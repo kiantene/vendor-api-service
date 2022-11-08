@@ -1,0 +1,2 @@
+# game-aggregator-vendor-service
+
