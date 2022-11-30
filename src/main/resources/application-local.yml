@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    maria-reader:
+      driver-class-name: org.mariadb.jdbc.Driver
+      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      username: ga_admin
+      password: Asdf1234-
+    maria-writer:
+      driver-class-name: org.mariadb.jdbc.Driver
+      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      username: ga_admin
+      password: Asdf1234-
+  liquibase:
+    change-log: /liquibase/master.xml
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  redis:
+    host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
+    port: 6379
+    username: dev
+    password: Asdf1234-
+    jedis:
+      pool:
+        max-idle: 30
+        max-active: 100
+        min-idle: 10
+        max-wait: 2000
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
+logstash:
+  address: "127.0.0.1:5000"
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://127.0.0.1:8761/eureka/

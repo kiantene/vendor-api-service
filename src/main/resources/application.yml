@@ -1,0 +1,38 @@
+server:
+  port: 8082
+  http2:
+    enabled: true
+sas:
+  enabled: false
+spring:
+  application:
+    name: vendor-api-service
+  profiles:
+    include: dev
+  main:
+    allow-bean-definition-overriding: true
+springdoc:
+  api-docs:
+    path: /${spring.application.name}/v3/api-docs
+  swagger-ui:
+    path: /${spring.application.name}/swagger-ui.html
+    tryItOutEnabled: true
+  paths-to-match: /**
+#logging:
+#  config: classpath:logback-spring.xml
+# Micro-services list
+grpc:
+  server:
+    port: 9092
+  client:
+    game-aggregator-operator-api-service:
+#      address: 'discovery:///game-aggregator-operator-api-service'
+      address: 'static://localhost:9093'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+#    application-grpc:
+#      address: 'discovery:///application-sample2'
+#      enableKeepAlive: true
+#      keepAliveWithoutCalls: true
+#      negotiationType: plaintext
