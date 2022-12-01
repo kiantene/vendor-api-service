@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.api.v1.game.loginaction;
 
 import com.nextgen.gameaggregator.vendor.api.v1.apicomponent.log.TraceIdLog;
-import com.nextgen.gameaggregator.vendor.grpc.dto.VendorGameAuthenticationServiceRequestDto;
-import com.nextgen.gameaggregator.vendor.grpc.vo.VendorGameAuthenticationServiceResponseVo;
+import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameAuthenticationServiceRequestDto;
+import com.nextgen.gameaggregator.vendor.grpc.v1.vo.VendorGameAuthenticationServiceResponseVo;
 import com.nextgen.gameaggregator.vendor.util.NameUtils;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.slf4j.Logger;

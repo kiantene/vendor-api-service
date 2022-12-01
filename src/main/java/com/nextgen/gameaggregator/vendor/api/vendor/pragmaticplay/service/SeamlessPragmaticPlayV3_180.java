@@ -6,8 +6,8 @@ import com.nextgen.gameaggregator.vendor.api.vendor.pragmaticplay.service.dto.Se
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryRequest;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryResult;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerAuthenticationReader;
-import com.nextgen.gameaggregator.vendor.grpc.dto.VendorGameLoginServiceRequestDto;
-import com.nextgen.gameaggregator.vendor.grpc.vo.VendorGameLoginServiceResponseVo;
+import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameLoginServiceRequestDto;
+import com.nextgen.gameaggregator.vendor.grpc.v1.vo.VendorGameLoginServiceResponseVo;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
 import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.AbstractSeamlessVendor;

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.grpc.vo;
+package com.nextgen.gameaggregator.vendor.grpc.v1.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

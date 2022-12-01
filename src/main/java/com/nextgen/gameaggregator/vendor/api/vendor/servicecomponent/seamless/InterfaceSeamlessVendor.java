@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless;
 
-import com.nextgen.gameaggregator.vendor.grpc.dto.VendorGameLoginServiceRequestDto;
-import com.nextgen.gameaggregator.vendor.grpc.vo.VendorGameLoginServiceResponseVo;
+import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameLoginServiceRequestDto;
+import com.nextgen.gameaggregator.vendor.grpc.v1.vo.VendorGameLoginServiceResponseVo;
 import com.nextgen.gameaggregator.vendor.vendorclass.seamless.pragmaticplay.filter.LoggingFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

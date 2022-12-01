@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.vendor.api.vendor.pragmaticplay.vo.BetRequestA
 import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.*;
-import com.nextgen.gameaggregator.vendor.grpc.dto.VendorGameBetRequestServiceRequestDto;
+import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameBetRequestServiceRequestDto;
 import com.nextgen.sas.core.web.action.Action;
 import com.nextgen.sas.core.web.action.WebActionRequest;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;

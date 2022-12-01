@@ -1,11 +1,11 @@
-package com.nextgen.gameaggregator.vendor.grpc.listener;
+package com.nextgen.gameaggregator.vendor.grpc.v1.listener;
 
 import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.*;
 import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
-import com.nextgen.gameaggregator.vendor.grpc.dto.VendorGameLoginServiceRequestDto;
-import com.nextgen.gameaggregator.vendor.grpc.vo.VendorGameLoginServiceResponseVo;
+import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameLoginServiceRequestDto;
+import com.nextgen.gameaggregator.vendor.grpc.v1.vo.VendorGameLoginServiceResponseVo;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Autowired;

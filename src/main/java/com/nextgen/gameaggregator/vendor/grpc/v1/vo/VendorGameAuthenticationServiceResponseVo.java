@@ -1,32 +1,33 @@
-package com.nextgen.gameaggregator.vendor.grpc.vo;
+package com.nextgen.gameaggregator.vendor.grpc.v1.vo;
 
-public class VendorBetResultServiceResponseVo {
-
-    private String transactionId;
+public class VendorGameAuthenticationServiceResponseVo {
+    private String userId;
     private String currency;
     private Double cash;
     private Double bonus;
+    private String token;
     private Integer error;
     private String description;
 
-    public VendorBetResultServiceResponseVo() {
+    public VendorGameAuthenticationServiceResponseVo() {
     }
 
-    public VendorBetResultServiceResponseVo(String transactionId, String currency, Double cash, Double bonus, Integer error, String description) {
-        this.transactionId = transactionId;
+    public VendorGameAuthenticationServiceResponseVo(String userId, String currency, Double cash, Double bonus, String token, Integer error, String description) {
+        this.userId = userId;
         this.currency = currency;
         this.cash = cash;
         this.bonus = bonus;
+        this.token = token;
         this.error = error;
         this.description = description;
     }
 
-    public String getTransactionId() {
-        return transactionId;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setTransactionId(String transactionId) {
-        this.transactionId = transactionId;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     public String getCurrency() {
@@ -51,6 +52,14 @@ public class VendorBetResultServiceResponseVo {
 
     public void setBonus(Double bonus) {
         this.bonus = bonus;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public Integer getError() {
