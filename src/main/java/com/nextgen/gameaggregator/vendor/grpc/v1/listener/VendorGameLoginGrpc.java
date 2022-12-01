@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.grpc.v1.listener;
 
-import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.*;
+import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginDto;
+import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginServiceGrpc;
+import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginVo;
+import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.*;
-import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
 import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameLoginServiceRequestDto;
 import com.nextgen.gameaggregator.vendor.grpc.v1.vo.VendorGameLoginServiceResponseVo;
 import io.grpc.stub.StreamObserver;
@@ -11,7 +13,7 @@ import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @GrpcService
-public class VendorGameLoginService extends GameLoginServiceGrpc.GameLoginServiceImplBase {
+public class VendorGameLoginGrpc extends GameLoginServiceGrpc.GameLoginServiceImplBase {
 
     private SeamlessVendorAdaptor  seamlessVendorAdaptor;
 
@@ -22,7 +24,7 @@ public class VendorGameLoginService extends GameLoginServiceGrpc.GameLoginServic
     private String vendorPlayerUsername = null;
     private String playerSessionId = null;
 
-    public VendorGameLoginService(SeamlessVendorAdaptor seamlessVendorAdaptor) {
+    public VendorGameLoginGrpc(SeamlessVendorAdaptor seamlessVendorAdaptor) {
         this.seamlessVendorAdaptor = seamlessVendorAdaptor;
     }
 
