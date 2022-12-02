@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.grpc.v1.subcriber;
 
-import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultDto;
+import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultGrpcDto;
+import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultServiceGrpc;
-import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultVo;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,7 @@ public class OperatorBetResultGrpc {
     @GrpcClient("game-aggregator-operator-api-service")
     private BetResultServiceGrpc.BetResultServiceBlockingStub blockingStub;
 
-    public BetResultVo betResult(
+    public BetResultGrpcVo betResult(
             final Long agentId,
             final Long agentPlayerId,
             final Long gameId,
@@ -27,7 +27,7 @@ public class OperatorBetResultGrpc {
             final Long betTime,
             final Long settledTime
     ){
-        BetResultDto dto = BetResultDto.newBuilder()
+        BetResultGrpcDto dto = BetResultGrpcDto.newBuilder()
                 .setAgentId(agentId)
                 .setAgentPlayerId(agentPlayerId)
                 .setGameId(gameId)

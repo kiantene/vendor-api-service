@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.api.vendor.sample;
 
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.grpc.v1.operator.betrequest.BetRequestVo;
+import com.nextgen.gameaggregator.grpc.v1.operator.betrequest.BetRequestGrpcVo;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetRequestGrpc;
 import com.nextgen.sas.core.web.action.Action;
 import com.nextgen.sas.core.web.action.WebActionRequest;
@@ -27,7 +27,7 @@ public class RequestAction extends Action implements WebActionRequest {
     @PostMapping("")
     public ResponseEntity<Map<String, Object> > action(@RequestBody ObjectNode json , HttpServletRequest request) {
 
-        BetRequestVo serviceVo = this.operatorBetRequestGrpc.betRequest(
+        BetRequestGrpcVo serviceVo = this.operatorBetRequestGrpc.betRequest(
                 json.get("agentId").asLong(),
                 json.get("agentPlayerId").asLong(),
                 json.get("gameId").asLong(),

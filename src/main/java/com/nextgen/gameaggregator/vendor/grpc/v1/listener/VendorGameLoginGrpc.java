@@ -1,11 +1,11 @@
 package com.nextgen.gameaggregator.vendor.grpc.v1.listener;
 
-import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginDto;
+import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginGrpcDto;
+import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginServiceGrpc;
-import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginVo;
 import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.*;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.*;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorReader;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorReaderManager;
 import com.nextgen.gameaggregator.vendor.grpc.v1.dto.VendorGameLoginServiceRequestDto;
 import com.nextgen.gameaggregator.vendor.grpc.v1.vo.VendorGameLoginServiceResponseVo;
 import io.grpc.stub.StreamObserver;
@@ -28,7 +28,7 @@ public class VendorGameLoginGrpc extends GameLoginServiceGrpc.GameLoginServiceIm
         this.seamlessVendorAdaptor = seamlessVendorAdaptor;
     }
 
-    public void gameLogin(final GameLoginDto dto, final StreamObserver<GameLoginVo> responseObserver) {
+    public void gameLogin(final GameLoginGrpcDto dto, final StreamObserver<GameLoginGrpcVo> responseObserver) {
 
         //merge data from VendorGameLoginServiceDto to VendorGameLoginServiceRequestDto for class file processing
         VendorGameLoginServiceRequestDto requestDto = new VendorGameLoginServiceRequestDto(
@@ -57,7 +57,7 @@ public class VendorGameLoginGrpc extends GameLoginServiceGrpc.GameLoginServiceIm
 
         VendorGameLoginServiceResponseVo responseVo = seamlessVendorAdaptor.seamlessVendor.gameLogin(requestDto);
 
-        GameLoginVo vo = GameLoginVo.newBuilder()
+        GameLoginGrpcVo vo = GameLoginGrpcVo.newBuilder()
                 .setStatus(responseVo.getStatus())
                 .setGameUrl(responseVo.getGameUrl())
                 .setVendorErrorCode(responseVo.getVendorErrorCode())

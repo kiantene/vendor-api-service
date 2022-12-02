@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.grpc.v1.subcriber;
 
-import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceDto;
+import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGrpcDto;
+import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceServiceGrpc;
-import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceVo;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ public class OperatorWalletBalanceGrpc {
     @GrpcClient("game-aggregator-operator-api-service")
     private WalletBalanceServiceGrpc.WalletBalanceServiceBlockingStub blockingStub;
 
-    public WalletBalanceVo walletBalance(
+    public WalletBalanceGrpcVo walletBalance(
             final Long agentId,
             final Long agentPlayerId,
             final Long vendorId,
@@ -21,7 +21,7 @@ public class OperatorWalletBalanceGrpc {
             final Long agentCredentialId
     ) {
 
-        WalletBalanceDto dto = WalletBalanceDto.newBuilder()
+        WalletBalanceGrpcDto dto = WalletBalanceGrpcDto.newBuilder()
                 .setAgentId(agentId)
                 .setAgentPlayerId(agentPlayerId)
                 .setVendorId(vendorId)

@@ -1,11 +1,10 @@
 package com.nextgen.gameaggregator.vendor.grpc.v1.listener;
 
 import com.nextgen.gameaggregator.grpc.constant.ConstantErrorMessage;
-import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailDto;
+import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailGrpcDto;
+import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailServiceGrpc;
-import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailVo;
 import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
-
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 
@@ -13,10 +12,10 @@ import net.devh.boot.grpc.server.service.GrpcService;
 public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceImplBase {
     private SeamlessVendorAdaptor seamlessVendorAdaptor;
 
-    public void betDetail(final BetDetailDto dto,
-                          final StreamObserver<BetDetailVo> responseObserver) {
+    public void betDetail(final BetDetailGrpcDto dto,
+                          final StreamObserver<BetDetailGrpcVo> responseObserver) {
 
-        BetDetailVo vo = BetDetailVo.newBuilder()
+        BetDetailGrpcVo vo = BetDetailGrpcVo.newBuilder()
                 .setStatus(true)
                 .setDetailUrl("http://wwww.aaa.com")
                 .setVendorErrorCode(ConstantErrorMessage.SUCCESS_CODE)
