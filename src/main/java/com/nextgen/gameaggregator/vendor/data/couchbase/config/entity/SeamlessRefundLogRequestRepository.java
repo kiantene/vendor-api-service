@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Scope("log")
-@Collection("seamless_bet_history_result")
-public interface SeamlessBetHistoryResultRepository extends CouchbaseRepository<SeamlessBetHistoryResult, String> {
+@Collection("seamless_refund_log")
+public interface SeamlessRefundLogRequestRepository extends CouchbaseRepository <SeamlessRefundLogRequest, String>{
 
-    SeamlessBetHistoryResult findByVendorBetId (String vendorBetId);
+    SeamlessRefundLogRequest findByVendorBetIdAndVendorCode (String vendorBetId, String vendorCode);
 }

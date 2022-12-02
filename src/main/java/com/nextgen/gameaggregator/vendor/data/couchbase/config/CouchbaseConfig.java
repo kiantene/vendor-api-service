@@ -1,4 +1,5 @@
 package com.nextgen.gameaggregator.vendor.data.couchbase.config;
+
 import com.couchbase.client.java.env.ClusterEnvironment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,7 +10,8 @@ import org.springframework.util.ResourceUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Configuration
 public class CouchbaseConfig extends AbstractCouchbaseConfiguration {

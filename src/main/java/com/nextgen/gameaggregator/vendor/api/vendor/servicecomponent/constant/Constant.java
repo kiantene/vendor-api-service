@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.constant;
 
 public class Constant {
 
-    public static final String USER_TYPE = "vendor_service_api";
+
 
     public static final String IS_WEB = "WEB";
 

@@ -1,4 +1,5 @@
 package com.nextgen.gameaggregator.vendor.data.mariadb.writer.manager;
+
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.Example1;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless;
 
-import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.constant.Constant;
+import com.nextgen.gameaggregator.vendor.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.*;
