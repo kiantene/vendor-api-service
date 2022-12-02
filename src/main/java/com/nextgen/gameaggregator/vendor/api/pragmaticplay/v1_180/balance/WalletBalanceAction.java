@@ -3,13 +3,18 @@ package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.balance;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+@RestController
+@RequestMapping(path = "api/v1/prammaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class WalletBalanceAction extends AbstractAction {
 
     @PostMapping(path = "balance2")
