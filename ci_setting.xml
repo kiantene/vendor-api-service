@@ -1,0 +1,35 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.1.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd">
+    <servers>
+        <server>
+            <id>gitlab-maven</id>
+            <configuration>
+                <httpHeaders>
+                    <property>
+                        <name>Private-Token</name>
+                        <value>xLLx8jKqyX6D21usogtT</value>
+                    </property>
+                </httpHeaders>
+            </configuration>
+        </server>
+    </servers>
+
+    <mirrors>
+        <mirror>
+            <id>gitlab-maven</id>
+            <name>Repo Mirror</name>
+            <url>
+                http://192.168.88.109/api/v4/projects/19/packages/maven
+            </url>
+            <mirrorOf>http://192.168.88.109</mirrorOf>
+        </mirror>
+        <mirror>
+            <id>gitlab-maven-2</id>
+            <name>Repo Mirror</name>
+            <url>
+                http://192.168.88.109/api/v4/projects/41/packages/maven
+            </url>
+            <mirrorOf>http://192.168.88.109</mirrorOf>
+        </mirror>
+    </mirrors>
+</settings>

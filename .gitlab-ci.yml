@@ -1,0 +1,27 @@
+before_script:
+  - export JAVA_HOME=/usr/lib/jvm/jdk-18/
+
+stages:
+  - build
+  - deploy
+
+maven-build:
+  stage: build
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'QA'
+      when: manual
+  script:
+    - 'mvn clean deploy -s ./ci_setting.xml -DskipTests=true'
+  artifacts:
+    paths:
+      - ./target/*.jar
+ali-deploy:
+  stage: deploy
+  needs: ["maven-build"]
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'QA'
+      when: manual
+  script:
+    - docker build -t registry-intl.ap-southeast-3.aliyuncs.com/gameagg/game-aggregator-vendor-api-service:latest .
+    - docker login --username=jeff.zheng.nf@hotmail.com --password="$ALI_CONTAINER_REGISTRY_PWD" registry-intl.ap-southeast-3.aliyuncs.com
+    - docker push registry-intl.ap-southeast-3.aliyuncs.com/gameagg/game-aggregator-vendor-api-service:latest
