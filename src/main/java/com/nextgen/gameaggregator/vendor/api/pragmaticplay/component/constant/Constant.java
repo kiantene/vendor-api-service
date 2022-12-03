@@ -11,6 +11,6 @@ public class Constant {
 
 
     //region vendor outgoing APIs
-
+    public static final String SEAMLESS_GAME_LOGIN = "/game/url";
     //endregion
 }

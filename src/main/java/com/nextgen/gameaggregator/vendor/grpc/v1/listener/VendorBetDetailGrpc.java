@@ -4,25 +4,32 @@ import com.nextgen.gameaggregator.grpc.constant.ConstantErrorMessage;
 import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailGrpcDto;
 import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailServiceGrpc;
-import com.nextgen.gameaggregator.vendor.api.vendor.servicecomponent.seamless.SeamlessVendorAdaptor;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 
 @GrpcService
 public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceImplBase {
-    private SeamlessVendorAdaptor seamlessVendorAdaptor;
+    private BetDetailGrpcVo vo;
 
     public void betDetail(final BetDetailGrpcDto dto,
                           final StreamObserver<BetDetailGrpcVo> responseObserver) {
 
-        BetDetailGrpcVo vo = BetDetailGrpcVo.newBuilder()
-                .setStatus(true)
-                .setDetailUrl("http://wwww.aaa.com")
-                .setVendorErrorCode(ConstantErrorMessage.SUCCESS_CODE)
-                .setVendorErrorMessage(ConstantErrorMessage.SUCCESS_MESSAGE)
-                .build();
-
-        responseObserver.onNext(vo);
+        try {
+            this.vo = BetDetailGrpcVo.newBuilder()
+                    .setStatus(true)
+                    .setDetailUrl("http://wwww.aaa.com")
+                    .setVendorErrorCode(ConstantErrorMessage.SUCCESS_CODE)
+                    .setVendorErrorMessage(ConstantErrorMessage.SUCCESS_MESSAGE)
+                    .build();
+        } catch (Exception exception) {
+            this.vo = BetDetailGrpcVo.newBuilder()
+                    .setStatus(false)
+                    .setDetailUrl("")
+                    .setVendorErrorCode(ConstantErrorMessage.GAME_CLASS_PROCESSING_FAIL_CODE)
+                    .setVendorErrorMessage(ConstantErrorMessage.GAME_CLASS_PROCESSING_FAIL)
+                    .build();
+        }
+        responseObserver.onNext(this.vo);
         responseObserver.onCompleted();
 
     }
