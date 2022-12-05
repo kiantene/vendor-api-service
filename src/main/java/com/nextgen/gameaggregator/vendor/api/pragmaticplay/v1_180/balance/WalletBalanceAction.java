@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.balance;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerAuthenticationReader;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,9 +16,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
+
 @RestController
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class WalletBalanceAction extends AbstractAction {
+
+//    @Autowired
+//    private OperatorWalletBalanceActionService operatorWalletBalanceActionService;
+
+//    private final SeamlessVendorAdaptor seamlessVendorAdaptor;
+//    private VendorPlayerAuthenticationReader vendorPlayerAuthenticationReader = new VendorPlayerAuthenticationReader();
 
     @PostMapping(path = Constant.ACTION_BALANCE)
     public WalletBalanceActionVo walletBalance(WalletBalanceActionDto dto, WebRequestWrapper request){
@@ -35,16 +45,53 @@ public class WalletBalanceAction extends AbstractAction {
         thisVo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
         //* Validation failed
         if (thisVo.getError() != ConstantErrorMessage.CODE_SUCCESS) {
-            System.out.println("check point 0");
             return thisVo;
         }
 
+        String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
+        //region call to correct class file
+        //TODO CONFIRM GET CLASS FILE WITH VENDORID, CREDENTIALID AND CURRENCY
+//        seamlessVendorAdaptor.getVendor(classFile);
+        //endregion
 
+        HashMap<String,Object> walletBalanceServiceInput = this.actionDtoToHashMapServiceInput(dto);
+        HashMap<String,Object> walletBalanceServiceOutput = new HashMap<String,Object>();
+//        walletBalanceServiceOutput = seamlessVendorAdaptor.seamlessVendor.walletBalance(walletBalanceServiceInput);
+
+//        VendorPlayerAuthenticationReader v1 = (VendorPlayerAuthenticationReader) walletBalanceServiceOutput.get("vendorPlayerAuthenticationReader");
+
+        try{
+            //check authentication output of error param is integer (this to make sure this processed in our class file)
+            if (walletBalanceServiceOutput.get("error") instanceof Integer){
+                thisVo = hashMapServiceOutputToActionVo(thisVo, walletBalanceServiceOutput);
+
+                //if player authentication success
+                if (thisVo.getError() == ConstantErrorMessage.RESPONSE_CODES.get(ConstantErrorMessage.RESPONSE_KEY_SUCCESS)) {
+
+
+                    //call operator check balance grpc next
+//                    OperatorWalletBalanceServiceVo serviceVo = this.operatorWalletBalanceActionService.operatorWalletBalanceServiceResponse(v1.getAgentId(), v1.getAgentPlayerId(), v1.getVendorId(), v1.getCurrencyCode(), traceId, this.findAgentCredentialIdByAgentId(v1.getAgentId()));
+
+                    //if operator check balance grpc return success
+//                    if (serviceVo.getStatus()){
+//                        thisVo.setCash(BigDecimal.valueOf(serviceVo.getBalance()));
+//                    } else {
+//                        //TODO - DECIDE TO USE RECONCILIATION OR NOT
+//                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
+//                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION);
+//                    }
+                }
+            }
+        } catch (ClassCastException e){
+            //all should properly preset even is error, this handle unexpected scenario if any of the params
+            //is casting in wrong format
+            thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
+        }
 
         //let it work first, since operator data project is yet to have for my side on weekends.
         thisVo.setError(0);
         thisVo.setDescription("Success");
-        thisVo.setCash(BigDecimal.valueOf(100d));
+        thisVo.setCash(BigDecimal.valueOf(100L));
 
         return thisVo;
     }
@@ -58,11 +105,6 @@ public class WalletBalanceAction extends AbstractAction {
     }
 
     private WalletBalanceActionVo hashMapServiceOutputToActionVo(WalletBalanceActionVo vo, HashMap<String,Object> serviceOutput) {
-        System.out.println("check point 1");
-        System.out.println(serviceOutput.get("currency").toString());
-        System.out.println(serviceOutput.get("bonus"));
-        System.out.println(serviceOutput.get("error"));
-        System.out.println(serviceOutput.get("description"));
         //*
         vo.setCurrency(serviceOutput.get("currency").toString());
         vo.setBonus(new BigDecimal(serviceOutput.get("bonus").toString()));
