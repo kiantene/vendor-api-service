@@ -43,7 +43,5 @@ public class JackpotWinActionDto extends AbstractActionDto {
 
     private String platform;
 
-    private String token;
-
     // specPrizes[#].specPrizeType;
 }

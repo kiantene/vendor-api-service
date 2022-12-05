@@ -12,7 +12,6 @@ import javax.validation.constraints.*;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthenticationDto extends AbstractActionDto {
-    private String token;
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String providerId;
 }

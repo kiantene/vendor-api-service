@@ -37,5 +37,4 @@ public class ResultActionDto extends AbstractActionDto {
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String roundDetails;
 
-    private String token;
 }

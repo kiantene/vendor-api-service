@@ -4,7 +4,7 @@ import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnor
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.*;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -12,5 +12,8 @@ public class AbstractActionDto {
 
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String hash;
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
+    private String token;
 
 }

@@ -17,6 +17,5 @@ public class WalletBalanceActionDto extends AbstractActionDto {
     private String providerId;
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String userId;
-    private String token;
 
 }

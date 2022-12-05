@@ -22,5 +22,4 @@ public class RefundActionDto extends AbstractActionDto {
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String providerId;
 
-    private String token;
 }

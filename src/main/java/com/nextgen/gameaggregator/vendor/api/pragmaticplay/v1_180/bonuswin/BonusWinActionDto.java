@@ -39,8 +39,6 @@ public class BonusWinActionDto extends AbstractActionDto {
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String gameId;
 
-    private String token;
-
     // private String requestId;
     // specPrizes[#].specPrizeAmount
     // specPrizes[#].specPrizeCode
