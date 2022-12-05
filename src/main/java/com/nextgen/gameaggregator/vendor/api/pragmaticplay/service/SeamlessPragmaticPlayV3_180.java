@@ -50,7 +50,8 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
     public GameLoginGrpcVo gameLogin(GameLoginGrpcDto dto) {
         try {
             this.setCredential();
-            this.findVendorPlayerUsername(dto.getAgentPlayerId(), dto.getAgentId(), dto.getCurrency(), true);
+            this.findVendorPlayerUsername(dto.getAgentPlayerId(), dto.getAgentId(),
+                    dto.getMasterAgentId(), dto.getHouseId(), dto.getCurrency(),true);
 
             this.createPlayerAuthentication(
                     Long.valueOf(dto.getWalletType()), dto.getAgentPlayerId(),

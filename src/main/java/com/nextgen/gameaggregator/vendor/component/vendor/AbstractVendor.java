@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayer
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
 import com.nextgen.gameaggregator.vendor.util.NameUtils;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,7 +72,7 @@ public class AbstractVendor extends VendorDataEntity {
     //endregion
 
     public void findVendorPlayerUsername(
-            Long agentPlayerId, Long agentId, String currencyCode, Boolean createNow) {
+            Long agentPlayerId, Long agentId, Long masterAgentId, Long houseId,String currencyCode, Boolean createNow) {
         vendorPlayerReader = vendorPlayerReaderManager.findByAgentPlayerIdAndVendorIdAndVendorCredentialIdAndCurrencyCode(
                 agentPlayerId, this.vendorId, this.vendorCredentialId, currencyCode);
         if ((vendorPlayerReader == null) && (createNow)) {
@@ -81,6 +82,11 @@ public class AbstractVendor extends VendorDataEntity {
              vendorPlayerWriter = new VendorPlayerWriter();
 
             vendorPlayerWriter.setAgentPlayerId(agentPlayerId);
+            vendorPlayerWriter.setAgentId(agentId);
+            vendorPlayerWriter.setMasterAgentId(masterAgentId);
+            vendorPlayerWriter.setPassword(null);
+            vendorPlayerWriter.setBalance(new BigDecimal(0));
+            vendorPlayerWriter.setHouseId(houseId);
             vendorPlayerWriter.setVendorId(this.vendorId);
             vendorPlayerWriter.setVendorCredentialId(this.vendorCredentialId);
             vendorPlayerWriter.setCredentialsVersion(this.CredentialLatestVersion);

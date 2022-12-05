@@ -1,16 +1,18 @@
 package com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity;
 
 import com.nextgen.sas.core.db.bean.CommonEntity;
+import lombok.Data;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "vendor_players")
 @SQLDelete(sql = "UPDATE vendor_players SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted=false")
-
+@Data
 public class VendorPlayerWriter extends CommonEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,74 +33,25 @@ public class VendorPlayerWriter extends CommonEntity {
     @Column(name = "vendor_username", nullable = false,  length = 50)
     private String vendorUsername;
 
+    @Column(name = "password", nullable = true,  length = 50)
+    private String password;
+
+    @Column(name = "balance", nullable = false,  length = 50)
+    private BigDecimal balance;
+
     @Column(name = "currency_code", nullable = false,  length = 50)
     private String currencyCode;
 
     @Column(name = "status", nullable = false)
     private Boolean status;
 
-    @Override
-    public Long getId() {
-        return id;
-    }
+    @Column(name = "agent_id", nullable = false)
+    private Long agentId;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    @Column(name = "master_agent_id", nullable = false)
+    private Long masterAgentId;
 
-    public Long getAgentPlayerId() {
-        return agentPlayerId;
-    }
+    @Column(name = "house_id", nullable = false)
+    private Long houseId;
 
-    public void setAgentPlayerId(Long agentPlayerId) {
-        this.agentPlayerId = agentPlayerId;
-    }
-
-    public Long getVendorId() {
-        return vendorId;
-    }
-
-    public void setVendorId(Long vendorId) {
-        this.vendorId = vendorId;
-    }
-
-    public Long getVendorCredentialId() {
-        return vendorCredentialId;
-    }
-
-    public void setVendorCredentialId(Long vendorCredentialId) {
-        this.vendorCredentialId = vendorCredentialId;
-    }
-
-    public Long getCredentialsVersion() {
-        return credentialsVersion;
-    }
-
-    public void setCredentialsVersion(Long credentialsVersion) {
-        this.credentialsVersion = credentialsVersion;
-    }
-
-    public String getVendorUsername() {
-        return vendorUsername;
-    }
-
-    public void setVendorUsername(String vendorUsername) {
-        this.vendorUsername = vendorUsername;
-    }
-
-    public String getCurrencyCode() {
-        return currencyCode;
-    }
-
-    public void setCurrencyCode(String currencyCode) {
-        this.currencyCode = currencyCode;
-    }
-
-    public Boolean getStatus() {
-        return status;
-    }
-
-    public void setStatus(Boolean status) {
-        this.status = status;
-    }
 }
