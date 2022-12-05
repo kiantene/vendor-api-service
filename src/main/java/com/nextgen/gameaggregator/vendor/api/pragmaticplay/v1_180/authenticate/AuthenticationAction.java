@@ -21,7 +21,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RequestMapping(path = Constant.AUTHENTICATE_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class AuthenticationAction extends AbstractAction {
 
-    @Autowired
+//    @Autowired
 //    private OperatorWalletBalanceActionService operatorWalletBalanceActionService;
 
 //    private final SeamlessVendorAdaptor seamlessVendorAdaptor;
