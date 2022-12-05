@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
@@ -22,7 +23,15 @@ public class ResultAction extends AbstractAction {
     @PostMapping(path = Constant.ACTION_RESULT)
     public ResultActionVo betResult(ResultActionDto dto, WebRequestWrapper request)
     {
+        //* Temporary solution to map into DTO
+        dto = this.queryStringToDto(request.getBody(), ResultActionDto.class);
         ResultActionVo vo = new ResultActionVo();
+
+        //* DTO Validation
+        Map<String, String> dtoValidationResult = this.doValidation(dto, ResultActionDto.class);
+        //* Verify validation result
+        vo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
+
         HashMap<String,Object> betResultOutput =new HashMap<String,Object>();
         HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
         String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
@@ -105,8 +114,8 @@ public class ResultAction extends AbstractAction {
 //            vo.setDescription("Internal server error. Please retry again");
 //        }
 
-        System.out.println("betAmount ::: " + Double.parseDouble(betResultOutput.get("betAmount").toString()));
-        System.out.println("winLoss ::: " + Double.parseDouble(betResultOutput.get("winLoss").toString()));
+//        System.out.println("betAmount ::: " + Double.parseDouble(betResultOutput.get("betAmount").toString()));
+//        System.out.println("winLoss ::: " + Double.parseDouble(betResultOutput.get("winLoss").toString()));
 
         vo.setError(0);
         vo.setDescription("Success");

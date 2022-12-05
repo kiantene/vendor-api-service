@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
@@ -19,7 +20,15 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 public class RefundAction extends AbstractAction {
     @PostMapping(path = Constant.ACTION_REFUND)
     public RefundActionVo refund(RefundActionDto dto, WebRequestWrapper request){
+
+        //* Temporary solution to map into DTO
+        dto = this.queryStringToDto(request.getBody(), RefundActionDto.class);
         RefundActionVo vo = new RefundActionVo();
+
+        //* DTO Validation
+        Map<String, String> dtoValidationResult = this.doValidation(dto, RefundActionDto.class);
+        //* Verify validation result
+        vo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
 
         HashMap<String,Object> betResultOutput =new HashMap<String,Object>();
         HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
@@ -95,6 +104,8 @@ public class RefundAction extends AbstractAction {
 //            vo.setError(100);
 //            vo.setDescription("Internal server error. Please retry again");
 //        }
+
+        Map<String, String> voValidationResult = this.doValidation(vo, RefundActionVo.class);
 
         return vo;
     }
