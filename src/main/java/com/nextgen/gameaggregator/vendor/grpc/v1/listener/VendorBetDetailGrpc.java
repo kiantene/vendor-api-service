@@ -6,9 +6,13 @@ import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.vendor.betdetail.BetDetailServiceGrpc;
 import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @GrpcService
 public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceImplBase {
+
+    private static final Logger logger = LoggerFactory.getLogger(VendorBetDetailGrpc.class);
     private BetDetailGrpcVo vo;
 
     public void betDetail(final BetDetailGrpcDto dto,
@@ -22,6 +26,7 @@ public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceIm
                     .setVendorErrorMessage(ConstantErrorMessage.SUCCESS_MESSAGE)
                     .build();
         } catch (Exception exception) {
+            logger.error(exception.getMessage());
             this.vo = BetDetailGrpcVo.newBuilder()
                     .setStatus(false)
                     .setDetailUrl("")

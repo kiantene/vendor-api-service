@@ -9,9 +9,11 @@ import com.nextgen.gameaggregator.vendor.api.pragmaticplay.service.vo.SeamlessGa
 import com.nextgen.gameaggregator.vendor.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.component.vendor.AbstractVendor;
 import com.nextgen.gameaggregator.vendor.component.vendor.InterfaceSeamlessVendor;
+import com.nextgen.gameaggregator.vendor.exception.VendorApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -46,31 +48,45 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
     //region Game Login
     @Override
     public GameLoginGrpcVo gameLogin(GameLoginGrpcDto dto) {
-        this.setCredential();
+        try {
+            this.setCredential();
 
-        MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();
-        paramMap.add("symbol", this.findVendorGameCode(dto.getGameId(), dto.getLanguage(), dto.getPlatform()));
-        paramMap.add("language", this.findVendorLanguageCode(dto.getLanguage()));
-        paramMap.add("currency", this.findVendorCurrencyCode(dto.getCurrency(), dto.getVendorId()));
-        paramMap.add("platform", this.findVendorPlatformCode(dto.getPlatform()));
-        paramMap.add("secureLogin", credentialMap.get("secureLogin"));
-        paramMap.add("token", dto.getTraceId());
-        String response = this.vendorAPICall(paramMap, SEAMLESS_GAME_LOGIN);
-
-        return this.verifyGameLoginResponse(response);
-    }
-
-    @Override
-    public GameLoginGrpcVo verifyGameLoginResponse(String response) {
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-        SeamlessGameLoginVo seamlessGameLoginVo = new Gson().fromJson(response, SeamlessGameLoginVo.class);
-        if(seamlessGameLoginVo ==null){
+            MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();
+            paramMap.add("symbol", this.findVendorGameCode(dto.getGameId(), dto.getLanguage(), dto.getPlatform()));
+            paramMap.add("language", this.findVendorLanguageCode(dto.getLanguage()));
+            paramMap.add("currency", this.findVendorCurrencyCode(dto.getCurrency(), dto.getVendorId()));
+            paramMap.add("platform", this.findVendorPlatformCode(dto.getPlatform()));
+            paramMap.add("secureLogin", credentialMap.get("secureLogin"));
+            paramMap.add("token", dto.getTraceId());
+            String response = this.vendorAPICall(paramMap, SEAMLESS_GAME_LOGIN);
+            return this.verifyGameLoginResponse(response);
+        }catch (VendorApiException vendorApiException) {
             return GameLoginGrpcVo.newBuilder()
                     .setStatus(false)
                     .setGameUrl("")
-                    .setVendorErrorCode(ConstantErrorMessage.INVALID_RESPONSE_CODE)
-                    .setVendorErrorMessage(ConstantErrorMessage.EXTERNAL + "-"+ConstantErrorMessage.INVALID_RESPONSE_CODE)
+                    .setVendorErrorCode(vendorApiException.getErrorCode())
+                    .setVendorErrorMessage( ConstantErrorMessage.EXTERNAL + "-" +vendorApiException.getMessage())
                     .build();
+        } catch (Exception exception) {
+            return GameLoginGrpcVo.newBuilder()
+                    .setStatus(false)
+                    .setGameUrl("")
+                    .setVendorErrorCode(ConstantErrorMessage.UNEXPECTED_ERROR_CODE)
+                    .setVendorErrorMessage( ConstantErrorMessage.UNEXPECTED_ERROR)
+                    .build();
+        }
+
+
+    }
+
+    @Override
+    public GameLoginGrpcVo verifyGameLoginResponse(String response) throws VendorApiException {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+        SeamlessGameLoginVo seamlessGameLoginVo = new Gson().fromJson(response, SeamlessGameLoginVo.class);
+        if(seamlessGameLoginVo ==null){
+            throw new VendorApiException(
+                    ConstantErrorMessage.INVALID_RESPONSE_CODE,
+                    ConstantErrorMessage.EXTERNAL + "-" + ConstantErrorMessage.INVALID_RESPONSE_CODE);
         }
 
         Set<ConstraintViolation<SeamlessGameLoginVo>> violations = validator.validate(seamlessGameLoginVo);
@@ -82,13 +98,9 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 validationMessage += "," + violation.getPropertyPath() + violation.getMessage();
             }
             logger.error(validationMessage);
-
-            return GameLoginGrpcVo.newBuilder()
-                    .setStatus(false)
-                    .setGameUrl("")
-                    .setVendorErrorCode(ConstantErrorMessage.INVALID_RESPONSE_CODE)
-                    .setVendorErrorMessage(ConstantErrorMessage.EXTERNAL + "-"+ConstantErrorMessage.INVALID_RESPONSE_CODE)
-                    .build();
+            throw new VendorApiException(
+                    ConstantErrorMessage.INVALID_RESPONSE_CODE,
+                    ConstantErrorMessage.EXTERNAL + "-" + ConstantErrorMessage.INVALID_RESPONSE);
         }
 
         if(seamlessGameLoginVo.getError().equals("0")){
@@ -110,15 +122,16 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
     }
 
-
     //endregion
 
 
     //region vendor api call
-    public String vendorAPICall(MultiValueMap<String, String> paramMap, String endPoint) {
+    public String vendorAPICall(MultiValueMap<String, String> paramMap, String endPoint) throws VendorApiException {
 
+        try {
         paramMap.add("hash", this.mD5(URLDecoder.decode(kSort(paramMap)) + this.credentialMap.get("secretKey")));
         WebClient webClient = WebClient.create(this.credentialMap.get("apiUrl"));
+
         return webClient.post()
                 .uri(endPoint)
                 // .header("Authorization", "Bearer MY_SECRET_TOKEN")
@@ -128,9 +141,22 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //.bodyValue(requestJson)
                 //.body(BodyInserters.fromValue(paramMap))
                 .retrieve()
+                .onStatus(HttpStatus::isError, response ->
+                        response.bodyToMono(String.class)
+                                .doOnNext(responseBody ->
+                                        logger.error("Error Vendor API response from server: {}", responseBody)
+                                )
+                                // throw original error
+                                .then(response.createException())
+                )
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(Constant.SERVICE_TIMEOUT))
                 .block();
+        } catch (Exception exception) {
+            throw new VendorApiException(
+                    ConstantErrorMessage.INVALID_RESPONSE_CODE,
+                    ConstantErrorMessage.EXTERNAL + "-" + exception.getMessage());
+        }
     }
 
 
@@ -161,7 +187,6 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
         }
         Arrays.sort(key);
         for (String s : key) {
-            System.out.println(map.getFirst(s));
             sb += s + "=" + map.getFirst(s) + "&";
         }
         sb = sb.substring(0, sb.length() - 1);
