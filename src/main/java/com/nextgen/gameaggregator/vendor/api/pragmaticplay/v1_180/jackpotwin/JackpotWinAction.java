@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.jackpotwin;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,10 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path = "api/v1/prammaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class JackpotWinAction extends AbstractAction {
 
-    @PostMapping(path = "jackpotWin")
+    @PostMapping(path = Constant.ACTION_JACKPOT_WIN)
     public JackpotWinActionVo betResultPromoWin(JackpotWinActionDto dto, WebRequestWrapper request)
     {
         //* Temporary solution to map into DTO

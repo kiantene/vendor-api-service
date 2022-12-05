@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.result;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,18 +11,27 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
-@RequestMapping(path = "api/v1/prammaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class ResultAction extends AbstractAction {
 
-    @PostMapping(path = "result")
+    @PostMapping(path = Constant.ACTION_RESULT)
     public ResultActionVo betResult(ResultActionDto dto, WebRequestWrapper request)
     {
+        //* Temporary solution to map into DTO
+        dto = this.queryStringToDto(request.getBody(), ResultActionDto.class);
         ResultActionVo vo = new ResultActionVo();
+
+        //* DTO Validation
+        Map<String, String> dtoValidationResult = this.doValidation(dto, ResultActionDto.class);
+        //* Verify validation result
+        vo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
+
         HashMap<String,Object> betResultOutput =new HashMap<String,Object>();
         HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
         String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
@@ -104,8 +114,8 @@ public class ResultAction extends AbstractAction {
 //            vo.setDescription("Internal server error. Please retry again");
 //        }
 
-        System.out.println("betAmount ::: " + Double.parseDouble(betResultOutput.get("betAmount").toString()));
-        System.out.println("winLoss ::: " + Double.parseDouble(betResultOutput.get("winLoss").toString()));
+//        System.out.println("betAmount ::: " + Double.parseDouble(betResultOutput.get("betAmount").toString()));
+//        System.out.println("winLoss ::: " + Double.parseDouble(betResultOutput.get("winLoss").toString()));
 
         vo.setError(0);
         vo.setDescription("Success");

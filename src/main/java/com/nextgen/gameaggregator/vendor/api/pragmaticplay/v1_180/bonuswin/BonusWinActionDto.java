@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.bonuswin;
 
-import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+//import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.dto.AbstractActionDto;
 import lombok.Data;
@@ -38,4 +39,10 @@ public class BonusWinActionDto extends AbstractActionDto {
     private String gameId;
 
     private String token;
+
+    // private String requestId;
+    // specPrizes[#].specPrizeAmount
+    // specPrizes[#].specPrizeCode
+    // specPrizes[#].specPrizeType
+
 }

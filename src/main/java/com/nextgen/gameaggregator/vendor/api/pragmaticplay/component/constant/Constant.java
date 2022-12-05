@@ -8,7 +8,20 @@ public class Constant {
 
 
     //region vendor incoming APIs
-    public static final String AUTHENTICATE_ACTION = WEB_ACTION + "/authenticate";
+    public static final String ACTION_AUTHENTICATE = "authenticate";
+    public static final String ACTION_BALANCE = "balance";
+    public static final String ACTION_BET = "bet";
+    public static final String ACTION_BONUS_WIN = "bonusWin";
+    public static final String ACTION_JACKPOT_WIN = "jackpotWin";
+    public static final String ACTION_PROMO_WIN = "promoWin";
+    public static final String ACTION_REFUND = "refund";
+    public static final String ACTION_RESULT = "result";
+
+
+
+
+
+
     //endregion
 
 

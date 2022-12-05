@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.bonuswin;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,9 +16,9 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
 
 @RestController
-@RequestMapping(path = "api/v1/prammaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BonusWinAction extends AbstractAction {
-    @PostMapping(path = "bonusWin")
+    @PostMapping(path = Constant.ACTION_BONUS_WIN)
     public BonusWinActionVo bonusWin(BonusWinActionDto dto, WebRequestWrapper request){
 
         HashMap<String,Object> betResultOutput =new HashMap<String,Object>();
