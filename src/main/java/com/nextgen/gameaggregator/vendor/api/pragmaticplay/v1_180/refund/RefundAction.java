@@ -17,7 +17,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RestController
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class RefundAction extends AbstractAction {
-    @PostMapping(path = ACTION_REFUND)
+    @PostMapping(path = Constant.ACTION_REFUND)
     public RefundActionVo refund(RefundActionDto dto, WebRequestWrapper request){
         RefundActionVo vo = new RefundActionVo();
 

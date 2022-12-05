@@ -19,7 +19,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class ResultAction extends AbstractAction {
 
-    @PostMapping(path = ACTION_RESULT)
+    @PostMapping(path = Constant.ACTION_RESULT)
     public ResultActionVo betResult(ResultActionDto dto, WebRequestWrapper request)
     {
         ResultActionVo vo = new ResultActionVo();

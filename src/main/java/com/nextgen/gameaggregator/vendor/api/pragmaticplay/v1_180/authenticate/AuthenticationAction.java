@@ -17,7 +17,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
 
 @RestController
-@RequestMapping(path = Constant.ACTION_AUTHENTICATE, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class AuthenticationAction extends AbstractAction {
 
 //    @Autowired

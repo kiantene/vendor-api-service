@@ -19,7 +19,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BetAction extends AbstractAction {
 
-    @PostMapping(path = ACTION_BET)
+    @PostMapping(path = Constant.ACTION_BET)
     public BetActionVo betRequest(BetActionDto dto, WebRequestWrapper request)
     {
         BetActionVo vo = new BetActionVo();
