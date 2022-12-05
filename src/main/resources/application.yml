@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: 8084
   http2:
     enabled: true
 sas:
@@ -23,11 +23,11 @@ springdoc:
 # Micro-services list
 grpc:
   server:
-    port: 9092
+    port: 9094
   client:
     game-aggregator-operator-api-service:
 #      address: 'discovery:///game-aggregator-operator-api-service'
-      address: 'static://localhost:9093'
+      address: 'static://localhost:9095'
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext

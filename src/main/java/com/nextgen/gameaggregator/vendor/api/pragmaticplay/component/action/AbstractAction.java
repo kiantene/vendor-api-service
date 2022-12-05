@@ -6,8 +6,10 @@ import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessAc
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessRefundLogRequest;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessRefundLogRequestRepository;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.AgentCredentialReader;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerAuthenticationReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.AgentCredentialReaderManager;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorPlayerAuthenticationReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorReaderManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,6 +35,11 @@ public class AbstractAction {
 
     @Autowired
     private SeamlessRefundLogRequestRepository seamlessRefundLogRequestRepository;
+
+    @Autowired
+    private VendorPlayerAuthenticationReaderManager vendorPlayerAuthenticationReaderManager;
+
+    private VendorPlayerAuthenticationReader vendorPlayerAuthenticationReader = new VendorPlayerAuthenticationReader();
 
     public <T> T queryStringToDto(String queryString, Class<T> clazz) {
 
@@ -117,6 +124,14 @@ public class AbstractAction {
 
         this.seamlessRefundLogRequestRepository.save(dataSet);
 
+    }
+    //endregion
+
+    //region match the trace id (token) from vendor and vendor_player_authentication table then get all data
+    public VendorPlayerAuthenticationReader findTraceId(String traceId){
+        vendorPlayerAuthenticationReader = vendorPlayerAuthenticationReaderManager.findByTraceId(traceId);
+
+        return vendorPlayerAuthenticationReader;
     }
     //endregion
 }
