@@ -19,7 +19,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class RefundAction extends AbstractAction {
     @PostMapping(path = Constant.ACTION_REFUND)
-    public RefundActionVo refund(RefundActionDto dto, WebRequestWrapper request){
+    public RefundActionVo refund(RefundActionDto dto, WebRequestWrapper request) {
 
         //* Temporary solution to map into DTO
         dto = this.queryStringToDto(request.getBody(), RefundActionDto.class);
@@ -30,7 +30,7 @@ public class RefundAction extends AbstractAction {
         //* Verify validation result
         vo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
 
-        HashMap<String,Object> betResultOutput =new HashMap<String,Object>();
+        HashMap<String, Object> betResultOutput = new HashMap<String, Object>();
         HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
         String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
 
@@ -43,9 +43,8 @@ public class RefundAction extends AbstractAction {
 
         //region create result log for all request that comes to result end point
         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
-        String playerToken = (formattedOutput.get("token") == null)?"_NULL": "_"+formattedOutput.get("token").toString();
-        this.createSeamlessResultLogRecord(VENDOR_CODE+"_refund_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
-                request.getBody());
+        String playerToken = (formattedOutput.get("token") == null) ? "_NULL" : "_" + formattedOutput.get("token").toString();
+        this.createSeamlessResultLogRecord(VENDOR_CODE + "_refund_" + aggregatorRequestStartMs + playerToken, aggregatorRequestStartMs, request.getBody());
         //endregion
         System.out.println("1");
 

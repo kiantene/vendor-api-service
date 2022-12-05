@@ -15,8 +15,7 @@ import java.util.Map;
 public class JackpotWinAction extends AbstractAction {
 
     @PostMapping(path = Constant.ACTION_JACKPOT_WIN)
-    public JackpotWinActionVo betResultPromoWin(JackpotWinActionDto dto, WebRequestWrapper request)
-    {
+    public JackpotWinActionVo betResultPromoWin(JackpotWinActionDto dto, WebRequestWrapper request) {
         //* Temporary solution to map into DTO
         dto = this.queryStringToDto(request.getBody(), JackpotWinActionDto.class);
         JackpotWinActionVo vo = new JackpotWinActionVo();

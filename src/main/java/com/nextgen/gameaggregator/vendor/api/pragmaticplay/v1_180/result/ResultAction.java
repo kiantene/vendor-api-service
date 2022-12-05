@@ -21,8 +21,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 public class ResultAction extends AbstractAction {
 
     @PostMapping(path = Constant.ACTION_RESULT)
-    public ResultActionVo betResult(ResultActionDto dto, WebRequestWrapper request)
-    {
+    public ResultActionVo betResult(ResultActionDto dto, WebRequestWrapper request) {
         //* Temporary solution to map into DTO
         dto = this.queryStringToDto(request.getBody(), ResultActionDto.class);
         ResultActionVo vo = new ResultActionVo();
@@ -32,7 +31,7 @@ public class ResultAction extends AbstractAction {
         //* Verify validation result
         vo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
 
-        HashMap<String,Object> betResultOutput =new HashMap<String,Object>();
+        HashMap<String, Object> betResultOutput = new HashMap<String, Object>();
         HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
         String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
 
@@ -45,9 +44,8 @@ public class ResultAction extends AbstractAction {
 
         //region create result log for all request that comes to result end point
         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
-        String playerToken = (formattedOutput.get("token") == null)?"_NULL": "_"+formattedOutput.get("token").toString();
-        this.createSeamlessResultLogRecord(VENDOR_CODE+"_betResult_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
-                request.getBody());
+        String playerToken = (formattedOutput.get("token") == null) ? "_NULL" : "_" + formattedOutput.get("token").toString();
+        this.createSeamlessResultLogRecord(VENDOR_CODE + "_betResult_" + aggregatorRequestStartMs + playerToken, aggregatorRequestStartMs, request.getBody());
         //endregion
 
         System.out.println("request.getBody() ::::" + request.getBody());

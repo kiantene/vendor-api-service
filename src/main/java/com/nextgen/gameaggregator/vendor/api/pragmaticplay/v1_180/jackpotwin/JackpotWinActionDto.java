@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.jackpotwin;
 
 //import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.dto.AbstractActionDto;
@@ -43,6 +44,6 @@ public class JackpotWinActionDto extends AbstractActionDto {
     private String platform;
 
     private String token;
-    
+
     // specPrizes[#].specPrizeType;
 }

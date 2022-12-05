@@ -15,8 +15,7 @@ import java.util.Map;
 public class PromoWinAction extends AbstractAction {
 
     @PostMapping(path = Constant.ACTION_PROMO_WIN)
-    public PromoWinActionVo promoWin(PromoWinActionDto dto, WebRequestWrapper request)
-    {
+    public PromoWinActionVo promoWin(PromoWinActionDto dto, WebRequestWrapper request) {
         //* Temporary solution to map into DTO
         dto = this.queryStringToDto(request.getBody(), PromoWinActionDto.class);
         PromoWinActionVo vo = new PromoWinActionVo();
