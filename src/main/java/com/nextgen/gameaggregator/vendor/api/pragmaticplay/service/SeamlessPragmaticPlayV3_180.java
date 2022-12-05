@@ -28,6 +28,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -59,7 +60,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                     this.findVendorPlatformCode(dto.getPlatform()), dto.getLanguage(),
                     this.findVendorLanguageCode(dto.getLanguage()), dto.getGameId(),
                     this.findVendorGameCode(dto.getGameId(), dto.getLanguage(), dto.getPlatform()), dto.getAgentId(),
-                    dto.getTraceId(), dto.getCurrency(), this.findVendorCurrencyCode(dto.getCurrency(), dto.getVendorId()));
+                    dto.getTraceId(), dto.getCurrency(), this.findVendorCurrencyCode(dto.getCurrency(), dto.getVendorId()), Instant.now().toEpochMilli());
 
 
             MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();

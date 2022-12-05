@@ -1,10 +1,13 @@
 package com.nextgen.gameaggregator.vendor.component.vendor;
 
 import com.nextgen.gameaggregator.vendor.component.constant.Constant;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthenticationRepository;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerAuthenticationWriter;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
 import com.nextgen.gameaggregator.vendor.util.NameUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -16,6 +19,8 @@ public class AbstractVendor extends VendorDataEntity {
     public Long CredentialLatestVersion;
     public Map<String, String> credentialMap = new HashMap<>();
 
+    @Autowired
+    private VendorPlayerAuthenticationRepository vendorPlayerAuthenticationRepository;
 
 
     public void setVendorIdAndCredentialId(Long vendorId, Long vendorCredentialId) {
@@ -100,31 +105,35 @@ public class AbstractVendor extends VendorDataEntity {
         }
     }
 
-    public void createPlayerAuthentication( Long walletType, Long agentPlayerId, Long vendorPlayerId,
+    public void createPlayerAuthentication(Long walletType, Long agentPlayerId, Long vendorPlayerId,
                                            String vendorPlayerUsername, String platformCode,
                                            String vendorPlatformCode, String languageCode, String vendorLanguageCode,
                                            Long gameId, String vendorGameCode, Long agentId, String traceId,
-                                           String currencyCode, String vendorCurrencyCode){
-        vendorPlayerAuthenticationWriter = new VendorPlayerAuthenticationWriter();
+                                           String currencyCode, String vendorCurrencyCode, Long createdAt){
+//        vendorPlayerAuthenticationWriter = new VendorPlayerAuthenticationWriter();
+        VendorPlayerAuthentication vendorPlayerAuthentication = new VendorPlayerAuthentication();
 
-        vendorPlayerAuthenticationWriter.setVendorId(this.vendorId);
-        vendorPlayerAuthenticationWriter.setWalletType(walletType);
-        vendorPlayerAuthenticationWriter.setAgentPlayerId(agentPlayerId);
-        vendorPlayerAuthenticationWriter.setVendorPlayerId(vendorPlayerId);
-        vendorPlayerAuthenticationWriter.setVendorPlayerUsername(vendorPlayerUsername);
-        vendorPlayerAuthenticationWriter.setPlatformCode(platformCode);
-        vendorPlayerAuthenticationWriter.setVendorPlatformCode(vendorPlatformCode);
-        vendorPlayerAuthenticationWriter.setLanguageCode(languageCode);
-        vendorPlayerAuthenticationWriter.setVendorLanguageCode(vendorLanguageCode);
-        vendorPlayerAuthenticationWriter.setGameId(gameId);
-        vendorPlayerAuthenticationWriter.setVendorGameCode(vendorGameCode);
-        vendorPlayerAuthenticationWriter.setAgentId(agentId);
-        vendorPlayerAuthenticationWriter.setTraceId(traceId);
-        vendorPlayerAuthenticationWriter.setCurrencyCode(currencyCode);
-        vendorPlayerAuthenticationWriter.setVendorCurrencyCode(vendorCurrencyCode);
-        vendorPlayerAuthenticationWriter.setStatus(true);
-        vendorPlayerAuthenticationWriter.prepareSave(1L, Constant.USER_TYPE, "0.0.0.0");
-        vendorPlayerAuthenticationWriterManager.save(vendorPlayerAuthenticationWriter);
+        vendorPlayerAuthentication.setId(traceId);
+        vendorPlayerAuthentication.setVendorId(this.vendorId);
+        vendorPlayerAuthentication.setWalletType(walletType);
+        vendorPlayerAuthentication.setAgentPlayerId(agentPlayerId);
+        vendorPlayerAuthentication.setVendorPlayerId(vendorPlayerId);
+        vendorPlayerAuthentication.setVendorPlayerUsername(vendorPlayerUsername);
+        vendorPlayerAuthentication.setPlatformCode(platformCode);
+        vendorPlayerAuthentication.setVendorPlatformCode(vendorPlatformCode);
+        vendorPlayerAuthentication.setLanguageCode(languageCode);
+        vendorPlayerAuthentication.setVendorLanguageCode(vendorLanguageCode);
+        vendorPlayerAuthentication.setGameId(gameId);
+        vendorPlayerAuthentication.setVendorGameCode(vendorGameCode);
+        vendorPlayerAuthentication.setAgentId(agentId);
+        vendorPlayerAuthentication.setTraceId(traceId);
+        vendorPlayerAuthentication.setCurrencyCode(currencyCode);
+        vendorPlayerAuthentication.setVendorCurrencyCode(vendorCurrencyCode);
+        vendorPlayerAuthentication.setStatus(true);
+        vendorPlayerAuthentication.setCreatedAt(createdAt);
+//        vendorPlayerAuthentication.prepareSave(1L, Constant.USER_TYPE, "0.0.0.0");
+//        vendorPlayerAuthenticationWriterManager.save(vendorPlayerAuthenticationWriter);
+        vendorPlayerAuthenticationRepository.save(vendorPlayerAuthentication);
 
     }
 
