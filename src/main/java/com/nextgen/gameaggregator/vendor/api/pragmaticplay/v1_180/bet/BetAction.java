@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.bet;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,10 +16,10 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
-@RequestMapping(path = "api/v1/prammaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BetAction extends AbstractAction {
 
-    @PostMapping(path = "bet")
+    @PostMapping(path = ACTION_BET)
     public BetActionVo betRequest(BetActionDto dto, WebRequestWrapper request)
     {
         BetActionVo vo = new BetActionVo();

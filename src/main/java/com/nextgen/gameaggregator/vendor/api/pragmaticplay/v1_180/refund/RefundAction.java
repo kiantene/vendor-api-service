@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.refund;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,9 +15,9 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
-@RequestMapping(path = "api/v1/prammaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class RefundAction extends AbstractAction {
-    @PostMapping(path = "refund")
+    @PostMapping(path = ACTION_REFUND)
     public RefundActionVo refund(RefundActionDto dto, WebRequestWrapper request){
         RefundActionVo vo = new RefundActionVo();
 
