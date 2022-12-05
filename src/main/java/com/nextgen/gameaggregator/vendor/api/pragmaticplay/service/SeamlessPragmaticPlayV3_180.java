@@ -50,6 +50,16 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
     public GameLoginGrpcVo gameLogin(GameLoginGrpcDto dto) {
         try {
             this.setCredential();
+            this.findVendorPlayerUsername(dto.getAgentPlayerId(), dto.getAgentId(), dto.getCurrency(), true);
+
+            this.createPlayerAuthentication(
+                    Long.valueOf(dto.getWalletType()), dto.getAgentPlayerId(),
+                    this.vendorPlayerReader.getId(), this.vendorPlayerReader.getVendorUsername(),dto.getPlatform(),
+                    this.findVendorPlatformCode(dto.getPlatform()), dto.getLanguage(),
+                    this.findVendorLanguageCode(dto.getLanguage()), dto.getGameId(),
+                    this.findVendorGameCode(dto.getGameId(), dto.getLanguage(), dto.getPlatform()), dto.getAgentId(),
+                    dto.getTraceId(), dto.getCurrency(), this.findVendorCurrencyCode(dto.getCurrency(), dto.getVendorId()));
+
 
             MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();
             paramMap.add("symbol", this.findVendorGameCode(dto.getGameId(), dto.getLanguage(), dto.getPlatform()));
@@ -68,6 +78,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                     .setVendorErrorMessage( ConstantErrorMessage.EXTERNAL + "-" +vendorApiException.getMessage())
                     .build();
         } catch (Exception exception) {
+            logger.error(exception.getMessage());
             return GameLoginGrpcVo.newBuilder()
                     .setStatus(false)
                     .setGameUrl("")

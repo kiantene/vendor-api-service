@@ -2,7 +2,8 @@ package com.nextgen.gameaggregator.vendor.component.vendor;
 
 import com.nextgen.gameaggregator.vendor.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
+import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerAuthenticationWriter;
+import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
 import com.nextgen.gameaggregator.vendor.util.NameUtils;
 
 import java.util.HashMap;
@@ -69,13 +70,15 @@ public class AbstractVendor extends VendorDataEntity {
     }
     //endregion
 
-    public VendorPlayerReader findVendorPlayerUsername(
+    public void findVendorPlayerUsername(
             Long agentPlayerId, Long agentId, String currencyCode, Boolean createNow) {
         vendorPlayerReader = vendorPlayerReaderManager.findByAgentPlayerIdAndVendorIdAndVendorCredentialIdAndCurrencyCode(
                 agentPlayerId, this.vendorId, this.vendorCredentialId, currencyCode);
         if ((vendorPlayerReader == null) && (createNow)) {
             String vendorPlayerUsername = NameUtils.generateUsername(
                     Constant.USERNAME_SEPARATOR, this.vendorCredentialId, agentId, agentPlayerId);
+
+             vendorPlayerWriter = new VendorPlayerWriter();
 
             vendorPlayerWriter.setAgentPlayerId(agentPlayerId);
             vendorPlayerWriter.setVendorId(this.vendorId);
@@ -89,8 +92,6 @@ public class AbstractVendor extends VendorDataEntity {
 
             vendorPlayerReader = vendorPlayerReaderManager.findById(vendorPlayerWriter.getId()).orElse(null);
         }
-
-        return vendorPlayerReader;
     }
 
     public void createPlayerAuthentication( Long walletType, Long agentPlayerId, Long vendorPlayerId,
@@ -98,8 +99,9 @@ public class AbstractVendor extends VendorDataEntity {
                                            String vendorPlatformCode, String languageCode, String vendorLanguageCode,
                                            Long gameId, String vendorGameCode, Long agentId, String traceId,
                                            String currencyCode, String vendorCurrencyCode){
+        vendorPlayerAuthenticationWriter = new VendorPlayerAuthenticationWriter();
 
-        vendorPlayerAuthenticationWriter.setVendorId(vendorId);
+        vendorPlayerAuthenticationWriter.setVendorId(this.vendorId);
         vendorPlayerAuthenticationWriter.setWalletType(walletType);
         vendorPlayerAuthenticationWriter.setAgentPlayerId(agentPlayerId);
         vendorPlayerAuthenticationWriter.setVendorPlayerId(vendorPlayerId);
