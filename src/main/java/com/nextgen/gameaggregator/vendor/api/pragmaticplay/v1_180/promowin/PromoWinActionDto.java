@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.promowin;
 
 import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.dto.AbstractActionDto;
 import lombok.Data;
 
 import javax.validation.constraints.*;
@@ -9,9 +10,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PromoWinActionDto {
-    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
-    private String hash;
+public class PromoWinActionDto extends AbstractActionDto {
 
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String userId;
