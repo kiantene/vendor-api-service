@@ -19,16 +19,15 @@ public class AbstractActionVo {
     private String description;
 
     public AbstractActionVo() {
-        this.traceId = "";
-        this.error = ConstantErrorMessage.CODE_UNEXPECTED_ERROR;
-        this.description = ConstantErrorMessage.MESSAGE_UNEXPECTED_ERROR;
+        this.setTraceId("");
+        this.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
     }
 
     public void verifyValidationResultAndManipulateErrorAndDescription(Map<String, String> validationResult) {
         if (validationResult.isEmpty()) {
             this.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
         } else {
-            this.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
+            this.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INVALID_PARAM);
         }
     }
 

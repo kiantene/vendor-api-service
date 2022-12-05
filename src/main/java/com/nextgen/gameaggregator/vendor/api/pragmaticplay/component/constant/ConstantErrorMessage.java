@@ -20,6 +20,7 @@ public class ConstantErrorMessage {
         put(RESPONSE_KEY_SUCCESS, 0);
         put(RESPONSE_KEY_PLAYER_AUTH_FAILED, 4);
         put(RESPONSE_KEY_PLAYER_FROZEN, 6);
+        put(RESPONSE_KEY_INVALID_PARAM, 7);
         put(RESPONSE_KEY_GAME_NOT_FOUND, 8);
         put(RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION, 100);
         put(RESPONSE_KEY_INTERNAL_SERVER_ERROR, 120);
@@ -33,6 +34,7 @@ public class ConstantErrorMessage {
         put(RESPONSE_KEY_GAME_NOT_FOUND, "");
         put(RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION, "Internal server error, please try again later");
         put(RESPONSE_KEY_INTERNAL_SERVER_ERROR, "Internal server error, please try again later");
+        put(RESPONSE_KEY_INVALID_PARAM, "Bad parameters in the request, please check post parameters.");
     }};
     public static final String MESSAGE_UNEXPECTED_ERROR = "Unexpected UNEXPECTED";
 
