@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 public interface SeamlessBetHistoryResultRepository extends CouchbaseRepository<SeamlessBetHistoryResult, String> {
 
     SeamlessBetHistoryResult findByVendorBetId (String vendorBetId);
+
+    SeamlessBetHistoryResult findByServiceVendorBetIdAndRequestType (String serviceVendorBetId, String requestType);
 }

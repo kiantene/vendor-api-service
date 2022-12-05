@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.vendor.component.vendor;
 
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.*;
+import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.SeamlessBetHistoryCollectionWriter;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerAuthenticationWriter;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
+import com.nextgen.gameaggregator.vendor.data.mariadb.writer.manager.SeamlessBetHistoryCollectionWriterManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.manager.VendorPlayerAuthenticationWriterManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.manager.VendorPlayerWriterManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,5 +51,47 @@ public class VendorDataEntity {
     public VendorPlayerAuthenticationWriterManager vendorPlayerAuthenticationWriterManager;
     public VendorPlayerAuthenticationWriter vendorPlayerAuthenticationWriter;
     //endregion
+
+    @Autowired
+    public VendorReaderManager vendorReaderManager;
+
+    public VendorReader vendorReader = new VendorReader();
+
+    @Autowired
+    public SeamlessBetHistoryCollectionReaderManager seamlessBetHistoryCollectionReaderManager;
+
+    public SeamlessBetHistoryCollectionReader seamlessBetHistoryCollectionReader = new SeamlessBetHistoryCollectionReader();
+
+    @Autowired
+    public SeamlessBetHistoryCollectionWriterManager seamlessBetHistoryCollectionWriterManager;
+
+    public SeamlessBetHistoryCollectionWriter seamlessBetHistoryCollectionWriter = new SeamlessBetHistoryCollectionWriter();
+
+    @Autowired
+    public SeamlessBetHistoryRequestRepository seamlessBetHistoryRequestRepository;
+
+    @Autowired
+    public SeamlessBetHistoryResultRepository seamlessBetHistoryResultRepository;
+
+    @Autowired
+    public BetHistorySeamlessRequestRepository betHistorySeamlessRequestRepository;
+
+    @Autowired
+    public BetHistorySeamlessResultRepository betHistorySeamlessResultRepository;
+
+    @Autowired
+    public SeamlessEndRoundRequestRepository seamlessEndRoundRequestRepository;
+
+    @Autowired
+    public SeamlessEndRoundErrorRequestRepository seamlessEndRoundErrorRequestRepository;
+
+    @Autowired
+    public SeamlessRefundLogRequestRepository seamlessRefundLogRequestRepository;
+
+    @Autowired
+    public SeamlessBetHistoryOthersRequestRepository seamlessBetHistoryOthersRequestRepository;
+
+    @Autowired
+    public BetHistorySeamlessOthersRequestRepository betHistorySeamlessOthersRequestRepository;
 
 }

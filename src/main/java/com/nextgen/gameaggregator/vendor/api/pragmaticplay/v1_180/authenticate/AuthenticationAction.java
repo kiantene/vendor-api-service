@@ -1,16 +1,21 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.authenticate;
 
+import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGrpcVo;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
+import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorWalletBalanceGrpc;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -20,16 +25,8 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class AuthenticationAction extends AbstractAction {
 
-//    @Autowired
-//    private OperatorWalletBalanceActionService operatorWalletBalanceActionService;
-
-    //    private final SeamlessVendorAdaptor seamlessVendorAdaptor;
-    private AuthenticationVo vo = new AuthenticationVo();
-//    private VendorPlayerAuthenticationReader vendorPlayerAuthenticationReader = new VendorPlayerAuthenticationReader();
-
-//    public AuthenticationAction(SeamlessVendorAdaptor seamlessVendorAdaptor) {
-//        this.seamlessVendorAdaptor = seamlessVendorAdaptor;
-//    }
+    @Autowired
+    private OperatorWalletBalanceGrpc operatorWalletBalanceGrpc;
 
     @PostMapping(path = Constant.ACTION_AUTHENTICATE)
     public AuthenticationVo gameAuthenticate(AuthenticationDto dto, WebRequestWrapper request) {
@@ -46,66 +43,56 @@ public class AuthenticationAction extends AbstractAction {
         Map<String, String> dtoValidationResult = this.doValidation(dto, AuthenticationDto.class);
         //* Verify validation result
         thisVo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
-        //* Validation failed
-        if (thisVo.getError() != ConstantErrorMessage.CODE_SUCCESS) {
-            return thisVo;
-        }
 
-        HashMap<String, Object> gameAuthenticationOutput = new HashMap<String, Object>();
-        HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
-        String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
+        //region create result log for all request that comes to result end point
+        Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
+        String playerToken = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+        this.createSeamlessResultLogRecord(VENDOR_CODE+"_authentication_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
+                request.getBody());
+        //endregion
 
-        //need to put inside VendorGameAuthenticationServiceRequestDto for validation?
-        formattedOutput = this.handleQueryStringDataToMapObject(request.getBody());
+        //region if verify validation result is clean
+        if (thisVo.getError() == ConstantErrorMessage.CODE_SUCCESS) {
+            VendorPlayerAuthentication vendorPlayerAuthentication;
+            vendorPlayerAuthentication = this.findTraceId(dto.getToken());
 
-        //region call to correct class file
-        //TODO CONFIRM GET CLASS FILE WITH VENDORID, CREDENTIALID AND CURRENCY
-//        seamlessVendorAdaptor.getVendor(classFile);
-//        //endregion
-//
-//        gameAuthenticationOutput = seamlessVendorAdaptor.seamlessVendor.gameAuthentication(formattedOutput);
-//        VendorPlayerAuthenticationReader v1 = (VendorPlayerAuthenticationReader) gameAuthenticationOutput.get("vendorPlayerAuthenticationReader");
+            //check is player token exists
+            if (vendorPlayerAuthentication != null) {
+                //default set as error, and require vendor to resend request
+                thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION);
 
-        try {
-            //check authentication output of error param is integer (this to make sure this processed in our class file)
-            if (gameAuthenticationOutput.get("error") instanceof Integer) {
-                vo.setUserId(gameAuthenticationOutput.get("userId").toString());
-                vo.setCurrency(gameAuthenticationOutput.get("currency").toString());
-                vo.setBonus(new BigDecimal(gameAuthenticationOutput.get("bonus").toString()));
-                vo.setToken(gameAuthenticationOutput.get("token").toString());
-                vo.setError((int) gameAuthenticationOutput.get("error"));
-                vo.setDescription(gameAuthenticationOutput.get("description").toString());
+                try{
+                    thisVo.setUserId(vendorPlayerAuthentication.getVendorPlayerUsername());
+                    thisVo.setCurrency(vendorPlayerAuthentication.getCurrencyCode());
+                    thisVo.setBonus(BigDecimal.valueOf(0d));
+                    thisVo.setToken(vendorPlayerAuthentication.getTraceId());
 
-                //if player authentication success
-                if (vo.getError() == 0) {
-                    //call operator check balance grpc next
-//                    OperatorWalletBalanceServiceVo serviceVo = this.operatorWalletBalanceActionService.operatorWalletBalanceServiceResponse(v1.getAgentId(), v1.getAgentPlayerId(), v1.getVendorId(), v1.getCurrencyCode(), traceId, this.findAgentCredentialIdByAgentId(v1.getAgentId()));
+                    //prepare grpc info and send over to grpc
+                    WalletBalanceGrpcVo serviceVo = this.operatorWalletBalanceGrpc.walletBalance(
+                            vendorPlayerAuthentication.getAgentId(),
+                            vendorPlayerAuthentication.getAgentPlayerId(),
+                            vendorPlayerAuthentication.getVendorId(),
+                            vendorPlayerAuthentication.getCurrencyCode(),
+                            traceId,
+                            this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId()));
 
-                    //if operator check balance grpc return success
-//                    if (serviceVo.getStatus()) {
-//                        vo.setCash(serviceVo.getBalance());
-//                    } else {
-//                        //else fail
-//                        //TODO ERROR MAPPING
-//                        vo.setCash(0d);
-//                        vo.setError(444);
-//                        vo.setDescription("Operator player validation failed.");
-//                    }
+                    if(serviceVo.getStatus()){
+                        //if grpc success, set as success and set the responding balance amount
+                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
+                        thisVo.setCash((BigDecimal.valueOf(serviceVo.getBalance())).setScale(2, RoundingMode.HALF_DOWN));
+                    }
+                } catch (ClassCastException e){
+                    //try catch for any class cast error, return error for vendor and require to resend request
                 }
+            } else {
+                thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_PLAYER_AUTH_FAILED);
             }
-        } catch (ClassCastException e) {
-            //all should properly preset even is error, this handle unexpected scenario if any of the params
-            //is casting in wrong format
-            vo.setError(100);
-            vo.setDescription("Internal server error. Please retry again");
         }
+        //endregion
 
-        //let it work first, since operator data project is yet to have for my side on weekends.
-        vo.setError(0);
-        vo.setDescription("Success");
-        vo.setCash(BigDecimal.valueOf(100));
+        System.out.println("walletBalance traceId ::::::" + traceId);
+        System.out.println("walletBalance thisVo ::::::" + thisVo);
 
-        return vo;
+        return thisVo;
     }
-
 }

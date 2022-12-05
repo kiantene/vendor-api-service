@@ -1,15 +1,11 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessActionLogRepository;
-import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessActionLogRequest;
-import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessRefundLogRequest;
-import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessRefundLogRequestRepository;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.AgentCredentialReader;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerAuthenticationReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.AgentCredentialReaderManager;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorPlayerAuthenticationReaderManager;
+
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorReaderManager;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -37,9 +33,9 @@ public class AbstractAction {
     private SeamlessRefundLogRequestRepository seamlessRefundLogRequestRepository;
 
     @Autowired
-    private VendorPlayerAuthenticationReaderManager vendorPlayerAuthenticationReaderManager;
+    private VendorPlayerAuthenticationRepository vendorPlayerAuthenticationRepository;
 
-    private VendorPlayerAuthenticationReader vendorPlayerAuthenticationReader = new VendorPlayerAuthenticationReader();
+    private VendorPlayerAuthentication vendorPlayerAuthentication = new VendorPlayerAuthentication();
 
     public <T> T queryStringToDto(String queryString, Class<T> clazz) {
 
@@ -128,10 +124,10 @@ public class AbstractAction {
     //endregion
 
     //region match the trace id (token) from vendor and vendor_player_authentication table then get all data
-    public VendorPlayerAuthenticationReader findTraceId(String traceId){
-        vendorPlayerAuthenticationReader = vendorPlayerAuthenticationReaderManager.findByTraceId(traceId);
+    public VendorPlayerAuthentication findTraceId(String traceId){
+        vendorPlayerAuthentication = vendorPlayerAuthenticationRepository.findByTraceId(traceId);
 
-        return vendorPlayerAuthenticationReader;
+        return vendorPlayerAuthentication;
     }
     //endregion
 }

@@ -1,15 +1,21 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.bet;
 
+import com.nextgen.gameaggregator.grpc.v1.operator.betrequest.BetRequestGrpcVo;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
+import com.nextgen.gameaggregator.vendor.component.vendor.VendorAdaptor;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
+import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetRequestGrpc;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +27,11 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BetAction extends AbstractAction {
 
+    @Autowired
+    private OperatorBetRequestGrpc operatorBetRequestGrpc;
+    @Autowired
+    private VendorAdaptor vendorAdaptor;
+
     @PostMapping(path = Constant.ACTION_BET)
     public BetActionVo betRequest(BetActionDto dto, WebRequestWrapper request) {
 
@@ -29,39 +40,95 @@ public class BetAction extends AbstractAction {
 
         //* Temporary solution to map into DTO
         dto = this.queryStringToDto(request.getBody(), BetActionDto.class);
-        BetActionVo vo = new BetActionVo();
-        vo.setTraceId(traceId);
+        BetActionVo thisVo = new BetActionVo();
+        thisVo.setTraceId(traceId);
 
         //* DTO Validation
         Map<String, String> dtoValidationResult = this.doValidation(dto, BetActionDto.class);
         //* Verify validation result
-        vo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
+        thisVo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
         //* Validation failed
-        if (vo.getError() != ConstantErrorMessage.CODE_SUCCESS) {
-            return vo;
-        }
-
-        HashMap<String,Object> betRequestOutput =new HashMap<String,Object>();
-        HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
-        String classFile = this.findClassFileByVendorCode(VENDOR_CODE);
-
-
-        //need to put inside VendorGameAuthenticationServiceRequestDto for validation?
-        formattedOutput = this.handleQueryStringDataToMapObject(request.getBody());
-        formattedOutput.put("rawRequest", request.getBody());
 
         //region create result log for all request that comes to result end point
         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
-        String playerToken = (formattedOutput.get("token") == null)?"_NULL": "_"+formattedOutput.get("token").toString();
+        String playerToken = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
         this.createSeamlessResultLogRecord(VENDOR_CODE+"_betRequest_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
                 request.getBody());
         //endregion
 
-        //let it work first, since operator data project is yet to have for my side on weekends.
-        vo.setError(0);
-        vo.setDescription("Success");
-        vo.setCash(BigDecimal.valueOf(100d));
+        //check if all vendor requested dto param is fit
+        if (thisVo.getError() == ConstantErrorMessage.CODE_SUCCESS) {
+            VendorPlayerAuthentication vendorPlayerAuthentication;
+            vendorPlayerAuthentication = this.findTraceId(dto.getToken());
 
-        return vo;
+            //check player authentication
+            if (vendorPlayerAuthentication != null) {
+
+                //prepare for default error response
+                thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION);
+                HashMap<String, Object> formattedOutput = new HashMap<String, Object>();
+                HashMap<String,Object> betRequestOutput =new HashMap<String,Object>();
+                formattedOutput = this.handleQueryStringDataToMapObject(request.getBody());
+                formattedOutput.put("rawRequest", request.getBody());
+                formattedOutput.put("vendorPlayerAuthentication", vendorPlayerAuthentication);
+
+                //check is the vendor class file availability
+                if (vendorAdaptor.getVendor(vendorPlayerAuthentication.getVendorId(), vendorPlayerAuthentication.getWalletType(),
+                        vendorPlayerAuthentication.getVendorCredentialId())) {
+
+                        //call class file to process bet data
+                        betRequestOutput = vendorAdaptor.seamlessVendor.betRequest(formattedOutput);
+
+                        //check is the class file process data success?
+                        if((int)betRequestOutput.get("error") == 0){
+                            try{
+                                //assign default success data
+                                thisVo.setCurrency(vendorPlayerAuthentication.getCurrencyCode());
+                                thisVo.setTraceId(traceId);
+                                thisVo.setBonus(BigDecimal.valueOf(0d));
+                                thisVo.setUsedPromo(BigDecimal.valueOf(0d));
+                                thisVo.setTransactionId(traceId.replace("-", ""));
+
+                                //prepare call to operator grpc
+                                BetRequestGrpcVo serviceVo = this.operatorBetRequestGrpc.betRequest(
+                                        vendorPlayerAuthentication.getAgentId(),
+                                        vendorPlayerAuthentication.getAgentPlayerId(),
+                                        vendorPlayerAuthentication.getGameId(),
+                                        vendorPlayerAuthentication.getCurrencyCode(),
+                                        traceId,
+                                        this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId()),
+                                        betRequestOutput.get("betHistoryId").toString(),
+                                        dto.getReference(),
+                                        dto.getRoundId(),
+                                        Double.parseDouble(dto.getAmount()),
+                                        dto.getTimestamp()
+                                );
+
+                                //check grpc status
+                                if(serviceVo.getStatus()){
+                                    //if grpc success, set as success and set the responding balance amount
+                                    thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
+                                    thisVo.setCash((BigDecimal.valueOf(serviceVo.getBalance())).setScale(2, RoundingMode.HALF_DOWN));
+                                }
+                            } catch (Exception e){
+                                //return 100 error which required vendor resend us request
+                            }
+                        } else {
+                            // if insert bet data got issue
+                        }
+                    } else {
+                        // if class file is not found
+                    thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
+                    }
+                } else {
+                    //if auth fail
+                    thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_PLAYER_AUTH_FAILED);
+                }
+            }
+
+        System.out.println("BetAction traceId ::::::" + traceId);
+        System.out.println("BetAction thisVo ::::::" + thisVo);
+
+        return thisVo;
     }
 }

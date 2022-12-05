@@ -4,7 +4,7 @@ import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGr
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerAuthenticationReader;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorWalletBalanceGrpc;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,29 +48,30 @@ public class WalletBalanceAction extends AbstractAction {
         //region create result log for all request that comes to result end point
         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
         String playerToken = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
-        this.createSeamlessResultLogRecord(VENDOR_CODE+"_authentication_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
+        this.createSeamlessResultLogRecord(VENDOR_CODE+"_walletBalance_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
                 request.getBody());
         //endregion
 
         //region if verify validation result is clean
         if (thisVo.getError() == ConstantErrorMessage.CODE_SUCCESS) {
-            VendorPlayerAuthenticationReader vendorPlayerAuthenticationReader;
-            vendorPlayerAuthenticationReader = this.findTraceId(dto.getToken());
+            VendorPlayerAuthentication vendorPlayerAuthentication;
+            vendorPlayerAuthentication = this.findTraceId(dto.getToken());
 
             //check is player token exists
-            if (vendorPlayerAuthenticationReader != null) {
+            if (vendorPlayerAuthentication != null) {
                 //default set as error, and require vendor to resend request
+
                 thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION);
 
                 try{
                     //prepare grpc info and send over to grpc
                     WalletBalanceGrpcVo serviceVo = this.operatorWalletBalanceGrpc.walletBalance(
-                            vendorPlayerAuthenticationReader.getAgentId(),
-                            vendorPlayerAuthenticationReader.getAgentPlayerId(),
-                            vendorPlayerAuthenticationReader.getVendorId(),
-                            vendorPlayerAuthenticationReader.getCurrencyCode(),
+                            vendorPlayerAuthentication.getAgentId(),
+                            vendorPlayerAuthentication.getAgentPlayerId(),
+                            vendorPlayerAuthentication.getVendorId(),
+                            vendorPlayerAuthentication.getCurrencyCode(),
                             traceId,
-                            this.findAgentCredentialIdByAgentId(vendorPlayerAuthenticationReader.getAgentId()));
+                            this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId()));
 
                     if(serviceVo.getStatus()){
                         //if grpc success, set as success and set the responding balance amount

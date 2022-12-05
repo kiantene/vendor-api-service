@@ -22,7 +22,7 @@ public class VendorPlayerAuthentication {
 
     private Long vendorId;
 
-    private Long walletType;
+    private Integer walletType;
 
     private Long agentPlayerId;
 
@@ -53,6 +53,8 @@ public class VendorPlayerAuthentication {
     private Boolean status;
 
     private Long createdAt;
+
+    private Long vendorCredentialId;
 
 }
 
