@@ -38,4 +38,10 @@ public class BonusWinActionDto extends AbstractActionDto {
     private String gameId;
 
     private String token;
+
+    // private String requestId;
+    // specPrizes[#].specPrizeAmount
+    // specPrizes[#].specPrizeCode
+    // specPrizes[#].specPrizeType
+
 }

@@ -23,21 +23,25 @@ public class JackpotWinActionDto extends AbstractActionDto {
     private String userId;
 
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
-    private String campaignId;
+    private String gameId;
 
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
-    private String campaignType;
+    private String roundId;
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
+    private String jackpotId;
+
+    private String jackpotDetails;
 
     @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private BigDecimal amount;
 
     @NotNull(message = ConstantErrorMessage.NOT_NULL)
-    private String currency;
-
-    @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private String reference;
 
-    private String roundId;
-    private String gameId;
-    private String dataType;
+    private String platform;
+
+    private String token;
+    
+    // specPrizes[#].specPrizeType;
 }
