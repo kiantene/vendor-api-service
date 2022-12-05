@@ -1,12 +1,14 @@
-package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.authenticate;
+package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.refund;
 
 import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AuthenticationDto {
+public class RefundActionDto {
     private String hash;
-    private String token;
+    private String userId;
+    private String reference;
     private String providerId;
+    private String token;
 }
