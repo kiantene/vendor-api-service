@@ -10,16 +10,30 @@ import javax.validation.constraints.*;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetActionDto extends AbstractActionDto {
-    private String hash;
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String userId;
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String gameId;
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String roundId;
+
+    @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private String amount;
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String reference;
+
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String providerId;
-    private String timestamp;
+
+    @Positive(message = ConstantErrorMessage.POSITIVE)
+    @NotNull(message = ConstantErrorMessage.NOT_NULL)
+    private Long timestamp;
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String roundDetails;
+
     private String token;
 }
