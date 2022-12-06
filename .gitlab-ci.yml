@@ -22,6 +22,6 @@ ali-deploy:
     - if: $CI_COMMIT_BRANCH == 'QA'
       when: manual
   script:
-    - docker build -t registry-intl.ap-southeast-3.aliyuncs.com/gameagg/game-aggregator-vendor-api-service:latest .
+    - docker build -t registry-intl.ap-southeast-3.aliyuncs.com/game-aggregator/ga-vendor-api-service:latest .
     - docker login --username=jeff.zheng.nf@hotmail.com --password="$ALI_CONTAINER_REGISTRY_PWD" registry-intl.ap-southeast-3.aliyuncs.com
-    - docker push registry-intl.ap-southeast-3.aliyuncs.com/gameagg/game-aggregator-vendor-api-service:latest
+    - docker push registry-intl.ap-southeast-3.aliyuncs.com/game-aggregator/ga-vendor-api-service:latest
