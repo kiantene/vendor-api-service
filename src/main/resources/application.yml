@@ -31,6 +31,7 @@ grpc:
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
+
 #    application-grpc:
 #      address: 'discovery:///application-sample2'
 #      enableKeepAlive: true
