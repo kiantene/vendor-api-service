@@ -25,4 +25,6 @@ public class AuthenticationVo extends AbstractActionVo {
     private BigDecimal bonus;
 
     private String token;
+
+    private String errorCheck;
 }

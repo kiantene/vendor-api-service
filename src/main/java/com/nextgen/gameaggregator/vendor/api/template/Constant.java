@@ -9,4 +9,6 @@ public class Constant {
     public static final String SAMPLE_BET_REFUND_ACTION = "/vendor/sample/bet/refund";
 
     public static final String SAMPLE_WALLET_BALANCE_ACTION = "/vendor/sample/wallet/balance";
+
+    public static final String SAMPLE_CHECK_VALUE_ACTION = "/vendor/sample/check/value";
 }
