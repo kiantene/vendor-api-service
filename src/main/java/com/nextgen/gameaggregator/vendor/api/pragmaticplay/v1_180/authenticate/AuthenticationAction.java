@@ -44,6 +44,12 @@ public class AuthenticationAction extends AbstractAction {
         //* Verify validation result
         thisVo.verifyValidationResultAndManipulateErrorAndDescription(dtoValidationResult);
 
+        String test = "";
+        for (Map.Entry<String, String> entry : dtoValidationResult.entrySet()) {
+            test += entry.getKey() + "/" + entry.getValue();
+        }
+        thisVo.setErrorCheck(test);
+
         //region create result log for all request that comes to result end point
         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
         String playerToken = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
