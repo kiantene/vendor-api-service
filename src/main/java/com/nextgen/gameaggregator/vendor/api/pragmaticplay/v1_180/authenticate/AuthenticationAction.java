@@ -48,6 +48,7 @@ public class AuthenticationAction extends AbstractAction {
         for (Map.Entry<String, String> entry : dtoValidationResult.entrySet()) {
             test += entry.getKey() + "/" + entry.getValue();
         }
+        test += "| body :"+ request.getBody();
         thisVo.setErrorCheck(test);
 
         //region create result log for all request that comes to result end point
