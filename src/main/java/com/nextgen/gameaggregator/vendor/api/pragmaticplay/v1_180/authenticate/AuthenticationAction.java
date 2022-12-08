@@ -107,8 +107,17 @@ public class AuthenticationAction extends AbstractAction {
         }
         //endregion
 
-        System.out.println("walletBalance traceId ::::::" + traceId);
-        System.out.println("walletBalance thisVo ::::::" + thisVo);
+        System.out.println("authentication traceId ::::::" + traceId);
+        System.out.println("authentication thisVo ::::::" + thisVo);
+
+//        if (thisVo.getError() != 0){
+//            //region create ERROR log for all request that if error not = 0
+//            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+//            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+//            this.createSeamlessResultLogRecord(VENDOR_CODE+"_authenticationErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+//                    body+"||"+thisVo);
+//            //endregion
+//        }
 
         return thisVo;
     }

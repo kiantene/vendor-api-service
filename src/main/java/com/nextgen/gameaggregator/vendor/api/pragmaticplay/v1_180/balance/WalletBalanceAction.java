@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,6 +24,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
 
 @RestController
+@RequestScope
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class WalletBalanceAction extends AbstractAction {
 
@@ -60,8 +62,12 @@ public class WalletBalanceAction extends AbstractAction {
             //check is player token exists
             if (vendorPlayerAuthentication != null) {
                 //default set as error, and require vendor to resend request
-
+                thisVo.setCurrency(vendorPlayerAuthentication.getCurrencyCode());
+                thisVo.setBonus(BigDecimal.valueOf(0d));
+                thisVo.setTotalBalance(BigDecimal.valueOf(0d));
                 thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION);
+
+                System.out.println("balanceAction BEFORE GRPC traceId ::::::" + traceId);
 
                 try{
                     //prepare grpc info and send over to grpc
@@ -72,6 +78,9 @@ public class WalletBalanceAction extends AbstractAction {
                             vendorPlayerAuthentication.getCurrencyCode(),
                             traceId,
                             this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId()));
+
+                    System.out.println("balanceAction AFTER GRPC traceId ::::::" + traceId);
+                    System.out.println("balanceAction serviceVo ::::::" + serviceVo);
 
                     if(serviceVo.getStatus()){
                         //if grpc success, set as success and set the responding balance amount
@@ -89,6 +98,15 @@ public class WalletBalanceAction extends AbstractAction {
 
         System.out.println("walletBalance traceId ::::::" + traceId);
         System.out.println("walletBalance thisVo ::::::" + thisVo);
+
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_walletBalanceErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    request.getBody()+"||"+thisVo);
+            //endregion
+        }
 
         return thisVo;
     }

@@ -8,11 +8,14 @@ import com.nextgen.gameaggregator.vendor.component.vendor.VendorAdaptor;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetRequestGrpc;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -24,6 +27,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
+@RequestScope
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BetAction extends AbstractAction {
 
@@ -31,6 +35,8 @@ public class BetAction extends AbstractAction {
     private OperatorBetRequestGrpc operatorBetRequestGrpc;
     @Autowired
     private VendorAdaptor vendorAdaptor;
+
+    private static final Logger logger = LoggerFactory.getLogger(VendorAdaptor.class);
 
     @PostMapping(path = Constant.ACTION_BET)
     public BetActionVo betRequest(BetActionDto dto, WebRequestWrapper request) {
@@ -89,6 +95,9 @@ public class BetAction extends AbstractAction {
                                 thisVo.setUsedPromo(BigDecimal.valueOf(0d));
                                 thisVo.setTransactionId(traceId.replace("-", ""));
 
+                                System.out.println("betAction BEFORE GRPC traceId ::::::" + traceId);
+
+
                                 //prepare call to operator grpc
                                 BetRequestGrpcVo serviceVo = this.operatorBetRequestGrpc.betRequest(
                                         vendorPlayerAuthentication.getAgentId(),
@@ -104,6 +113,10 @@ public class BetAction extends AbstractAction {
                                         dto.getTimestamp()
                                 );
 
+                                System.out.println("betAction AFTER GRPC traceId ::::::" + traceId);
+                                System.out.println("betAction serviceVo ::::::" + serviceVo);
+
+
                                 //check grpc status
                                 if(serviceVo.getStatus()){
                                     //if grpc success, set as success and set the responding balance amount
@@ -112,13 +125,15 @@ public class BetAction extends AbstractAction {
                                 }
                             } catch (Exception e){
                                 //return 100 error which required vendor resend us request
+                                logger.error("betAction grpc error : " + e);
                             }
                         } else {
                             // if insert bet data got issue
+                            // logged in class file already
                         }
                     } else {
                         // if class file is not found
-                    thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
+                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
                     }
                 } else {
                     //if auth fail
@@ -128,6 +143,15 @@ public class BetAction extends AbstractAction {
 
         System.out.println("BetAction traceId ::::::" + traceId);
         System.out.println("BetAction thisVo ::::::" + thisVo);
+
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_betActionErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    request.getBody()+"||"+thisVo);
+            //endregion
+        }
 
         return thisVo;
     }

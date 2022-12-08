@@ -4,9 +4,12 @@ import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultGrpcDto;
 import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultServiceGrpc;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 @Service
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OperatorBetResultGrpc {
     @GrpcClient("game-aggregator-operator-api-service")
     private BetResultServiceGrpc.BetResultServiceBlockingStub blockingStub;
