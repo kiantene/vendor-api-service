@@ -16,25 +16,22 @@ public class VendorGameLoginGrpc extends GameLoginServiceGrpc.GameLoginServiceIm
 
     private static final Logger logger = LoggerFactory.getLogger(VendorGameLoginGrpc.class);
 
-    private GameLoginGrpcVo vo;
 
     @Autowired
     private VendorAdaptor vendorAdaptor;
 
     public void gameLogin(final GameLoginGrpcDto dto, final StreamObserver<GameLoginGrpcVo> responseObserver) {
 
+        GameLoginGrpcVo vo;
         try {
             if (vendorAdaptor.getVendor(dto.getVendorId(), dto.getWalletType(), dto.getVendorCredentialId())) {
-                switch (dto.getWalletType()) {
-                    case 1:
-                        this.vo = vendorAdaptor.seamlessVendor.gameLogin(dto);
-                        break;
-                    case 0:
-                        this.vo = vendorAdaptor.transferVendor.gameLogin(dto);
-                        break;
+                if(dto.getWalletType() == 1){
+                    vo = vendorAdaptor.seamlessVendor.gameLogin(dto);
+                }else{
+                    vo = vendorAdaptor.transferVendor.gameLogin(dto);
                 }
             } else {
-                this.vo = GameLoginGrpcVo.newBuilder()
+                vo = GameLoginGrpcVo.newBuilder()
                         .setStatus(false)
                         .setGameUrl("")
                         .setVendorErrorCode(ConstantErrorMessage.GAME_CLASS_NOT_IMPLEMENT_CODE)
@@ -43,7 +40,7 @@ public class VendorGameLoginGrpc extends GameLoginServiceGrpc.GameLoginServiceIm
             }
         } catch (Exception exception) {
             logger.error(exception.getMessage());
-            this.vo = GameLoginGrpcVo.newBuilder()
+            vo = GameLoginGrpcVo.newBuilder()
                     .setStatus(false)
                     .setGameUrl("")
                     .setVendorErrorCode(ConstantErrorMessage.GAME_CLASS_PROCESSING_FAIL_CODE)
@@ -51,7 +48,7 @@ public class VendorGameLoginGrpc extends GameLoginServiceGrpc.GameLoginServiceIm
                     .build();
 
         }
-        responseObserver.onNext(this.vo);
+        responseObserver.onNext(vo);
         responseObserver.onCompleted();
     }
 

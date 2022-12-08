@@ -13,13 +13,12 @@ import org.slf4j.LoggerFactory;
 public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(VendorBetDetailGrpc.class);
-    private BetDetailGrpcVo vo;
-
     public void betDetail(final BetDetailGrpcDto dto,
                           final StreamObserver<BetDetailGrpcVo> responseObserver) {
 
+        BetDetailGrpcVo vo;
         try {
-            this.vo = BetDetailGrpcVo.newBuilder()
+            vo = BetDetailGrpcVo.newBuilder()
                     .setStatus(true)
                     .setDetailUrl("http://wwww.aaa.com")
                     .setVendorErrorCode(ConstantErrorMessage.SUCCESS_CODE)
@@ -27,14 +26,14 @@ public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceIm
                     .build();
         } catch (Exception exception) {
             logger.error(exception.getMessage());
-            this.vo = BetDetailGrpcVo.newBuilder()
+            vo = BetDetailGrpcVo.newBuilder()
                     .setStatus(false)
                     .setDetailUrl("")
                     .setVendorErrorCode(ConstantErrorMessage.GAME_CLASS_PROCESSING_FAIL_CODE)
                     .setVendorErrorMessage(ConstantErrorMessage.GAME_CLASS_PROCESSING_FAIL)
                     .build();
         }
-        responseObserver.onNext(this.vo);
+        responseObserver.onNext(vo);
         responseObserver.onCompleted();
 
     }
