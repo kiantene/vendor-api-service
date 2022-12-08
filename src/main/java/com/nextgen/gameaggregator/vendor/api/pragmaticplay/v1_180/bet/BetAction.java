@@ -8,6 +8,8 @@ import com.nextgen.gameaggregator.vendor.component.vendor.VendorAdaptor;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetRequestGrpc;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,6 +33,8 @@ public class BetAction extends AbstractAction {
     private OperatorBetRequestGrpc operatorBetRequestGrpc;
     @Autowired
     private VendorAdaptor vendorAdaptor;
+
+    private static final Logger logger = LoggerFactory.getLogger(VendorAdaptor.class);
 
     @PostMapping(path = Constant.ACTION_BET)
     public BetActionVo betRequest(BetActionDto dto, WebRequestWrapper request) {
@@ -112,13 +116,15 @@ public class BetAction extends AbstractAction {
                                 }
                             } catch (Exception e){
                                 //return 100 error which required vendor resend us request
+                                logger.error("betAction grpc error : " + e);
                             }
                         } else {
                             // if insert bet data got issue
+                            // logged in class file already
                         }
                     } else {
                         // if class file is not found
-                    thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
+                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
                     }
                 } else {
                     //if auth fail

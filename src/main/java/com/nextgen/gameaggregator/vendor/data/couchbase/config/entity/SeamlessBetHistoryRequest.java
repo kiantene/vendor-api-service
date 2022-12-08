@@ -38,4 +38,6 @@ public class SeamlessBetHistoryRequest {
 
     private String vendorCode;
 
+    public SeamlessBetHistoryRequest() {
+    }
 }

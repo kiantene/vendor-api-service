@@ -40,4 +40,7 @@ public class SeamlessBetHistoryOthersRequest {
     private String rawResponse;
 
     private String vendorCode;
+
+    public SeamlessBetHistoryOthersRequest() {
+    }
 }

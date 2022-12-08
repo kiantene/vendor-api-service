@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.api.pragmaticplay.service.vo.SeamlessGa
 import com.nextgen.gameaggregator.vendor.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.component.vendor.AbstractVendor;
 import com.nextgen.gameaggregator.vendor.component.vendor.InterfaceSeamlessVendor;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryOthersRequest;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryRequest;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryResult;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
@@ -44,6 +45,13 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 @Scope("prototype")
 public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements InterfaceSeamlessVendor {
 
+//    resultType =
+//    1 : win
+//    2 : jackpot
+//    3 : free game
+//    4 : game ended / lose (to be confirmed)
+//    5 : promo win
+
     private static final Logger logger = LoggerFactory.getLogger(SeamlessPragmaticPlayV3_180.class);
     public SeamlessPragmaticPlayV3_180() {
     }
@@ -54,6 +62,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
     SeamlessBetHistoryRequest seamlessBetHistoryRequest;
     SeamlessBetHistoryResult seamlessBetHistoryResult;
+    SeamlessBetHistoryOthersRequest seamlessBetHistoryOthersRequest;
     VendorPlayerAuthentication vendorPlayerAuthentication;
 
     //region Game Login
@@ -196,9 +205,11 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
     @Override
     public HashMap<String, Object> betResult(HashMap<String, Object> map) {
 
+        SeamlessBetHistoryRequest seamlessBetHistoryRequest = new SeamlessBetHistoryRequest();
+        SeamlessBetHistoryOthersRequest seamlessBetHistoryOthersRequest = new SeamlessBetHistoryOthersRequest();
+
         HashMap<String, Object> results = new HashMap<String, Object>();
         String betHistoryId = null;
-        Integer correctScenario = 0;
         VendorPlayerAuthentication v1 = (VendorPlayerAuthentication) map.get("vendorPlayerAuthentication");
 
         //default error
@@ -206,74 +217,61 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
         try{
             seamlessBetHistoryRequest = this.findIdWithVendorBetIdFromLogSeamlessBetHistoryRequest(VENDOR_CODE+"_"+map.get("roundId").toString());
-            seamlessBetHistoryResult = this.findIdWithVendorBetIdFromLogSeamlessBetHistoryResult(VENDOR_CODE+"_"+map.get("roundId").toString());
+            Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
 
             if(seamlessBetHistoryRequest == null){
-                if(seamlessBetHistoryResult == null){
-                    //correct scenario 1, request got no matched vendor bet id and result got no matched vendor bet id
-                    //we proceed to create the result data with bet_amount = 0
-                    //betTime and settledTime will be the same
-                    betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString(),
-                            map.get("reference").toString(), UUID.randomUUID().toString(), map.get("roundId").toString(),
-                            0d, Double.parseDouble(map.get("amount").toString()),
-                            Long.parseLong(map.get("timestamp").toString()), Long.parseLong(map.get("timestamp").toString()),
-                            Instant.now().toEpochMilli(), "betResult", "SLOT", map.get("rawRequest").toString(),
-                            VENDOR_CODE);
+                //if request of this bet is not exists in request table
+                //insert data into raw.bet_history_seamless_others table for (ksql?) error record processing
+                //will still send as correct result to operator via grpc
+                betHistoryId = UUID.randomUUID().toString();
 
-                    correctScenario = 1;
+                //map.get("roundId").toString()+"_1"
+                this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_1", "betResult",
+                    "", VENDOR_CODE, v1.getVendorCurrencyCode(),
+                    map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
 
-                    //region return success responses
-                    results.put("error", 0);
-                    results.put("betHistoryId", betHistoryId);
-                    results.put("betTime", map.get("timestamp").toString());
-                    results.put("betAmount", "0");
-                    results.put("winLoss", map.get("amount").toString());
-                    results.put("resultType", "1");
-                    //end region
-                } else {
-                    //error scenario 1, request got no matched vendor bet id and result got matched vendor bet id
-                }
+                //region return success responses
+                results.put("error", 0);
+                results.put("betHistoryId", betHistoryId);
+                results.put("betTime", map.get("timestamp").toString());
+                results.put("betAmount", "0");
+                results.put("winLoss", map.get("amount").toString());
+                results.put("resultType", "1");
+                //end region
             }else{
                 betHistoryId = seamlessBetHistoryRequest.getBetHistoryId();
-                if(seamlessBetHistoryResult == null) {
-                    //correct scenario 2, request got matched vendor bet id and result got no matched vendor bet id
-                    //we proceed to create the result data
-                    betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString(),
-                            map.get("reference").toString(), betHistoryId, map.get("roundId").toString(),
-                            seamlessBetHistoryRequest.getBetAmount(), Double.parseDouble(map.get("amount").toString()),
-                            seamlessBetHistoryRequest.getBetTime(), Long.parseLong(map.get("timestamp").toString()),
-                            Instant.now().toEpochMilli(), "betResult", "SLOT", map.get("rawRequest").toString(),
-                            VENDOR_CODE);
+                //correct scenario 2, request got matched vendor bet id and result got no matched vendor bet id
+                //we proceed to create the result data into log.seamless_bet_history_result table and raw.bet_history_seamless_result table
+                //will send as correct result to operator via grpc
+                betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString()+"_1",
+                    map.get("reference").toString(), betHistoryId, map.get("roundId").toString(),
+                    seamlessBetHistoryRequest.getBetAmount(), Double.parseDouble(map.get("amount").toString()),
+                    seamlessBetHistoryRequest.getBetTime(), Long.parseLong(map.get("timestamp").toString()),
+                    Instant.now().toEpochMilli(), "betResult", "SLOT", map.get("rawRequest").toString(),
+                    VENDOR_CODE);
 
-                    correctScenario = 1;
+                //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
+                this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_1", "betResult",
+                    "", VENDOR_CODE, v1.getVendorCurrencyCode(),
+                    map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
 
-                    //region return success responses
-                    results.put("error", 0);
-                    results.put("description", "Success");
-                    results.put("betHistoryId", betHistoryId);
-                    results.put("betTime", seamlessBetHistoryRequest.getBetTime().toString());
-                    results.put("betAmount", seamlessBetHistoryRequest.getBetAmount().toString());
-                    results.put("winLoss", map.get("amount").toString());
-                    results.put("resultType", "1");
-                    //end region
-                }
-                else{
-                    //error scenario 2, request got matched vendor bet id and result also got matched vendor bet id
-                }
-            }
 
-            //if hit both correct scenario, record the data that used for ksql process
-            if(correctScenario == 1){
-                //when correct scenario, then create data into couchbase for data processing
-                Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
+                //region return success responses
+                results.put("error", 0);
+                results.put("description", "Success");
+                results.put("betHistoryId", betHistoryId);
+                results.put("betTime", seamlessBetHistoryRequest.getBetTime().toString());
+                results.put("betAmount", seamlessBetHistoryRequest.getBetAmount().toString());
+                results.put("winLoss", map.get("amount").toString());
+                results.put("resultType", "1");
+                //end region
 
-                this.createRawBetHistorySeamlessResultCouchBase(betHistoryId, "betResult",
-                        "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
             }
 
         } catch (Exception e){
-            //return error
+            //if any of the db insert is failed, will throw error
+            logger.error("betResult insert error : " + e);
+            logger.error("seamlessBetHistoryRequest : " + seamlessBetHistoryRequest);
         }
 
         return results;
@@ -281,6 +279,8 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
     @Override
     public HashMap<String, Object> betRequest(HashMap<String, Object> map) {
+
+        SeamlessBetHistoryRequest seamlessBetHistoryRequest = new SeamlessBetHistoryRequest();
         HashMap<String, Object> results = new HashMap<String, Object>();
         String betHistoryId = null;
         VendorPlayerAuthentication v1 = (VendorPlayerAuthentication) map.get("vendorPlayerAuthentication");
@@ -292,9 +292,8 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
             seamlessBetHistoryRequest = this.findIdWithVendorBetIdFromLogSeamlessBetHistoryRequest(VENDOR_CODE+"_"+map.get("roundId").toString());
 
             if(seamlessBetHistoryRequest == null){
-                //proceed to create the record in seamless_bet_history_collections table
-                //TODO GET GAME CATEGORY
-
+                //proceed to create the record in log.seamless_bet_history_collections table, this is used for check is request exists
+                //will still send as correct result to operator via grpc
                 betHistoryId = this.createLogSeamlessBetHistoryRequestCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString(),
                         map.get("reference").toString(), UUID.randomUUID().toString(), map.get("roundId").toString(),
                         Double.parseDouble(map.get("amount").toString()), Long.parseLong(map.get("timestamp").toString()),
@@ -303,21 +302,24 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
                 Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
 
+                //proceed to create record to raw.bet_history_seamless_request table, this is used for ksql aggregate data
                 this.createRawBetHistorySeamlessRequestCouchBase(betHistoryId, "betRequest",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
                         map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
 
             }else{
+                //will still send as correct result to operator via grpc
                 betHistoryId = seamlessBetHistoryRequest.getBetHistoryId();
             }
-
             //region return success responses
             results.put("error", 0);
             results.put("betHistoryId", betHistoryId);
             //end region
 
         } catch (Exception e){
-            //return error
+            //if any of the db insert is failed, will throw error
+            logger.error("betRequest insert error : " + e);
+            logger.error("seamlessBetHistoryRequest: " + seamlessBetHistoryRequest);
         }
 
         return results;
@@ -325,17 +327,174 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
     @Override
     public HashMap<String, Object> endRound(HashMap<String, Object> map) {
-        return null;
+
+        SeamlessBetHistoryRequest seamlessBetHistoryRequest = new SeamlessBetHistoryRequest();
+        SeamlessBetHistoryOthersRequest seamlessBetHistoryOthersRequest = new SeamlessBetHistoryOthersRequest();
+
+        HashMap<String, Object> results = new HashMap<String, Object>();
+        String betHistoryId = null;
+        VendorPlayerAuthentication v1 = (VendorPlayerAuthentication) map.get("vendorPlayerAuthentication");
+
+        //default error
+        results.put("error", 100);
+
+        try{
+            seamlessBetHistoryRequest = this.findIdWithVendorBetIdFromLogSeamlessBetHistoryRequest(VENDOR_CODE+"_"+map.get("roundId").toString());
+            Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
+
+            if(seamlessBetHistoryRequest == null){
+                //if request of this bet is not exists in request table
+                //insert data into raw.bet_history_seamless_others table for (ksql?) error record processing
+                //will still send as correct result to operator via grpc
+                betHistoryId = UUID.randomUUID().toString();
+
+                //map.get("roundId").toString()+"_4"
+                this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_4", "endRound",
+                        "", VENDOR_CODE, v1.getVendorCurrencyCode(),
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+
+                //region return success responses
+                results.put("error", 0);
+                //end region
+            }else{
+                betHistoryId = seamlessBetHistoryRequest.getBetHistoryId();
+                //correct scenario 2, request got matched vendor bet id and result got no matched vendor bet id
+                //we proceed to create the result data into log.seamless_bet_history_result table and raw.bet_history_seamless_result table
+                //will send as correct result to operator via grpc
+                betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString()+"_4",
+                        seamlessBetHistoryRequest.getVendorBetId(), betHistoryId, map.get("roundId").toString(),
+                        seamlessBetHistoryRequest.getBetAmount(), 0d,
+                        seamlessBetHistoryRequest.getBetTime(), seamlessBetHistoryRequest.getBetTime(),
+                        Instant.now().toEpochMilli(), "endRound", "SLOT", map.get("rawRequest").toString(),
+                        VENDOR_CODE);
+
+                //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
+                this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_4", "endRound",
+                        "", VENDOR_CODE, v1.getVendorCurrencyCode(),
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+
+                //region return success responses
+                results.put("error", 0);
+                //end region
+            }
+
+        } catch (Exception e){
+            //if any of the db insert is failed, will throw error
+            logger.error("endRound insert error : " + e);
+            logger.error("seamlessBetHistoryRequest : " + seamlessBetHistoryRequest);
+        }
+
+        return results;
     }
 
     @Override
     public HashMap<String, Object> refund(HashMap<String, Object> map) {
-        return null;
+        SeamlessBetHistoryRequest seamlessBetHistoryRequest = new SeamlessBetHistoryRequest();
+        SeamlessBetHistoryResult seamlessBetHistoryResult = new SeamlessBetHistoryResult();
+
+        HashMap<String, Object> results = new HashMap<String, Object>();
+        VendorPlayerAuthentication v1 = (VendorPlayerAuthentication) map.get("vendorPlayerAuthentication");
+
+        //default error
+        results.put("error", 100);
+
+        try{
+            seamlessBetHistoryRequest = this.findVendorBetIdFromSeamlessBetHistoryRequest(map.get("reference").toString());
+            seamlessBetHistoryResult = this.findVendorBetIdFromSeamlessBetHistoryResult(map.get("reference").toString());
+
+            if(seamlessBetHistoryResult != null){
+
+                String resultType = seamlessBetHistoryResult.getBetHistoryId().substring(seamlessBetHistoryResult.
+                        getBetHistoryId().length() - 1);
+
+                results.put("vendorRoundId", seamlessBetHistoryResult.getVendorRoundId());
+                results.put("betAmount", seamlessBetHistoryResult.getBetAmount());
+                results.put("refundAmount", seamlessBetHistoryResult.getWinLoss());
+                results.put("resultType", resultType);
+                results.put("betTime", seamlessBetHistoryResult.getBetTime());
+                results.put("settledTime", seamlessBetHistoryResult.getSettledTime());
+                results.put("betHistoryId", seamlessBetHistoryResult.getBetHistoryId());
+                results.put("error", 0);
+            }
+            else if(seamlessBetHistoryRequest != null){
+                results.put("vendorRoundId", seamlessBetHistoryRequest.getVendorRoundId());
+                results.put("betAmount", seamlessBetHistoryRequest.getBetAmount());
+                results.put("refundAmount", seamlessBetHistoryRequest.getBetAmount());
+                results.put("resultType", "0");
+                results.put("betTime", seamlessBetHistoryRequest.getBetTime());
+                results.put("settledTime", seamlessBetHistoryRequest.getBetTime());
+                results.put("betHistoryId", seamlessBetHistoryRequest.getBetHistoryId());
+                results.put("error", 0);
+            }
+
+        } catch (Exception e){
+            logger.error("refund insert error : " + e);
+            logger.error("seamlessBetHistoryRequest : " + seamlessBetHistoryRequest);
+            logger.error("seamlessBetHistoryResult : " + seamlessBetHistoryResult);
+        }
+
+        return results;
     }
 
     @Override
     public HashMap<String, Object> bonusWin(HashMap<String, Object> map) {
-        return null;
+        SeamlessBetHistoryRequest seamlessBetHistoryRequest = new SeamlessBetHistoryRequest();
+        SeamlessBetHistoryOthersRequest seamlessBetHistoryOthersRequest = new SeamlessBetHistoryOthersRequest();
+
+        HashMap<String, Object> results = new HashMap<String, Object>();
+        String betHistoryId = null;
+        VendorPlayerAuthentication v1 = (VendorPlayerAuthentication) map.get("vendorPlayerAuthentication");
+
+        //default error
+        results.put("error", 100);
+
+        try{
+            seamlessBetHistoryRequest = this.findIdWithVendorBetIdFromLogSeamlessBetHistoryRequest(VENDOR_CODE+"_"+map.get("roundId").toString());
+            Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
+
+            if(seamlessBetHistoryRequest == null){
+                //if request of this bet is not exists in request table
+                //insert data into raw.bet_history_seamless_others table for (ksql?) error record processing
+                //will still send as correct result to operator via grpc
+                betHistoryId = UUID.randomUUID().toString();
+
+                //map.get("roundId").toString()+"_3"
+                this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_3", "bonusWin",
+                        "", VENDOR_CODE, v1.getVendorCurrencyCode(),
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+
+                //region return success responses
+                results.put("error", 0);
+                //end region
+            }else{
+                betHistoryId = seamlessBetHistoryRequest.getBetHistoryId();
+                //correct scenario 2, request got matched vendor bet id and result got no matched vendor bet id
+                //we proceed to create the result data into log.seamless_bet_history_result table and raw.bet_history_seamless_result table
+                //will send as correct result to operator via grpc
+                betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString()+"_3",
+                        seamlessBetHistoryRequest.getVendorBetId(), betHistoryId, map.get("roundId").toString(),
+                        seamlessBetHistoryRequest.getBetAmount(), Double.parseDouble(map.get("amount").toString()),
+                        seamlessBetHistoryRequest.getBetTime(), Long.parseLong(map.get("timestamp").toString()),
+                        Instant.now().toEpochMilli(), "bonusWin", "SLOT", map.get("rawRequest").toString(),
+                        VENDOR_CODE);
+
+                //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
+                this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_3", "bonusWin",
+                        "", VENDOR_CODE, v1.getVendorCurrencyCode(),
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+
+                //region return success responses
+                results.put("error", 0);
+                //end region
+            }
+
+        } catch (Exception e){
+            //if any of the db insert is failed, will throw error
+            logger.error("bonusWin insert error : " + e);
+            logger.error("seamlessBetHistoryRequest : " + seamlessBetHistoryRequest);
+        }
+
+        return results;
     }
 
 

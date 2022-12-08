@@ -28,6 +28,8 @@ public class OperatorBetRefundGrpc {
             final Long betTime,
             final Long settledTime
     ){
+
+        
         BetRefundGrpcDto dto = BetRefundGrpcDto.newBuilder()
                 .setAgentId(agentId)
                 .setAgentPlayerId(agentPlayerId)

@@ -16,6 +16,7 @@ public class Constant {
     public static final String ACTION_PROMO_WIN = "promoWin";
     public static final String ACTION_REFUND = "refund";
     public static final String ACTION_RESULT = "result";
+    public static final String ACTION_END_ROUND = "endRound";
 
 
 
