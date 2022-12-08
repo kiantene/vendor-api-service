@@ -64,7 +64,7 @@
 		<dependency>
 			<groupId>com.nextgen.sas</groupId>
 			<artifactId>core</artifactId>
-			<version>1.8.x</version>
+			<version>1.8.3</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -120,11 +120,15 @@
 	<repositories>
 		<repository>
 			<id>gitlab-maven</id>
-			<url>http://192.168.88.109/api/v4/projects/19/packages/maven</url>
+			<url>http://192.168.88.109/api/v4/projects/10/packages/maven</url>
 		</repository>
 		<repository>
 			<id>gitlab-maven-2</id>
 			<url>http://192.168.88.109/api/v4/projects/41/packages/maven</url>
+		</repository>
+		<repository>
+			<id>gitlab-maven-3</id>
+			<url>http://192.168.88.109/api/v4/projects/19/packages/maven</url>
 		</repository>
 	</repositories>
 

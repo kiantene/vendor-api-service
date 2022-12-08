@@ -31,5 +31,13 @@
             </url>
             <mirrorOf>http://192.168.88.109</mirrorOf>
         </mirror>
+        <mirror>
+            <id>gitlab-maven-3</id>
+            <name>Repo Mirror</name>
+            <url>
+                http://192.168.88.109/api/v4/projects/10/packages/maven
+            </url>
+            <mirrorOf>http://192.168.88.109</mirrorOf>
+        </mirror>
     </mirrors>
 </settings>
