@@ -4,7 +4,7 @@ public class Constant {
 
     public static final String VENDOR_CODE = "PP";
     public static final String API_VERSION = "v1";
-    public static final String WEB_ACTION = "api/" + API_VERSION + "/pragmaticplay/";
+    public static final String WEB_ACTION = "api/" + API_VERSION + "/prammaticplay/";
 
 
     //region vendor incoming APIs

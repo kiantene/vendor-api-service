@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.context.annotation.RequestScope;
 import reactor.netty.resources.ConnectionProvider;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
+@RequestScope
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class RefundAction extends AbstractAction {
 
@@ -93,33 +95,35 @@ public class RefundAction extends AbstractAction {
                             thisVo.setTransactionId(traceId.replace("-", ""));
 
                             //skip operator grpc first while fixing the premature close issue
-                            thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
+//                            thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
+                            System.out.println("refundAction BEFORE GRPC traceId ::::::" + traceId);
 
                             //prepare call to operator grpc
-//                            BetRefundGrpcVo serviceVo = this.operatorBetRefundGrpc.betRefund(
-//                                    vendorPlayerAuthentication.getAgentId(),
-//                                    vendorPlayerAuthentication.getAgentPlayerId(),
-//                                    vendorPlayerAuthentication.getGameId(),
-//                                    vendorPlayerAuthentication.getCurrencyCode(),
-//                                    traceId,
-//                                    this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId()),
-//                                    betResultOutput.get("betHistoryId").toString(),
-//                                    dto.getReference(),
-//                                    betResultOutput.get("vendorRoundId").toString(),
-//                                    Double.parseDouble(betResultOutput.get("betAmount").toString()),
-//                                    Double.parseDouble(betResultOutput.get("refundAmount").toString()),
-//                                    Integer.parseInt(betResultOutput.get("resultType").toString()),
-//                                    Long.parseLong(betResultOutput.get("betTime").toString()),
-//                                    Long.parseLong(betResultOutput.get("settledTime").toString())
-//                            );
-//
-//                            System.out.println("serviceVo ::: "+serviceVo);
-//
-//                            //check grpc status
-//                            if(serviceVo.getStatus()){
-//                                //if grpc success, set as success and set the responding balance amount
-//                                thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
-//                            }
+                            BetRefundGrpcVo serviceVo = this.operatorBetRefundGrpc.betRefund(
+                                    vendorPlayerAuthentication.getAgentId(),
+                                    vendorPlayerAuthentication.getAgentPlayerId(),
+                                    vendorPlayerAuthentication.getGameId(),
+                                    vendorPlayerAuthentication.getCurrencyCode(),
+                                    traceId,
+                                    this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId()),
+                                    betResultOutput.get("betHistoryId").toString(),
+                                    dto.getReference(),
+                                    betResultOutput.get("vendorRoundId").toString(),
+                                    Double.parseDouble(betResultOutput.get("betAmount").toString()),
+                                    Double.parseDouble(betResultOutput.get("refundAmount").toString()),
+                                    Integer.parseInt(betResultOutput.get("resultType").toString()),
+                                    Long.parseLong(betResultOutput.get("betTime").toString()),
+                                    Long.parseLong(betResultOutput.get("settledTime").toString())
+                            );
+
+                            System.out.println("refundAction AFTER GRPC traceId ::::::" + traceId);
+                            System.out.println("refundAction serviceVo ::::::" + serviceVo);
+
+                            //check grpc status
+                            if(serviceVo.getStatus()){
+                                //if grpc success, set as success and set the responding balance amount
+                                thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
+                            }
                         } catch (Exception e){
                             //return 100 error which required vendor resend us request
                             logger.error("refund grpc error : " + e);
@@ -142,6 +146,15 @@ public class RefundAction extends AbstractAction {
 
         System.out.println("refund traceId ::::::" + traceId);
         System.out.println("refund thisVo ::::::" + thisVo);
+
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_refundErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    request.getBody()+"||"+thisVo);
+            //endregion
+        }
 
         return thisVo;
     }

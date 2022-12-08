@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
+@RequestScope
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BetAction extends AbstractAction {
 
@@ -93,6 +95,9 @@ public class BetAction extends AbstractAction {
                                 thisVo.setUsedPromo(BigDecimal.valueOf(0d));
                                 thisVo.setTransactionId(traceId.replace("-", ""));
 
+                                System.out.println("betAction BEFORE GRPC traceId ::::::" + traceId);
+
+
                                 //prepare call to operator grpc
                                 BetRequestGrpcVo serviceVo = this.operatorBetRequestGrpc.betRequest(
                                         vendorPlayerAuthentication.getAgentId(),
@@ -107,6 +112,10 @@ public class BetAction extends AbstractAction {
                                         Double.parseDouble(dto.getAmount()),
                                         dto.getTimestamp()
                                 );
+
+                                System.out.println("betAction AFTER GRPC traceId ::::::" + traceId);
+                                System.out.println("betAction serviceVo ::::::" + serviceVo);
+
 
                                 //check grpc status
                                 if(serviceVo.getStatus()){
@@ -134,6 +143,15 @@ public class BetAction extends AbstractAction {
 
         System.out.println("BetAction traceId ::::::" + traceId);
         System.out.println("BetAction thisVo ::::::" + thisVo);
+
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_betActionErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    request.getBody()+"||"+thisVo);
+            //endregion
+        }
 
         return thisVo;
     }

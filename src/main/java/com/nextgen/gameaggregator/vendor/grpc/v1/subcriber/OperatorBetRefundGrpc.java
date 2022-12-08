@@ -4,9 +4,12 @@ import com.nextgen.gameaggregator.grpc.v1.operator.betrefund.BetRefundGrpcDto;
 import com.nextgen.gameaggregator.grpc.v1.operator.betrefund.BetRefundGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.operator.betrefund.BetRefundServiceGrpc;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 @Service
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OperatorBetRefundGrpc {
 
     @GrpcClient("game-aggregator-operator-api-service")

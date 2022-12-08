@@ -8,8 +8,11 @@ import io.grpc.stub.StreamObserver;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 
 @GrpcService
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class VendorBetDetailGrpc extends BetDetailServiceGrpc.BetDetailServiceImplBase {
 
     private static final Logger logger = LoggerFactory.getLogger(VendorBetDetailGrpc.class);

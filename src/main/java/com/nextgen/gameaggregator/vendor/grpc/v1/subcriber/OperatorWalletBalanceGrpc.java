@@ -4,9 +4,12 @@ import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGr
 import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceServiceGrpc;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 @Service
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class OperatorWalletBalanceGrpc {
 
     @GrpcClient("game-aggregator-operator-api-service")

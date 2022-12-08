@@ -29,4 +29,6 @@ public interface InterfaceSeamlessVendor {
 
     public HashMap<String, Object> bonusWin(HashMap<String, Object> map);
 
+    public HashMap<String, Object> jackpotWin(HashMap<String, Object> map);
+
 }

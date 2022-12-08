@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,6 +28,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
 
 @RestController
+@RequestScope
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class BonusWinAction extends AbstractAction {
 
@@ -91,6 +93,8 @@ public class BonusWinAction extends AbstractAction {
                             thisVo.setCurrency(vendorPlayerAuthentication.getCurrencyCode());
                             thisVo.setTransactionId(traceId.replace("-", ""));
 
+                            System.out.println("bonusWin BEFORE GRPC traceId ::::::" + traceId);
+
                             //prepare call to operator grpc
                             WalletBalanceGrpcVo serviceVo = this.operatorWalletBalanceGrpc.walletBalance(
                                     vendorPlayerAuthentication.getAgentId(),
@@ -100,6 +104,11 @@ public class BonusWinAction extends AbstractAction {
                                     traceId,
                                     this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId())
                             );
+
+                            System.out.println("bonusWin AFTER GRPC traceId ::::::" + traceId);
+                            System.out.println("bonusWin serviceVo ::::::" + serviceVo);
+
+
                             //check grpc status
                             if(serviceVo.getStatus()){
                                 //if grpc success, set as success and set the responding balance amount
@@ -126,6 +135,15 @@ public class BonusWinAction extends AbstractAction {
 
         System.out.println("bonusWin traceId ::::::" + traceId);
         System.out.println("bonusWin thisVo ::::::" + thisVo);
+
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_bonusWinErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    request.getBody()+"||"+thisVo);
+            //endregion
+        }
 
         return thisVo;
     }

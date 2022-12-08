@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -26,6 +27,7 @@ import java.util.UUID;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.*;
 
 @RestController
+@RequestScope
 @RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class ResultAction extends AbstractAction {
 
@@ -91,6 +93,8 @@ public class ResultAction extends AbstractAction {
                             thisVo.setBonus(BigDecimal.valueOf(0d));
                             thisVo.setTransactionId(traceId.replace("-", ""));
 
+                            System.out.println("betResult BEFORE GRPC traceId ::::::" + traceId);
+
                             //prepare call to operator grpc
                              BetResultGrpcVo serviceVo = this.operatorBetResultGrpc.betResult(
                                     vendorPlayerAuthentication.getAgentId(),
@@ -108,6 +112,10 @@ public class ResultAction extends AbstractAction {
                                     Long.parseLong(betResultOutput.get("betTime").toString()),
                                     dto.getTimestamp()
                             );
+
+                            System.out.println("betResult AFTER GRPC traceId ::::::" + traceId);
+                            System.out.println("betResult serviceVo ::::::" + serviceVo);
+
                             //check grpc status
                             if(serviceVo.getStatus()){
                                 //if grpc success, set as success and set the responding balance amount
@@ -134,6 +142,15 @@ public class ResultAction extends AbstractAction {
 
         System.out.println("ResultAction traceId ::::::" + traceId);
         System.out.println("ResultAction thisVo ::::::" + thisVo);
+
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_betResultErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    request.getBody()+"||"+thisVo);
+            //endregion
+        }
 
         return thisVo;
     }
