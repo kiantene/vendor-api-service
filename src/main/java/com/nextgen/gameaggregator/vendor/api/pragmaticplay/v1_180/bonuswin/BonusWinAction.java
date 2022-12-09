@@ -99,7 +99,7 @@ public class BonusWinAction extends AbstractAction {
                             WalletBalanceGrpcVo serviceVo = this.operatorWalletBalanceGrpc.walletBalance(
                                     vendorPlayerAuthentication.getAgentId(),
                                     vendorPlayerAuthentication.getAgentPlayerId(),
-                                    vendorPlayerAuthentication.getGameId(),
+                                    vendorPlayerAuthentication.getVendorId(),
                                     vendorPlayerAuthentication.getCurrencyCode(),
                                     traceId,
                                     this.findAgentCredentialIdByAgentId(vendorPlayerAuthentication.getAgentId())

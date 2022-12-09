@@ -90,6 +90,8 @@ public class JackpotWinAction extends AbstractAction {
                             //assign default success data
                             thisVo.setTraceId(traceId);
                             thisVo.setBonus(BigDecimal.valueOf(0d));
+                            thisVo.setTransactionId(traceId.replace("-", ""));
+                            thisVo.setCurrency(vendorPlayerAuthentication.getCurrencyCode());
 
                             System.out.println("jackpotWin BEFORE GRPC traceId ::::::" + traceId);
 
