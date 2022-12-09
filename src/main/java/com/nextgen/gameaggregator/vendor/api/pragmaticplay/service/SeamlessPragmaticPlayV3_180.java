@@ -403,7 +403,6 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
             seamlessBetHistoryResult = this.findVendorBetIdFromSeamlessBetHistoryResult(map.get("reference").toString());
 
             if(seamlessBetHistoryResult != null){
-
                 String resultType = seamlessBetHistoryResult.getBetHistoryId().substring(seamlessBetHistoryResult.
                         getBetHistoryId().length() - 1);
 
@@ -425,6 +424,9 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 results.put("settledTime", seamlessBetHistoryRequest.getBetTime());
                 results.put("betHistoryId", seamlessBetHistoryRequest.getBetHistoryId());
                 results.put("error", 0);
+            }
+            else{
+                logger.error("refund record for reference_id "+ map.get("reference").toString() +" unable to find in request and result table couchbase");
             }
 
         } catch (Exception e){
