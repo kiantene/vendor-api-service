@@ -43,6 +43,8 @@ public class AuthenticationAction extends AbstractAction {
         System.out.println(body);
         System.out.println(req.getContentLength());
         String traceId = UUID.randomUUID().toString();
+        String grpcError = null;
+        String grpcErrorDes = null;
 
         //* Temporary solution to map into DTO
         dto = this.queryStringToDto(body, AuthenticationDto.class);
@@ -97,6 +99,10 @@ public class AuthenticationAction extends AbstractAction {
                         //if grpc success, set as success and set the responding balance amount
                         thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
                         thisVo.setCash((BigDecimal.valueOf(serviceVo.getBalance())).setScale(2, RoundingMode.HALF_DOWN));
+                    }else{
+                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR_RECONCILIATION);
+                        grpcError = serviceVo.getOperatorErrorCode();
+                        grpcErrorDes = serviceVo.getOperatorErrorMessage();
                     }
                 } catch (ClassCastException e){
                     //try catch for any class cast error, return error for vendor and require to resend request
@@ -110,14 +116,14 @@ public class AuthenticationAction extends AbstractAction {
         System.out.println("authentication traceId ::::::" + traceId);
         System.out.println("authentication thisVo ::::::" + thisVo);
 
-//        if (thisVo.getError() != 0){
-//            //region create ERROR log for all request that if error not = 0
-//            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
-//            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
-//            this.createSeamlessResultLogRecord(VENDOR_CODE+"_authenticationErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
-//                    body+"||"+thisVo);
-//            //endregion
-//        }
+        if (thisVo.getError() != 0){
+            //region create ERROR log for all request that if error not = 0
+            Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
+            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            this.createSeamlessResultLogRecord(VENDOR_CODE+"_authenticationErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
+                    test+"||"+thisVo+"||"+grpcError+"||"+grpcErrorDes);
+            //endregion
+        }
 
         return thisVo;
     }

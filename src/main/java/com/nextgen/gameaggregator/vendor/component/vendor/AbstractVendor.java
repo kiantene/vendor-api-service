@@ -291,7 +291,7 @@ public class AbstractVendor extends VendorDataEntity {
                                                             String aggregatorRequestStartMs)
     {
         BetHistorySeamlessRequest dataSet = new BetHistorySeamlessRequest(betHistoryId, type, categoryCode, vendorCode,
-                vendorCurrencyCode, rawResponse, aggregatorRequestStartMs);
+                vendorCurrencyCode, rawResponse, aggregatorRequestStartMs, betHistoryId);
 
         this.betHistorySeamlessRequestRepository.save(dataSet);
     }
@@ -300,10 +300,10 @@ public class AbstractVendor extends VendorDataEntity {
     //region create raw.bet_history_seamless_result data to couch base
     public void createRawBetHistorySeamlessResultCouchBase(String betHistoryId, String type, String categoryCode,
                                                            String vendorCode, String vendorCurrencyCode, String rawResponse,
-                                                           String aggregatorRequestStartMs)
+                                                           String aggregatorRequestStartMs, String gaBetId)
     {
         BetHistorySeamlessResult dataSet = new BetHistorySeamlessResult(betHistoryId, type, categoryCode, vendorCode,
-                vendorCurrencyCode, rawResponse, aggregatorRequestStartMs);
+                vendorCurrencyCode, rawResponse, aggregatorRequestStartMs, gaBetId);
 
         this.betHistorySeamlessResultRepository.save(dataSet);
     }
@@ -312,10 +312,10 @@ public class AbstractVendor extends VendorDataEntity {
     //region create raw.bet_history_seamless_others data to couch base
     public void createRawBetHistorySeamlessOthersCouchBase(String betHistoryId, String type, String categoryCode,
                                                            String vendorCode, String vendorCurrencyCode, String rawResponse,
-                                                           String aggregatorRequestStartMs)
+                                                           String aggregatorRequestStartMs, String gaBetId)
     {
         BetHistorySeamlessOthersRequest dataSet = new BetHistorySeamlessOthersRequest(betHistoryId, type, categoryCode, vendorCode,
-                vendorCurrencyCode, rawResponse, aggregatorRequestStartMs);
+                vendorCurrencyCode, rawResponse, aggregatorRequestStartMs, gaBetId);
 
         this.betHistorySeamlessOthersRequestRepository.save(dataSet);
     }

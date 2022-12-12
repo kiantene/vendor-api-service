@@ -15,6 +15,9 @@ public class VendorCurrencyMapReader extends CommonEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "vendor_id", nullable = false)
     private Long vendorId;
 
     @Column(name = "currency_code", nullable = false, length = 5)
