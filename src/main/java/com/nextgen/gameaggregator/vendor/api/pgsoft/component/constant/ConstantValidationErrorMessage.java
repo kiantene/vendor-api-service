@@ -4,4 +4,7 @@ public class ConstantValidationErrorMessage {
 
     public static final String CANNOT_BE_BLANK = "${validatedValue} cannot be blank";
     public static final String CANNOT_BE_NULL = "${validatedValue} cannot be null";
+    public static final String MUST_BE_POSITIVE = "${validatedValue} must be positive";
+
+
 }

@@ -12,6 +12,7 @@ import javax.validation.constraints.NotBlank;
 public class BalanceActionDto extends AbstractActionDto {
     @NotBlank(message = ConstantValidationErrorMessage.CANNOT_BE_BLANK)
     private String playerName;
+    //* Below are not mandatory
     private String operatorPlayerSession;
     private Integer gameId;
 }
