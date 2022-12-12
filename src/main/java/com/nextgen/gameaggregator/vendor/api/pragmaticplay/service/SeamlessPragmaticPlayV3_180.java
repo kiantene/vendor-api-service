@@ -228,7 +228,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //map.get("roundId").toString()+"_1"
                 this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_1", "betResult",
                     "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                    map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                    map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
                 //region return success responses
                 results.put("error", 0);
@@ -253,7 +253,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
                 this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_1", "betResult",
                     "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                    map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                    map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
 
                 //region return success responses
@@ -351,7 +351,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //map.get("roundId").toString()+"_4"
                 this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_4", "endRound",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
                 //region return success responses
                 results.put("error", 0);
@@ -371,7 +371,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
                 this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_4", "endRound",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
                 //region return success responses
                 results.put("error", 0);
@@ -426,6 +426,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 results.put("error", 0);
             }
             else{
+                //TODO THIS WILL KEEP TRIGGER FOR US, NEED TO HANDLE ?
                 logger.error("refund record for reference_id "+ map.get("reference").toString() +" unable to find in request and result table couchbase");
             }
 
@@ -463,7 +464,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //map.get("roundId").toString()+"_3"
                 this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_3", "bonusWin",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
                 //region return success responses
                 results.put("error", 0);
@@ -483,7 +484,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
                 this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_3", "bonusWin",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
                 //region return success responses
                 results.put("error", 0);
@@ -524,7 +525,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //map.get("roundId").toString()+"_2"
                 this.createRawBetHistorySeamlessOthersCouchBase(betHistoryId+"_2", "jackpotWin",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
                 //region return success responses
                 results.put("error", 0);
@@ -548,7 +549,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                 //the data insert to bet_history_seamless_result table, have to determine the result type in betHistoryId
                 this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_2", "jackpotWin",
                         "", VENDOR_CODE, v1.getVendorCurrencyCode(),
-                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString());
+                        map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
 
                 //region return success responses

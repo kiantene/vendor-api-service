@@ -22,4 +22,5 @@ public class BetHistorySeamlessRequest {
     private String vendorCurrencyCode;
     private String rawResponse;
     private String aggregatorRequestStartMs;
+    private String gaBetId;
 }
