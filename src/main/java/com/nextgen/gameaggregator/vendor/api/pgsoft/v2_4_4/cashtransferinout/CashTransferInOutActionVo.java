@@ -1,19 +1,16 @@
-package com.nextgen.gameaggregator.vendor.api.pgsoft.v2_4_4.balance;
+package com.nextgen.gameaggregator.vendor.api.pgsoft.v2_4_4.cashtransferinout;
 
 import com.nextgen.gameaggregator.vendor.api.pgsoft.component.vo.AbstractActionVo;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 
-
 @Data
-public class BalanceVo extends AbstractActionVo {
+public class CashTransferInOutActionVo extends AbstractActionVo {
 
     private ResponseData data;
 
-    public BalanceVo () {
+    public CashTransferInOutActionVo() {
         this.data = new ResponseData();
     }
 
@@ -35,5 +32,4 @@ public class BalanceVo extends AbstractActionVo {
     public void setUpdatedTime(Long updatedTime) {
         this.data.setUpdatedTime(updatedTime);
     }
-
 }
