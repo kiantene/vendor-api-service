@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.api.pgsoft.v2_4_4.cashtransferinout;
+package com.nextgen.gameaggregator.vendor.api.pgsoft.callback.v2_4_4.cashtransferinout;
 
 import com.nextgen.gameaggregator.vendor.api.pgsoft.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.api.pgsoft.component.action.AbstractAction;
