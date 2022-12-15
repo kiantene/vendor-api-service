@@ -31,6 +31,9 @@ public class VendorPlayerReader extends CommonEntity {
     @Column(name = "credentials_version", nullable = false)
     private Long credentialsVersion;
 
+    @Column(name = "username", nullable = false,  length = 50)
+    private String username;
+
     @Column(name = "vendor_username", nullable = false,  length = 50)
     private String vendorUsername;
 
@@ -85,6 +88,14 @@ public class VendorPlayerReader extends CommonEntity {
 
     public void setCredentialsVersion(Long credentialsVersion) {
         this.credentialsVersion = credentialsVersion;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getVendorUsername() {

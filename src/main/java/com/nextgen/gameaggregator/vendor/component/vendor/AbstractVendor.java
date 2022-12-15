@@ -2,15 +2,19 @@ package com.nextgen.gameaggregator.vendor.component.vendor;
 
 import com.nextgen.gameaggregator.vendor.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.AgentPlayer;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
 import com.nextgen.gameaggregator.vendor.util.NameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
+@RequestScope
 public class AbstractVendor extends VendorDataEntity {
     public Long vendorCredentialId;
     public Long vendorId;
@@ -68,16 +72,17 @@ public class AbstractVendor extends VendorDataEntity {
 
     //region find vendor's currency code from vendor_currency_maps table
     public String findVendorCurrencyCode(String currencyCode, Long vendorId) {
-        vendorCurrencyMapReader = vendorCurrencyMapReaderManager.findByCurrencyCodeAndVendorId(currencyCode, this.vendorId);
+        vendorCurrencyMapReader = vendorCurrencyMapReaderManager.findByCurrencyCodeAndVendorId(currencyCode, vendorId);
 
         return vendorCurrencyMapReader.getVendorCurrencyCode();
     }
     //endregion
 
     public void findVendorPlayerUsername(
-            Long agentPlayerId, Long agentId, Long masterAgentId, Long houseId,String currencyCode, Boolean createNow) {
+            Long agentPlayerId, Long agentId, Long masterAgentId, Long houseId,String currencyCode, Boolean createNow, String playerUsername) {
         vendorPlayerReader = vendorPlayerReaderManager.findByAgentPlayerIdAndVendorIdAndVendorCredentialIdAndCurrencyCode(
                 agentPlayerId, this.vendorId, this.vendorCredentialId, currencyCode);
+
         if ((vendorPlayerReader == null) && (createNow)) {
             String vendorPlayerUsername = NameUtils.generateUsername(
                     Constant.USERNAME_SEPARATOR, this.vendorCredentialId, agentId, agentPlayerId);
@@ -93,6 +98,7 @@ public class AbstractVendor extends VendorDataEntity {
             vendorPlayerWriter.setVendorId(this.vendorId);
             vendorPlayerWriter.setVendorCredentialId(this.vendorCredentialId);
             vendorPlayerWriter.setCredentialsVersion(this.CredentialLatestVersion);
+            vendorPlayerWriter.setUsername(playerUsername);
             vendorPlayerWriter.setVendorUsername(vendorPlayerUsername);
             vendorPlayerWriter.setCurrencyCode(currencyCode);
             vendorPlayerWriter.setStatus(true);
@@ -360,6 +366,35 @@ public class AbstractVendor extends VendorDataEntity {
     public void createSeamlessEndRoundErrorCouchBase (String id, Long aggregatorRequestStartMs, String rawRequest){
         SeamlessEndRoundErrorRequest dataSet = new SeamlessEndRoundErrorRequest(id, aggregatorRequestStartMs, rawRequest);
         this.seamlessEndRoundErrorRequestRepository.save(dataSet);
+    }
+    //endregion
+
+    //region create unknown refund record to log.seamless_refund_log couchbase to perform fixes later
+    public void createRefundLogForUnknownRefundRecord(String vendorBetId, String vendorCode, String status,
+                                                       Long aggregatorRequestStartMs, String rawRequest){
+        SeamlessRefundLogRequest dataSet = new SeamlessRefundLogRequest(vendorBetId, vendorCode, status,
+                aggregatorRequestStartMs, rawRequest);
+        this.seamlessRefundLogRequestRepository.save(dataSet);
+    }
+    //endregion
+
+    //region find vendor_players data by vendorPlayerUsername
+    public VendorPlayerReader findVendorPlayerInfoByVendorPlayerUsername (String vendorPlayerUsername){
+
+        VendorPlayerReader searchResult;
+        searchResult = vendorPlayerReaderManager.findByVendorUsername(vendorPlayerUsername);
+
+        return searchResult;
+    }
+    //endregion
+
+    //region find vendor_players data by vendorPlayerUsername
+    public AgentPlayer findAgentPlayerInfoByAgentPlayerId (Long agentPlayerId){
+
+        AgentPlayer searchResult;
+        searchResult = agentPlayerManager.findById(agentPlayerId).orElse(null);
+
+        return searchResult;
     }
     //endregion
 }

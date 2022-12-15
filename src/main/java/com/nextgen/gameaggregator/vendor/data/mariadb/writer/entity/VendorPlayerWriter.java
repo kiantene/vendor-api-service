@@ -30,6 +30,9 @@ public class VendorPlayerWriter extends CommonEntity {
     @Column(name = "credentials_version", nullable = false)
     private Long credentialsVersion;
 
+    @Column(name = "username", nullable = false,  length = 50)
+    private String username;
+
     @Column(name = "vendor_username", nullable = false,  length = 50)
     private String vendorUsername;
 
