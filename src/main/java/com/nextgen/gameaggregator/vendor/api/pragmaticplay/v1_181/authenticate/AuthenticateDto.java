@@ -8,10 +8,8 @@ import javax.validation.constraints.NotBlank;
 public class AuthenticateDto {
     @NotBlank
     private String hash;
-
     @NotBlank
     private String token;
-
     @NotBlank
     private String providerId;
 }
