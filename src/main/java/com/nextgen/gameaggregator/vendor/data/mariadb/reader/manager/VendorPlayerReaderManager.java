@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 public interface VendorPlayerReaderManager extends JpaRepository<VendorPlayerReader, Long> {
 
     VendorPlayerReader findByAgentPlayerIdAndVendorIdAndVendorCredentialIdAndCurrencyCode(Long agentPlayerId, Long vendorId, Long vendorCredentialId, String currencyCode);
+
+    VendorPlayerReader findByVendorUsername(String vendorUsername);
 }

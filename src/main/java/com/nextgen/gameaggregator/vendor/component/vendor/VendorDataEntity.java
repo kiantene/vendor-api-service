@@ -58,6 +58,11 @@ public class VendorDataEntity {
     public VendorReader vendorReader = new VendorReader();
 
     @Autowired
+    public AgentPlayerManager agentPlayerManager;
+
+    public AgentPlayer agentPlayer = new AgentPlayer();
+
+    @Autowired
     public SeamlessBetHistoryCollectionReaderManager seamlessBetHistoryCollectionReaderManager;
 
     public SeamlessBetHistoryCollectionReader seamlessBetHistoryCollectionReader = new SeamlessBetHistoryCollectionReader();

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.api.pgsoft.v2_4_4.verifysession;
+package com.nextgen.gameaggregator.vendor.api.pgsoft.callback.v2_4_4.verifysession;
 
 import com.nextgen.gameaggregator.vendor.api.pgsoft.component.vo.AbstractActionVo;
 import lombok.Data;
