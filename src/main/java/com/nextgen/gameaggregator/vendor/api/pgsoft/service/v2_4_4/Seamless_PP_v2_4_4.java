@@ -34,7 +34,7 @@ public class Seamless_PP_v2_4_4 extends AbstractVendor implements InterfaceSeaml
             String openGameCode = this.findVendorGameCode(dto.getGameId(), dto.getLanguage(), dto.getPlatform());
 
             this.setCredential();
-            this.findVendorPlayerUsername(dto.getAgentPlayerId(), dto.getAgentId(), dto.getMasterAgentId(), dto.getHouseId(), dto.getCurrency(),true);
+            this.findVendorPlayerUsername(dto.getAgentPlayerId(), dto.getAgentId(), dto.getMasterAgentId(), dto.getHouseId(), dto.getCurrency(),true, dto.getPlayerUsername());
             this.createPlayerAuthentication(
                 dto.getWalletType(),
                 dto.getAgentPlayerId(),
@@ -117,6 +117,11 @@ public class Seamless_PP_v2_4_4 extends AbstractVendor implements InterfaceSeaml
 
     @Override
     public HashMap<String, Object> jackpotWin(HashMap<String, Object> map) {
+        return null;
+    }
+
+    @Override
+    public HashMap<String, Object> promoWin(HashMap<String, Object> map) {
         return null;
     }
 
