@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCurren
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorGameLanguageMapReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
 import com.nextgen.gameaggregator.vendor.exception.VendorApiException;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
@@ -41,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.SEAMLESS_GAME_LOGIN;
 import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
@@ -703,4 +705,14 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
         return sb;
     }
     //endregion
+
+    private String generateHash(MultiValueMap<String, String> params, String secret) {
+        String payload = params.keySet().stream()
+                .sorted()
+                .map(key -> key + "=" + params.get(key).get(0))
+                .collect(Collectors.joining("&"));
+
+        payload += secret;
+        return DigestUtils.md5Hex(payload);
+    }
 }
