@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.vendor.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.AgentPlayer;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorGameLanguageMapReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
 import com.nextgen.gameaggregator.vendor.util.NameUtils;
@@ -12,6 +13,7 @@ import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RequestScope
@@ -395,6 +397,16 @@ public class AbstractVendor extends VendorDataEntity {
         searchResult = agentPlayerManager.findById(agentPlayerId).orElse(null);
 
         return searchResult;
+    }
+    //endregion
+
+    //region find vendor_players data by vendorPlayerUsername
+    public VendorGameLanguageMapReader findGameIdByVendorBetGameCodeAndVendorId (String vendorBetGameCode, Long vendorId){
+
+        List<VendorGameLanguageMapReader> searchResult;
+        searchResult = vendorGameLanguageMapReaderManager.findByVendorBetGameCodeAndVendorId(vendorBetGameCode, vendorId);
+
+        return searchResult.isEmpty()?null:searchResult.get(0);
     }
     //endregion
 }

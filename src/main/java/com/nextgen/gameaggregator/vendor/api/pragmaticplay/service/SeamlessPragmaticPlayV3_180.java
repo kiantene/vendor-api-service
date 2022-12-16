@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBe
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.AgentPlayer;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCurrencyMapReader;
+import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorGameLanguageMapReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
 import com.nextgen.gameaggregator.vendor.exception.VendorApiException;
 import org.slf4j.Logger;
@@ -399,7 +400,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
         VendorPlayerAuthentication v1 = (VendorPlayerAuthentication) map.get("vendorPlayerAuthentication");
 
         //default error
-        results.put("error", 100);
+        results.put("error", 120);
 
         try{
             seamlessBetHistoryRequest = this.findVendorBetIdFromSeamlessBetHistoryRequest(map.get("reference").toString());
@@ -590,6 +591,7 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
     public HashMap<String, Object> promoWin(HashMap<String, Object> map) {
         SeamlessBetHistoryRequest seamlessBetHistoryRequest = new SeamlessBetHistoryRequest();
         SeamlessBetHistoryOthersRequest seamlessBetHistoryOthersRequest = new SeamlessBetHistoryOthersRequest();
+        VendorGameLanguageMapReader vendorGameLanguageMapReader;
         AgentPlayer agentPlayer;
         String vendorCurrencyCode;
 
@@ -601,41 +603,48 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
         results.put("error", 100);
         results.put("agentId", null);
         results.put("agentPlayerId", null);
-        results.put("gameId", 1);
+        results.put("gameId", null);
 
         try{
             agentPlayer = this.findAgentPlayerInfoByAgentPlayerId(v1.getAgentPlayerId());
             vendorCurrencyCode = this.findVendorCurrencyCode(v1.getCurrencyCode(), v1.getVendorId());
+            vendorGameLanguageMapReader = this.findGameIdByVendorBetGameCodeAndVendorId(map.get("gameId").toString(), v1.getVendorId());
 
             //check is player exists in agent_players table
             if(agentPlayer != null){
                 //check is the vendor_currency_code exists in vendor_currency_map table
                 if(vendorCurrencyCode != null){
-                    results.put("agentId", agentPlayer.getAgentId());
-                    results.put("agentPlayerId", agentPlayer.getId());
+                    //check is the gameId exists in vendor_game_language_map table.
+                    if(vendorGameLanguageMapReader != null) {
 
-                    Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
-                    betHistoryId = UUID.randomUUID().toString();
+                        Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
+                        betHistoryId = UUID.randomUUID().toString();
 
-                    betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("reference").toString()+"_5",
-                            map.get("reference").toString(), betHistoryId, map.get("reference").toString(),
-                            0d, Double.parseDouble(map.get("amount").toString()),
-                            Long.parseLong(map.get("timestamp").toString()), Long.parseLong(map.get("timestamp").toString()),
-                            Instant.now().toEpochMilli(), "promoWin", "SLOT", map.get("rawRequest").toString(),
-                            VENDOR_CODE);
+                        betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("reference").toString()+"_5",
+                                map.get("reference").toString(), betHistoryId, map.get("reference").toString(),
+                                0d, Double.parseDouble(map.get("amount").toString()),
+                                Long.parseLong(map.get("timestamp").toString()), Long.parseLong(map.get("timestamp").toString()),
+                                Instant.now().toEpochMilli(), "promoWin", "SLOT", map.get("rawRequest").toString(),
+                                VENDOR_CODE);
 
-                    this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_5", "promoWin",
-                            "", VENDOR_CODE, vendorCurrencyCode,
-                            map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
+                        this.createRawBetHistorySeamlessResultCouchBase(betHistoryId+"_5", "promoWin",
+                                "", VENDOR_CODE, vendorCurrencyCode,
+                                map.get("rawRequest").toString(), aggregatorRequestStartMs.toString(), betHistoryId);
 
-                    results.put("error", 0);
-                    results.put("betHistoryId", betHistoryId);
-                    results.put("betTime", map.get("timestamp").toString());
-                    results.put("betAmount", "0");
-                    results.put("winLoss", map.get("amount").toString());
-                    results.put("resultType", "5");
-                    results.put("description", "Success");
+                        results.put("error", 0);
+                        results.put("betHistoryId", betHistoryId);
+                        results.put("betTime", map.get("timestamp").toString());
+                        results.put("betAmount", "0");
+                        results.put("winLoss", map.get("amount").toString());
+                        results.put("resultType", "5");
+                        results.put("description", "Success");
+                        results.put("agentId", agentPlayer.getAgentId());
+                        results.put("agentPlayerId", agentPlayer.getId());
+                        results.put("gameId", vendorGameLanguageMapReader.getVendorGameId());
 
+                    } else {
+                        results.put("description", "find findGameIdByVendorBetGameCodeAndVendorId failed");
+                    }
                 } else {
                     results.put("description", "findVendorCurrencyCode failed");
                 }
