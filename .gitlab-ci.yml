@@ -1,27 +1,52 @@
 before_script:
   - export JAVA_HOME=/usr/lib/jvm/jdk-18/
-
+variables:
+  POINTING_BRANCH: "QA"
+  ALI_REGISTRY: registry-intl.ap-southeast-3.aliyuncs.com/game-aggregator/ga-vendor-api-service
+  DOCKER_REGISTRY: esportsking/ga-vendor-api-service
 stages:
   - build
+  - push-img
   - deploy
+
+.deploy-rule:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $POINTING_BRANCH
 
 maven-build:
   stage: build
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'QA'
-      # when: manual
+  extends: .deploy-rule
   script:
     - 'mvn clean deploy -s ./ci_setting.xml -DskipTests=true'
   artifacts:
     paths:
       - ./target/*.jar
-ali-deploy:
-  stage: deploy
+
+push-alicloud:
+  stage: push-img
   needs: ["maven-build"]
-  rules:
-    - if: $CI_COMMIT_BRANCH == 'QA'
-      when: manual
+  extends: .deploy-rule
+  when: manual
   script:
-    - docker build -t registry-intl.ap-southeast-3.aliyuncs.com/game-aggregator/ga-vendor-api-service:$VERSION .
+    - docker build -t $ALI_REGISTRY:$VERSION -t $ALI_REGISTRY:latest .
     - docker login --username=jeff.zheng.nf@hotmail.com --password="$ALI_CONTAINER_REGISTRY_PWD" registry-intl.ap-southeast-3.aliyuncs.com
-    - docker push registry-intl.ap-southeast-3.aliyuncs.com/game-aggregator/ga-vendor-api-service:$VERSION
+    - docker push $ALI_REGISTRY:$VERSION
+    - docker push $ALI_REGISTRY:latest
+
+push-dockerhub:
+  stage: push-img
+  needs: ["maven-build"]
+  extends: .deploy-rule
+  when: manual
+  script:
+    - docker build -t $DOCKER_REGISTRY:$VERSION -t $DOCKER_REGISTRY:latest .
+    - docker login --username=esportsking --password="$DOCKERHUB_PWD"
+    - docker push $DOCKER_REGISTRY:$VERSION
+    - docker push $DOCKER_REGISTRY:latest
+
+deploy-aws:
+  stage: deploy
+  needs: ["push-dockerhub"]
+  extends: .deploy-rule
+  script:
+    - echo "This is deploy steps"
