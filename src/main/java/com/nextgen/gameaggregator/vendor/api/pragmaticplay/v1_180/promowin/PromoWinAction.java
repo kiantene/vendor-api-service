@@ -63,7 +63,7 @@ public class PromoWinAction extends AbstractAction {
 
         //region create result log for all request that comes to result end point
         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
-        String playerToken = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+        String playerToken = (dto.getReference() == null)?"_NULL": "_"+dto.getReference();
         this.createSeamlessResultLogRecord(VENDOR_CODE+"_promoWin_"+aggregatorRequestStartMs+playerToken, aggregatorRequestStartMs,
                 request.getBody());
         //endregion
@@ -112,7 +112,7 @@ public class PromoWinAction extends AbstractAction {
                                     this.findAgentCredentialIdByAgentId(Long.parseLong(promoWinOutput.get("agentId").toString())),
                                     promoWinOutput.get("betHistoryId").toString(),
                                     dto.getReference(),
-                                    dto.getRoundId(),
+                                    dto.getReference(),
                                     Double.parseDouble(promoWinOutput.get("betAmount").toString()),
                                     Double.parseDouble(promoWinOutput.get("winLoss").toString()),
                                     Integer.parseInt(promoWinOutput.get("resultType").toString()),
@@ -153,7 +153,7 @@ public class PromoWinAction extends AbstractAction {
         if (thisVo.getError() != 0){
             //region create ERROR log for all request that if error not = 0
             Long aggregatorRequestStartMsErr = Instant.now().toEpochMilli();
-            String playerTokenErr = (dto.getToken() == null)?"_NULL": "_"+dto.getToken();
+            String playerTokenErr = (dto.getReference() == null)?"_NULL": "_"+dto.getReference();
             this.createSeamlessResultLogRecord(VENDOR_CODE+"_promoWinErr_"+aggregatorRequestStartMsErr+playerTokenErr, aggregatorRequestStartMsErr,
                     request.getBody()+"||"+thisVo+"||"+formattedOutput+"||"+promoWinOutput);
             //endregion

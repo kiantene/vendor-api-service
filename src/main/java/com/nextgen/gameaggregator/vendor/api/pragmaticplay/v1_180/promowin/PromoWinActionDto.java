@@ -12,7 +12,10 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PromoWinActionDto extends AbstractActionDto {
+public class PromoWinActionDto {
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
+    private String hash;
 
     @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String providerId;

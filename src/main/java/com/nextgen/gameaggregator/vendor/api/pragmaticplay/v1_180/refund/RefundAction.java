@@ -87,12 +87,16 @@ public class RefundAction extends AbstractAction {
                     //call class file to process bet data
                     betResultOutput = vendorAdaptor.seamlessVendor.refund(formattedOutput);
 
+                    thisVo.setTraceId(traceId);
+                    thisVo.setTransactionId(traceId.replace("-", ""));
+
+                    if((int)betResultOutput.get("error") == 120) {
+                        thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_INTERNAL_SERVER_ERROR);
+                    }
+
                     //check is the class file process data success?
                     if((int)betResultOutput.get("error") == 0){
                         try{
-                            //assign default success data
-                            thisVo.setTraceId(traceId);
-                            thisVo.setTransactionId(traceId.replace("-", ""));
 
                             //skip operator grpc first while fixing the premature close issue
 //                            thisVo.setErrorAndDescriptionByConstantResponseKey(ConstantErrorMessage.RESPONSE_KEY_SUCCESS);
