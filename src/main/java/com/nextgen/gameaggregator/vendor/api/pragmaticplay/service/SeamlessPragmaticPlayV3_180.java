@@ -406,27 +406,13 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
 
         try{
             seamlessBetHistoryRequest = this.findVendorBetIdFromSeamlessBetHistoryRequest(map.get("reference").toString());
-            seamlessBetHistoryResult = this.findVendorBetIdFromSeamlessBetHistoryResult(map.get("reference").toString());
             Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
 
-            if(seamlessBetHistoryResult != null){
-                String resultType = seamlessBetHistoryResult.getBetHistoryId().substring(seamlessBetHistoryResult.
-                        getBetHistoryId().length() - 1);
-
-                results.put("vendorRoundId", seamlessBetHistoryResult.getVendorRoundId());
-                results.put("betAmount", seamlessBetHistoryResult.getBetAmount());
-                results.put("refundAmount", seamlessBetHistoryResult.getWinLoss());
-                results.put("resultType", resultType);
-                results.put("betTime", seamlessBetHistoryResult.getBetTime());
-                results.put("settledTime", seamlessBetHistoryResult.getSettledTime());
-                results.put("betHistoryId", seamlessBetHistoryResult.getBetHistoryId());
-                results.put("error", 0);
-            }
-            else if(seamlessBetHistoryRequest != null){
+            if(seamlessBetHistoryRequest != null){
                 results.put("vendorRoundId", seamlessBetHistoryRequest.getVendorRoundId());
                 results.put("betAmount", seamlessBetHistoryRequest.getBetAmount());
                 results.put("refundAmount", seamlessBetHistoryRequest.getBetAmount());
-                results.put("resultType", "0");
+                results.put("resultType", "6");
                 results.put("betTime", seamlessBetHistoryRequest.getBetTime());
                 results.put("settledTime", seamlessBetHistoryRequest.getBetTime());
                 results.put("betHistoryId", seamlessBetHistoryRequest.getBetHistoryId());
