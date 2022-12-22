@@ -37,7 +37,7 @@ push-dockerhub:
   stage: push-img
   needs: ["maven-build"]
   extends: .deploy-rule
-  when: manual
+  # when: manual
   script:
     - docker build -t $DOCKER_REGISTRY:latest .
     # - docker build -t $DOCKER_REGISTRY:$VERSION -t $DOCKER_REGISTRY:latest .
