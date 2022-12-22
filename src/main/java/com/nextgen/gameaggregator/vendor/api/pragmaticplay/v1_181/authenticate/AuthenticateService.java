@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
@@ -13,7 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import java.lang.reflect.Field;
@@ -54,24 +57,35 @@ public class AuthenticateService {
         return t;
     }
 
-    public void validateRequest(AuthenticateDto dto) throws InvalidRequestException {
+    public void validateRequest(AuthenticateDto dto, Class<AuthenticateDto> clazz) throws InvalidRequestException {
+        Map<String, String> validationMap = new HashMap<String, String>();
+
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-        if (!validator.validate(dto).isEmpty()) { // Missing request parameters
-            throw new InvalidRequestException();
+        Set<ConstraintViolation<AuthenticateDto>> violations = validator.validate(dto);
+        for (ConstraintViolation<AuthenticateDto> violation : violations) {
+            validationMap.put(violation.getPropertyPath().toString(), violation.getPropertyPath() + " " + violation.getMessage());
+        }
+
+        System.out.println("validationMap++++ "+validationMap);
+
+        if(!validationMap.isEmpty()){
+            throw new InvalidRequestException(validationMap.toString());
         }
     }
 
-    public void validateHash(AuthenticateDto dto, String secretKey) throws InvalidHashException {
+    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidHashException {
 
-        Map<String, String> map = ClassConverter.toMap(dto);
-        MultiValueMap<String, String> multiValueMap = MapConverter.toMultiValueMap(map);
-        MapUtils.removeFromMultiValueMap(multiValueMap, "hash");
+        String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
 
-        String rawHash = map.get("hash");
-        String checkerHash = this.generateHash(multiValueMap, secretKey);
+        MultiValueMap<String, String> map = UriComponentsBuilder.newInstance()
+                .query(modifiedQueryString)
+                .build()
+                .getQueryParams();
 
-        if(!rawHash.equals(checkerHash)){
+        String checkerHash = this.generateHash(map, secretKey);
+
+        if(!hash.equals(checkerHash)){
             throw new InvalidHashException();
         }
 
@@ -85,42 +99,6 @@ public class AuthenticateService {
 
         payload += secret;
         return DigestUtils.md5Hex(payload);
-    }
-
-    public class MapUtils {
-        public static <K, V> void removeFromMultiValueMap(MultiValueMap<K, V> map, K key) {
-            if (map.containsKey(key)) {
-                map.remove(key);
-            }
-        }
-    }
-
-    public class MapConverter {
-        public static <K, V> MultiValueMap<K, V> toMultiValueMap(Map<K, V> map) {
-            MultiValueMap<K, V> multiValueMap = new LinkedMultiValueMap<>();
-            for (Map.Entry<K, V> entry : map.entrySet()) {
-                multiValueMap.add(entry.getKey(), entry.getValue());
-            }
-            return multiValueMap;
-        }
-    }
-
-    public class ClassConverter {
-        public static Map<String, String> toMap(Object object) {
-            Map<String, String> map = new HashMap<>();
-            for (Field field : object.getClass().getDeclaredFields()) {
-                field.setAccessible(true);
-                try {
-                    Object fieldValue = field.get(object);
-                    if (fieldValue != null) {
-                        map.put(field.getName(), fieldValue.toString());
-                    }
-                } catch (IllegalAccessException e) {
-                    // handle exception
-                }
-            }
-            return map;
-        }
     }
 
     public VendorPlayerAuthentication verifyToken(String token) throws AuthenticationException {

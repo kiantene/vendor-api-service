@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.gson.Gson;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -162,6 +164,26 @@ public class ServiceController extends HttpServlet {
         return jsonResponse;
     }
 
+    @PostMapping(path = "generate/hash")
+    public JsonNode generateHash(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+
+        String requestBody = request.getReader().lines().collect(Collectors.joining());
+        //String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
+
+        MultiValueMap<String, String> map = UriComponentsBuilder.newInstance()
+                .query(requestBody)
+                .build()
+                .getQueryParams();
+
+        GetHashVo vo = new GetHashVo();
+        vo.setHash(generateHash(map, "testKey"));
+
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonResponse = mapper.valueToTree(vo);
+
+        return jsonResponse;
+    }
+
     private String generateHash(MultiValueMap<String, String> params, String secret) {
         String payload = params.keySet().stream()
                 .sorted()
@@ -188,6 +210,18 @@ public class ServiceController extends HttpServlet {
         getGameListVo.setImage138x138(square138);
 
         return getGameListVo;
+    }
+
+    private static class GetHashVo {
+        String hash;
+
+        public String getHash() {
+            return hash;
+        }
+
+        public void setHash(String hash) {
+            this.hash = hash;
+        }
     }
 
     private static class GetGameListDto {
