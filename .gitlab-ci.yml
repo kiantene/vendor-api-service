@@ -59,4 +59,4 @@ deploy-ali:
     script:
       - echo "$CD_PRIVATE_KEY" > "$(pwd)/CD.pem"
       - chmod 400 "$(pwd)/CD.pem"
-      - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" root@47.254.202.80 -p 22 'docker service update --image esportsking/ga-vendor-api-service:latest game-aggregator_ga-vendor-api-service'
+      - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" root@47.254.202.80 -p 22 'docker service update --force --image esportsking/ga-vendor-api-service:latest game-aggregator_ga-vendor-api-service'
