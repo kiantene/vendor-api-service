@@ -124,17 +124,6 @@
 		</dependency>
 	</dependencies>
 
-
-
-
-	<repositories>
-		<repository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/10/packages/maven</url>
-		</repository>
-	</repositories>
-
-
 	<build>
 		<plugins>
 			<plugin>
