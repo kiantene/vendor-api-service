@@ -2,6 +2,7 @@ server:
   port: 8082
   http2:
     enabled: true
+mavenTimestamp: @timestamp@
 sas:
   enabled: false
 spring:

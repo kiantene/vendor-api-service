@@ -39,9 +39,10 @@ push-dockerhub:
   extends: .deploy-rule
   when: manual
   script:
-    - docker build -t $DOCKER_REGISTRY:$VERSION -t $DOCKER_REGISTRY:latest .
+    - docker build -t $DOCKER_REGISTRY:latest .
+    # - docker build -t $DOCKER_REGISTRY:$VERSION -t $DOCKER_REGISTRY:latest .
     - docker login --username=esportsking --password="$DOCKERHUB_PWD"
-    - docker push $DOCKER_REGISTRY:$VERSION
+    # - docker push $DOCKER_REGISTRY:$VERSION
     - docker push $DOCKER_REGISTRY:latest
 
 deploy-aws:
@@ -50,3 +51,12 @@ deploy-aws:
   extends: .deploy-rule
   script:
     - echo "This is deploy steps"
+
+deploy-ali:
+    stage: deploy
+    needs: ["push-dockerhub"]
+    extends: .deploy-rule
+    script:
+      - echo "$CD_PRIVATE_KEY" > "$(pwd)/CD.pem"
+      - chmod 400 "$(pwd)/CD.pem"
+      - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" root@47.254.202.80 -p 22 'docker service update --image esportsking/ga-vendor-api-service:latest game-aggregator_ga-vendor-api-service'
