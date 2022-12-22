@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
+package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.balance;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
@@ -21,38 +21,38 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping(path = "api/v2/pragmaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
-public class AuthenticateAction {
+public class WalletBalanceAction {
+
     @Autowired
     HttpServletRequest request;
 
     @Autowired
-    AuthenticateService authenticateService;
+    WalletBalanceService walletBalanceService;
 
-    @PostMapping(path = "authenticate")
-    public AuthenticateVo authenticate(AuthenticateDto dto) {
-        AuthenticateVo response = new AuthenticateVo();
+    @PostMapping(path = "balance")
+    public WalletBalanceVo walletBalance(WalletBalanceDto dto) {
+        WalletBalanceVo response = new WalletBalanceVo();
 
         try {
             // region temporary solution to convert to DTO
             String requestBody = request.getReader().lines().collect(Collectors.joining());
-            dto = authenticateService.queryStringToDto(requestBody, AuthenticateDto.class);
+            dto = walletBalanceService.queryStringToDto(requestBody, WalletBalanceDto.class);
             log.info(dto.toString());
             // endregion
 
             // Validate request parameters from vendor
-            authenticateService.validateRequest(dto);
-            VendorPlayerAuthentication authenticatedUser = authenticateService.verifyToken(dto.getToken());
+            walletBalanceService.validateRequest(dto);
+            VendorPlayerAuthentication authenticatedUser = walletBalanceService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
-            String secretKey = authenticateService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            authenticateService.validateHash(dto, secretKey);
+            String secretKey = walletBalanceService.verifyCredential(authenticatedUser.getVendorCredentialId());
+            walletBalanceService.validateHash(dto, secretKey);
 
-            // Call bet request operator GRPC to get the balance of the player
+            // Call wallet balance operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();
-            BigDecimal balance = authenticateService.getWalletBalanceFromGRPC(dto, traceId, authenticatedUser);
+            BigDecimal balance = walletBalanceService.getWalletBalanceFromGRPC(dto, traceId, authenticatedUser);
 
             response.setError(ResponseCodes.SUCCESS);
-            response.setUserId(authenticatedUser.getVendorPlayerUsername());
             response.setCurrency(authenticatedUser.getCurrencyCode());
             response.setCash(balance);
             response.setBonus(BigDecimal.ZERO);
@@ -71,7 +71,6 @@ public class AuthenticateAction {
 
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            System.out.println("exception test+++"+exception);
 
         } finally {
             response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError()));
@@ -79,4 +78,5 @@ public class AuthenticateAction {
 
         return response;
     }
+
 }

@@ -1,12 +1,16 @@
-package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
+package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.balance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
+import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthenticationRepository;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialValueReaderManager;
-import com.nextgen.gameaggregator.vendor.exception.*;
+import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
+import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
+import com.nextgen.gameaggregator.vendor.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.vendor.exception.UnableToFindCredentialsException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,12 +22,15 @@ import javax.validation.Validation;
 import javax.validation.Validator;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class AuthenticateService {
+public class WalletBalanceService {
 
     @Autowired
     public VendorCredentialReaderManager vendorCredentialReaderManager;
@@ -54,7 +61,7 @@ public class AuthenticateService {
         return t;
     }
 
-    public void validateRequest(AuthenticateDto dto) throws InvalidRequestException {
+    public void validateRequest(WalletBalanceDto dto) throws InvalidRequestException {
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
         if (!validator.validate(dto).isEmpty()) { // Missing request parameters
@@ -62,7 +69,7 @@ public class AuthenticateService {
         }
     }
 
-    public void validateHash(AuthenticateDto dto, String secretKey) throws InvalidHashException {
+    public void validateHash(WalletBalanceDto dto, String secretKey) throws InvalidHashException {
 
         Map<String, String> map = ClassConverter.toMap(dto);
         MultiValueMap<String, String> multiValueMap = MapConverter.toMultiValueMap(map);
@@ -70,6 +77,9 @@ public class AuthenticateService {
 
         String rawHash = map.get("hash");
         String checkerHash = this.generateHash(multiValueMap, secretKey);
+
+        System.out.println("rawHash ++" + rawHash);
+        System.out.println("checkerHash ++" + checkerHash);
 
         if(!rawHash.equals(checkerHash)){
             throw new InvalidHashException();
@@ -157,7 +167,7 @@ public class AuthenticateService {
         return credentialValues.getValue();
     }
 
-    public BigDecimal getWalletBalanceFromGRPC(AuthenticateDto dto, String traceId, VendorPlayerAuthentication vpa) {
+    public BigDecimal getWalletBalanceFromGRPC(WalletBalanceDto dto, String traceId, VendorPlayerAuthentication vpa) {
         //TODO: call operatorBetRequestGrpc.betRequest to get the balance of player from operator
         return new BigDecimal("1000");
 

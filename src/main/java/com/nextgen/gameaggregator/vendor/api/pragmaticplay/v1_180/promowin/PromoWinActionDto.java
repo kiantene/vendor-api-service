@@ -42,7 +42,10 @@ public class PromoWinActionDto {
     @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private String reference;
 
+    @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private String roundId;
+
+    @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private String gameId;
     private String dataType;
 }

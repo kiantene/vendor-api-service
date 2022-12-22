@@ -608,8 +608,8 @@ public class SeamlessPragmaticPlayV3_180 extends AbstractVendor implements Inter
                         Long aggregatorRequestStartMs = Instant.now().toEpochMilli();
                         betHistoryId = UUID.randomUUID().toString();
 
-                        betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("reference").toString()+"_5",
-                                map.get("reference").toString(), betHistoryId, map.get("reference").toString(),
+                        betHistoryId = this.createLogSeamlessBetHistoryResultCouchBase(VENDOR_CODE+"_"+map.get("roundId").toString()+"_5",
+                                map.get("reference").toString(), betHistoryId, map.get("roundId").toString(),
                                 0d, Double.parseDouble(map.get("amount").toString()),
                                 Long.parseLong(map.get("timestamp").toString()), Long.parseLong(map.get("timestamp").toString()),
                                 Instant.now().toEpochMilli(), "promoWin", "SLOT", map.get("rawRequest").toString(),

@@ -32,14 +32,37 @@ public class ServiceController extends HttpServlet {
     RestTemplate restTemplate;
 
     @PostMapping(path = "game/getGameList")
-    public JsonNode getGameList() throws JsonProcessingException {
+    public JsonNode getGameList(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String imagePath = "https://zf006.prerelease-env.biz";
+        GetGameListVo vo = new GetGameListVo();
+
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = request.getReader();
+        try {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append('\n');
+            }
+        } finally {
+            reader.close();
+        }
+        String payload = sb.toString();
+
+        Gson gson = new Gson();
+        GetBetDetailDto obj = gson.fromJson(payload, GetBetDetailDto.class);
+
         String url = "https://api.prerelease-env.biz/IntegrationService/v3/http/CasinoGameAPI/getCasinoGames/";
         String secretKey = "testKey";
         RestTemplate restTemplate = new RestTemplate();
+        String secureLogin = "zf06_rtw015sw";
+
+        if(obj.agentId.toString() == "2"){
+            secureLogin = "zf_winksw";
+        }
 
         // create a map to store the request parameters
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("secureLogin", "zf06_rtw015sw");
+        params.add("secureLogin", secureLogin);
         params.add("hash", this.generateHash(params, secretKey));
 
         HttpHeaders headers = new HttpHeaders();
@@ -49,11 +72,11 @@ public class ServiceController extends HttpServlet {
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(params, headers);
 
         // make the POST request and store the response
-        String response = restTemplate.postForObject(url, requestEntity, String.class);
+        String result = restTemplate.postForObject(url, requestEntity, String.class);
 
         ObjectMapper mapper = new ObjectMapper();
 
-        JsonNode jsonResponse = mapper.readTree(response);
+        JsonNode jsonResponse = mapper.readTree(result);
 
         return jsonResponse;
     }
@@ -76,7 +99,7 @@ public class ServiceController extends HttpServlet {
         String payload = sb.toString();
 
         Gson gson = new Gson();
-        GetGameListDto obj = gson.fromJson(payload, GetGameListDto.class);
+        GetGameIconDto obj = gson.fromJson(payload, GetGameIconDto.class);
 
         vo = this.generateGameListPath(imagePath, obj.vendorGameCode);
 
@@ -169,7 +192,15 @@ public class ServiceController extends HttpServlet {
 
     private static class GetGameListDto {
         String vendorCode;
+
+        String agentId;
+    }
+
+    private static class GetGameIconDto {
+        String vendorCode;
         String vendorGameCode;
+
+        String agentId;
     }
 
     private static class GetBetDetailDto {
