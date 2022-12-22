@@ -17,6 +17,8 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes.INVALID_REQUEST;
+
 @RestController
 @RequestMapping(path = "api/v2/pragmaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
@@ -33,6 +35,7 @@ public class BetAction {
     public BetVo authenticate(BetDto dto) {
 
         BetVo response = new BetVo();
+        String errorMessage = "";
 
         try {
             // region temporary solution to convert to DTO
@@ -42,12 +45,12 @@ public class BetAction {
             // endregion
 
             // Validate request parameters from vendor
-            betService.validateRequest(dto);
+            betService.validateRequest(dto, BetDto.class);
             VendorPlayerAuthentication authenticatedUser = betService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
             String secretKey = betService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            betService.validateHash(dto, secretKey);
+            betService.validateHash(dto.getHash(), secretKey, requestBody);
 
             // Get seamless bet request Id
             String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
@@ -72,7 +75,8 @@ public class BetAction {
             response.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
-            response.setError(ResponseCodes.INVALID_REQUEST);
+            response.setError(INVALID_REQUEST);
+            errorMessage = " || "+invalidRequestException.getMessage();
 
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -88,9 +92,10 @@ public class BetAction {
 
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+            errorMessage = " || "+exception;
 
         } finally {
-            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError()));
+            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError())+errorMessage);
         }
 
         return response;

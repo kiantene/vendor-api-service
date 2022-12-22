@@ -1,33 +1,45 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto {
 
-    @NotBlank
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String token;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String hash;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String userId;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String gameId;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String roundId;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String amount;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String reference;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String providerId;
-    @Positive
+
+    @Positive(message = ConstantErrorMessage.POSITIVE)
+    @NotNull(message = ConstantErrorMessage.NOT_NULL)
     private Long timestamp;
-    @NotBlank
+
+    @NotBlank(message = ConstantErrorMessage.NOT_BLANK)
     private String roundDetails;
 }

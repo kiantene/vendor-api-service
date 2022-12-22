@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.balance;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
 import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
@@ -32,6 +33,7 @@ public class WalletBalanceAction {
     @PostMapping(path = "balance")
     public WalletBalanceVo walletBalance(WalletBalanceDto dto) {
         WalletBalanceVo response = new WalletBalanceVo();
+        String errorMessage = "";
 
         try {
             // region temporary solution to convert to DTO
@@ -41,12 +43,12 @@ public class WalletBalanceAction {
             // endregion
 
             // Validate request parameters from vendor
-            walletBalanceService.validateRequest(dto);
+            walletBalanceService.validateRequest(dto, WalletBalanceDto.class);
             VendorPlayerAuthentication authenticatedUser = walletBalanceService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
             String secretKey = walletBalanceService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            walletBalanceService.validateHash(dto, secretKey);
+            walletBalanceService.validateHash(dto.getHash(), secretKey, requestBody);
 
             // Call wallet balance operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();
@@ -59,6 +61,7 @@ public class WalletBalanceAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             response.setError(ResponseCodes.INVALID_REQUEST);
+            errorMessage = " || "+invalidRequestException.getMessage();
 
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -73,7 +76,7 @@ public class WalletBalanceAction {
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
         } finally {
-            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError()));
+            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError())+errorMessage);
         }
 
         return response;

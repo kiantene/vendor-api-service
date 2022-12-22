@@ -22,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.annotation.RequestScope;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import java.lang.reflect.Field;
@@ -81,24 +83,35 @@ public class BetService {
         return t;
     }
 
-    public void validateRequest(BetDto dto) throws InvalidRequestException {
+    public void validateRequest(BetDto dto, Class<BetDto> clazz) throws InvalidRequestException {
+        Map<String, String> validationMap = new HashMap<String, String>();
+
         Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-        if (!validator.validate(dto).isEmpty()) { // Missing request parameters
-            throw new InvalidRequestException();
+        Set<ConstraintViolation<BetDto>> violations = validator.validate(dto);
+        for (ConstraintViolation<BetDto> violation : violations) {
+            validationMap.put(violation.getPropertyPath().toString(), violation.getPropertyPath() + " " + violation.getMessage());
+        }
+
+        System.out.println("validationMap++++ "+validationMap);
+
+        if(!validationMap.isEmpty()){
+            throw new InvalidRequestException(validationMap.toString());
         }
     }
 
-    public void validateHash(BetDto dto, String secretKey) throws InvalidHashException {
+    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidHashException {
 
-        Map<String, String> map = ClassConverter.toMap(dto);
-        MultiValueMap<String, String> multiValueMap = MapConverter.toMultiValueMap(map);
-        MapUtils.removeFromMultiValueMap(multiValueMap, "hash");
+        String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
 
-        String rawHash = map.get("hash");
-        String checkerHash = this.generateHash(multiValueMap, secretKey);
+        MultiValueMap<String, String> map = UriComponentsBuilder.newInstance()
+                .query(modifiedQueryString)
+                .build()
+                .getQueryParams();
 
-        if(!rawHash.equals(checkerHash)){
+        String checkerHash = this.generateHash(map, secretKey);
+
+        if(!hash.equals(checkerHash)){
             throw new InvalidHashException();
         }
 
@@ -112,42 +125,6 @@ public class BetService {
 
         payload += secret;
         return DigestUtils.md5Hex(payload);
-    }
-
-    public class MapUtils {
-        public static <K, V> void removeFromMultiValueMap(MultiValueMap<K, V> map, K key) {
-            if (map.containsKey(key)) {
-                map.remove(key);
-            }
-        }
-    }
-
-    public class MapConverter {
-        public static <K, V> MultiValueMap<K, V> toMultiValueMap(Map<K, V> map) {
-            MultiValueMap<K, V> multiValueMap = new LinkedMultiValueMap<>();
-            for (Map.Entry<K, V> entry : map.entrySet()) {
-                multiValueMap.add(entry.getKey(), entry.getValue());
-            }
-            return multiValueMap;
-        }
-    }
-
-    public class ClassConverter {
-        public static Map<String, String> toMap(Object object) {
-            Map<String, String> map = new HashMap<>();
-            for (Field field : object.getClass().getDeclaredFields()) {
-                field.setAccessible(true);
-                try {
-                    Object fieldValue = field.get(object);
-                    if (fieldValue != null) {
-                        map.put(field.getName(), fieldValue.toString());
-                    }
-                } catch (IllegalAccessException e) {
-                    // handle exception
-                }
-            }
-            return map;
-        }
     }
 
     public String getSeamlessBetRequestId(BetDto dto){

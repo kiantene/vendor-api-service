@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
 import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
@@ -31,6 +32,7 @@ public class AuthenticateAction {
     @PostMapping(path = "authenticate")
     public AuthenticateVo authenticate(AuthenticateDto dto) {
         AuthenticateVo response = new AuthenticateVo();
+        String errorMessage = "";
 
         try {
             // region temporary solution to convert to DTO
@@ -40,12 +42,12 @@ public class AuthenticateAction {
             // endregion
 
             // Validate request parameters from vendor
-            authenticateService.validateRequest(dto);
+            authenticateService.validateRequest(dto, AuthenticateDto.class);
             VendorPlayerAuthentication authenticatedUser = authenticateService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
             String secretKey = authenticateService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            authenticateService.validateHash(dto, secretKey);
+            authenticateService.validateHash(dto.getHash(), secretKey, requestBody);
 
             // Call bet request operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();
@@ -59,6 +61,7 @@ public class AuthenticateAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             response.setError(ResponseCodes.INVALID_REQUEST);
+            errorMessage = " || "+invalidRequestException.getMessage();
 
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -74,7 +77,7 @@ public class AuthenticateAction {
             System.out.println("exception test+++"+exception);
 
         } finally {
-            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError()));
+            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError())+errorMessage);
         }
 
         return response;
