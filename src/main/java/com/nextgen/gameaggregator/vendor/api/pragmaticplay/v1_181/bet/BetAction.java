@@ -43,8 +43,11 @@ public class BetAction {
 
             // Validate request parameters from vendor
             betService.validateRequest(dto);
-            betService.validateHash(dto.getHash(), requestBody);
             VendorPlayerAuthentication authenticatedUser = betService.verifyToken(dto.getToken());
+
+            // Validate hash from vendor
+            String secretKey = betService.verifyCredential(authenticatedUser.getVendorCredentialId());
+            betService.validateHash(dto, secretKey);
 
             // Get seamless bet request Id
             String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
@@ -54,8 +57,8 @@ public class BetAction {
                 seamlessBetRequestId = betService.createLogSeamlessBetHistoryRequest(dto, requestBody);
             }
 
-            // Create raw seamless bet history request data for data transforming
-            betService.createRawBetHistorySeamlessRequest(seamlessBetRequestId, authenticatedUser, requestBody);
+            // Create kafka seamless bet history request data for data transforming
+            betService.createRecordToKafkaBetHistoryTopic(seamlessBetRequestId, authenticatedUser, requestBody);
 
             // Call bet request operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();
@@ -71,16 +74,16 @@ public class BetAction {
         } catch (InvalidRequestException invalidRequestException) {
             response.setError(ResponseCodes.INVALID_REQUEST);
 
-        } catch (InvalidHashException invalidHashException) {
-            response.setError(ResponseCodes.INVALID_HASH);
-
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
-        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
-            response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
+        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
+            response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-        } catch (CreateRawBetHistorySeamlessException createRawBetHistorySeamlessException) {
+        } catch (InvalidHashException invalidHashException) {
+            response.setError(ResponseCodes.INVALID_HASH);
+
+        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
 
         } catch (Exception exception) { // any other exception encountered

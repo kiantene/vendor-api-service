@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlay
 import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
 import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
 import com.nextgen.gameaggregator.vendor.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.vendor.exception.UnableToFindCredentialsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -39,9 +41,15 @@ public class AuthenticateAction {
 
             // Validate request parameters from vendor
             authenticateService.validateRequest(dto);
-            authenticateService.validateHash(dto.getHash(), requestBody);
             VendorPlayerAuthentication authenticatedUser = authenticateService.verifyToken(dto.getToken());
-            BigDecimal balance = authenticateService.getWalletBalance(authenticatedUser);
+
+            // Validate hash from vendor
+            String secretKey = authenticateService.verifyCredential(authenticatedUser.getVendorCredentialId());
+            authenticateService.validateHash(dto, secretKey);
+
+            // Call bet request operator GRPC to get the balance of the player
+            String traceId = UUID.randomUUID().toString();
+            BigDecimal balance = authenticateService.getWalletBalanceFromGRPC(dto, traceId, authenticatedUser);
 
             response.setError(ResponseCodes.SUCCESS);
             response.setUserId(authenticatedUser.getVendorPlayerUsername());
@@ -52,14 +60,18 @@ public class AuthenticateAction {
         } catch (InvalidRequestException invalidRequestException) {
             response.setError(ResponseCodes.INVALID_REQUEST);
 
-        } catch (InvalidHashException invalidHashException) {
-            response.setError(ResponseCodes.INVALID_HASH);
-
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
+        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
+            response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+
+        } catch (InvalidHashException invalidHashException) {
+            response.setError(ResponseCodes.INVALID_HASH);
+
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+            System.out.println("exception test+++"+exception);
 
         } finally {
             response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError()));

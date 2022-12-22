@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlay
 import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
 import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
 import com.nextgen.gameaggregator.vendor.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.vendor.exception.UnableToFindCredentialsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,28 +27,30 @@ public class WalletBalanceAction {
     HttpServletRequest request;
 
     @Autowired
-    WalletBalanceService balanceService;
+    WalletBalanceService walletBalanceService;
 
     @PostMapping(path = "balance")
-    public WalletBalanceVo authenticate(WalletBalanceDto dto) {
+    public WalletBalanceVo walletBalance(WalletBalanceDto dto) {
         WalletBalanceVo response = new WalletBalanceVo();
 
         try {
             // region temporary solution to convert to DTO
             String requestBody = request.getReader().lines().collect(Collectors.joining());
-            dto = balanceService.queryStringToDto(requestBody, WalletBalanceDto.class);
+            dto = walletBalanceService.queryStringToDto(requestBody, WalletBalanceDto.class);
             log.info(dto.toString());
             // endregion
 
             // Validate request parameters from vendor
-            balanceService.validateRequest(dto);
-            balanceService.validateHash(dto.getHash(), requestBody);
+            walletBalanceService.validateRequest(dto);
+            VendorPlayerAuthentication authenticatedUser = walletBalanceService.verifyToken(dto.getToken());
 
-            System.out.println("dto +++++"+ dto);
-            System.out.println("requestBody +++++"+ requestBody);
+            // Validate hash from vendor
+            String secretKey = walletBalanceService.verifyCredential(authenticatedUser.getVendorCredentialId());
+            walletBalanceService.validateHash(dto, secretKey);
 
-            VendorPlayerAuthentication authenticatedUser = balanceService.verifyToken(dto.getToken());
-            BigDecimal balance = balanceService.getWalletBalanceFromGRPC(authenticatedUser);
+            // Call wallet balance operator GRPC to get the balance of the player
+            String traceId = UUID.randomUUID().toString();
+            BigDecimal balance = walletBalanceService.getWalletBalanceFromGRPC(dto, traceId, authenticatedUser);
 
             response.setError(ResponseCodes.SUCCESS);
             response.setCurrency(authenticatedUser.getCurrencyCode());
@@ -56,11 +60,14 @@ public class WalletBalanceAction {
         } catch (InvalidRequestException invalidRequestException) {
             response.setError(ResponseCodes.INVALID_REQUEST);
 
-        } catch (InvalidHashException invalidHashException) {
-            response.setError(ResponseCodes.INVALID_HASH);
-
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
+
+        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
+            response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+
+        } catch (InvalidHashException invalidHashException) {
+            response.setError(ResponseCodes.INVALID_HASH);
 
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
