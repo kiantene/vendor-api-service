@@ -1,7 +1,7 @@
 before_script:
   - export JAVA_HOME=/usr/lib/jvm/jdk-18/
 variables:
-  POINTING_BRANCH: "QA"
+  POINTING_BRANCH: "qa"
   ALI_REGISTRY: registry-intl.ap-southeast-3.aliyuncs.com/game-aggregator/ga-vendor-api-service
   DOCKER_REGISTRY: esportsking/ga-vendor-api-service
 stages:
