@@ -55,26 +55,12 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
-#logstash:
-#  address: "127.0.0.1:5000"
-#eureka:
-#  client:
-#    serviceUrl:
-#      defaultZone: http://127.0.0.1:8761/eureka/
-# Micro-services list
 grpc:
   server:
     port: 9092
   client:
     game-aggregator-operator-api-service:
-#      address: 'discovery:///game-aggregator-operator-api-service'
-      address: 'static://localhost:9093'
+      address: 'static://ga-operator-api-service:9093'
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
-
-#    application-grpc:
-#      address: 'discovery:///application-sample2'
-#      enableKeepAlive: true
-#      keepAliveWithoutCalls: true
-#      negotiationType: plaintext

@@ -21,20 +21,3 @@ springdoc:
   paths-to-match: /**
 #logging:
 #  config: classpath:logback-spring.xml
-# Micro-services list
-grpc:
-  server:
-    port: 9092
-  client:
-    game-aggregator-operator-api-service:
-#      address: 'discovery:///game-aggregator-operator-api-service'
-      address: 'static://localhost:9093'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
-
-#    application-grpc:
-#      address: 'discovery:///application-sample2'
-#      enableKeepAlive: true
-#      keepAliveWithoutCalls: true
-#      negotiationType: plaintext
