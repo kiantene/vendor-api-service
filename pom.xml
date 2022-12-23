@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.3</version>
+		<version>2.7.5</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
@@ -45,7 +45,7 @@
 			<version>2.0.1.Final</version>
 		</dependency>
 		<dependency>
-			<groupId>org.hibernate</groupId>
+			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
 			<version>6.0.13.Final</version>
 		</dependency>
@@ -66,7 +66,7 @@
 		<dependency>
 			<groupId>com.nextgen.sas</groupId>
 			<artifactId>core</artifactId>
-			<version>1.8.3</version>
+			<version>1.8.x</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.springframework.boot</groupId>
@@ -123,6 +123,11 @@
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-streams</artifactId>
 			<version>3.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.15</version>
 		</dependency>
 	</dependencies>
 
