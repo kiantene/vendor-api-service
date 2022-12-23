@@ -1,25 +1,23 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet.BetDto;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialValueReaderManager;
-import com.nextgen.gameaggregator.vendor.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,26 +34,6 @@ public class AuthenticateService {
 
     @Autowired
     private VendorPlayerAuthenticationRepository vendorPlayerAuthenticationRepository;
-
-    public <T> T queryStringToDto(String queryString, Class<T> clazz) {
-
-        log.info(queryString);
-
-        HashMap<String, Object> queryParameterMap = new HashMap<String, Object>();
-        String[] fields = queryString.split("&");
-
-        for (int i = 0; i < fields.length; ++i) {
-            String[] kv = fields[i].split("=");
-            if (2 == kv.length) {
-                queryParameterMap.put(kv[0], kv[1]);
-            }
-        }
-
-        ObjectMapper mapper = new ObjectMapper();
-        T t = mapper.convertValue(queryParameterMap, clazz);
-
-        return t;
-    }
 
     public void validateRequest(AuthenticateDto dto, Class<AuthenticateDto> clazz) throws InvalidRequestException {
         Map<String, String> validationMap = new HashMap<String, String>();
@@ -74,21 +52,12 @@ public class AuthenticateService {
         }
     }
 
-    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidHashException {
-
-        String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
-
-        MultiValueMap<String, String> map = UriComponentsBuilder.newInstance()
-                .query(modifiedQueryString)
-                .build()
-                .getQueryParams();
-
-        String checkerHash = this.generateHash(map, secretKey);
-
-        if(!hash.equals(checkerHash)){
-            throw new InvalidHashException();
+    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidSignatureException {
+        String requestData = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
+        String generatedHash = this.generateHash(requestData, secretKey);
+        if (!hash.equals(generatedHash)) {
+            throw new InvalidSignatureException();
         }
-
     }
 
     private String generateHash(MultiValueMap<String, String> params, String secret) {
@@ -97,6 +66,10 @@ public class AuthenticateService {
                 .map(key -> key + "=" + params.get(key).get(0))
                 .collect(Collectors.joining("&"));
 
+        return this.generateHash(payload, secret);
+    }
+
+    private String generateHash(String payload, String secret) {
         payload += secret;
         return DigestUtils.md5Hex(payload);
     }

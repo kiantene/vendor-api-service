@@ -3,10 +3,7 @@ package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.endround;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryRequest;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
-import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
-import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
-import com.nextgen.gameaggregator.vendor.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.vendor.exception.UnableToFindCredentialsException;
+import com.nextgen.gameaggregator.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -85,7 +82,7 @@ public class EndRoundAction {
         } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-        } catch (InvalidHashException invalidHashException) {
+        } catch (InvalidSignatureException invalidSignatureException) {
             response.setError(ResponseCodes.INVALID_HASH);
 
         } catch (Exception exception) { // any other exception encountered

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.util;
+package com.nextgen.gameaggregator.util;
 
 import org.apache.commons.lang3.StringUtils;
 

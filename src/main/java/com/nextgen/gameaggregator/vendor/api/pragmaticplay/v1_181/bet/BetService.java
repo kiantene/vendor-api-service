@@ -3,23 +3,19 @@ package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.nextgen.gameaggregator.grpc.v1.operator.betrequest.BetRequestGrpcVo;
-import com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.balance.WalletBalanceDto;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialValueReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.AgentCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialValueReaderManager;
-import com.nextgen.gameaggregator.vendor.exception.*;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetRequestGrpc;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.beanutils.BeanMap;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -27,13 +23,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant.VENDOR_CODE;
 
 @Service
 @Slf4j
@@ -100,7 +93,7 @@ public class BetService {
         }
     }
 
-    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidHashException {
+    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidSignatureException {
 
         String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
 
@@ -112,7 +105,7 @@ public class BetService {
         String checkerHash = this.generateHash(map, secretKey);
 
         if(!hash.equals(checkerHash)){
-            throw new InvalidHashException();
+            throw new InvalidSignatureException();
         }
 
     }

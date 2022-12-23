@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.exception;
+package com.nextgen.gameaggregator.exception;
 
 public class VendorApiException extends Exception {
     private String errorCode;

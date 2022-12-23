@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.util;
+package com.nextgen.gameaggregator.util;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.codec.digest.HmacAlgorithms;

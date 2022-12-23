@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
-import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
-import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
-import com.nextgen.gameaggregator.vendor.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.vendor.exception.UnableToFindCredentialsException;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
+import com.nextgen.gameaggregator.util.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -32,12 +32,11 @@ public class AuthenticateAction {
     @PostMapping(path = "authenticate")
     public AuthenticateVo authenticate(AuthenticateDto dto) {
         AuthenticateVo response = new AuthenticateVo();
-        String errorMessage = "";
 
         try {
             // region temporary solution to convert to DTO
             String requestBody = request.getReader().lines().collect(Collectors.joining());
-            dto = authenticateService.queryStringToDto(requestBody, AuthenticateDto.class);
+            dto = CommonUtils.queryStringToDto(requestBody, AuthenticateDto.class);
             log.info(dto.toString());
             // endregion
 
@@ -61,7 +60,6 @@ public class AuthenticateAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             response.setError(ResponseCodes.INVALID_REQUEST);
-            errorMessage = " || "+invalidRequestException.getMessage();
 
         } catch (AuthenticationException authenticationException) {
             response.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -69,15 +67,15 @@ public class AuthenticateAction {
         } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-        } catch (InvalidHashException invalidHashException) {
+        } catch (InvalidSignatureException invalidSignatureException) {
             response.setError(ResponseCodes.INVALID_HASH);
 
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            System.out.println("exception test+++"+exception);
+            log.error("exception test+++"+exception);
 
         } finally {
-            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError())+errorMessage);
+            response.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(response.getError()));
         }
 
         return response;

@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCreden
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorGameLanguageMapReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.writer.entity.VendorPlayerWriter;
-import com.nextgen.gameaggregator.vendor.util.NameUtils;
+import com.nextgen.gameaggregator.util.NameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.annotation.RequestScope;
 

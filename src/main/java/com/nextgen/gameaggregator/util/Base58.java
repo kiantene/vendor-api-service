@@ -1,6 +1,6 @@
-package com.nextgen.gameaggregator.vendor.util;
+package com.nextgen.gameaggregator.util;
 
-import com.nextgen.gameaggregator.vendor.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;

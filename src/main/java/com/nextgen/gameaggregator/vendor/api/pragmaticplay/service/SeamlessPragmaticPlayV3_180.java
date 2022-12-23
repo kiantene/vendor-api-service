@@ -14,10 +14,9 @@ import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBe
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryResult;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.AgentPlayer;
-import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCurrencyMapReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorGameLanguageMapReader;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorPlayerReader;
-import com.nextgen.gameaggregator.vendor.exception.VendorApiException;
+import com.nextgen.gameaggregator.exception.VendorApiException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

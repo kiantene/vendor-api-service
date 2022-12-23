@@ -5,7 +5,7 @@ import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginGrpcDto;
 import com.nextgen.gameaggregator.grpc.v1.vendor.gamelogin.GameLoginGrpcVo;
 import com.nextgen.gameaggregator.vendor.component.vendor.AbstractVendor;
 import com.nextgen.gameaggregator.vendor.component.vendor.InterfaceSeamlessVendor;
-import com.nextgen.gameaggregator.vendor.exception.VendorApiException;
+import com.nextgen.gameaggregator.exception.VendorApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

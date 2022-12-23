@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCreden
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.AgentCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialValueReaderManager;
-import com.nextgen.gameaggregator.vendor.exception.*;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetRequestGrpc;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -96,7 +96,7 @@ public class ResultService {
         }
     }
 
-    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidHashException {
+    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidSignatureException {
 
         String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
 
@@ -108,7 +108,7 @@ public class ResultService {
         String checkerHash = this.generateHash(map, secretKey);
 
         if(!hash.equals(checkerHash)){
-            throw new InvalidHashException();
+            throw new InvalidSignatureException();
         }
 
     }
