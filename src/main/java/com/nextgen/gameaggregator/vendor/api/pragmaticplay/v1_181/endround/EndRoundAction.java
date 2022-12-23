@@ -1,9 +1,12 @@
-package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet;
+package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.endround;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryRequest;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
-import com.nextgen.gameaggregator.vendor.exception.*;
+import com.nextgen.gameaggregator.vendor.exception.AuthenticationException;
+import com.nextgen.gameaggregator.vendor.exception.InvalidHashException;
+import com.nextgen.gameaggregator.vendor.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.vendor.exception.UnableToFindCredentialsException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -23,53 +26,51 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.Respo
 @RequestMapping(path = "api/v2/pragmaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 @RequestScope
-public class BetAction {
+public class EndRoundAction {
 
     @Autowired
     HttpServletRequest request;
 
     @Autowired
-    BetService betService;
+    EndRoundService endRoundService;
 
-    @PostMapping(path = "bet")
-    public BetVo betRequest(BetDto dto) {
+    @PostMapping(path = "endRound")
+    public EndRoundVo endRound(EndRoundDto dto) {
 
-        BetVo response = new BetVo();
+        EndRoundVo response = new EndRoundVo();
         String errorMessage = "";
 
         try {
             // region temporary solution to convert to DTO
             String requestBody = request.getReader().lines().collect(Collectors.joining());
-            dto = betService.queryStringToDto(requestBody, BetDto.class);
+            dto = endRoundService.queryStringToDto(requestBody, EndRoundDto.class);
             log.info(dto.toString());
             // endregion
 
             // Validate request parameters from vendor
-            betService.validateRequest(dto, BetDto.class);
-            VendorPlayerAuthentication authenticatedUser = betService.verifyToken(dto.getToken());
+            endRoundService.validateRequest(dto, EndRoundDto.class);
+            VendorPlayerAuthentication authenticatedUser = endRoundService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
-            String secretKey = betService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            betService.validateHash(dto.getHash(), secretKey, requestBody);
+            String secretKey = endRoundService.verifyCredential(authenticatedUser.getVendorCredentialId());
+            endRoundService.validateHash(dto.getHash(), secretKey, requestBody);
 
-            // Get seamless bet request Id
-            String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
+            // use the bet result round id to find the bet request info from log request
+            SeamlessBetHistoryRequest seamlessBetRequest = endRoundService.getSeamlessBetRequestId(dto);
 
-            if (seamlessBetRequestId == null){
-                // If not finding seamless bet request id, then create one
-                seamlessBetRequestId = betService.createLogSeamlessBetHistoryRequest(dto, requestBody);
+            if (seamlessBetRequest == null){
+                // if not finding bet request info, will create as "others" record for extra handling
+                endRoundService.createRawBetHistorySeamlessOthersCouchBase(requestBody, authenticatedUser.getVendorCurrencyCode());
+            } else {
+                // if found the bet request info, will create as success result record (kafka topic)
+                endRoundService.createRecordToKafkaBetHistoryTopic(seamlessBetRequest.getBetHistoryId(), authenticatedUser, requestBody);
             }
 
-            // Create kafka seamless bet history request data for data transforming
-            betService.createRecordToKafkaBetHistoryTopic(seamlessBetRequestId, authenticatedUser, requestBody);
-
+            // no matter bet request is found or not, will still proceed to send to operator
             // Call bet request operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();
-            BigDecimal balance = betService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequestId);
+            BigDecimal balance = endRoundService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequest);
 
-            response.setTransactionId(traceId.replace("-", ""));
-            response.setUsedPromo(BigDecimal.ZERO);
-            response.setCurrency(authenticatedUser.getVendorCurrencyCode());
             response.setError(ResponseCodes.SUCCESS);
             response.setCash(balance);
             response.setBonus(BigDecimal.ZERO);
@@ -86,9 +87,6 @@ public class BetAction {
 
         } catch (InvalidHashException invalidHashException) {
             response.setError(ResponseCodes.INVALID_HASH);
-
-        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
-            response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
 
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);

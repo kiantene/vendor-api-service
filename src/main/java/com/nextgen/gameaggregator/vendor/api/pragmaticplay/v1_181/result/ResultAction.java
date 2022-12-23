@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.bet;
+package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.result;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.SeamlessBetHistoryRequest;
@@ -23,52 +23,52 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.Respo
 @RequestMapping(path = "api/v2/pragmaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 @RequestScope
-public class BetAction {
+public class ResultAction {
 
     @Autowired
     HttpServletRequest request;
 
     @Autowired
-    BetService betService;
+    ResultService resultService;
 
-    @PostMapping(path = "bet")
-    public BetVo betRequest(BetDto dto) {
+    @PostMapping(path = "result")
+    public ResultVo betResult(ResultDto dto) {
 
-        BetVo response = new BetVo();
+        ResultVo response = new ResultVo();
         String errorMessage = "";
 
         try {
             // region temporary solution to convert to DTO
             String requestBody = request.getReader().lines().collect(Collectors.joining());
-            dto = betService.queryStringToDto(requestBody, BetDto.class);
+            dto = resultService.queryStringToDto(requestBody, ResultDto.class);
             log.info(dto.toString());
             // endregion
 
             // Validate request parameters from vendor
-            betService.validateRequest(dto, BetDto.class);
-            VendorPlayerAuthentication authenticatedUser = betService.verifyToken(dto.getToken());
+            resultService.validateRequest(dto, ResultDto.class);
+            VendorPlayerAuthentication authenticatedUser = resultService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
-            String secretKey = betService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            betService.validateHash(dto.getHash(), secretKey, requestBody);
+            String secretKey = resultService.verifyCredential(authenticatedUser.getVendorCredentialId());
+            resultService.validateHash(dto.getHash(), secretKey, requestBody);
 
-            // Get seamless bet request Id
-            String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
+            // use the bet result round id to find the bet request info from log request
+            SeamlessBetHistoryRequest seamlessBetRequest = resultService.getSeamlessBetRequestId(dto);
 
-            if (seamlessBetRequestId == null){
-                // If not finding seamless bet request id, then create one
-                seamlessBetRequestId = betService.createLogSeamlessBetHistoryRequest(dto, requestBody);
+            if (seamlessBetRequest == null){
+                // if not finding bet request info, will create as "others" record for extra handling
+                resultService.createRawBetHistorySeamlessOthersCouchBase(requestBody, authenticatedUser.getVendorCurrencyCode());
+            } else {
+                // if found the bet request info, will create as success result record (kafka topic)
+                resultService.createRecordToKafkaBetHistoryTopic(seamlessBetRequest.getBetHistoryId(), authenticatedUser, requestBody);
             }
 
-            // Create kafka seamless bet history request data for data transforming
-            betService.createRecordToKafkaBetHistoryTopic(seamlessBetRequestId, authenticatedUser, requestBody);
-
+            // no matter bet request is found or not, will still proceed to send to operator
             // Call bet request operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();
-            BigDecimal balance = betService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequestId);
+            BigDecimal balance = resultService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequest);
 
             response.setTransactionId(traceId.replace("-", ""));
-            response.setUsedPromo(BigDecimal.ZERO);
             response.setCurrency(authenticatedUser.getVendorCurrencyCode());
             response.setError(ResponseCodes.SUCCESS);
             response.setCash(balance);
@@ -86,9 +86,6 @@ public class BetAction {
 
         } catch (InvalidHashException invalidHashException) {
             response.setError(ResponseCodes.INVALID_HASH);
-
-        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
-            response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
 
         } catch (Exception exception) { // any other exception encountered
             response.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
