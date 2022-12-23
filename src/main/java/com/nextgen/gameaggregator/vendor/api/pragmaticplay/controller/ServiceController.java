@@ -191,6 +191,7 @@ public class ServiceController extends HttpServlet {
                 .collect(Collectors.joining("&"));
 
         payload += secret;
+        System.out.println("payload ++++ "+payload);
         return DigestUtils.md5Hex(payload);
     }
 

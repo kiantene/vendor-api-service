@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/md5.js"></script>
+<script type="text/javascript">
+
+    //your default params
+    var providerId = "PragmaticPlay";
+    var token = "1e6a464f-fbf0-4319-9ce5-6261bb77c024";
+    var gameId = "vs7monkeys";
+
+    //your default params into object in whichever sequence
+    const obj = {
+      'gameId': gameId,
+      'token': token,
+      'providerId': providerId
+    };
+
+    console.log(CryptoJS.MD5('absfasdfafsda').toString());
+
+    //this action will sort your object with asc
+    const sorted = Object.fromEntries(Object.entries(obj).sort((a, b) => a[0].localeCompare(b[0])));
+
+
+    //this action will make your object to query string
+    const queryString = Object.entries(sorted)
+      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+      .join('&');
+
+      console.log(queryString);
+
+
+    //this action will md5 your query string with testkey and generate the hash key
+    const md5QueryString = CryptoJS.MD5(queryString+'testKey').toString();
+
+    console.log(md5QueryString);
+</script>
+
+</body>
+</html>
