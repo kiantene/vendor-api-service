@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
 
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.util.VendorUtils;
+import com.nextgen.gameaggregator.vendor.api.pragmaticplay.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
@@ -24,29 +26,26 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AuthenticateAction {
     @Autowired
-    HttpServletRequest request;
-
-    @Autowired
     AuthenticateService authenticateService;
 
     @PostMapping(path = "authenticate")
-    public AuthenticateVo authenticate(AuthenticateDto dto) {
+    public ResponseVo authenticate(HttpServletRequest request) {
         AuthenticateVo response = new AuthenticateVo();
 
         try {
             // region temporary solution to convert to DTO
             String requestBody = request.getReader().lines().collect(Collectors.joining());
-            dto = CommonUtils.queryStringToDto(requestBody, AuthenticateDto.class);
+            AuthenticateDto dto = CommonUtils.queryStringToDto(requestBody, AuthenticateDto.class);
             log.info(dto.toString());
             // endregion
 
             // Validate request parameters from vendor
-            authenticateService.validateRequest(dto, AuthenticateDto.class);
+            VendorUtils.validateRequest(dto);
             VendorPlayerAuthentication authenticatedUser = authenticateService.verifyToken(dto.getToken());
 
             // Validate hash from vendor
             String secretKey = authenticateService.verifyCredential(authenticatedUser.getVendorCredentialId());
-            authenticateService.validateHash(dto.getHash(), secretKey, requestBody);
+            VendorUtils.validateHash(dto.getHash(), secretKey, requestBody);
 
             // Call bet request operator GRPC to get the balance of the player
             String traceId = UUID.randomUUID().toString();

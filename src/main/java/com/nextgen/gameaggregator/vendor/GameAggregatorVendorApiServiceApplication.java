@@ -15,8 +15,8 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @EntityScan("com.nextgen.gameaggregator.vendor.*")
 @ComponentScan(basePackages = {
 		"com.nextgen.sas",
-		"com.nextgen.gameaggregator.vendor",
-		"com.nextgen.sas.core"
+		"com.nextgen.sas.core",
+		"com.nextgen.gameaggregator.vendor"
 }, nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class GameAggregatorVendorApiServiceApplication {
 

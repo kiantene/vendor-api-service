@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
 
 import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.*;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCredentialReader;
@@ -10,17 +8,11 @@ import com.nextgen.gameaggregator.vendor.data.mariadb.reader.entity.VendorCreden
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialReaderManager;
 import com.nextgen.gameaggregator.vendor.data.mariadb.reader.manager.VendorCredentialValueReaderManager;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -34,45 +26,6 @@ public class AuthenticateService {
 
     @Autowired
     private VendorPlayerAuthenticationRepository vendorPlayerAuthenticationRepository;
-
-    public void validateRequest(AuthenticateDto dto, Class<AuthenticateDto> clazz) throws InvalidRequestException {
-        Map<String, String> validationMap = new HashMap<String, String>();
-
-        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-
-        Set<ConstraintViolation<AuthenticateDto>> violations = validator.validate(dto);
-        for (ConstraintViolation<AuthenticateDto> violation : violations) {
-            validationMap.put(violation.getPropertyPath().toString(), violation.getPropertyPath() + " " + violation.getMessage());
-        }
-
-        System.out.println("validationMap++++ "+validationMap);
-
-        if(!validationMap.isEmpty()){
-            throw new InvalidRequestException(validationMap.toString());
-        }
-    }
-
-    public void validateHash(String hash, String secretKey, String requestBody) throws InvalidSignatureException {
-        String requestData = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
-        String generatedHash = this.generateHash(requestData, secretKey);
-        if (!hash.equals(generatedHash)) {
-            throw new InvalidSignatureException();
-        }
-    }
-
-    private String generateHash(MultiValueMap<String, String> params, String secret) {
-        String payload = params.keySet().stream()
-                .sorted()
-                .map(key -> key + "=" + params.get(key).get(0))
-                .collect(Collectors.joining("&"));
-
-        return this.generateHash(payload, secret);
-    }
-
-    private String generateHash(String payload, String secret) {
-        payload += secret;
-        return DigestUtils.md5Hex(payload);
-    }
 
     public VendorPlayerAuthentication verifyToken(String token) throws AuthenticationException {
         VendorPlayerAuthentication authenticatedUser = new VendorPlayerAuthentication();

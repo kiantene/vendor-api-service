@@ -1,13 +1,11 @@
 package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_180.endround;
 
-import com.nextgen.gameaggregator.grpc.v1.operator.betresult.BetResultGrpcVo;
 import com.nextgen.gameaggregator.grpc.v1.operator.walletbalance.WalletBalanceGrpcVo;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.action.AbstractAction;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.Constant;
 import com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.constant.ConstantErrorMessage;
 import com.nextgen.gameaggregator.vendor.component.vendor.VendorAdaptor;
 import com.nextgen.gameaggregator.vendor.data.couchbase.config.entity.VendorPlayerAuthentication;
-import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorBetResultGrpc;
 import com.nextgen.gameaggregator.vendor.grpc.v1.subcriber.OperatorWalletBalanceGrpc;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
