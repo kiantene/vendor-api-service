@@ -65,7 +65,7 @@ public class AuthenticateAction {
             String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-            VendorService.validateHash(dto.getHash(), secretKey, body);
+            VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId);

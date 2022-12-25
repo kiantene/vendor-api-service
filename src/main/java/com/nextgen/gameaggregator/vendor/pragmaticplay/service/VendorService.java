@@ -15,6 +15,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -66,15 +67,38 @@ public class VendorService {
         return generateHash(payload, secret);
     }
 
+    public static String generateHash(Map<String, String> params, String secret) {
+        String payload = params.keySet().stream().sorted()
+                .map(key -> key + "=" + params.get(key))
+                .collect(Collectors.joining("&"));
+
+        return generateHash(payload, secret);
+    }
+
     public static String generateHash(String payload, String secret) {
         payload += secret;
         return DigestUtils.md5Hex(payload);
     }
 
-    public static void validateHash(String hash, String secretKey, String requestBody) throws InvalidSignatureException {
-        String requestData = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
-        String generatedHash = generateHash(requestData, secretKey);
-        log.info("Request data: " + requestData);
+    public static Map<String, String> convertQueryStringToMap(String queryString) {
+        Map<String, String> queryParameterMap = new HashMap<>();
+        String[] fields = queryString.split("&");
+
+        for (String field : fields) {
+            String[] kv = field.split("=");
+            if (kv.length == 2) queryParameterMap.put(kv[0], kv[1]);
+        }
+
+        return queryParameterMap;
+    }
+
+    public static void validateHash(String requestBody, String secretKey) throws InvalidSignatureException {
+        Map<String, String> map = convertQueryStringToMap(requestBody);
+        String hash = map.get("hash");
+        map.remove("hash");
+
+        String generatedHash = generateHash(map, secretKey);
+        log.info("Request body: " + requestBody);
         log.info("Generated hash: " + generatedHash);
         if (!hash.equals(generatedHash)) {
             throw new InvalidSignatureException();
