@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor;
+package com.nextgen.gameaggregator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,10 +12,11 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @Configuration
 @ServletComponentScan
 @SpringBootApplication
-@EntityScan("com.nextgen.gameaggregator.vendor.*")
+@EntityScan("com.nextgen.gameaggregator.*")
 @ComponentScan(basePackages = {
 		"com.nextgen.sas",
 		"com.nextgen.sas.core",
+		"com.nextgen.gameaggregator",
 		"com.nextgen.gameaggregator.vendor"
 }, nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class GameAggregatorVendorApiServiceApplication {

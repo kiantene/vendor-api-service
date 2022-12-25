@@ -25,4 +25,10 @@ public class JpaConfig {
         return DataSourceBuilder.create().build();
     }
 
+    @Bean("dataSourceMariaDefault")
+    @ConfigurationProperties(prefix = "spring.datasource.maria-default")
+    public DataSource dataSourceMariaDefault() {
+        return DataSourceBuilder.create().build();
+    }
+
 }

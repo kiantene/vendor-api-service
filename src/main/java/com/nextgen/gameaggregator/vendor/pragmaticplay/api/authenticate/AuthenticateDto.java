@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.api.pragmaticplay.v1_181.authenticate;
+package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
