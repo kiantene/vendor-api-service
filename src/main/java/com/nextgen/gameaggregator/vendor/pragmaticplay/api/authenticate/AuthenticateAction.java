@@ -2,10 +2,18 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -69,7 +77,7 @@ public class AuthenticateAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            log.error(invalidRequestException.getValidation().toString());
+            httpRequestLog.setStackTrace(invalidRequestException.getValidation().toString());
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -79,14 +87,17 @@ public class AuthenticateAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            log.error(credentialNotFoundException.getMessage());
+            httpRequestLog.setStackTrace(credentialNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            log.error(exception.getMessage());
+            httpRequestLog.setStackTrace(HttpService.getStackTrace(exception));
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
+            if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
+                httpRequestLog.setStatus(1);
+            }
             httpService.logResponse(httpRequestLog, responseVo, traceId);
         }
 

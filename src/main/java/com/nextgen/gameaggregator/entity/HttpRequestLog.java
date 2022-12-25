@@ -10,13 +10,15 @@ import javax.persistence.*;
 public class HttpRequestLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id;
     private String traceId;
     private String url;
     private String method;
     private String headers;
     private String requestBody;
     private String responseBody;
+    private String stackTrace;
+    private Integer status;
     private String requestIp;
     private Long requestTime;
 }

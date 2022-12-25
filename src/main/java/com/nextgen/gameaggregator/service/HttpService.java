@@ -34,6 +34,7 @@ public class HttpService {
             httpRequestLog.setMethod(request.getMethod());
             httpRequestLog.setHeaders(headersJson);
             httpRequestLog.setRequestBody(requestBody);
+            httpRequestLog.setStatus(0);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setRequestTime(System.nanoTime());
 
@@ -57,6 +58,16 @@ public class HttpService {
                 log.error(exception.getMessage());
             }
         }
+    }
+
+    public static String getStackTrace(Exception exception) {
+        log.error(exception.getMessage());
+        StringBuilder stackTrace = new StringBuilder();
+        StackTraceElement[] stackTraceElements = exception.getStackTrace();
+        for (StackTraceElement stackTraceElement : stackTraceElements) {
+            stackTrace.append(stackTraceElement).append("\r\n");
+        }
+        return stackTrace.toString();
     }
 
     public static <T> T convertJsonToDto(String json, Class<T> objectClass) throws JsonProcessingException {
