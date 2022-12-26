@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.entity;
 
 import lombok.Data;
-
 import javax.persistence.*;
 
 @Entity
@@ -17,7 +16,7 @@ public class HttpRequestLog {
     private String headers;
     private String requestBody;
     private String responseBody;
-    private String stackTrace;
+    private String errorMessage;
     private Integer status;
     private String requestIp;
     private Long requestTime;

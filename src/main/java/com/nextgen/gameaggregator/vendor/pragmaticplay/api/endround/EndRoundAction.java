@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -83,7 +81,7 @@ public class EndRoundAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setStackTrace(invalidRequestException.getValidation().toString());
+            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -96,7 +94,7 @@ public class EndRoundAction {
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setStackTrace(HttpService.getStackTrace(exception));
+            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));

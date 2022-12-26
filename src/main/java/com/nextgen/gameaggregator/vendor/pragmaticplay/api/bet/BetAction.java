@@ -84,7 +84,7 @@ public class BetAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setStackTrace(invalidRequestException.getValidation().toString());
+            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
@@ -100,7 +100,7 @@ public class BetAction {
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setStackTrace(HttpService.getStackTrace(exception));
+            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
