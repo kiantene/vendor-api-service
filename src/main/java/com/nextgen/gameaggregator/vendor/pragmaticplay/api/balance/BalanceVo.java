@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class WalletBalanceVo extends ResponseVo {
+public class BalanceVo extends ResponseVo {
     private String currency;    // Currency of the player
     private BigDecimal cash;    // Real balance of the player
     private BigDecimal bonus;   // Bonus balance of the player

@@ -7,7 +7,7 @@ import javax.validation.constraints.NotBlank;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WalletBalanceDto {
+public class BalanceDto {
     @NotBlank
     private String hash;
     @NotBlank

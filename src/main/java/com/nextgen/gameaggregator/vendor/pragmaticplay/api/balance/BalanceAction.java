@@ -30,7 +30,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
-public class WalletBalanceAction {
+public class BalanceAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -43,7 +43,7 @@ public class WalletBalanceAction {
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        WalletBalanceVo responseVo = new WalletBalanceVo();
+        BalanceVo responseVo = new BalanceVo();
         String traceId = UUID.randomUUID().toString();
 
         try {
@@ -51,7 +51,7 @@ public class WalletBalanceAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            WalletBalanceDto dto = HttpService.convertQueryStringToDto(body, WalletBalanceDto.class);
+            BalanceDto dto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
