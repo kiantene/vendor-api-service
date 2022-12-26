@@ -25,7 +25,7 @@ import static com.nextgen.gameaggregator.vendor.api.pragmaticplay.component.cons
 
 @RestController
 @RequestScope
-@RequestMapping(path = "api/v0/pragmaticplay/", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Constant.WEB_ACTION, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class WalletBalanceAction extends AbstractAction {
 
     @Autowired
