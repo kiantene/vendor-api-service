@@ -64,6 +64,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+			<version>3.1.4</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.nextgen.sas</groupId>
 			<artifactId>core</artifactId>
 			<version>1.8.x</version>
