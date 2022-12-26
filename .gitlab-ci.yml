@@ -60,4 +60,4 @@ deploy-ali:
     script:
       - echo "$CD_PRIVATE_KEY" > "$(pwd)/CD.pem"
       - chmod 400 "$(pwd)/CD.pem"
-      - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" root@47.254.202.80 -p 22 'docker pull $DOCKER_REGISTRY:latest && docker service update --force --image esportsking/$DOCKER_REGISTRY:latest $PORTAINER_NAME'
+      - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" root@47.254.202.80 -p 22 "docker pull $DOCKER_REGISTRY:latest && docker service update --force --image esportsking/$DOCKER_REGISTRY:latest $PORTAINER_NAME"
