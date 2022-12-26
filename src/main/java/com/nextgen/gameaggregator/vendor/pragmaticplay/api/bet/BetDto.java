@@ -6,6 +6,7 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,7 +31,7 @@ public class BetDto {
     // Amount of the bet. Minimum is 0.00.
     @Positive
     @NotNull
-    private String amount;
+    private BigDecimal amount;
 
     // Unique reference of this transaction.
     @NotBlank

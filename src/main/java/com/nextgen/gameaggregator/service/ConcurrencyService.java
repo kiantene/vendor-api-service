@@ -9,6 +9,6 @@ import java.util.concurrent.Executors;
 @Service
 @Slf4j
 public class ConcurrencyService {
-    private static final Integer THREAD_SIZE = 6;
+    private static final Integer THREAD_SIZE = 8;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
 }

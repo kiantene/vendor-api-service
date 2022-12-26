@@ -1,19 +1,15 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
-import com.nextgen.gameaggregator.service.ConcurrencyService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.operator.wallet.bet.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -37,9 +33,13 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private BetService betService;
+    @Autowired
+    private WalletBetAction walletBetAction;
+    @Autowired
+    private EventDispatcher eventDispatcher;
 
     @PostMapping(path = Endpoints.BET)
-    public BetVo betRequest(HttpServletRequest request) {
+    public ResponseVo betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         BetVo responseVo = new BetVo();
         String traceId = UUID.randomUUID().toString();
@@ -77,9 +77,30 @@ public class BetAction {
             // Call bet request operator GRPC to get the balance of the player
 //            BigDecimal balance = betService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequestId);
 
+            String currencyCode = "CNY";
+
+            // Prepare data to be sent to Operator
+            WalletBetDto walletBetDto = new WalletBetDto();
+            walletBetDto.setTraceId(traceId);
+            walletBetDto.setUsername(dto.getUserId()); // TODO: to update to the correct value
+            walletBetDto.setTransactionId(traceId);
+            walletBetDto.setExternalTransactionId(dto.getReference());
+            walletBetDto.setAmount(dto.getAmount());
+            walletBetDto.setCurrency(currencyCode); // TODO: to update to the correct value
+            walletBetDto.setToken(""); // TODO: to update to the correct value
+            walletBetDto.setGameId(dto.getGameId()); // TODO: to update to the correct value
+            walletBetDto.setRoundId(dto.getRoundId());
+            walletBetDto.setTimestamp(dto.getTimestamp());
+
+            log.info(walletBetDto.toString());
+            OperatorResponseVo<WalletBetData> operatorResponseVo = walletBetAction.call(walletBetDto);
+
+            // Emit event for additional asynchronous processing
+            eventDispatcher.emit(getClass(), body);
+
             responseVo.setTransactionId(traceId.replace("-", ""));
-            responseVo.setCurrency("CNY"); // TODO: return vendor's currency code
-            responseVo.setCash(new BigDecimal("1000"));
+            responseVo.setCurrency(currencyCode);
+            responseVo.setCash(operatorResponseVo.getData().getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
