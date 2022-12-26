@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.service.ConcurrencyService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -107,7 +108,7 @@ public class BetAction {
             if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
                 httpRequestLog.setStatus(1);
             }
-            httpService.logResponse(httpRequestLog, responseVo, traceId);
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
         return responseVo;

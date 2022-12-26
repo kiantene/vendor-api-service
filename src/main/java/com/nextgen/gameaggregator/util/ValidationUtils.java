@@ -6,6 +6,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -16,11 +17,16 @@ public class ValidationUtils {
             Validator validator = factory.getValidator();
 
             Set<ConstraintViolation<T>> violations = validator.validate(requestObject);
+            Map<String, String> validation = new HashMap<>();
 
-            Map<String, String> validation = violations.stream()
-                    .collect(Collectors.toMap(k -> k.getPropertyPath().toString(), v -> "Invalid value."));
+            violations.forEach(v -> {
+                String fieldName = v.getPropertyPath().toString();
+                if (!validation.containsKey(fieldName)) {
+                    validation.put(fieldName, "Invalid value.");
+                }
+            });
 
-            if (!validator.validate(requestObject).isEmpty()) { // Missing/Invalid request parameters
+            if (!validation.isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidRequestException(validation);
             }
         }

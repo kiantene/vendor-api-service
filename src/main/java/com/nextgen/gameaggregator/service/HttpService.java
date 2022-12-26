@@ -61,11 +61,13 @@ public class HttpService {
     }
 
     public static String getStackTrace(Exception exception) {
+        final String NEWLINE = "\r\n";
         log.error(exception.getMessage());
         StringBuilder stackTrace = new StringBuilder();
+        stackTrace.append(exception.getMessage()).append(NEWLINE+NEWLINE);
         StackTraceElement[] stackTraceElements = exception.getStackTrace();
         for (StackTraceElement stackTraceElement : stackTraceElements) {
-            stackTrace.append(stackTraceElement).append("\r\n");
+            stackTrace.append(stackTraceElement).append(NEWLINE);
         }
         return stackTrace.toString();
     }

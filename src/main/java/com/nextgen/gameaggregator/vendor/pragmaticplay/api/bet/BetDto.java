@@ -28,7 +28,8 @@ public class BetDto {
     private String roundId;
 
     // Amount of the bet. Minimum is 0.00.
-    @NotBlank
+    @Positive
+    @NotNull
     private String amount;
 
     // Unique reference of this transaction.

@@ -90,7 +90,7 @@ public class AuthenticateAction {
             if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
                 httpRequestLog.setStatus(1);
             }
-            httpService.logResponse(httpRequestLog, responseVo, traceId);
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
         return responseVo;
