@@ -36,7 +36,7 @@ public class HttpService {
             httpRequestLog.setRequestBody(requestBody);
             httpRequestLog.setStatus(0);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
-            httpRequestLog.setRequestTime(System.nanoTime());
+            httpRequestLog.setRequestTime(System.currentTimeMillis());
 
             httpRequestLogRepository.save(httpRequestLog);
         } catch (Exception exception) {
