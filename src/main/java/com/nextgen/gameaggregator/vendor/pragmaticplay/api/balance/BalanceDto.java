@@ -11,9 +11,9 @@ public class BalanceDto {
     @NotBlank
     private String hash;
     @NotBlank
-    private String token;
-    @NotBlank
     private String providerId;
     @NotBlank
     private String userId;
+
+    private String token;
 }

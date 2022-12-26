@@ -2,10 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -45,6 +43,8 @@ public class BalanceAction {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         BalanceVo responseVo = new BalanceVo();
         String traceId = UUID.randomUUID().toString();
+        Integer vendorLineId;
+        String currencyCode;
 
         try {
             // Retrieve request body in original string format
@@ -59,10 +59,18 @@ public class BalanceAction {
             // 2. Verify session token
             // Need to retrieve line credentials from game session in order to validate hash
             // If Token has been tampered, then AuthenticationException will be thrown
-            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            if (dto.getToken() != null) {
+                GameSession session = gameSessionService.verifyToken(dto.getToken());
+                vendorLineId = session.getVendorLineId();
+                currencyCode = session.getCurrencyCode();
+            } else { // no token provided, proceed to fetch by username
+                VendorPlayer vendorPlayer = gameSessionService.findVendorPlayerByUsername(dto.getUserId());
+                vendorLineId = vendorPlayer.getVendorLineId();
+                currencyCode = gameSessionService.getPlayerCurrencyCode(vendorPlayer.getAgentPlayerId());
+            }
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
@@ -70,7 +78,7 @@ public class BalanceAction {
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId);
 
-            responseVo.setCurrency(session.getCurrencyCode()); // TODO: vendor currency code
+            responseVo.setCurrency(currencyCode); // TODO: vendor currency code
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 

@@ -20,7 +20,7 @@ public class ValidationUtils {
             Map<String, String> validation = violations.stream()
                     .collect(Collectors.toMap(k -> k.getPropertyPath().toString(), v -> "Invalid value."));
 
-            if (!validator.validate(requestObject).isEmpty()) { // Missing request parameters
+            if (!validator.validate(requestObject).isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidRequestException(validation);
             }
         }

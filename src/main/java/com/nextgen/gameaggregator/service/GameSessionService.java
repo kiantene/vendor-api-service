@@ -1,9 +1,16 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.Agent;
+import com.nextgen.gameaggregator.entity.AgentPlayer;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 //import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
+import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.AgentRepository;
 import com.nextgen.gameaggregator.repository.GameSessionRepository;
+import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,6 +22,12 @@ import java.util.Optional;
 public class GameSessionService {
     @Autowired
     private GameSessionRepository gameSessionRepository;
+    @Autowired
+    private VendorPlayerRepository vendorPlayerRepository;
+    @Autowired
+    private AgentPlayerRepository agentPlayerRepository;
+    @Autowired
+    private AgentRepository agentRepository;
 
     public GameSession verifyToken(String token) throws AuthenticationException {
         GameSession session = gameSessionRepository.findByToken(token);
@@ -30,4 +43,22 @@ public class GameSessionService {
 //
 //        gameSessionRepository.save(gameSession);
 //    }
+
+    public VendorPlayer findVendorPlayerByUsername(String username) throws InvalidPlayerException {
+        VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(username);
+        Optional.ofNullable(vendorPlayer).orElseThrow(InvalidPlayerException::new);
+
+        return vendorPlayer;
+    }
+
+    public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {
+        // TODO: require optimisation
+        Optional<AgentPlayer> agentPlayer = agentPlayerRepository.findById(agentPlayerId);
+        agentPlayer.orElseThrow(InvalidPlayerException::new);
+
+        Optional<Agent> agent = agentRepository.findById(agentPlayer.get().getAgentId());
+        agent.orElseThrow(InvalidPlayerException::new);
+
+        return agent.get().getCurrency().getCode();
+    }
 }

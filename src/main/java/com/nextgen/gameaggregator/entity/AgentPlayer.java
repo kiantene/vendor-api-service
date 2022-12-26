@@ -1,0 +1,21 @@
+package com.nextgen.gameaggregator.entity;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
+import javax.persistence.*;
+
+@Entity
+@Table(name = "agent_players")
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+public class AgentPlayer extends BaseEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private Integer agentId;
+    private String username;
+    private Integer status;
+}
