@@ -54,13 +54,13 @@ public class BetAction {
             ValidationUtils.validateRequest(dto);
 
             // 2. Verify session token
-            GameSession session = gameSessionService.verifyToken(dto.getToken());
+//            GameSession session = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+//            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
+//            VendorService.validateHash(body, secretKey);
 
 //            // Get seamless bet request Id
 //            String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
@@ -77,7 +77,7 @@ public class BetAction {
 //            BigDecimal balance = betService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequestId);
 
             responseVo.setTransactionId(traceId.replace("-", ""));
-            responseVo.setCurrency(session.getCurrencyCode()); // TODO: return vendor's currency code
+            responseVo.setCurrency("CNY"); // TODO: return vendor's currency code
             responseVo.setCash(new BigDecimal("1000"));
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
@@ -86,14 +86,14 @@ public class BetAction {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
 
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+//        } catch (AuthenticationException authenticationException) {
+//            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
 //        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-        } catch (InvalidSignatureException invalidHashException) {
-            responseVo.setError(ResponseCodes.INVALID_HASH);
+//        } catch (InvalidSignatureException invalidHashException) {
+//            responseVo.setError(ResponseCodes.INVALID_HASH);
 
 //        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);

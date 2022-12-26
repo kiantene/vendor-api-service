@@ -51,6 +51,6 @@ public class ResultDto {
     private String roundDetails;
 
     // Token of the player from Authenticate response.
-    @NotBlank
+//    @NotBlank
     private String token;
 }
