@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.BufferedReader;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,14 +31,20 @@ public class HttpService {
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
-            String requestBody = request.getReader().lines().collect(Collectors.joining("\n"));
 
-            log.info(requestBody);
+            BufferedReader reader = request.getReader();
+            StringBuilder requestBody = new StringBuilder();
+
+            int value;
+            while((value = reader.read()) != -1) {
+                requestBody.append((char) value);
+            }
+            log.info(requestBody.toString());
 
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
             httpRequestLog.setHeaders(headersJson);
-            httpRequestLog.setRequestBody(requestBody);
+            httpRequestLog.setRequestBody(requestBody.toString());
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setStartTime(System.currentTimeMillis());
