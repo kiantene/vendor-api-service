@@ -59,15 +59,9 @@ public class BalanceAction {
             // 2. Verify session token
             // Need to retrieve line credentials from game session in order to validate hash
             // If Token has been tampered, then AuthenticationException will be thrown
-            if (dto.getToken() != null) {
-                GameSession session = gameSessionService.verifyToken(dto.getToken());
-                vendorLineId = session.getVendorLineId();
-                currencyCode = session.getCurrencyCode();
-            } else { // no token provided, proceed to fetch by username
-                VendorPlayer vendorPlayer = gameSessionService.findVendorPlayerByUsername(dto.getUserId());
-                vendorLineId = vendorPlayer.getVendorLineId();
-                currencyCode = gameSessionService.getPlayerCurrencyCode(vendorPlayer.getAgentPlayerId());
-            }
+            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            vendorLineId = session.getVendorLineId();
+            currencyCode = session.getCurrencyCode();
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
             String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
@@ -76,10 +70,10 @@ public class BalanceAction {
             VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId);
+            BigDecimal balance = walletService.getBalance(traceId, session);
 
             responseVo.setCurrency(currencyCode); // TODO: vendor currency code
-            responseVo.setCash(balance);
+            responseVo.setCash(BigDecimal.valueOf(1000));
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
