@@ -1,13 +1,16 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.operator.wallet.bet.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import com.nextgen.gameaggregator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -55,13 +58,13 @@ public class BetAction {
             ValidationUtils.validateRequest(dto);
 
             // 2. Verify session token
-//            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            GameSession session = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-//            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-//            VendorService.validateHash(body, secretKey);
+            VendorService.validateHash(body, secretKey);
 
 //            // Get seamless bet request Id
 //            String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);

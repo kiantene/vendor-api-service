@@ -54,13 +54,13 @@ public class ResultAction {
             ValidationUtils.validateRequest(dto);
 
             // 2. Verify session token
-//            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            GameSession session = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-//            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-//            VendorService.validateHash(body, secretKey);
+            VendorService.validateHash(body, secretKey);
 
             // use the bet result round id to find the bet request info from log request
 //            SeamlessBetHistoryRequest seamlessBetRequest = resultService.getSeamlessBetRequestId(dto);

@@ -72,6 +72,7 @@ public class AuthenticateAction {
             responseVo.setCurrency(session.getCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
+            responseVo.setToken(session.getToken());
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);

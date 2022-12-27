@@ -15,4 +15,5 @@ public class AuthenticateVo extends ResponseVo {
     private String currency;    // Currency of the player
     private BigDecimal cash;    // Real balance of the player
     private BigDecimal bonus;   // Bonus balance of the player
+    private String token;       // Token/session of the player
 }
