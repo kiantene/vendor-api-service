@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.event.EventDispatcher;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.wallet.bet.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -111,14 +111,14 @@ public class BetAction {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
 
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
 //        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-//        } catch (InvalidSignatureException invalidHashException) {
-//            responseVo.setError(ResponseCodes.INVALID_HASH);
+        } catch (InvalidSignatureException invalidHashException) {
+            responseVo.setError(ResponseCodes.INVALID_HASH);
 
 //        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);

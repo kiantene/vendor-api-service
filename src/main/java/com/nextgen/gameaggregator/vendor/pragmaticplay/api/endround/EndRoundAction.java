@@ -83,14 +83,14 @@ public class EndRoundAction {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
 
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
 //        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setError(ResponseCodes.INVALID_HASH);
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setError(ResponseCodes.INVALID_HASH);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);

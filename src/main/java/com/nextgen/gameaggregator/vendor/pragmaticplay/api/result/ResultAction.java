@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
@@ -86,14 +84,14 @@ public class ResultAction {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
             httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
 
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
 //        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setError(ResponseCodes.INVALID_HASH);
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setError(ResponseCodes.INVALID_HASH);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
