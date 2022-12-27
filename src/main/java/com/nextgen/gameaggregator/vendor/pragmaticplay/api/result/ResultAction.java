@@ -102,6 +102,7 @@ public class ResultAction {
             if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
+            httpRequestLog.setEndTime(System.currentTimeMillis());
             ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 

@@ -61,11 +61,12 @@ public class HttpService {
         if (requestLog != null) {
             try {
                 String responseBody = new ObjectMapper().writeValueAsString(responseVo);
-                Long endTime = System.currentTimeMillis();
                 requestLog.setResponseBody(responseBody);
                 requestLog.setTraceId(traceId);
-                requestLog.setEndTime(endTime);
-                requestLog.setTimeTaken(endTime - requestLog.getStartTime());
+                if (requestLog.getEndTime() == null) {
+                    requestLog.setEndTime(System.currentTimeMillis());
+                }
+                requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                 requestLog.setStatus(COMPLETED);
 
                 httpRequestLogRepository.save(requestLog);

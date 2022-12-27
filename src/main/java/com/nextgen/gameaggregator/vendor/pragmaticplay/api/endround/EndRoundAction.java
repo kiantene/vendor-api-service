@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.ConcurrencyService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -101,7 +102,8 @@ public class EndRoundAction {
             if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
-            httpService.logResponse(httpRequestLog, responseVo, traceId);
+            httpRequestLog.setEndTime(System.currentTimeMillis());
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
         return responseVo;
