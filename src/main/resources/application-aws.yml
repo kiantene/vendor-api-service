@@ -2,7 +2,7 @@ spring:
   datasource:
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
-      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_qa?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
       username: ga_admin
       password: Asdf1234-
     maria-reader:
@@ -43,14 +43,15 @@ spring:
       sasl:
         mechanism: PLAIN
         jaas:
-          config: org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
+          config:
+            org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
             password='J6eK7L9IemczU6LfsFXoHmxq1Gq4mfIBmMK0Y/EOnfIIjFUMBfA5kerKR26KZdye';
       acks: all
       bootstrap:
         servers: pkc-817wq.ap-east-1.aws.confluent.cloud:9092
       session:
         timeout:
-          ms: '45000'
+          ms: "45000"
 logging:
   level:
     org:
@@ -60,10 +61,13 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
+#logstash:
+#  address: "127.0.0.1:5000"
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://eureka:8761/eureka/
+      defaultZone: http://alb-1560919621.ap-east-1.elb.amazonaws.com:8761/eureka/
+# Micro-services list
 grpc:
   server:
     port: 9092

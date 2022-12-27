@@ -43,14 +43,15 @@ spring:
       sasl:
         mechanism: PLAIN
         jaas:
-          config: org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
+          config:
+            org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
             password='J6eK7L9IemczU6LfsFXoHmxq1Gq4mfIBmMK0Y/EOnfIIjFUMBfA5kerKR26KZdye';
       acks: all
       bootstrap:
         servers: pkc-817wq.ap-east-1.aws.confluent.cloud:9092
       session:
         timeout:
-          ms: '45000'
+          ms: "45000"
 logging:
   level:
     org:
@@ -62,24 +63,17 @@ logging:
               BasicBinder: TRACE
 #logstash:
 #  address: "127.0.0.1:5000"
-#eureka:
-#  client:
-#    serviceUrl:
-#      defaultZone: http://127.0.0.1:8761/eureka/
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://127.0.0.1:8761/eureka/
 # Micro-services list
 grpc:
   server:
     port: 9092
   client:
     game-aggregator-operator-api-service:
-#      address: 'discovery:///game-aggregator-operator-api-service'
-      address: 'static://localhost:9093'
+      address: "discovery:///operator-api"
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
-
-#    application-grpc:
-#      address: 'discovery:///application-sample2'
-#      enableKeepAlive: true
-#      keepAliveWithoutCalls: true
-#      negotiationType: plaintext
