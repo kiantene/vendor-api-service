@@ -63,17 +63,14 @@ logging:
               BasicBinder: TRACE
 #logstash:
 #  address: "127.0.0.1:5000"
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://127.0.0.1:8761/eureka/
+
 # Micro-services list
 grpc:
   server:
     port: 9092
   client:
     game-aggregator-operator-api-service:
-      address: "discovery:///operator-api"
+      address: 'static://localhost:9093'
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
