@@ -2,12 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -43,8 +39,6 @@ public class BalanceAction {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         BalanceVo responseVo = new BalanceVo();
         String traceId = UUID.randomUUID().toString();
-        Integer vendorLineId;
-        String currencyCode;
 
         try {
             // Retrieve request body in original string format
@@ -60,19 +54,17 @@ public class BalanceAction {
             // Need to retrieve line credentials from game session in order to validate hash
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession session = gameSessionService.verifyToken(dto.getToken());
-            vendorLineId = session.getVendorLineId();
-            currencyCode = session.getCurrencyCode();
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, session);
+            BigDecimal balance = walletService.getBalance(session);
 
-            responseVo.setCurrency(currencyCode); // TODO: vendor currency code
+            responseVo.setCurrency(session.getCurrencyCode()); // TODO: retrieve vendor currency code mapping
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
@@ -103,7 +95,8 @@ public class BalanceAction {
             if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
-            httpService.logResponse(httpRequestLog, responseVo, traceId);
+            httpRequestLog.setEndTime(System.currentTimeMillis());
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
         return responseVo;
