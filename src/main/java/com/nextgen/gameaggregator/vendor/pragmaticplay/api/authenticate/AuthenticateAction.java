@@ -63,14 +63,14 @@ public class AuthenticateAction {
             VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId);
+            //BigDecimal balance = walletService.getBalance(traceId);
 
             // Emit event for additional asynchronous processing
             eventDispatcher.emit(getClass(), body);
 
             responseVo.setUserId(session.getVendorPlayerUsername());
             responseVo.setCurrency(session.getCurrencyCode());
-            responseVo.setCash(balance);
+            responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setToken(session.getToken());
 

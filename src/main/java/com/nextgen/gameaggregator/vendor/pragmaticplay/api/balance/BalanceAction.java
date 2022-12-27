@@ -73,7 +73,7 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, session);
 
             responseVo.setCurrency(currencyCode); // TODO: vendor currency code
-            responseVo.setCash(BigDecimal.valueOf(1000));
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -89,6 +89,10 @@ public class BalanceAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpRequestLog.setErrorMessage(credentialNotFoundException.getMessage());
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
+            httpRequestLog.setErrorMessage(invalidOperatorResponseException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
