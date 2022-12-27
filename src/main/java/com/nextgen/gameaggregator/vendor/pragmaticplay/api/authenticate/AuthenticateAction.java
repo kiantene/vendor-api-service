@@ -95,7 +95,7 @@ public class AuthenticateAction {
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
             if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
-                httpRequestLog.setStatus(1);
+                httpRequestLog.setStatus(HttpService.ERROR);
             }
             ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }

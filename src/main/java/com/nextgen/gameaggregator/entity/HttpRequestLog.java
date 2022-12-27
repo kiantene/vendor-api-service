@@ -19,5 +19,7 @@ public class HttpRequestLog {
     private String errorMessage;
     private Integer status;
     private String requestIp;
-    private Long requestTime;
+    private Long startTime;
+    private Long endTime;
+    private Long timeTaken;
 }

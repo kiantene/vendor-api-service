@@ -17,6 +17,10 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class HttpService {
+    public static final Integer PROCESSING = 1;
+    public static final Integer COMPLETED = 2;
+    public static final Integer ERROR = -1;
+
     @Autowired
     private HttpRequestLogRepository httpRequestLogRepository;
 
@@ -34,9 +38,9 @@ public class HttpService {
             httpRequestLog.setMethod(request.getMethod());
             httpRequestLog.setHeaders(headersJson);
             httpRequestLog.setRequestBody(requestBody);
-            httpRequestLog.setStatus(0);
+            httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
-            httpRequestLog.setRequestTime(System.currentTimeMillis());
+            httpRequestLog.setStartTime(System.currentTimeMillis());
 
             httpRequestLogRepository.save(httpRequestLog);
         } catch (Exception exception) {
@@ -50,8 +54,12 @@ public class HttpService {
         if (requestLog != null) {
             try {
                 String responseBody = new ObjectMapper().writeValueAsString(responseVo);
+                Long endTime = System.currentTimeMillis();
                 requestLog.setResponseBody(responseBody);
                 requestLog.setTraceId(traceId);
+                requestLog.setEndTime(endTime);
+                requestLog.setTimeTaken(endTime - requestLog.getStartTime());
+                requestLog.setStatus(COMPLETED);
 
                 httpRequestLogRepository.save(requestLog);
             } catch (Exception exception) {
