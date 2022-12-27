@@ -60,6 +60,10 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://127.0.0.1:8761/eureka/
 grpc:
   server:
     port: 9092

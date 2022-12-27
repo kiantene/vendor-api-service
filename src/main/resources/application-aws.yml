@@ -73,7 +73,7 @@ grpc:
     port: 9092
   client:
     game-aggregator-operator-api-service:
-      address: "discovery:///game-aggregator-operator-api-service"
+      address: "discovery:///operator-api"
       enableKeepAlive: true
       keepAliveWithoutCalls: true
       negotiationType: plaintext
