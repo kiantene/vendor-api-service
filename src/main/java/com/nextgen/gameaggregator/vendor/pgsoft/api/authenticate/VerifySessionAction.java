@@ -74,7 +74,6 @@ public class VerifySessionAction {
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
-
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
@@ -86,7 +85,7 @@ public class VerifySessionAction {
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
 
         } finally {
-            if (!parentResponseVo.getError().equals(null)) {
+            if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
             httpRequestLog.setEndTime(System.currentTimeMillis());

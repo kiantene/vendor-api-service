@@ -17,3 +17,5 @@ public class VerifySessionDto extends CommonDto {
     private Integer gameId;
 
 }
+
+
