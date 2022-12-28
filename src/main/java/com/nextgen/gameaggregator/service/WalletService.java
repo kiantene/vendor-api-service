@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceData;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
-import com.nextgen.gameaggregator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
+import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,17 +29,15 @@ public class WalletService {
         String traceId = UUID.randomUUID().toString();
         Integer agentId = gameSession.getAgentId();
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String signature = "";
 
-        //TODO WAYS TO GET VENDOR CODE
-        WalletBalanceDto walletBalanceDto = new WalletBalanceDto(
-                gameSession.getAgentPlayerUsername(),
-                traceId,
-                Long.parseLong(gameSession.getAgentId().toString()),
-                "PP",
-                gameSession.getCurrencyCode()
-        );
+        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+        walletBalanceDto.setTraceId(traceId);
+        walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
+        walletBalanceDto.setToken(gameSession.getToken());
 
-        OperatorResponseVo<WalletBalanceData> responseVo = walletBalanceAction.call(callbackUrl, walletBalanceDto);
+        OperatorResponseVo<WalletBalanceData> responseVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
 
 //        String responses;
 //        responses = this.callRestApiService(walletBalanceDto, webClient);

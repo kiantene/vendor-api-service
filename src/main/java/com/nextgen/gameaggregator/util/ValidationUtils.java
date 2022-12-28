@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.util;
 
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 
 import javax.validation.ConstraintViolation;
@@ -9,7 +10,6 @@ import javax.validation.ValidatorFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ValidationUtils {
     public static <T> void validateRequest(T requestObject) throws InvalidRequestException {
@@ -29,6 +29,22 @@ public class ValidationUtils {
             if (!validation.isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidRequestException(validation);
             }
+        }
+    }
+
+    public static void validateVendorUsername(String username) throws InvalidPlayerException {
+        // Max length is based on database type length
+        final int min = 3;
+        final int max = 100;
+
+        if (username.length() < min || username.length() > max) {
+            throw new InvalidPlayerException();
+        }
+    }
+
+    public static void validateEquals(String expected, String actual) throws InvalidRequestException {
+        if (!expected.equals(actual)) {
+            throw new InvalidRequestException();
         }
     }
 }

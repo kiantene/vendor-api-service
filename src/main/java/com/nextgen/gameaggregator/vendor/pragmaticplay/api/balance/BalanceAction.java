@@ -49,11 +49,17 @@ public class BalanceAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
+            ValidationUtils.validateVendorUsername(dto.getUserId());
+            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
             // Need to retrieve line credentials from game session in order to validate hash
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession session = gameSessionService.verifyToken(dto.getToken());
+            // Throw exception if received username differs from game session
+            if (!session.getVendorPlayerUsername().equals(dto.getUserId())) {
+                throw new InvalidPlayerException();
+            }
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
             String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
@@ -70,7 +76,12 @@ public class BalanceAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
