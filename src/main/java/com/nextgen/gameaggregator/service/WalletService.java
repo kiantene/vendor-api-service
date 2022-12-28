@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceData;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetData;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.util.UUID;
 
 @Service
@@ -24,6 +24,8 @@ public class WalletService {
     private AgentApiCredentialService agentApiCredentialService;
     @Autowired
     private WalletBalanceAction walletBalanceAction;
+    @Autowired
+    private WalletBetAction walletBetAction;
 
     public BigDecimal getBalance(GameSession gameSession) throws InvalidOperatorResponseException {
         String traceId = UUID.randomUUID().toString();
@@ -57,4 +59,15 @@ public class WalletService {
 //        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 //        this.walletBalanceVo = new Gson().fromJson(response, WalletBalanceVo.class);
 //    }
+
+    public BigDecimal doBet(GameSession gameSession, WalletBetDto dto) {
+        String traceId = UUID.randomUUID().toString();
+        Integer agentId = gameSession.getAgentId();
+        String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String signature = "";
+
+        OperatorResponseVo<WalletBetData> responseVo = walletBetAction.call(callbackUrl, signature, dto);
+
+        return responseVo.getData().getBalance();
+    }
 }

@@ -55,22 +55,22 @@ public class BalanceAction {
             // 2. Verify session token
             // Need to retrieve line credentials from game session in order to validate hash
             // If Token has been tampered, then AuthenticationException will be thrown
-            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
             // Throw exception if received username differs from game session
-            if (!session.getVendorPlayerUsername().equals(dto.getUserId())) {
+            if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
                 throw new InvalidPlayerException();
             }
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(session);
+            BigDecimal balance = walletService.getBalance(gameSession);
 
-            responseVo.setCurrency(session.getCurrencyCode()); // TODO: retrieve vendor currency code mapping
+            responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: retrieve vendor currency code mapping
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
