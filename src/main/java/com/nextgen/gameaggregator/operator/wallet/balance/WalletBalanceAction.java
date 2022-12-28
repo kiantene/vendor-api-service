@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
+import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -14,13 +15,12 @@ import java.time.Duration;
 @Service
 @Slf4j
 public class WalletBalanceAction {
-    private static final String ENDPOINT = "/wallet/balance/";
     public OperatorResponseVo<WalletBalanceData> call(String callbackUrl, WalletBalanceDto dto) {
         OperatorResponseVo<WalletBalanceData> responseVo = new OperatorResponseVo<>();
 
         WebClient webClient = WebClient.create(callbackUrl);
-        String data = webClient.post()
-                .uri(ENDPOINT)
+        WalletBalanceVo data = webClient.post()
+                .uri(Endpoints.WALLET_BALANCE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))
@@ -34,13 +34,13 @@ public class WalletBalanceAction {
                                 // throw original error
                                 .then(response.createException())
                 )
-                .bodyToMono(String.class)
+                .bodyToMono(WalletBalanceVo.class)
                 .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
                 .block();
 
-        log.info(data);
+        log.info(data.toString());
         WalletBalanceData walletBetData = new WalletBalanceData();
-        walletBetData.setBalance(new BigDecimal("1000"));
+        walletBetData.setBalance(data.getResponse().getData().getBalance());
 
         responseVo.setData(walletBetData);
 

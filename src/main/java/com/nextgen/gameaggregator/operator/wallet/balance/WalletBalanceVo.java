@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.grpc.constant.ConstantErrorMessage;
 import lombok.Data;
 
 import javax.validation.constraints.Digits;
@@ -21,29 +20,29 @@ public class WalletBalanceVo {
         @lombok.Data
         public static class Data {
 
-            @NotBlank(message = "playerUsername" + ConstantErrorMessage.NOT_BLANK)
+            @NotBlank
             String playerUsername;
-            @NotNull(message = "balance" + ConstantErrorMessage.NOT_NULL)
-            @Digits(integer = 12, fraction = 4, message = "balance" + ConstantErrorMessage.DIGITS_12_4)
+            @NotNull
+            @Digits(integer = 12, fraction = 4, message = "balance")
             BigDecimal balance = BigDecimal.ZERO;
-            @NotBlank(message = "currency" + ConstantErrorMessage.NOT_BLANK)
-            @Size(min = 3, max = 3, message = "currency" + ConstantErrorMessage.SIZE_MIN_MAX + " 3 and 3")
+            @NotBlank
+            @Size(min = 3, max = 3)
             String currency;
         }
 
         Data data;
     }
 
-
-    @NotNull(message = "status" + ConstantErrorMessage.NOT_NULL)
+    @NotNull
     boolean status;
-    @NotBlank(message = "traceId" + ConstantErrorMessage.NOT_BLANK)
-    @Size(min = 36, max = 36, message = "traceId" + ConstantErrorMessage.SIZE_MIN_MAX + " 36 and 36")
+
+    @NotBlank
+    @Size
     String traceId;
 
-    @NotNull(message = "errorMessage" + ConstantErrorMessage.NOT_NULL)
+    @NotNull
     String errorMessage;
 
-    @NotNull(message = "response" + ConstantErrorMessage.NOT_NULL)
+    @NotNull
     Response response;
 }
