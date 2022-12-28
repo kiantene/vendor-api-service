@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AgentApiCredentialRepository extends JpaRepository<AgentApiCredential, Integer> {
     AgentApiCredential findByApiKey(String apiKey);
+    AgentApiCredential findByAgentIdAndStatus(Integer agentId, Integer status);
 }

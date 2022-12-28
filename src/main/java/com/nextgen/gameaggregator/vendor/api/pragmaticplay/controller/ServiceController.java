@@ -168,6 +168,7 @@ public class ServiceController extends HttpServlet {
     public JsonNode generateHash(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 
         String requestBody = request.getReader().lines().collect(Collectors.joining());
+        System.out.println("requestBody ++++" + requestBody);
         //String modifiedQueryString = requestBody.replaceAll("(^|&)hash=.*?(&|$)", "$1$2");
 
         MultiValueMap<String, String> map = UriComponentsBuilder.newInstance()
