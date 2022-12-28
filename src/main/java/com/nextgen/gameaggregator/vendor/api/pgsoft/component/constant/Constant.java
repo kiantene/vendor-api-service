@@ -4,7 +4,7 @@ public class Constant {
     public static final String VENDOR_CODE = "PG";
 
     public static final String API_VERSION = "v1";
-    public static final String WEB_ACTION = "api/" + API_VERSION + "/pgsoft/";
+    public static final String WEB_ACTION = "old/api/" + API_VERSION + "/pgsoft/";
 
     //* Callback Endpoints
     public static final String ACTION_AUTHENTICATE = "VerifySession";

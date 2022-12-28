@@ -1,0 +1,85 @@
+package com.nextgen.gameaggregator.vendor.pgsoft.constant;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class ResponseCodes {
+
+    public static final Integer INVALID_REQUEST = 1034;
+    public static final Integer OPERATION_FAILED = 1035;
+    public static final Integer INTERNAL_SERVER_ERROR = 1200;
+    public static final Integer INVALID_OPERATOR = 1204;
+    public static final Integer INVALID_PLAYER_SESSION_1300 = 1300;
+    public static final Integer PLAYER_SESSION_TOKEN_IS_EMPTY = 1301;
+    public static final Integer INVALID_PLAYER_SESSION_1302 = 1302;
+    public static final Integer SERVER_ERROR_OCCURS = 1303;
+    public static final Integer INVALID_PLAYER = 1305;
+    public static final Integer PLAYER_IS_BLOCKED_TO_ACCESS_CURRENT_GAME = 1306;
+    public static final Integer INVALID_PLAYER_SESSION_1307 = 1307;
+    public static final Integer PLAYER_SESSION_IS_EXPIRED = 1308;
+    public static final Integer PLAYER_IS_INACTIVE = 1309;
+    public static final Integer FAILED_TO_VERIFY_OPERATOR_PLAYER_SESSION = 1310;
+    public static final Integer PLAYER_OPERATION_IN_PROGRESS = 1315;
+    public static final Integer GAME_IS_UNDER_MAINTENANCE = 1400;
+    public static final Integer GAME_IS_INACTIVE = 1401;
+    public static final Integer GAME_DOES_NOT_EXIST = 1402;
+    public static final Integer VALUE_CANNOT_BE_NULL = 3001;
+    public static final Integer PLAYER_DOES_NOT_EXIST = 3004;
+    public static final Integer PLAYER_WALLET_DOES_NOT_EXIST = 3005;
+    public static final Integer PLAYER_WALLET_ALREADY_EXISTS = 3006;
+    public static final Integer FREE_GAME_DOES_NOT_EXIST = 3009;
+    public static final Integer OUT_OF_THE_BALANCE_AMOUNT_TO_TRANSFER_OUT = 3013;
+    public static final Integer FREE_GAME_CANNOT_BE_CANCELLED = 3014;
+    public static final Integer NOT_ENOUGH_FREE_GAME = 3019;
+    public static final Integer NO_BET_EXISTS = 3021;
+    public static final Integer BET_ALREADY_PAY_OUT = 3022;
+    public static final Integer FREE_GAME_EXPIRED = 3030;
+    public static final Integer FREE_GAME_ALREADY_CONVERTED = 3031;
+    public static final Integer BET_ALREADY_EXISTED = 3032;
+    public static final Integer BET_FAILED = 3033;
+    public static final Integer PAY_OUT_FAILED = 3034;
+    public static final Integer INVALID_MULTIPLIER = 3035;
+    public static final Integer NOT_ENOUGH_BALANCE_TO_CONVERT = 3036;
+    public static final Integer TRANSACTION_DOES_NOT_EXIST = 3040;
+    public static final Integer NOT_ENOUGH_CASH_BALANCE_TO_BET = 3202;
+
+    public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
+        put(INVALID_REQUEST, "Invalid request");
+        put(OPERATION_FAILED, "Operation Failed");
+        put(INTERNAL_SERVER_ERROR, "Internal server error");
+        put(INVALID_OPERATOR, "Invalid operator");
+        put(INVALID_PLAYER_SESSION_1300, "Invalid player session");
+        put(PLAYER_SESSION_TOKEN_IS_EMPTY, "Player session token is empty");
+        put(INVALID_PLAYER_SESSION_1302, "Invalid player session");
+        put(SERVER_ERROR_OCCURS, "Server error occurs");
+        put(INVALID_PLAYER, "Invalid player");
+        put(PLAYER_IS_BLOCKED_TO_ACCESS_CURRENT_GAME, "Player is blocked to access current game");
+        put(INVALID_PLAYER_SESSION_1307, "Invalid player session");
+        put(PLAYER_SESSION_IS_EXPIRED, "Player session is expired");
+        put(PLAYER_IS_INACTIVE, "Player is inactive");
+        put(FAILED_TO_VERIFY_OPERATOR_PLAYER_SESSION, "Failed to verify operator player session");
+        put(PLAYER_OPERATION_IN_PROGRESS, "Player’s operation in progress");
+        put(GAME_IS_UNDER_MAINTENANCE, "Game is under maintenance");
+        put(GAME_IS_INACTIVE, "Game is inactive");
+        put(GAME_DOES_NOT_EXIST, "Game does not exist");
+        put(VALUE_CANNOT_BE_NULL, "Value cannot be null");
+        put(PLAYER_DOES_NOT_EXIST, "Player does not exist");
+        put(PLAYER_WALLET_DOES_NOT_EXIST, "Player wallet does not exist");
+        put(PLAYER_WALLET_ALREADY_EXISTS, "Player wallet already exists");
+        put(FREE_GAME_DOES_NOT_EXIST, "Free game does not exist");
+        put(OUT_OF_THE_BALANCE_AMOUNT_TO_TRANSFER_OUT, "Out of the balance amount to transfer out");
+        put(FREE_GAME_CANNOT_BE_CANCELLED, "Free game cannot be cancelled");
+        put(NOT_ENOUGH_FREE_GAME, "Not enough free game");
+        put(NO_BET_EXISTS, "No bet exists");
+        put(BET_ALREADY_PAY_OUT, "Bet already pay-out");
+        put(FREE_GAME_EXPIRED, "Free game expired");
+        put(FREE_GAME_ALREADY_CONVERTED, "Free game already converted");
+        put(BET_ALREADY_EXISTED, "Bet already existed");
+        put(BET_FAILED, "Bet failed");
+        put(PAY_OUT_FAILED, "Pay-out failed");
+        put(INVALID_MULTIPLIER, "Invalid multiplier");
+        put(NOT_ENOUGH_BALANCE_TO_CONVERT, "Not enough balance to convert");
+        put(TRANSACTION_DOES_NOT_EXIST, "Transaction does not exist");
+        put(NOT_ENOUGH_CASH_BALANCE_TO_BET, "Not enough cash balance to bet");
+    }};
+}
