@@ -14,6 +14,6 @@ public class BalanceDto {
     private String providerId;
     @NotBlank
     private String userId;
-
+    @NotBlank
     private String token;
 }

@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
-import com.nextgen.gameaggregator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,18 +11,20 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 
 @Service
 @Slf4j
 public class WalletBalanceAction {
-    public OperatorResponseVo<WalletBalanceData> call(String callbackUrl, WalletBalanceDto dto) {
+    public OperatorResponseVo<WalletBalanceData> call(String callbackUrl, String signature, WalletBalanceDto dto) {
         OperatorResponseVo<WalletBalanceData> responseVo = new OperatorResponseVo<>();
 
-        WebClient webClient = WebClient.create(callbackUrl);
-        WalletBalanceVo data = webClient.post()
+        OperatorResponseVo data = WebClient.create(callbackUrl)
+                .post()
                 .uri(Endpoints.WALLET_BALANCE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
+                .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
                 // TODO: proper error handling
@@ -34,15 +36,30 @@ public class WalletBalanceAction {
                                 // throw original error
                                 .then(response.createException())
                 )
-                .bodyToMono(WalletBalanceVo.class)
+                .bodyToMono(OperatorResponseVo.class)
                 .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
                 .block();
 
         log.info(data.toString());
-        WalletBalanceData walletBetData = new WalletBalanceData();
-        walletBetData.setBalance(data.getResponse().getData().getBalance());
 
-        responseVo.setData(walletBetData);
+        responseVo.setStatus(data.getStatus());
+        responseVo.setTraceId(data.getTraceId());
+        responseVo.setMessage(data.getMessage());
+//        responseVo.setValidation(data.getValidation());
+
+        LinkedHashMap<String, Object> dataMap = (LinkedHashMap<String, Object>) data.getData();
+
+        WalletBalanceData walletBalanceData = new WalletBalanceData();
+        walletBalanceData.setUsername(dataMap.get("username").toString());
+        walletBalanceData.setCurrency(dataMap.get("currency").toString());
+        walletBalanceData.setBalance(new BigDecimal(dataMap.get("balance").toString()));
+        responseVo.setData(walletBalanceData);
+
+//        log.info(data.getData().getClass().toString());
+//        WalletBalanceData walletBetData = new WalletBalanceData();
+//        walletBetData.setBalance(new BigDecimal("1000"));
+//
+//        responseVo.setData(walletBetData);
 
         return responseVo;
     }

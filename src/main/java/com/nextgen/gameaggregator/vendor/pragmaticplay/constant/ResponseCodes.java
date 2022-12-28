@@ -5,6 +5,7 @@ import java.util.Map;
 
 public class ResponseCodes {
     public static final Integer SUCCESS = 0;
+    public static final Integer PLAYER_NOT_FOUND = 2;
     public static final Integer AUTHENTICATION_ERROR = 4;
     public static final Integer INVALID_HASH = 5;
     public static final Integer INVALID_REQUEST = 7;
@@ -13,6 +14,7 @@ public class ResponseCodes {
 
     public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(SUCCESS, "Success");
+        put(PLAYER_NOT_FOUND, "Player not found or is logged out.");
         put(AUTHENTICATION_ERROR, "Player authentication failed due to invalid, not found or expired token.");
         put(INVALID_HASH, "Invalid hash code.");
         put(INVALID_REQUEST, "Bad parameters in the request, please check post parameters.");

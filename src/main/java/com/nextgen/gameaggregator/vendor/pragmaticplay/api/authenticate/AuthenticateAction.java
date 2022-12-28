@@ -50,6 +50,7 @@ public class AuthenticateAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
+            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
             // Need to retrieve line credentials from game session in order to validate hash
@@ -63,20 +64,22 @@ public class AuthenticateAction {
             VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
-            //BigDecimal balance = walletService.getBalance(traceId);
+            BigDecimal balance = walletService.getBalance(session);
 
             // Emit event for additional asynchronous processing
             eventDispatcher.emit(getClass(), body);
 
             responseVo.setUserId(session.getVendorPlayerUsername());
             responseVo.setCurrency(session.getCurrencyCode());
-            responseVo.setCash(BigDecimal.ZERO);
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setToken(session.getToken());
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
