@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.wallet.bet.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
@@ -53,7 +52,6 @@ public class BetAction {
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateVendorUsername(dto.getUserId());
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
-            ValidationUtils.validateDecimalLength(dto.getAmount(), 10, 2);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
@@ -68,6 +66,8 @@ public class BetAction {
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
+            // TODO: check for duplicate reference
+
 //            // Get seamless bet request Id
 //            String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
 
@@ -79,29 +79,15 @@ public class BetAction {
 //            // Create kafka seamless bet history request data for data transforming
 //            betService.createRecordToKafkaBetHistoryTopic(seamlessBetRequestId, authenticatedUser, requestBody);
 
-            // Call bet request operator GRPC to get the balance of the player
-//            BigDecimal balance = betService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequestId);
-
-            // Prepare data to be sent to Operator
-            WalletBetDto walletBetDto = new WalletBetDto();
-            walletBetDto.setTraceId(traceId);
-            walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-            walletBetDto.setTransactionId(traceId);
-            walletBetDto.setExternalTransactionId(dto.getReference());
-            walletBetDto.setAmount(dto.getAmount());
-            walletBetDto.setCurrency(gameSession.getCurrencyCode());
-            walletBetDto.setToken(gameSession.getToken());
-            walletBetDto.setGameId(dto.getGameId()); // TODO: to update to the correct value
-            walletBetDto.setRoundId(dto.getRoundId());
-            walletBetDto.setTimestamp(dto.getTimestamp());
-
-            log.info(walletBetDto.toString());
-            BigDecimal balance = walletService.doBet(gameSession, walletBetDto);
+            // 5. Send bet request to Operator and check if player has enough balance
+            BigDecimal balance = walletService.doBet(traceId, gameSession, dto);
+            boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+            if (isNegativeBalance) throw new InsufficientBalanceException();
 
             // Emit event for additional asynchronous processing
             eventDispatcher.emit(getClass(), body);
 
-            responseVo.setTransactionId(walletBetDto.getTransactionId());
+            responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
@@ -119,11 +105,14 @@ public class BetAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
-//        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
-//            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-
         } catch (InvalidSignatureException invalidHashException) {
             responseVo.setError(ResponseCodes.INVALID_HASH);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            responseVo.setError(ResponseCodes.INSUFFICIENT_BALANCE);
+
+//        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
+//            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
 
 //        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
 //            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);

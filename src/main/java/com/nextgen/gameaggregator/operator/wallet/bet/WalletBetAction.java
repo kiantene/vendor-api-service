@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceData;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,17 +8,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.math.BigDecimal;
 import java.time.Duration;
-import java.util.LinkedHashMap;
 
 @Service
 @Slf4j
 public class WalletBetAction {
-    public OperatorResponseVo<WalletBetData> call(String callbackUrl, String signature, WalletBetDto dto) {
-        OperatorResponseVo<WalletBetData> responseVo = new OperatorResponseVo<>();
+    public WalletBetVo call(String callbackUrl, String signature, WalletBetDto dto) {
+        log.info(dto.toString());
 
-        OperatorResponseVo data = WebClient.create(callbackUrl)
+        WalletBetVo responseVo = WebClient.create(callbackUrl)
                 .post()
                 .uri(Endpoints.WALLET_BET)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -38,22 +33,13 @@ public class WalletBetAction {
                                 // throw original error
                                 .then(response.createException())
                 )
-                .bodyToMono(OperatorResponseVo.class)
+                .bodyToMono(WalletBetVo.class)
                 .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
                 .block();
 
-        log.info(data.toString());
-        responseVo.setStatus(data.getStatus());
-        responseVo.setTraceId(data.getTraceId());
-        responseVo.setMessage(data.getMessage());
-
-        LinkedHashMap<String, Object> dataMap = (LinkedHashMap<String, Object>) data.getData();
-
-        WalletBetData walletBetData = new WalletBetData();
-        walletBetData.setUsername(dataMap.get("username").toString());
-        walletBetData.setCurrency(dataMap.get("currency").toString());
-        walletBetData.setBalance(new BigDecimal(dataMap.get("balance").toString()));
-        responseVo.setData(walletBetData);
+        if (responseVo != null) {
+            log.info(responseVo.toString());
+        }
 
         return responseVo;
     }

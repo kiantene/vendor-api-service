@@ -48,13 +48,4 @@ public class ValidationUtils {
             throw new InvalidRequestException();
         }
     }
-
-    public static void validateDecimalLength(BigDecimal decimal, int maxDigits, int maxScale) throws InvalidRequestException {
-        BigDecimal decimalNoZeros = decimal.stripTrailingZeros();
-        int scale = decimalNoZeros.scale();
-        int digits = decimalNoZeros.precision() - scale;
-        if (digits > maxDigits || scale > maxScale) {
-            throw new InvalidRequestException();
-        }
-    }
 }

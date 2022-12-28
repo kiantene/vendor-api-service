@@ -1,17 +1,15 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto {
+public class BetDto implements BetData {
 
     // Hash code of the request
     @NotBlank
@@ -34,6 +32,7 @@ public class BetDto {
     // Amount of the bet. Minimum is 0.00.
     @Positive
     @NotNull
+    @Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
 
     // Unique reference of this transaction.
@@ -59,4 +58,7 @@ public class BetDto {
     // Token of the player from Authenticate response.
     @NotBlank
     private String token;
+
+    // Mapping
+    public String getExternalTransactionId() { return this.reference; }
 }

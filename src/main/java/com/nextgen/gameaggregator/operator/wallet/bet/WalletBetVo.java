@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.wallet.balance;
+package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.vo.ResponseVo;
@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper=true)
-public class WalletBalanceVo extends ResponseVo {
+public class WalletBetVo extends ResponseVo {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Data
     public static class ResponseData {

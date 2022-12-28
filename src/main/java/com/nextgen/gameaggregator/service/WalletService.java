@@ -3,17 +3,14 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceData;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
-import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
-import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetData;
-import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.operator.wallet.bet.*;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import javax.validation.Validation;
-import javax.validation.Validator;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -27,11 +24,10 @@ public class WalletService {
     @Autowired
     private WalletBetAction walletBetAction;
 
-    public BigDecimal getBalance(GameSession gameSession) throws InvalidOperatorResponseException {
-        String traceId = UUID.randomUUID().toString();
+    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException {
         Integer agentId = gameSession.getAgentId();
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
-        String signature = "";
+        String signature = ""; // TODO: implement signature generation
 
         WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
         walletBalanceDto.setTraceId(traceId);
@@ -39,34 +35,30 @@ public class WalletService {
         walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
         walletBalanceDto.setToken(gameSession.getToken());
 
-        OperatorResponseVo<WalletBalanceData> responseVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
+        WalletBalanceVo responseVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
 
-//        String responses;
-//        responses = this.callRestApiService(walletBalanceDto, webClient);
-//        this.validateResponse(responses);
-
-//        if (this.walletBalanceVo.isStatus()) {
-//            return walletBalanceVo.getResponse().getData().getBalance();
-//        } else {
-//            throw new InvalidOperatorResponseException();
-//        }
+        // TODO: implement error handling
         return responseVo.getData().getBalance();
     }
 
-//    private void validateResponse(String response)
-//    {
-//        //TODO VALIDATE OPERATOR'S RESPONSES
-//        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-//        this.walletBalanceVo = new Gson().fromJson(response, WalletBalanceVo.class);
-//    }
-
-    public BigDecimal doBet(GameSession gameSession, WalletBetDto dto) {
-        String traceId = UUID.randomUUID().toString();
+    public BigDecimal doBet(String traceId, GameSession gameSession, BetData betData) {
         Integer agentId = gameSession.getAgentId();
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
-        String signature = "";
+        String signature = ""; // TODO: implement signature generation
 
-        OperatorResponseVo<WalletBetData> responseVo = walletBetAction.call(callbackUrl, signature, dto);
+        WalletBetDto walletBetDto = new WalletBetDto();
+        walletBetDto.setTraceId(traceId);
+        walletBetDto.setTransactionId(traceId);
+        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(gameSession.getCurrencyCode());
+        walletBetDto.setToken(gameSession.getToken());
+        walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
+        walletBetDto.setAmount(betData.getAmount());
+        walletBetDto.setGameId(betData.getGameId()); // TODO: game code mapping
+        walletBetDto.setRoundId(betData.getRoundId());
+        walletBetDto.setTimestamp(betData.getTimestamp());
+
+        WalletBetVo responseVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
 
         return responseVo.getData().getBalance();
     }

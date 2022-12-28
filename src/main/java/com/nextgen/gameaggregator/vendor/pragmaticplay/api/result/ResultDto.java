@@ -3,9 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
@@ -22,19 +20,23 @@ public class ResultDto {
 
     // Id of the game.
     @NotBlank
+    @Size(min = 1, max = 32)
     private String gameId;
 
     // Id of the round.
     @NotBlank
+    @Size(max = 100)
     private String roundId;
 
     // Amount of the bet. Minimum is 0.00.
     @Positive
     @NotNull
+    @Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
 
     // Unique reference of this transaction.
     @NotBlank
+    @Size(min = 1, max = 32)
     private String reference;
 
     // Game Provider id.
@@ -49,6 +51,7 @@ public class ResultDto {
 
     // Additional information about the current game round.
     @NotBlank
+    @Size(max = 4000)
     private String roundDetails;
 
     // Token of the player from Authenticate response.
