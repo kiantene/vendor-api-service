@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,9 +73,9 @@ public class HttpService {
 
     public static String getStackTrace(Exception exception) {
         final String NEWLINE = "\r\n";
-        log.error(exception.getMessage());
+        log.error(exception.toString());
         StringBuilder stackTrace = new StringBuilder();
-        stackTrace.append(exception.getMessage()).append(NEWLINE+NEWLINE);
+        stackTrace.append("Exception: ").append(exception).append(NEWLINE+NEWLINE);
         StackTraceElement[] stackTraceElements = exception.getStackTrace();
         for (StackTraceElement stackTraceElement : stackTraceElements) {
             stackTrace.append(stackTraceElement).append(NEWLINE);
@@ -87,7 +88,7 @@ public class HttpService {
         return mapper.readValue(json, objectClass);
     }
 
-    public static <T> T convertQueryStringToDto(String queryString, Class<T> objectClass) {
+    public static <T> T convertQueryStringToDto(String queryString, Class<T> objectClass) throws InvalidRequestException {
         Map<String, String> queryParameterMap = new HashMap<>();
         String[] fields = queryString.split("&");
 
@@ -97,7 +98,15 @@ public class HttpService {
         }
 
         ObjectMapper mapper = new ObjectMapper();
-        return mapper.convertValue(queryParameterMap, objectClass);
+        T object;
+
+        try {
+            object = mapper.convertValue(queryParameterMap, objectClass);
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new InvalidRequestException(); // re-throw as InvalidRequest
+        }
+
+        return object;
     }
 
     private Map<String, String> getHeadersInfo(HttpServletRequest request) {

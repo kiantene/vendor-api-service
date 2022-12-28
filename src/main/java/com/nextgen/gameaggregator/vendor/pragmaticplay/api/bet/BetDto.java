@@ -6,6 +6,7 @@ import lombok.Data;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 @Data
@@ -22,10 +23,12 @@ public class BetDto {
 
     // Id of the game.
     @NotBlank
+    @Size(min = 1, max = 32)
     private String gameId;
 
     // Id of the round.
     @NotBlank
+    @Size(max = 100)
     private String roundId;
 
     // Amount of the bet. Minimum is 0.00.
@@ -35,6 +38,7 @@ public class BetDto {
 
     // Unique reference of this transaction.
     @NotBlank
+    @Size(min = 1, max = 32)
     private String reference;
 
     // Game Provider id.
@@ -49,6 +53,7 @@ public class BetDto {
 
     // Additional information about the current game round.
     @NotBlank
+    @Size(max = 4000)
     private String roundDetails;
 
     // Token of the player from Authenticate response.

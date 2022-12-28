@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
-import com.nextgen.gameaggregator.vo.OperatorResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -33,9 +32,7 @@ public class BetAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private BetService betService;
-    @Autowired
-    private WalletBetAction walletBetAction;
+    private WalletService walletService;
     @Autowired
     private EventDispatcher eventDispatcher;
 
@@ -54,12 +51,19 @@ public class BetAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
+            ValidationUtils.validateVendorUsername(dto.getUserId());
+            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            ValidationUtils.validateDecimalLength(dto.getAmount(), 10, 2);
 
             // 2. Verify session token
-            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // Throw exception if received username differs from game session
+            if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
+                throw new InvalidPlayerException();
+            }
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
@@ -78,36 +82,39 @@ public class BetAction {
             // Call bet request operator GRPC to get the balance of the player
 //            BigDecimal balance = betService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequestId);
 
-            String currencyCode = "CNY";
-
             // Prepare data to be sent to Operator
             WalletBetDto walletBetDto = new WalletBetDto();
             walletBetDto.setTraceId(traceId);
-            walletBetDto.setUsername(dto.getUserId()); // TODO: to update to the correct value
+            walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
             walletBetDto.setTransactionId(traceId);
             walletBetDto.setExternalTransactionId(dto.getReference());
             walletBetDto.setAmount(dto.getAmount());
-            walletBetDto.setCurrency(currencyCode); // TODO: to update to the correct value
-            walletBetDto.setToken(""); // TODO: to update to the correct value
+            walletBetDto.setCurrency(gameSession.getCurrencyCode());
+            walletBetDto.setToken(gameSession.getToken());
             walletBetDto.setGameId(dto.getGameId()); // TODO: to update to the correct value
             walletBetDto.setRoundId(dto.getRoundId());
             walletBetDto.setTimestamp(dto.getTimestamp());
 
             log.info(walletBetDto.toString());
-            OperatorResponseVo<WalletBetData> operatorResponseVo = walletBetAction.call(walletBetDto);
+            BigDecimal balance = walletService.doBet(gameSession, walletBetDto);
 
             // Emit event for additional asynchronous processing
             eventDispatcher.emit(getClass(), body);
 
-            responseVo.setTransactionId(traceId.replace("-", ""));
-            responseVo.setCurrency(currencyCode);
-            responseVo.setCash(operatorResponseVo.getData().getBalance());
+            responseVo.setTransactionId(walletBetDto.getTransactionId());
+            responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);

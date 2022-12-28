@@ -41,11 +41,9 @@ public class WalletBalanceAction {
                 .block();
 
         log.info(data.toString());
-
         responseVo.setStatus(data.getStatus());
         responseVo.setTraceId(data.getTraceId());
         responseVo.setMessage(data.getMessage());
-//        responseVo.setValidation(data.getValidation());
 
         LinkedHashMap<String, Object> dataMap = (LinkedHashMap<String, Object>) data.getData();
 
@@ -54,12 +52,6 @@ public class WalletBalanceAction {
         walletBalanceData.setCurrency(dataMap.get("currency").toString());
         walletBalanceData.setBalance(new BigDecimal(dataMap.get("balance").toString()));
         responseVo.setData(walletBalanceData);
-
-//        log.info(data.getData().getClass().toString());
-//        WalletBalanceData walletBetData = new WalletBalanceData();
-//        walletBetData.setBalance(new BigDecimal("1000"));
-//
-//        responseVo.setData(walletBetData);
 
         return responseVo;
     }
