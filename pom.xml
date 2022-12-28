@@ -149,26 +149,26 @@
 	<repositories>
 		<repository>
 			<id>gitlab-maven</id>
-			<url>http://192.168.88.109/api/v4/projects/10/packages/maven</url>
+			<url>http://223.25.67.48/api/v4/projects/10/packages/maven</url>
 		</repository>
 		<repository>
 			<id>gitlab-maven-2</id>
-			<url>http://192.168.88.109/api/v4/projects/41/packages/maven</url>
+			<url>http://223.25.67.48/api/v4/projects/41/packages/maven</url>
 		</repository>
 		<repository>
 			<id>gitlab-maven-3</id>
-			<url>http://192.168.88.109/api/v4/projects/19/packages/maven</url>
+			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
 		</repository>
 	</repositories>
 
 	<distributionManagement>
 		<repository>
 			<id>gitlab-maven</id>
-			<url>http://192.168.88.109/api/v4/projects/19/packages/maven</url>
+			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
 		</repository>
 		<snapshotRepository>
 			<id>gitlab-maven</id>
-			<url>http://192.168.88.109/api/v4/projects/19/packages/maven</url>
+			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
 		</snapshotRepository>
 	</distributionManagement>
 </project>
