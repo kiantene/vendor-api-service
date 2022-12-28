@@ -19,25 +19,25 @@
             <id>gitlab-maven</id>
             <name>Repo Mirror</name>
             <url>
-                http://192.168.88.109/api/v4/projects/19/packages/maven
+                http://223.25.67.48/api/v4/projects/19/packages/maven
             </url>
-            <mirrorOf>http://192.168.88.109</mirrorOf>
+            <mirrorOf>http://223.25.67.48</mirrorOf>
         </mirror>
         <mirror>
             <id>gitlab-maven-2</id>
             <name>Repo Mirror</name>
             <url>
-                http://192.168.88.109/api/v4/projects/41/packages/maven
+                http://223.25.67.48/api/v4/projects/41/packages/maven
             </url>
-            <mirrorOf>http://192.168.88.109</mirrorOf>
+            <mirrorOf>http://223.25.67.48</mirrorOf>
         </mirror>
         <mirror>
             <id>gitlab-maven-3</id>
             <name>Repo Mirror</name>
             <url>
-                http://192.168.88.109/api/v4/projects/10/packages/maven
+                http://223.25.67.48/api/v4/projects/10/packages/maven
             </url>
-            <mirrorOf>http://192.168.88.109</mirrorOf>
+            <mirrorOf>http://223.25.67.48</mirrorOf>
         </mirror>
     </mirrors>
 </settings>
