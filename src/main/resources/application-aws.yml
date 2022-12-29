@@ -61,13 +61,10 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
-#logstash:
-#  address: "127.0.0.1:5000"
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://alb-1560919621.ap-east-1.elb.amazonaws.com:8761/eureka/
-# Micro-services list
+      defaultZone: http://eureka:8761/eureka/
 grpc:
   server:
     port: 9092
