@@ -1,14 +1,16 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.dto;
 
-import com.nextgen.gameaggregator.vendor.api.pgsoft.component.constant.ConstantValidationErrorMessage;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.NotBlank;
 
 @Data
 public class CommonDto {
-    @NotBlank(message = ConstantValidationErrorMessage.CANNOT_BE_BLANK)
+    @NotBlank
+    @JsonProperty("operator_token")
     private String operatorToken;
-    @NotBlank(message = ConstantValidationErrorMessage.CANNOT_BE_BLANK)
+    @NotBlank
+    @JsonProperty("secret_key")
     private String secretKey;
 }

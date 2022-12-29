@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.vo;
 
-import brave.internal.Nullable;
 import lombok.Data;
+
+import javax.annotation.Nullable;
 
 @Data
 public class CommonVo {
