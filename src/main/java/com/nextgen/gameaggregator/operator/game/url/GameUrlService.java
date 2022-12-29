@@ -97,6 +97,11 @@ public class GameUrlService {
             vendorPlayerRepository.save(vendorPlayer);
         } else {
             vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineId(agentPlayer.getId(), vendorLine.getId());
+
+            if (vendorPlayer == null) {
+                vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId);
+                vendorPlayerRepository.save(vendorPlayer);
+            }
         }
 
         log.info(agentPlayer.toString());

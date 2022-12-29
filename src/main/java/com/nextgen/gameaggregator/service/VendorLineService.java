@@ -36,7 +36,7 @@ public class VendorLineService {
         Optional.ofNullable(agentVendorLine).orElseThrow(InvalidVendorLineException::new);
 
         VendorLine vendorLine = agentVendorLine.getVendorLine();
-        if (agentVendorLine.getStatus() == 0 || vendorLine.getStatus() == 0) {
+        if (vendorLine == null || agentVendorLine.getStatus() == 0 || vendorLine.getStatus() == 0) {
             throw new NoAvailableLineException();
         }
         return vendorLine;
