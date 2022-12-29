@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import lombok.Data;
 
 import javax.validation.constraints.*;
@@ -8,7 +9,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResultDto {
+public class ResultDto implements BetData {
 
     // Hash code of the request
     @NotBlank
@@ -57,4 +58,6 @@ public class ResultDto {
     // Token of the player from Authenticate response.
     @NotBlank
     private String token;
+
+    public String getExternalTransactionId() { return this.reference; }
 }

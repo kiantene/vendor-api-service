@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.wallet.balance;
+package com.nextgen.gameaggregator.operator.wallet.win;
 
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import lombok.extern.slf4j.Slf4j;
@@ -12,13 +12,16 @@ import java.time.Duration;
 
 @Service
 @Slf4j
-public class WalletBalanceAction {
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletBalanceDto dto) {
+public class WalletWinAction {
+    public static final String TYPE_WIN = "win";
+    public static final String TYPE_JACKPOT = "jackpot";
+
+    public WalletWinVo call(String callbackUrl, String signature, WalletWinDto dto) {
         log.info(dto.toString());
 
-        WalletBalanceVo responseVo = WebClient.create(callbackUrl)
+        WalletWinVo responseVo = WebClient.create(callbackUrl)
                 .post()
-                .uri(Endpoints.WALLET_BALANCE)
+                .uri(Endpoints.WALLET_WIN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(Endpoints.HEADER_SIGNATURE, signature)
@@ -33,7 +36,7 @@ public class WalletBalanceAction {
                                 // throw original error
                                 .then(response.createException())
                 )
-                .bodyToMono(WalletBalanceVo.class)
+                .bodyToMono(WalletWinVo.class)
                 .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
                 .block();
 

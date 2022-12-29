@@ -2,12 +2,11 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +32,7 @@ public class ResultAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    ResultService resultService;
+    private EventDispatcher eventDispatcher;
 
     @PostMapping(path = Endpoints.RESULT)
     public ResultVo betResult(HttpServletRequest request) {
@@ -50,15 +49,23 @@ public class ResultAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
+            ValidationUtils.validateVendorUsername(dto.getUserId());
+            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
-            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // Throw exception if received username differs from game session
+            if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
+                throw new InvalidPlayerException();
+            }
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
+
+            // TODO: check for duplicate reference
 
             // use the bet result round id to find the bet request info from log request
 //            SeamlessBetHistoryRequest seamlessBetRequest = resultService.getSeamlessBetRequestId(dto);
@@ -71,18 +78,25 @@ public class ResultAction {
 //                resultService.createRecordToKafkaBetHistoryTopic(seamlessBetRequest.getBetHistoryId(), authenticatedUser, requestBody);
 //            }
 
-            // no matter bet request is found or not, will still proceed to send to operator
-            // Call bet request operator GRPC to get the balance of the player
-//            BigDecimal balance = resultService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequest);
+            // 5. Send win result to Operator
+            BigDecimal balance = walletService.processWin(traceId, gameSession, dto);
 
-            responseVo.setTransactionId(traceId.replace("-", ""));
-            responseVo.setCurrency("CNY"); // TODO: vendor currency code
-            responseVo.setCash(new BigDecimal("1000"));
+            // Emit event for additional asynchronous processing
+            eventDispatcher.emit(getClass(), body);
+
+            responseVo.setTransactionId(traceId);
+            responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
