@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.vo;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 @Data

@@ -1,9 +1,101 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
 import lombok.Data;
 
+import javax.validation.constraints.*;
+import java.math.BigDecimal;
+
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class CashTransferInOutDto extends CommonDto {
 
+    /**
+     * Authentication Information
+     */
+    //* Below are not mandatory
+    private String operatorPlayerSession;
+
+    /**
+     * General Bet Information
+     */
+
+    //* Below are mandatory
+    @NotBlank
+    private String playerName;
+
+    @NotNull
+    @Positive
+    private Integer gameId;
+
+    @NotBlank
+    private String parentBetId;
+
+    @NotBlank
+    private String betId;
+
+    @NotBlank
+    private String currencyCode;
+
+    @NotNull
+    private BigDecimal betAmount;
+
+    @NotNull
+    private BigDecimal winAmount;
+
+    @NotNull
+    private BigDecimal transferAmount;
+
+    @NotBlank
+    private String transactionId;
+
+    @NotNull
+    @Positive
+    private Integer betType;
+
+    @Positive
+    @NotNull
+    private Long createTime;
+
+    @Positive
+    @NotNull
+    private Long updatedTime;
+
+    //* Below are not mandatory
+    private String walletType;
+    private String platform;
+
+    /**
+     * Bet Indicator
+     */
+    //* Below are not mandatory
+    private Boolean isValidateBet;
+    private Boolean isAdjustment;
+    private Boolean isParentZeroStake;
+    private Boolean isFeature;
+    private Boolean isFeatureBuy;
+    private Boolean isWager;
+
+    /**
+     * Free Game Information
+     */
+    //* Below are not mandatory
+    private String freeGameTransactionId;
+    private String freeGameName;
+    private Integer freeGameId;
+    private Boolean isMinusCount;
+
+    /**
+     * Bonus Game Information
+     */
+    //* Below are not mandatory
+    private String bonusTransactionId;
+    private String bonusName;
+    private Integer bonusId;
+    private BigDecimal bonusBalanceAmount;
+    private BigDecimal bonusRatioAmount;
 }
