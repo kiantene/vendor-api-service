@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.service;
 
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import lombok.extern.slf4j.Slf4j;
@@ -14,5 +15,13 @@ public class VendorService {
             throw new NoAvailableLineException();
         }
     }
+
+    public static void validatePlayerUsername(String vendorPlayerUsernameFromRequest, String vendorPlayerUsernameFromSession) throws InvalidPlayerException {
+        if (!vendorPlayerUsernameFromRequest.equals(vendorPlayerUsernameFromSession)) {
+            throw new InvalidPlayerException();
+        }
+    }
+
+
 
 }

@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -39,6 +40,7 @@ public class VerifySessionAction {
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo<VerifySessionVo> authenticate(HttpServletRequest request) {
+        // Construct Vo
         ResponseVo<VerifySessionVo> parentResponseVo = new ResponseVo<>();
         VerifySessionVo responseVo = new VerifySessionVo();
         parentResponseVo.setData(responseVo);
@@ -56,7 +58,7 @@ public class VerifySessionAction {
             ValidationUtils.validateRequest(dto);
 
             // 2. Verify session token
-            // Need to retrieve line credentials from game session in order to validate hash
+            // Need to validate whether game session expired
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
@@ -73,6 +75,9 @@ public class VerifySessionAction {
             // Fill VO required values
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
+
+        } catch (InvalidRequestException invalidRequestException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
