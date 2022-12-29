@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.ConcurrencyService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -32,10 +30,11 @@ public class EndRoundAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private VendorLineService vendorLineService;
-
+    private WalletService walletService;
     @Autowired
-    EndRoundService endRoundService;
+    private VendorLineService vendorLineService;
+    @Autowired
+    private EventDispatcher eventDispatcher;
 
     @PostMapping(path = Endpoints.END_ROUND)
     public EndRoundVo endRound(HttpServletRequest request) {
@@ -52,32 +51,27 @@ public class EndRoundAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
+            ValidationUtils.validateVendorUsername(dto.getUserId());
+            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
-            GameSession session = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(session.getVendorLineId(), Credentials.SECRET_KEY);
+            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
-            // use the bet result round id to find the bet request info from log request
-//            SeamlessBetHistoryRequest seamlessBetRequest = endRoundService.getSeamlessBetRequestId(dto);
+            // 5. Retrieve the latest wallet balance from Operator
+            // TODO: performance tuning, may cache the last balance from Result and use that
+            //  last balance to return to vendor, instead of making another call to Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-//            if (seamlessBetRequest == null){
-//                // if not finding bet request info, will create as "others" record for extra handling
-//                endRoundService.createRawBetHistorySeamlessOthersCouchBase(requestBody, authenticatedUser.getVendorCurrencyCode());
-//            } else {
-//                // if found the bet request info, will create as success result record (kafka topic)
-//                endRoundService.createRecordToKafkaBetHistoryTopic(seamlessBetRequest.getBetHistoryId(), authenticatedUser, requestBody);
-//            }
+            // Emit event for additional asynchronous processing
+            eventDispatcher.emit(getClass(), body);
 
-            // no matter bet request is found or not, will still proceed to send to operator
-            // Call bet request operator GRPC to get the balance of the player
-//            BigDecimal balance = endRoundService.getBetRequestBalanceFromGRPC(dto, traceId, authenticatedUser, seamlessBetRequest);
-
-            responseVo.setCash(new BigDecimal("1000"));
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

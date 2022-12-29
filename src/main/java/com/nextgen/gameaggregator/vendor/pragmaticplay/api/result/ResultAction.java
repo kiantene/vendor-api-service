@@ -67,17 +67,6 @@ public class ResultAction {
 
             // TODO: check for duplicate reference
 
-            // use the bet result round id to find the bet request info from log request
-//            SeamlessBetHistoryRequest seamlessBetRequest = resultService.getSeamlessBetRequestId(dto);
-
-//            if (seamlessBetRequest == null){
-//                // if not finding bet request info, will create as "others" record for extra handling
-//                resultService.createRawBetHistorySeamlessOthersCouchBase(requestBody, authenticatedUser.getVendorCurrencyCode());
-//            } else {
-//                // if found the bet request info, will create as success result record (kafka topic)
-//                resultService.createRecordToKafkaBetHistoryTopic(seamlessBetRequest.getBetHistoryId(), authenticatedUser, requestBody);
-//            }
-
             // 5. Send win result to Operator
             BigDecimal balance = walletService.processWin(traceId, gameSession, dto);
 
