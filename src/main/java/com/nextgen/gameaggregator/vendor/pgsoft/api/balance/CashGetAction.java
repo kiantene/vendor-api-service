@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,7 +25,7 @@ import java.util.UUID;
 
 @RestController
 @RequestScope
-@RequestMapping(path = Endpoints.PATH)
+@RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 public class CashGetAction {
 
     @Autowired
@@ -37,7 +38,7 @@ public class CashGetAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.BALANCE)
-    public ResponseVo<CashGetVo> authenticate(WebRequestWrapper request) {
+    public ResponseVo<CashGetVo> balance(WebRequestWrapper request) {
         // Construct Vo
         ResponseVo<CashGetVo> parentResponseVo = new ResponseVo<>();
         CashGetVo responseVo = new CashGetVo();
@@ -99,18 +100,14 @@ public class CashGetAction {
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
 
         } finally {
-            if (!parentResponseVo.getError().equals(null)) {
+            if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
             httpRequestLog.setEndTime(System.currentTimeMillis());
             ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
-
-        //*
-        responseVo.setUpdatedTime(1020202020L);
-        responseVo.setBalanceAmount(BigDecimal.valueOf(22.3));
-        responseVo.setCurrencyCode("CNY");
+        //
         return parentResponseVo;
     }
 
