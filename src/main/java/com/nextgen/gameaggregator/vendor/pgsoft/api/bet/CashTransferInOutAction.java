@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
@@ -34,6 +35,8 @@ public class CashTransferInOutAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private EventDispatcher eventDispatcher;
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(WebRequestWrapper request) {
         // Construct Vo
@@ -54,6 +57,14 @@ public class CashTransferInOutAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
+
+            // Emit event for additional asynchronous processing
+            // TODO
+//            switch () {
+//              eventDispatcher.emit(WinClass.getClass(), body);
+//              eventDispatcher.emit(LoseClass.getClass(), body);
+//              eventDispatcher.emit(FreeSpinClass.getClass(), body);
+//            }
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
