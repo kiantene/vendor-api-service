@@ -49,7 +49,6 @@ public class CashGetAction {
         String traceId = UUID.randomUUID().toString();
 
         try {
-            /**
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
             // Convert original request body into dto
@@ -80,11 +79,7 @@ public class CashGetAction {
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-            **/
-        responseVo.setCurrencyCode("CNY");
-        responseVo.setBalanceAmount(BigDecimal.valueOf(100000000));
-        responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-        /**
+            
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
@@ -106,7 +101,6 @@ public class CashGetAction {
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
-**/
         } finally {
             if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);
