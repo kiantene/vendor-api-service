@@ -1,0 +1,130 @@
+package com.nextgen.gameaggregator.operator.game.url;
+
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
+import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
+import javax.servlet.http.HttpServletRequest;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping(path = "game/")
+@Slf4j
+public class GameUrlAction {
+    @Autowired
+    private HttpService httpService;
+    @Autowired
+    private ValidationService validationService;
+    @Autowired
+    private GameUrlService gameUrlService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private VendorService vendorService;
+
+    @PostMapping(path = "url")
+    public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.logRequest(request);
+        OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
+        responseVo.setStatus(ResponseCodes.SUCCESS);
+        final String X_API_KEY = "X-API-Key";
+        final String X_SIGNATURE = "X-Signature";
+
+        try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
+
+            // Convert original json string into dto
+            GameUrlDto dto = HttpService.convertJsonToDto(body, GameUrlDto.class);
+            responseVo.setTraceId(dto.getTraceId());
+            log.info(dto.toString());
+
+            // 1. Validate all fields in the request object
+            ValidationUtils.validateRequest(dto);
+            // TODO: need to validate username (no special characters or chinese)
+
+            // 2. Check if api key is valid
+            AgentApiCredential apiCredential = validationService.validateApiKey(request.getHeader(X_API_KEY));
+
+            // 3. Validate the signature
+            validationService.validateSignature(body, apiCredential.getApiSecret(), request.getHeader(X_SIGNATURE));
+
+            // 4. Check if currency is supported
+            gameUrlService.checkCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
+
+            // 5. Check if game is supported
+            VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameId());
+
+            // TODO: to check available platform
+
+            Integer agentId = apiCredential.getAgent().getId();
+            Integer vendorId = vendorGame.getVendorId();
+            Integer currencyId = apiCredential.getAgent().getCurrency().getId();
+
+            // 6. Check if trace Id has been sent before
+            gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId());
+
+            // 7. Retrieve vendor line credentials
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currencyId);
+            Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
+
+            // 8. Check if vendor player account exists
+            GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
+            gameSessionService.createSession(gameSession, dto, vendorGame.getId());
+            log.info(gameSession.toString());
+
+            // 9. Request game url from vendor
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials);
+            responseVo.setData(gameUrlData);
+
+        } catch (IllegalArgumentException illegalArgumentException) {
+            // thrown when any field encountered type mismatch during conversion from json to dto
+            log.error(illegalArgumentException.toString());
+            responseVo.setStatus(ResponseCodes.MISMATCHED_DATA_TYPE);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setStatus(ResponseCodes.INVALID_REQUEST);
+            responseVo.setValidation(invalidRequestException.getValidation());
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setStatus(ResponseCodes.AUTHENTICATION_FAILED);
+
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setStatus(ResponseCodes.INVALID_SIGNATURE);
+
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            responseVo.setStatus(ResponseCodes.INVALID_GAME);
+
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            responseVo.setStatus(ResponseCodes.CURRENCY_NOT_SUPPORTED);
+
+        } catch (DuplicateRequestException duplicateRequestException) {
+            responseVo.setStatus(ResponseCodes.DUPLICATE_REQUEST);
+
+        } catch (NoAvailableLineException noAvailableLineException) {
+            responseVo.setStatus(ResponseCodes.UNDER_MAINTENANCE);
+
+        } catch (Exception exception) {
+            responseVo.setStatus(ResponseCodes.UNKNOWN_ERROR);
+            httpRequestLog.setStatus(1);
+            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+
+        } finally {
+            responseVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getStatus()));
+            httpRequestLog.setEndTime(System.currentTimeMillis());
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, responseVo.getTraceId()));
+        }
+
+        return responseVo;
+    }
+}

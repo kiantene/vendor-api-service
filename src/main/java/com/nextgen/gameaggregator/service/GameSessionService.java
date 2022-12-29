@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-//import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
+import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
 import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.AgentRepository;
 import com.nextgen.gameaggregator.repository.GameSessionRepository;
@@ -35,14 +35,14 @@ public class GameSessionService {
         return session;
     }
 
-//    public void createSession(GameSession gameSession, GameUrlDto dto, Integer gameId) {
-//        gameSession.setLanguage(dto.getLanguage());
-//        gameSession.setCurrencyCode(dto.getCurrency());
-//        gameSession.setTraceId(dto.getTraceId());
-//        gameSession.setVendorGameId(gameId);
-//
-//        gameSessionRepository.save(gameSession);
-//    }
+    public void createSession(GameSession gameSession, GameUrlDto dto, Integer gameId) {
+        gameSession.setLanguage(dto.getLanguage());
+        gameSession.setCurrencyCode(dto.getCurrency());
+        gameSession.setTraceId(dto.getTraceId());
+        gameSession.setVendorGameId(gameId);
+
+        gameSessionRepository.save(gameSession);
+    }
 
     public VendorPlayer findVendorPlayerByUsername(String username) throws InvalidPlayerException {
         VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(username);
