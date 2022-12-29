@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
@@ -9,6 +11,7 @@ import com.nextgen.gameaggregator.operator.wallet.bet.*;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinVo;
+import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,8 @@ import java.math.BigDecimal;
 public class WalletService {
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
+    @Autowired
+    private BetHistoryRepository betHistoryRepository;
     @Autowired
     private WalletBalanceAction walletBalanceAction;
     @Autowired
@@ -62,6 +67,33 @@ public class WalletService {
         walletBetDto.setTimestamp(betData.getTimestamp());
 
         WalletBetVo responseVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
+
+        if (responseVo.getStatus().equals(ResponseCodes.SUCCESS)) {
+            BetHistory betHistory = new BetHistory();
+            betHistory.setId(traceId);
+            betHistory.setExternalTransactionId(walletBetDto.getExternalTransactionId());
+            betHistory.setRoundId(walletBetDto.getRoundId());
+            betHistory.setVendorGameId(gameSession.getVendorGameId());
+            betHistory.setVendorPlayerId(gameSession.getVendorPlayerId());
+            betHistory.setVendorId(0);
+            betHistory.setAgentPlayerId(gameSession.getAgentPlayerId());
+            betHistory.setAgentId(gameSession.getAgentId());
+            betHistory.setMasterAgentId(0);
+            betHistory.setHouseId(0);
+            betHistory.setGameCategoryId(0);
+            betHistory.setCurrencyId(0);
+            betHistory.setBetAmount(walletBetDto.getAmount());
+            betHistory.setWinAmount(BigDecimal.ZERO);
+            betHistory.setWinLoss(BigDecimal.ZERO);
+            betHistory.setVendorWinLoss(BigDecimal.ZERO);
+            betHistory.setEffectiveTurnover(BigDecimal.ZERO);
+            betHistory.setResultType(0);
+            betHistory.setStatus(1);
+            betHistory.setVendorBetTime(walletBetDto.getTimestamp());
+            betHistory.setCreateDate(System.currentTimeMillis());
+
+            betHistoryRepository.save(betHistory);
+        }
 
         return responseVo.getData().getBalance();
     }
