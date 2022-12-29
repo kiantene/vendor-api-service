@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -48,6 +49,7 @@ public class CashGetAction {
         String traceId = UUID.randomUUID().toString();
 
         try {
+            /**
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
             // Convert original request body into dto
@@ -78,8 +80,11 @@ public class CashGetAction {
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-
-
+            **/
+        responseVo.setCurrencyCode("CNY");
+        responseVo.setBalanceAmount(BigDecimal.valueOf(100000000));
+        responseVo.setUpdatedTime(Instant.now().toEpochMilli());
+        /**
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
@@ -88,6 +93,9 @@ public class CashGetAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (NoAvailableLineException noAvailableLineException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
@@ -98,7 +106,7 @@ public class CashGetAction {
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
-
+**/
         } finally {
             if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);

@@ -54,6 +54,10 @@ public class VendorLineService {
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {
+        vendorLine.getCredentials().stream()
+                .filter(v -> v.getStatus() == 1)
+                .forEach(v -> System.out.println(v.getName()));
+
         return vendorLine.getCredentials().stream()
                 .filter(v -> v.getStatus() == 1)
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));

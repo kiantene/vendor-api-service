@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.service.*;
@@ -49,10 +50,14 @@ public class VerifySessionAction {
         String traceId = UUID.randomUUID().toString();
 
         try {
+            /**
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
             // Convert original request body into dto
             VerifySessionDto dto = HttpService.convertQueryStringToDto(body, VerifySessionDto.class);
+                    System.out.println(dto.getGameId());
+                    System.out.println(dto.getSecretKey());
+
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
@@ -75,20 +80,27 @@ public class VerifySessionAction {
             // Fill VO required values
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
-
+            **/
+            responseVo.setPlayerName("babytan");
+            responseVo.setNickname("Baby Tan");
+            responseVo.setCurrency("CNY");
+        /**
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
-        } catch (NoAvailableLineException noAvailableLineException) {
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+
+        }  catch (NoAvailableLineException noAvailableLineException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
-
+        **/
         } finally {
             if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);
@@ -97,6 +109,9 @@ public class VerifySessionAction {
             ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
+        System.out.println(parentResponseVo.getData().getPlayerName());
+        System.out.println(parentResponseVo.getData().getNickname());
+        System.out.println(parentResponseVo.getData().getCurrency());
         //
         return parentResponseVo;
     }
