@@ -82,7 +82,7 @@ public class VerifySessionAction {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);

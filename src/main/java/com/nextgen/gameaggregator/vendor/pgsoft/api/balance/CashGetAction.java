@@ -63,6 +63,7 @@ public class CashGetAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
             // 3. Validate vendor player username
+            // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
 
             // 4. Retrieve vendor line operatorToken and secretKey for validation
@@ -79,12 +80,12 @@ public class CashGetAction {
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-            
+
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
