@@ -6,15 +6,15 @@ import java.util.Map;
 public class ResponseCodes {
     public static final String SUCCESS = "SC_OK";
     public static final String INVALID_REQUEST = "SC_INVALID_REQUEST";
-    public static final String AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED";
-    public static final String INVALID_SIGNATURE = "INVALID_SIGNATURE";
+    public static final String AUTHENTICATION_FAILED = "SC_AUTHENTICATION_FAILED";
+    public static final String INVALID_SIGNATURE = "SC_INVALID_SIGNATURE";
     public static final String INVALID_GAME = "SC_INVALID_GAME";
-    public static final String INVALID_CURRENCY = "INVALID_CURRENCY";
-    public static final String DUPLICATE_REQUEST = "DUPLICATE_REQUEST";
+    public static final String INVALID_CURRENCY = "SC_INVALID_CURRENCY";
+    public static final String DUPLICATE_REQUEST = "SC_DUPLICATE_REQUEST";
     public static final String CURRENCY_NOT_SUPPORTED = "SC_CURRENCY_NOT_SUPPORTED";
-    public static final String UNDER_MAINTENANCE = "UNDER_MAINTENANCE";
-    public static final String UNKNOWN_ERROR = "UNKNOWN_ERROR";
-    public static final String MISMATCHED_DATA_TYPE = "MISMATCHED_DATA_TYPE";
+    public static final String UNDER_MAINTENANCE = "SC_UNDER_MAINTENANCE";
+    public static final String UNKNOWN_ERROR = "SC_UNKNOWN_ERROR";
+    public static final String MISMATCHED_DATA_TYPE = "SC_MISMATCHED_DATA_TYPE";
     public static final String INVALID_VALUE = "Invalid value.";
 
     public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
