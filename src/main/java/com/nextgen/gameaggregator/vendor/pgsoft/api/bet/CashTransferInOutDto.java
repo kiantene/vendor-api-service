@@ -82,6 +82,7 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     private Boolean isFeature;
     private Boolean isFeatureBuy;
     private Boolean isWager;
+    private Boolean isEndRound;
 
     /**
      * Free Game Information

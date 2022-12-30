@@ -54,6 +54,8 @@ public class EndRoundAction {
             ValidationUtils.validateVendorUsername(dto.getUserId());
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
+            // TODO: validate gameId
+
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
@@ -79,6 +81,9 @@ public class EndRoundAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
