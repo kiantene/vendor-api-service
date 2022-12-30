@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.Agent;
-import com.nextgen.gameaggregator.entity.AgentPlayer;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
@@ -35,11 +32,13 @@ public class GameSessionService {
         return session;
     }
 
-    public void createSession(GameSession gameSession, GameUrlDto dto, Integer gameId) {
-        gameSession.setLanguage(dto.getLanguage());
-        gameSession.setCurrencyCode(dto.getCurrency());
+    public void createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency) {
         gameSession.setTraceId(dto.getTraceId());
-        gameSession.setVendorGameId(gameId);
+        gameSession.setLanguage(dto.getLanguage());
+        gameSession.setVendorId(vendorGame.getVendorId());
+        gameSession.setVendorGameId(vendorGame.getId());
+        gameSession.setCurrencyId(currency.getId());
+        gameSession.setCurrencyCode(currency.getCode());
 
         gameSessionRepository.save(gameSession);
     }

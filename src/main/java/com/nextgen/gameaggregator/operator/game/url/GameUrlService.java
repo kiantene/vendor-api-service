@@ -84,7 +84,7 @@ public class GameUrlService {
         }
     }
 
-    public GameSession checkPlayer(Integer agentId, String username, VendorLine vendorLine) throws UnknownHostException {
+    public GameSession checkPlayer(Integer agentId, String username, VendorLine vendorLine) {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agentId, username);
         VendorPlayer vendorPlayer = null;
         Integer vendorId = vendorLine.getVendor().getId();
@@ -104,7 +104,7 @@ public class GameUrlService {
         log.info(agentPlayer.toString());
         log.info(vendorPlayer.toString());
 
-        return this.createGameSession(agentId, agentPlayer.getId(), username, vendorPlayer.getUsername(), vendorPlayer.getId(), vendorLine.getId());
+        return this.createGameSession(agentPlayer, vendorPlayer, vendorLine);
     }
 
     public AgentPlayer createAgentPlayer(Integer agentId, String username) {
@@ -132,19 +132,17 @@ public class GameUrlService {
         return entity;
     }
 
-    public GameSession createGameSession(Integer agentId, Long agentPlayerId, String agentPlayerUsername,
-                                         String vendorPlayerUsername, Long vendorPlayerId, Integer vendorLineId) {
-
+    private GameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
         GameSession entity = new GameSession();
 
         entity.setToken(UUID.randomUUID().toString());
-        entity.setAgentId(agentId);
-        entity.setAgentPlayerId(agentPlayerId);
-        entity.setAgentPlayerUsername(agentPlayerUsername);
-        entity.setVendorPlayerUsername(vendorPlayerUsername);
-        entity.setVendorPlayerId(vendorPlayerId);
-        entity.setVendorLineId(vendorLineId);
-        entity.setStatus(1);
+        entity.setAgentId(agentPlayer.getAgentId());
+        entity.setAgentPlayerId(agentPlayer.getId());
+        entity.setAgentPlayerUsername(agentPlayer.getUsername());
+        entity.setVendorPlayerUsername(vendorPlayer.getUsername());
+        entity.setVendorPlayerId(vendorPlayer.getId());
+        entity.setVendorLineId(vendorLine.getId());
+        entity.setStatus(1); // TODO: to use constant/enum
         entity.prepareSave(0, USERTYPE);
 
         return entity;

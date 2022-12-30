@@ -81,13 +81,13 @@ public class WalletService {
             betHistory.setRoundId(walletBetDto.getRoundId());
             betHistory.setVendorGameId(gameSession.getVendorGameId());
             betHistory.setVendorPlayerId(gameSession.getVendorPlayerId());
-            betHistory.setVendorId(0);
+            betHistory.setVendorId(gameSession.getVendorId());
             betHistory.setAgentPlayerId(gameSession.getAgentPlayerId());
             betHistory.setAgentId(gameSession.getAgentId());
             betHistory.setMasterAgentId(0);
             betHistory.setHouseId(0);
             betHistory.setGameCategoryId(0);
-            betHistory.setCurrencyId(0);
+            betHistory.setCurrencyId(gameSession.getCurrencyId());
             betHistory.setBetAmount(walletBetDto.getAmount());
             betHistory.setWinAmount(BigDecimal.ZERO);
             betHistory.setWinLoss(BigDecimal.ZERO);
@@ -145,7 +145,7 @@ public class WalletService {
             betResultLog.setVendorPlayerId(vendorPlayerId);
             betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
             betResultLog.setAgentId(gameSession.getAgentId());
-            betResultLog.setCurrencyId(0);
+            betResultLog.setCurrencyId(gameSession.getCurrencyId());
             betResultLog.setWinAmount(walletWinDto.getAmount());
             betResultLog.setResultType(0);
             betResultLog.setStatus(1);
