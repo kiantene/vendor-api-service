@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -34,7 +35,7 @@ public class EndRoundAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.END_ROUND)
-    public EndRoundVo endRound(HttpServletRequest request) {
+    public ResponseVo endRound(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         EndRoundVo responseVo = new EndRoundVo();
         String traceId = UUID.randomUUID().toString();

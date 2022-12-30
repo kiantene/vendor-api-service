@@ -1,6 +1,7 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
+package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -11,11 +12,21 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResultDto implements WinData {
+public class JackpotDto implements WinData {
 
     // Hash code of the request
     @NotBlank
     private String hash;
+
+    // Game Provider id.
+    @NotBlank
+    private String providerId;
+
+    // Date and time when the transaction is processed on the Pragmatic Play side
+    // (Unix epoch time in milliseconds, for example : 1470926696715)
+    @Positive
+    @NotNull
+    private Long timestamp;
 
     // Identifier of the user within the Casino Operator’s system.
     @NotBlank
@@ -33,6 +44,10 @@ public class ResultDto implements WinData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String roundId;
 
+    // Id of the jackpot.
+    @NotBlank
+    private String jackpotId;
+
     // Amount of the bet. Minimum is 0.00.
     @Positive
     @NotNull
@@ -45,32 +60,12 @@ public class ResultDto implements WinData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String reference;
 
-    // Game Provider id.
-    @NotBlank
-    private String providerId;
-
-    // Date and time when the transaction is processed on the Pragmatic Play side
-    // (Unix epoch time in milliseconds, for example : 1470926696715)
-    @Positive
-    @NotNull
-    private Long timestamp;
-
-    // Additional information about the current game round.
-    @NotBlank
-    @Size(max = 4000)
-    private String roundDetails;
-
     // Token of the player from Authenticate response.
     @NotBlank
     private String token;
 
     @Override
-    public String getExternalTransactionId() {
-        return this.reference;
-    }
-
+    public String getExternalTransactionId() { return this.reference; }
     @Override
-    public String getWinType() {
-        return WalletWinAction.TYPE_WIN;
-    }
+    public String getWinType() { return WalletWinAction.TYPE_JACKPOT; }
 }

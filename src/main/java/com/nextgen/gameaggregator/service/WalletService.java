@@ -7,13 +7,9 @@ import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.operator.wallet.balance.*;
 import com.nextgen.gameaggregator.operator.wallet.bet.*;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinVo;
+import com.nextgen.gameaggregator.operator.wallet.win.*;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -105,17 +101,17 @@ public class WalletService {
         return responseVo.getData().getBalance();
     }
 
-    public BetResultLog processWin(String traceId, GameSession gameSession, BetData betData, String rawData) throws BetNotFoundException, DuplicateExternalTransactionIdException {
+    public BetResultLog processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws BetNotFoundException, DuplicateExternalTransactionIdException {
         Integer agentId = gameSession.getAgentId();
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
-        String roundId = betData.getRoundId();
+        String roundId = winData.getRoundId();
 
         // 1. To check for duplicate reference
         // TODO: performance tuning, read from cache
-        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndVendorGameIdAndVendorPlayerId(betData.getExternalTransactionId(), vendorGameId, vendorPlayerId);
+        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndVendorGameIdAndVendorPlayerId(winData.getExternalTransactionId(), vendorGameId, vendorPlayerId);
         if (resultLog != null) { // Found a matching external transaction Id
-            throw new DuplicateExternalTransactionIdException("Duplicate external transaction Id: " + betData.getExternalTransactionId());
+            throw new DuplicateExternalTransactionIdException("Duplicate external transaction Id: " + winData.getExternalTransactionId());
         }
 
         // 2. To find matching bet record based on round Id
@@ -136,13 +132,13 @@ public class WalletService {
         walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
         walletWinDto.setCurrency(gameSession.getCurrencyCode());
         walletWinDto.setToken(gameSession.getToken());
-        walletWinDto.setExternalTransactionId(betData.getExternalTransactionId());
+        walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(referenceTransactionId);
-        walletWinDto.setAmount(betData.getAmount());
-        walletWinDto.setGameId(betData.getGameId()); // TODO: game code mapping
+        walletWinDto.setAmount(winData.getAmount());
+        walletWinDto.setGameId(winData.getGameId()); // TODO: game code mapping
         walletWinDto.setRoundId(roundId);
-        walletWinDto.setWinType(WalletWinAction.TYPE_WIN);
-        walletWinDto.setTimestamp(betData.getTimestamp());
+        walletWinDto.setWinType(winData.getWinType());
+        walletWinDto.setTimestamp(winData.getTimestamp());
 
         WalletWinVo responseVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
 
@@ -158,10 +154,17 @@ public class WalletService {
             betResultLog.setAgentId(gameSession.getAgentId());
             betResultLog.setCurrencyId(gameSession.getCurrencyId());
             betResultLog.setWinAmount(walletWinDto.getAmount());
-            betResultLog.setResultType(1);
+
+            // TODO: refactor, map to constant/enum value
+            int resultType = 1;
+            if (winData.getWinType().equals(WalletWinAction.TYPE_JACKPOT)) {
+                resultType = 2;
+            }
+
+            betResultLog.setResultType(resultType);
             betResultLog.setBalance(responseVo.getData().getBalance()); // TODO: check for null
             betResultLog.setRawData(rawData);
-            betResultLog.setStatus(1);
+            betResultLog.setStatus(1); // TODO: refactor, map to constant/enum value
             betResultLog.setVendorTime(walletWinDto.getTimestamp());
             betResultLog.setCreateDate(System.currentTimeMillis());
 

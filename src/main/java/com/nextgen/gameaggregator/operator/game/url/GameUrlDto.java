@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
 import javax.validation.constraints.*;
@@ -13,7 +14,7 @@ public class GameUrlDto {
 
     @NotBlank
     @Size(min = 3, max = 20)
-    @Pattern(regexp = "^[a-zA-Z0-9]+$") // Only alphanumeric allowed
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String username;
 
     @NotNull
@@ -27,7 +28,7 @@ public class GameUrlDto {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = "^[a-zA-Z0-9]+$") // Only alphanumeric allowed
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String platform;
 
     @NotBlank
