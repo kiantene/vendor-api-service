@@ -86,22 +86,19 @@ public class GameUrlService {
 
     public GameSession checkPlayer(Integer agentId, String username, VendorLine vendorLine) throws UnknownHostException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agentId, username);
-        VendorPlayer vendorPlayer;
+        VendorPlayer vendorPlayer = null;
         Integer vendorId = vendorLine.getVendor().getId();
 
         if (agentPlayer == null) {
             agentPlayer = this.createAgentPlayer(agentId, username);
             agentPlayerRepository.save(agentPlayer);
-
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId);
-            vendorPlayerRepository.save(vendorPlayer);
         } else {
             vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineId(agentPlayer.getId(), vendorLine.getId());
+        }
 
-            if (vendorPlayer == null) {
-                vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId);
-                vendorPlayerRepository.save(vendorPlayer);
-            }
+        if (vendorPlayer == null) {
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId);
+            vendorPlayerRepository.save(vendorPlayer);
         }
 
         log.info(agentPlayer.toString());
@@ -110,18 +107,18 @@ public class GameUrlService {
         return this.createGameSession(agentId, agentPlayer.getId(), username, vendorPlayer.getUsername(), vendorPlayer.getId(), vendorLine.getId());
     }
 
-    public AgentPlayer createAgentPlayer(Integer agentId, String username) throws UnknownHostException {
+    public AgentPlayer createAgentPlayer(Integer agentId, String username) {
         AgentPlayer entity = new AgentPlayer();
         entity.setAgentId(agentId);
         entity.setUsername(username);
         entity.setStatus(1);
-        entity.prepareSave(0, USERTYPE, InetAddress.getLocalHost().getHostAddress());
+        entity.prepareSave(0, USERTYPE);
         log.info("Insert new agent player " + username);
 
         return entity;
     }
 
-    public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId) throws UnknownHostException {
+    public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId) {
         String vendorPlayerUsername = NameUtils.generateUsername("O", agentPlayerId, vendorLineId.longValue());
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
@@ -129,14 +126,14 @@ public class GameUrlService {
         entity.setVendorId(vendorId);
         entity.setUsername(vendorPlayerUsername);
         entity.setStatus(1);
-        entity.prepareSave(0, USERTYPE, InetAddress.getLocalHost().getHostAddress());
+        entity.prepareSave(0, USERTYPE);
         log.info("Insert new vendor player " + vendorPlayerUsername);
 
         return entity;
     }
 
     public GameSession createGameSession(Integer agentId, Long agentPlayerId, String agentPlayerUsername,
-                                         String vendorPlayerUsername, Long vendorPlayerId, Integer vendorLineId) throws UnknownHostException {
+                                         String vendorPlayerUsername, Long vendorPlayerId, Integer vendorLineId) {
 
         GameSession entity = new GameSession();
 
@@ -148,7 +145,7 @@ public class GameUrlService {
         entity.setVendorPlayerId(vendorPlayerId);
         entity.setVendorLineId(vendorLineId);
         entity.setStatus(1);
-        entity.prepareSave(0, USERTYPE, InetAddress.getLocalHost().getHostAddress());
+        entity.prepareSave(0, USERTYPE);
 
         return entity;
     }

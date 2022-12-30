@@ -96,6 +96,10 @@ public class ResultAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setError(ResponseCodes.INVALID_HASH);
 
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            httpRequestLog.setErrorMessage("Round Id not found");
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));

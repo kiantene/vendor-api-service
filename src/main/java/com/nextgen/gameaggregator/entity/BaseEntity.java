@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.entity;
 
 import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 @MappedSuperclass
 public abstract class BaseEntity {
@@ -27,10 +29,18 @@ public abstract class BaseEntity {
         return this.createDate;
     }
 
-    public void prepareSave(Integer userId, String userType, String currentIp) {
+    public void prepareSave(Integer userId, String userType) {
+        String ip = "Unknown";
+        try {
+            // This exception should not block the saving of new records
+            ip = InetAddress.getLocalHost().getHostAddress();
+        } catch(UnknownHostException unknownHostException) {
+            unknownHostException.printStackTrace();
+        }
+
         this.createById = userId;
         this.createByUsertype = userType;
-        this.createByIp = currentIp;
+        this.createByIp = ip;
         this.createDate = System.currentTimeMillis();
     }
 

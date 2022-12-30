@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GameUrlAction implements GameUrl {
 
+    @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException {
         String secureLogin = credentials.get(Credentials.SECURE_LOGIN);
         Optional.ofNullable(secureLogin).orElseThrow(InvalidVendorLineException::new);
@@ -40,6 +41,7 @@ public class GameUrlAction implements GameUrl {
         return formData;
     }
 
+    @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
