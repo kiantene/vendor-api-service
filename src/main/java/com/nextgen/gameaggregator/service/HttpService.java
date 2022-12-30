@@ -43,8 +43,6 @@ public class HttpService {
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setStartTime(System.currentTimeMillis());
-
-//            httpRequestLogRepository.save(httpRequestLog);
         } catch (Exception exception) {
             log.error(exception.getMessage());
         }
@@ -62,7 +60,9 @@ public class HttpService {
                     requestLog.setEndTime(System.currentTimeMillis());
                 }
                 requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                requestLog.setStatus(COMPLETED);
+                if (requestLog.getStatus().equals(PROCESSING)) {
+                    requestLog.setStatus(COMPLETED);
+                }
 
                 httpRequestLogRepository.save(requestLog);
             } catch (Exception exception) {

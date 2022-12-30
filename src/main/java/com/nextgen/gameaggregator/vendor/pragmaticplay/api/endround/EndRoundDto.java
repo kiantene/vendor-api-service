@@ -23,6 +23,7 @@ public class EndRoundDto {
     // Id of the game.
     @NotBlank
     @Size(min = 1, max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String gameId;
 
     // Id of the round.

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
+package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -25,7 +25,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
-public class ResultAction {
+public class JackpotAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -35,10 +35,10 @@ public class ResultAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @PostMapping(path = Endpoints.RESULT)
-    public ResponseVo betResult(HttpServletRequest request) {
+    @PostMapping(path = Endpoints.JACKPOT)
+    public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        ResultVo responseVo = new ResultVo();
+        JackpotVo responseVo = new JackpotVo();
         String traceId = UUID.randomUUID().toString();
 
         try {
@@ -46,14 +46,14 @@ public class ResultAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);
+            JackpotDto dto = HttpService.convertQueryStringToDto(body, JackpotDto.class);
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateVendorUsername(dto.getUserId());
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
-            // TODO: validate gameId
+            // TODO: validate gameId with gameSession
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
