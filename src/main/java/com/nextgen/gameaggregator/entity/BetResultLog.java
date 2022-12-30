@@ -23,6 +23,8 @@ public class BetResultLog {
     private Integer currencyId;
     private BigDecimal winAmount;
     private Integer resultType;
+    private BigDecimal balance;
+    private String rawData;
     private Integer status;
     private Long vendorTime;
     private Long createDate;

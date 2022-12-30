@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface BetResultLogRepository extends JpaRepository<BetResultLog, String> {
-
+    BetResultLog findByExternalTransactionIdAndVendorGameIdAndVendorPlayerId(String externalTransactionId, Integer vendorGameId, Long vendorPlayerId);
 }

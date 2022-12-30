@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -33,8 +32,6 @@ public class EndRoundAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private EventDispatcher eventDispatcher;
 
     @PostMapping(path = Endpoints.END_ROUND)
     public EndRoundVo endRound(HttpServletRequest request) {
@@ -71,7 +68,7 @@ public class EndRoundAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Emit event for additional asynchronous processing
-            eventDispatcher.emit(getClass(), body);
+//            eventDispatcher.emit(getClass(), body);
 
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
