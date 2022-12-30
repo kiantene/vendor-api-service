@@ -27,6 +27,7 @@ public class ResultDto implements BetData {
     // Id of the round.
     @NotBlank
     @Size(max = 100)
+    @Pattern(regexp = "^[a-zA-Z0-9]+$") // Only alphanumeric allowed
     private String roundId;
 
     // Amount of the bet. Minimum is 0.00.
@@ -38,6 +39,7 @@ public class ResultDto implements BetData {
     // Unique reference of this transaction.
     @NotBlank
     @Size(min = 1, max = 32)
+    @Pattern(regexp = "^[a-zA-Z0-9]+$") // Only alphanumeric allowed
     private String reference;
 
     // Game Provider id.

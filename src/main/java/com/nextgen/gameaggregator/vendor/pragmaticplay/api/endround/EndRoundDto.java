@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 @Data
@@ -26,6 +27,7 @@ public class EndRoundDto {
     // Id of the round.
     @NotBlank
     @Size(max = 100)
+    @Pattern(regexp = "^[a-zA-Z0-9]+$")
     private String roundId;
 
     // Game Provider id.
