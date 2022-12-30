@@ -60,5 +60,6 @@ public class BetDto implements BetData {
     private String token;
 
     // Mapping
+    @Override
     public String getExternalTransactionId() { return this.reference; }
 }

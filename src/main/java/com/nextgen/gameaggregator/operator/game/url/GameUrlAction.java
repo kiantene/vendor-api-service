@@ -118,6 +118,7 @@ public class GameUrlAction {
             responseVo.setStatus(ResponseCodes.UNKNOWN_ERROR);
             httpRequestLog.setStatus(1);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getStatus()));

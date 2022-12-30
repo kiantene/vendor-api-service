@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.service.*;
@@ -49,6 +50,7 @@ public class VerifySessionAction {
         String traceId = UUID.randomUUID().toString();
 
         try {
+
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
             // Convert original request body into dto
@@ -80,15 +82,17 @@ public class VerifySessionAction {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
-        } catch (NoAvailableLineException noAvailableLineException) {
+        }  catch (NoAvailableLineException noAvailableLineException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
-
         } finally {
             if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);

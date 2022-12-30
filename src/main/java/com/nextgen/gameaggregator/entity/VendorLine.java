@@ -16,6 +16,6 @@ public class VendorLine {
     private Vendor vendor;
     private Integer houseId;
     private Integer status;
-    @OneToMany(mappedBy = "vendorLineId")
+    @OneToMany(mappedBy = "vendorLineId", fetch = FetchType.EAGER)
     private List<VendorLineCredential> credentials;
 }

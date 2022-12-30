@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
@@ -12,6 +14,7 @@ import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinVo;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,8 @@ public class WalletService {
     private AgentApiCredentialService agentApiCredentialService;
     @Autowired
     private BetHistoryRepository betHistoryRepository;
+    @Autowired
+    private BetResultLogRepository betResultLogRepository;
     @Autowired
     private WalletBalanceAction walletBalanceAction;
     @Autowired
@@ -45,6 +50,7 @@ public class WalletService {
 
         WalletBalanceVo responseVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
 
+        // TODO: to handle balance returned with more than 4 decimals
         // TODO: implement error handling
         return responseVo.getData().getBalance();
     }
@@ -98,8 +104,18 @@ public class WalletService {
         return responseVo.getData().getBalance();
     }
 
-    public BigDecimal processWin(String traceId, GameSession gameSession, BetData betData) {
+    public BigDecimal processWin(String traceId, GameSession gameSession, BetData betData) throws BetNotFoundException {
         Integer agentId = gameSession.getAgentId();
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        String roundId = betData.getRoundId();
+
+        BetHistory betHistory = betHistoryRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
+        if (betHistory == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException();
+        }
+
+        String referenceTransactionId = betHistory.getId();
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
         String signature = ""; // TODO: implement signature generation
 
@@ -110,14 +126,34 @@ public class WalletService {
         walletWinDto.setCurrency(gameSession.getCurrencyCode());
         walletWinDto.setToken(gameSession.getToken());
         walletWinDto.setExternalTransactionId(betData.getExternalTransactionId());
-        walletWinDto.setReferenceTransactionId(null);
+        walletWinDto.setReferenceTransactionId(referenceTransactionId);
         walletWinDto.setAmount(betData.getAmount());
         walletWinDto.setGameId(betData.getGameId()); // TODO: game code mapping
-        walletWinDto.setRoundId(betData.getRoundId());
+        walletWinDto.setRoundId(roundId);
         walletWinDto.setWinType(WalletWinAction.TYPE_WIN);
         walletWinDto.setTimestamp(betData.getTimestamp());
 
         WalletWinVo responseVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+
+        if (responseVo.getStatus().equals(ResponseCodes.SUCCESS)) {
+            BetResultLog betResultLog = new BetResultLog();
+            betResultLog.setId(traceId);
+            betResultLog.setReferenceTransactionId(referenceTransactionId);
+            betResultLog.setExternalTransactionId(walletWinDto.getExternalTransactionId());
+            betResultLog.setRoundId(roundId);
+            betResultLog.setVendorGameId(vendorGameId);
+            betResultLog.setVendorPlayerId(vendorPlayerId);
+            betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
+            betResultLog.setAgentId(gameSession.getAgentId());
+            betResultLog.setCurrencyId(0);
+            betResultLog.setWinAmount(walletWinDto.getAmount());
+            betResultLog.setResultType(0);
+            betResultLog.setStatus(1);
+            betResultLog.setVendorTime(walletWinDto.getTimestamp());
+            betResultLog.setCreateDate(System.currentTimeMillis());
+
+            betResultLogRepository.save(betResultLog);
+        }
 
         return responseVo.getData().getBalance();
     }

@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.operator.game.url;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl.GameUrlVo;
+import com.nextgen.gameaggregator.operator.game.url.GameUrlVo;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Map;

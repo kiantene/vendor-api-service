@@ -3,8 +3,11 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -12,7 +15,7 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CashTransferInOutDto extends CommonDto {
+public class CashTransferInOutDto extends CommonDto implements BetData {
 
     /**
      * Authentication Information
@@ -98,4 +101,30 @@ public class CashTransferInOutDto extends CommonDto {
     private Integer bonusId;
     private BigDecimal bonusBalanceAmount;
     private BigDecimal bonusRatioAmount;
+
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.betId;
+    }
+
+    @Override
+    public BigDecimal getAmount() {
+        return this.betAmount;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.parentBetId;
+    }
+
+    @Override
+    public String getGameId() {
+        return String.valueOf(this.gameId);
+    }
+
+    @Override
+    public Long getTimestamp() {
+        return this.createTime;
+    }
 }

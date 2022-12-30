@@ -59,5 +59,6 @@ public class ResultDto implements BetData {
     @NotBlank
     private String token;
 
+    @Override
     public String getExternalTransactionId() { return this.reference; }
 }

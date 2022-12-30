@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +63,7 @@ public class CashGetAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
             // 3. Validate vendor player username
+            // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
 
             // 4. Retrieve vendor line operatorToken and secretKey for validation
@@ -79,15 +81,17 @@ public class CashGetAction {
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
 
-
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (AuthenticationException authenticationException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
 
         } catch (NoAvailableLineException noAvailableLineException) {
             parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
@@ -98,7 +102,6 @@ public class CashGetAction {
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
-
         } finally {
             if (parentResponseVo.getError() != null) {
                 httpRequestLog.setStatus(HttpService.ERROR);
