@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,12 @@ public class CashTransferInOutAction {
 //              eventDispatcher.emit(LoseClass.getClass(), body);
 //              eventDispatcher.emit(FreeSpinClass.getClass(), body);
 //            }
+            String betType = VendorService.identifyBetType(dto);
+            System.out.println("============= Bet Type ================================================");
+            System.out.println(betType);
+            System.out.println("-----------------");
+            System.out.println(body);
+            System.out.println("=========================================================================");
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
