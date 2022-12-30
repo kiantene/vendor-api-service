@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
@@ -27,7 +28,7 @@ public class EndRoundDto {
     // Id of the round.
     @NotBlank
     @Size(max = 100)
-    @Pattern(regexp = "^[a-zA-Z0-9]+$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String roundId;
 
     // Game Provider id.

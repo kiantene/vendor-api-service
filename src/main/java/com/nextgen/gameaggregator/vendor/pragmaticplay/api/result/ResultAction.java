@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.event.EventDispatcher;
+import com.nextgen.gameaggregator.event.BetResultEvent;
+import com.nextgen.gameaggregator.event.EventDispatcherSystem;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -31,8 +33,6 @@ public class ResultAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private EventDispatcher eventDispatcher;
 
     @PostMapping(path = Endpoints.RESULT)
     public ResultVo betResult(HttpServletRequest request) {
@@ -52,6 +52,8 @@ public class ResultAction {
             ValidationUtils.validateVendorUsername(dto.getUserId());
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
+            // TODO: validate gameId
+
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
             // Throw exception if received username differs from game session
@@ -65,17 +67,15 @@ public class ResultAction {
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
-            // TODO: check for duplicate reference
-
             // 5. Send win result to Operator
-            BigDecimal balance = walletService.processWin(traceId, gameSession, dto);
+            BetResultLog betResultLog = walletService.processWin(traceId, gameSession, dto, body);
 
             // Emit event for additional asynchronous processing
-            eventDispatcher.emit(getClass(), body);
+            EventDispatcherSystem.emit(new BetResultEvent(betResultLog));
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
-            responseVo.setCash(balance);
+            responseVo.setCash(betResultLog.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -96,9 +96,13 @@ public class ResultAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setError(ResponseCodes.INVALID_HASH);
 
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage("Round Id not found");
+            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);

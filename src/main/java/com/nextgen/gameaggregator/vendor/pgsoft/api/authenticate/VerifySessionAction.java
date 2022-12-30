@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
@@ -35,8 +34,6 @@ public class VerifySessionAction {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private EventDispatcher eventDispatcher;
 
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
@@ -72,7 +69,7 @@ public class VerifySessionAction {
             VendorService.validateOperatorTokenAndSecretKey(dto.getOperatorToken(), dto.getSecretKey(), operatorToken, secretKey);
 
             // Emit event for additional asynchronous processing
-            eventDispatcher.emit(getClass(), body);
+//            eventDispatcher.emit(getClass(), body);
 
             // Fill VO required values
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());

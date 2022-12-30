@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -32,8 +31,6 @@ public class AuthenticateAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private EventDispatcher eventDispatcher;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
@@ -67,7 +64,7 @@ public class AuthenticateAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Emit event for additional asynchronous processing
-            eventDispatcher.emit(getClass(), body);
+//            eventDispatcher.emit(getClass(), body);
 
             responseVo.setUserId(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
