@@ -76,7 +76,9 @@ public class EndRoundAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);

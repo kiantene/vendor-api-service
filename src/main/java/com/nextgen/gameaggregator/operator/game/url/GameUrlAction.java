@@ -69,18 +69,18 @@ public class GameUrlAction {
 
             Integer agentId = apiCredential.getAgent().getId();
             Integer vendorId = vendorGame.getVendorId();
-            Integer currencyId = apiCredential.getAgent().getCurrency().getId();
+            Currency currency = apiCredential.getAgent().getCurrency();
 
             // 6. Check if trace Id has been sent before
             gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId());
 
             // 7. Retrieve vendor line credentials
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currencyId);
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             // 8. Check if vendor player account exists
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
-            gameSessionService.createSession(gameSession, dto, vendorGame.getId());
+            gameSessionService.createSession(gameSession, dto, vendorGame, currency);
             log.info(gameSession.toString());
 
             // 9. Request game url from vendor

@@ -21,9 +21,11 @@ public class GameSession extends BaseEntity {
     private String agentPlayerUsername;
     private String vendorPlayerUsername;
     private Long vendorPlayerId;
+    private Integer vendorId;
     private Integer vendorLineId;
     private Integer vendorGameId;
     private String language;
+    private Integer currencyId;
     private String currencyCode;
     private String traceId;
     private Integer status;
