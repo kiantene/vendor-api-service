@@ -13,8 +13,6 @@ import java.time.Duration;
 @Service
 @Slf4j
 public class WalletWinAction {
-    public static final String TYPE_WIN = "win";
-    public static final String TYPE_JACKPOT = "jackpot";
 
     public WalletWinVo call(String callbackUrl, String signature, WalletWinDto dto) {
         log.info(dto.toString());

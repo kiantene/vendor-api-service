@@ -36,7 +36,7 @@ public class GameUrlAction {
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
-        responseVo.setStatus(ResponseCodes.SUCCESS);
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
         final String X_API_KEY = "X-API-Key";
         final String X_SIGNATURE = "X-Signature";
 
@@ -90,32 +90,32 @@ public class GameUrlAction {
         } catch (IllegalArgumentException illegalArgumentException) {
             // thrown when any field encountered type mismatch during conversion from json to dto
             log.error(illegalArgumentException.toString());
-            responseVo.setStatus(ResponseCodes.MISMATCHED_DATA_TYPE);
+            responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setStatus(ResponseCodes.INVALID_REQUEST);
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
 
         } catch (AuthenticationException authenticationException) {
-            responseVo.setStatus(ResponseCodes.AUTHENTICATION_FAILED);
+            responseVo.setStatus(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
         } catch (InvalidSignatureException invalidSignatureException) {
-            responseVo.setStatus(ResponseCodes.INVALID_SIGNATURE);
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_SIGNATURE);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            responseVo.setStatus(ResponseCodes.INVALID_GAME);
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_GAME);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            responseVo.setStatus(ResponseCodes.CURRENCY_NOT_SUPPORTED);
+            responseVo.setStatus(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
 
         } catch (DuplicateRequestException duplicateRequestException) {
-            responseVo.setStatus(ResponseCodes.DUPLICATE_REQUEST);
+            responseVo.setStatus(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
 
         } catch (NoAvailableLineException noAvailableLineException) {
-            responseVo.setStatus(ResponseCodes.UNDER_MAINTENANCE);
+            responseVo.setStatus(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
 
         } catch (Exception exception) {
-            responseVo.setStatus(ResponseCodes.UNKNOWN_ERROR);
+            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpRequestLog.setStatus(1);
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
             exception.printStackTrace();
