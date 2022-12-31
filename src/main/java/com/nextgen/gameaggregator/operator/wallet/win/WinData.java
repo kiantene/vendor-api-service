@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.win;
 
+import com.nextgen.gameaggregator.enums.WinType;
+
 import java.math.BigDecimal;
 
 public interface WinData {
@@ -8,5 +10,5 @@ public interface WinData {
     String getRoundId();
     String getGameId();
     Long getTimestamp();
-    String getWinType();
+    WinType getWinType();
 }

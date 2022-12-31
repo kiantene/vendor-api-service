@@ -11,9 +11,12 @@ public class EventConfig {
 
     @Autowired
     private BetResultEventListener betResultEventListener;
+    @Autowired
+    private EndRoundEventListener endRoundEventListener;
 
     @Bean("eventListeners")
     public void eventListeners() {
         EventDispatcherSystem.addListener(BetResultEvent.class, betResultEventListener);
+        EventDispatcherSystem.addListener(EndRoundEvent.class, endRoundEventListener);
     }
 }

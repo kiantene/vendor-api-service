@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -70,7 +71,7 @@ public class ResultDto implements WinData {
     }
 
     @Override
-    public String getWinType() {
-        return WalletWinAction.TYPE_WIN;
+    public WinType getWinType() {
+        return WinType.WIN;
     }
 }

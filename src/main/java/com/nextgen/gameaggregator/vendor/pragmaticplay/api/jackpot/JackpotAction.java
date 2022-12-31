@@ -91,9 +91,6 @@ public class JackpotAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
-//        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
-//            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setError(ResponseCodes.INVALID_HASH);
 
