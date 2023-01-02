@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,10 +14,10 @@ import java.time.Duration;
 @Service
 @Slf4j
 public class WalletBetAction {
-    public WalletBetVo call(String callbackUrl, String signature, WalletBetDto dto) {
+    public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) {
         log.info(dto.toString());
 
-        WalletBetVo responseVo = WebClient.create(callbackUrl)
+        WalletBalanceVo responseVo = WebClient.create(callbackUrl)
                 .post()
                 .uri(Endpoints.WALLET_BET)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -33,7 +34,7 @@ public class WalletBetAction {
                                 // throw original error
                                 .then(response.createException())
                 )
-                .bodyToMono(WalletBetVo.class)
+                .bodyToMono(WalletBalanceVo.class)
                 .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
                 .block();
 

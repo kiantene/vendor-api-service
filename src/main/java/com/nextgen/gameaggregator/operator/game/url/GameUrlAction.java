@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.operator.game.url;
 
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -36,9 +37,6 @@ public class GameUrlAction {
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
-        responseVo.setStatus(ResponseCodes.Status.SC_OK);
-        final String X_API_KEY = "X-API-Key";
-        final String X_SIGNATURE = "X-Signature";
 
         try {
             // Retrieve request body in original string format
@@ -51,13 +49,14 @@ public class GameUrlAction {
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
-            // TODO: need to validate username (no special characters or chinese)
 
             // 2. Check if api key is valid
-            AgentApiCredential apiCredential = validationService.validateApiKey(request.getHeader(X_API_KEY));
+            String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
+            AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
             // 3. Validate the signature
-            validationService.validateSignature(body, apiCredential.getApiSecret(), request.getHeader(X_SIGNATURE));
+            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
             // 4. Check if currency is supported
             gameUrlService.checkCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
@@ -116,7 +115,7 @@ public class GameUrlAction {
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-            httpRequestLog.setStatus(1);
+            httpRequestLog.setStatus(1); // TODO: use enum
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
             exception.printStackTrace();
 

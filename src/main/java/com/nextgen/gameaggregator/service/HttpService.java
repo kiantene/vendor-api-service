@@ -100,6 +100,7 @@ public class HttpService {
         ObjectMapper mapper = new ObjectMapper();
         T object;
 
+        // TODO: To review on this exception handling
         try {
             object = mapper.convertValue(queryParameterMap, objectClass);
         } catch (IllegalArgumentException illegalArgumentException) {

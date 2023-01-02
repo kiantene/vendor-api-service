@@ -5,8 +5,8 @@ import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -35,7 +35,7 @@ public class GameUrlAction implements GameUrl {
         formData.add("symbol", gameCode);
         formData.add("language", gameSession.getLanguage());
         formData.add("token", gameSession.getToken());
-        String hash = generateHash(formData, secret);
+        String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
 
         return formData;
@@ -64,18 +64,5 @@ public class GameUrlAction implements GameUrl {
         }
 
         return responseVo;
-    }
-
-    public static String generateHash(MultiValueMap<String, String> params, String secret) {
-        String payload = params.keySet().stream().sorted()
-                .map(key -> key + "=" + params.get(key).get(0))
-                .collect(Collectors.joining("&"));
-
-        return generateHash(payload, secret);
-    }
-
-    public static String generateHash(String payload, String secret) {
-        payload += secret;
-        return DigestUtils.md5Hex(payload);
     }
 }

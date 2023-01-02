@@ -12,4 +12,8 @@ public enum BetStatus {
 
     public final Integer code;
     public final String description;
+
+    public boolean isValueOf(Integer status) {
+        return status.equals(code);
+    }
 }
