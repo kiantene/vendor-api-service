@@ -228,8 +228,9 @@ public class WalletService {
         WalletBalanceVo balanceVo = walletRefundAction.call(callbackUrl, signature, walletRefundDto);
 
         BetRefundLog betRefundLog = new BetRefundLog();
+        BigDecimal balance = null;
         if (balanceVo.getStatus() == ResponseCodes.Status.SC_OK) {
-            BigDecimal balance = balanceVo.getData().getBalance(); // TODO: check for null
+            balance = balanceVo.getData().getBalance(); // TODO: check for null
 
             betRefundLog.setBetHistoryId(betHistory.getId());
             betRefundLog.setExternalTransactionId(externalTransactionId);
@@ -251,6 +252,6 @@ public class WalletService {
         }
 
         // TODO: to refactor currency
-        return new BetRefundEvent(betHistory, betRefundLog, balanceVo.getData().getCurrency(), balanceVo.getData().getBalance());
+        return new BetRefundEvent(betHistory, betRefundLog, balance);
     }
 }
