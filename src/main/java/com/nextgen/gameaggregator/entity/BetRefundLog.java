@@ -2,16 +2,15 @@ package com.nextgen.gameaggregator.entity;
 
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "bet_result_log")
+@Table(name = "bet_refund_log")
 @Data
-public class BetResultLog {
+public class BetRefundLog {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
     private String betHistoryId;
     private String externalTransactionId;
@@ -21,11 +20,8 @@ public class BetResultLog {
     private Long agentPlayerId;
     private Integer agentId;
     private Integer currencyId;
-    private BigDecimal winAmount;
-    private Integer resultType;
     private BigDecimal balance;
     private String rawData;
     private Integer status;
-    private Long vendorTime;
     private Long createTime;
 }

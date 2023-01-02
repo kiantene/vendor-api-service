@@ -44,13 +44,6 @@ public class GameSessionService {
         gameSessionRepository.save(gameSession);
     }
 
-    public VendorPlayer findVendorPlayerByUsername(String username) throws InvalidPlayerException {
-        VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(username);
-        Optional.ofNullable(vendorPlayer).orElseThrow(InvalidPlayerException::new);
-
-        return vendorPlayer;
-    }
-
     public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {
         // TODO: require optimisation
         Optional<AgentPlayer> agentPlayer = agentPlayerRepository.findById(agentPlayerId);

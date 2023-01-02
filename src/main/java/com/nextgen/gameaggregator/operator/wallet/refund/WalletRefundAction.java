@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.wallet.win;
+package com.nextgen.gameaggregator.operator.wallet.refund;
 
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
@@ -13,14 +13,13 @@ import java.time.Duration;
 
 @Service
 @Slf4j
-public class WalletWinAction {
-
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletWinDto dto) {
+public class WalletRefundAction {
+    public WalletBalanceVo call(String callbackUrl, String signature, WalletRefundDto dto) {
         log.info(dto.toString());
 
         WalletBalanceVo responseVo = WebClient.create(callbackUrl)
                 .post()
-                .uri(Endpoints.WALLET_WIN)
+                .uri(Endpoints.WALLET_REFUND)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(Endpoints.HEADER_SIGNATURE, signature)

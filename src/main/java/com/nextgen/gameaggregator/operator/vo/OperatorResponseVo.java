@@ -9,7 +9,7 @@ import java.util.Map;
 @Data
 public class OperatorResponseVo<T> {
     private String traceId;
-    private ResponseCodes.Status status;
+    private ResponseCodes.Status status = ResponseCodes.Status.SC_OK;
     private String message;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

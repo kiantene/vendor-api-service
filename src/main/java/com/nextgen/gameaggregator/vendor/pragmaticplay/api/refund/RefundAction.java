@@ -1,10 +1,9 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
+package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -25,72 +24,62 @@ import java.util.UUID;
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
-public class EndRoundAction {
+public class RefundAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private GameSessionService gameSessionService;
+    private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private BetHistoryService betHistoryService;
 
-    @PostMapping(path = Endpoints.END_ROUND)
-    public ResponseVo endRound(HttpServletRequest request) {
+    @PostMapping(path = Endpoints.REFUND)
+    public ResponseVo refund(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        EndRoundVo responseVo = new EndRoundVo();
+        RefundVo responseVo = new RefundVo();
         String traceId = UUID.randomUUID().toString();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
-            // Convert original request body into dto
-            EndRoundDto dto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
+            RefundDto dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateVendorUsername(dto.getUserId());
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
-            // TODO: validate gameId
+            // 2. Retrieve vendor player information based on given userId
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(dto.getUserId());
 
-            // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            // 3. Retrieve vendor line's secretKey for hash validation
+            String secretKey = vendorLineService.getCredentialValueByName(vendorPlayer.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
-            // 5. Retrieve the bet transaction
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+            // 5. Send refund to Operator
+            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getExternalTransactionId(), vendorPlayer, body);
 
-            // 6. Retrieve the latest wallet balance from Operator
-            // TODO: performance tuning, may cache the last balance from Result and use that
-            //  last balance to return to vendor, instead of making another call to Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // Emit event for additional asynchronous processing such as publishing data to a kafka topic
+            EventDispatcherSystem.emitAsync(betRefundEvent);
 
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(new EndRoundEvent(betHistory));
-
-            responseVo.setCash(balance);
+            responseVo.setTransactionId(traceId);
+            responseVo.setCurrency(betRefundEvent.getCurrency()); // TODO: vendor currency map
+            responseVo.setCash(betRefundEvent.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
-                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+                String validations = invalidRequestException.getValidation().toString();
+                log.error(validations);
+                httpRequestLog.setErrorMessage(validations);
             }
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setError(ResponseCodes.INVALID_HASH);

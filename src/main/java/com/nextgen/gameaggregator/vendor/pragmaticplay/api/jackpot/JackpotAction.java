@@ -1,10 +1,9 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
-import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.event.BetResultEvent;
-import com.nextgen.gameaggregator.event.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -69,14 +68,14 @@ public class JackpotAction {
             VendorService.validateHash(body, secretKey);
 
             // 5. Send win result to Operator
-            BetResultLog betResultLog = walletService.processWin(traceId, gameSession, dto, body);
+            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
 
             // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emit(new BetResultEvent(betResultLog));
+            EventDispatcherSystem.emitAsync(betResultEvent);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
-            responseVo.setCash(betResultLog.getBalance());
+            responseVo.setCash(betResultEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

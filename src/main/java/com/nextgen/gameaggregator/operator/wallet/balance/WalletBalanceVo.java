@@ -17,7 +17,7 @@ public class WalletBalanceVo extends ResponseVo {
     @Data
     public static class ResponseData {
         private String username;
-        private BigDecimal balance;
+        private BigDecimal balance; // TODO: accepts only up to 4 decimals
         private String currency;
     }
 

@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.event.EventDispatcher;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
@@ -36,8 +35,7 @@ public class CashTransferInOutAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private EventDispatcher eventDispatcher;
+
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(WebRequestWrapper request) {
         // Construct Vo
@@ -76,7 +74,7 @@ public class CashTransferInOutAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             // 4. Send bet request to Operator and check if player has enough balance
-            BigDecimal balance = walletService.processBet(traceId, gameSession, dto);
+            BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
 
             //* hardcoded response
             responseVo.setUpdatedTime(now);

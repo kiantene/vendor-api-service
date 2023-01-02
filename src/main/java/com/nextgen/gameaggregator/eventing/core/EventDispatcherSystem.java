@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.event;
+package com.nextgen.gameaggregator.eventing.core;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -7,10 +7,10 @@ public class EventDispatcherSystem {
 
     private static final Map<Class<? extends Event>, EventDispatcher<?>> dispatchers = new HashMap<>();
 
-    public static <T extends Event> void emit(T event) {
+    public static <T extends Event> void emitAsync(T event) {
         @SuppressWarnings("unchecked")
         EventDispatcher<T> dispatcher = (EventDispatcher<T>) dispatchers.get(event.getClass());
-        dispatcher.emit(event);
+        dispatcher.emitAsync(event);
     }
 
     public static <T extends Event> void addListener(Class<T> eventClass, EventListener<T> listener) {

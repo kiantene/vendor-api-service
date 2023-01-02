@@ -31,9 +31,13 @@ public class BetHistory {
     private BigDecimal winLoss;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
+    private BigDecimal refundAmount;
     private Integer resultType;
+    private String rawData;
     private Integer status;
     private Long vendorBetTime;
     private Long vendorSettleTime;
-    private Long createDate;
+    private Long createTime;
+    private Long resultTime;
+    private Long refundTime;
 }

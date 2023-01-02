@@ -77,7 +77,7 @@ public class BetAction {
 //            betService.createRecordToKafkaBetHistoryTopic(seamlessBetRequestId, authenticatedUser, requestBody);
 
             // 5. Send bet request to Operator and check if player has enough balance
-            BigDecimal balance = walletService.processBet(traceId, gameSession, dto);
+            BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
             boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
             if (isNegativeBalance) throw new InsufficientBalanceException();
 
