@@ -39,13 +39,13 @@ public class VendorService {
             return BetTypes.REQUEST_AND_LOSE;
         } else if (dto.getParentBetId().equals(dto.getBetId()) && dto.getIsEndRound() == false) {
             // Win Bet Request
-            return BetTypes.REQUEST;
+            return BetTypes.REQUEST_AND_WIN;
         } else if (!dto.getParentBetId().equals(dto.getBetId()) && dto.getIsEndRound() == true) {
             // Win End Rounnd
             return BetTypes.END_ROUND;
         } else if (!dto.getParentBetId().equals(dto.getBetId()) && dto.getIsEndRound() == false) {
             // Freespin
-            return BetTypes.FREESPIN;
+            return BetTypes.WIN_AND_ONGOING;
         }
 
         return BetTypes.UNIDENTIFIABLE;
