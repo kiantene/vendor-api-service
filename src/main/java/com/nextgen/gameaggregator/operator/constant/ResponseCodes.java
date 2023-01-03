@@ -9,8 +9,10 @@ public class ResponseCodes {
         SC_INVALID_REQUEST,
         SC_AUTHENTICATION_FAILED,
         SC_INVALID_SIGNATURE,
+        SC_INVALID_TOKEN,
         SC_INVALID_GAME,
         SC_INVALID_CURRENCY,
+        SC_USER_NOT_EXISTS,
         SC_DUPLICATE_REQUEST,
         SC_CURRENCY_NOT_SUPPORTED,
         SC_UNDER_MAINTENANCE,
@@ -24,7 +26,9 @@ public class ResponseCodes {
         put(Status.SC_MISMATCHED_DATA_TYPE, "Data type mismatched in one or more parameters.");
         put(Status.SC_AUTHENTICATION_FAILED, "Authentication failed. X-API-Key is missing or invalid.");
         put(Status.SC_INVALID_SIGNATURE, "Invalid signature.");
+        put(Status.SC_INVALID_TOKEN, "Invalid token.");
         put(Status.SC_INVALID_GAME, "Game is not supported.");
+        put(Status.SC_USER_NOT_EXISTS, "User does not exists.");
         put(Status.SC_DUPLICATE_REQUEST, "Same trace Id found.");
         put(Status.SC_CURRENCY_NOT_SUPPORTED, "Currency is not supported.");
         put(Status.SC_UNDER_MAINTENANCE, "Game is under maintenance.");

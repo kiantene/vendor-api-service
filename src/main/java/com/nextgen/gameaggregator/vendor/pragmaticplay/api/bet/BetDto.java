@@ -23,7 +23,7 @@ public class BetDto implements BetData {
     // Id of the game.
     @NotBlank
     @Size(min = 1, max = 32)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String gameId;
 
     // Id of the round.
