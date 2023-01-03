@@ -15,6 +15,7 @@ import java.util.Set;
 public class ValidationUtils {
 
     public static final String ALPHANUMERIC_REGEX = "^[a-zA-Z0-9]+$";
+    public static final String ALPHANUMERIC_DASH_REGEX = "^[a-zA-Z0-9_-]+$";
 
     public static <T> void validateRequest(T requestObject) throws InvalidRequestException {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
