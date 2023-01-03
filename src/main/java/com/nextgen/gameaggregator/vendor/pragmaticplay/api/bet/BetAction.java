@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -47,7 +49,7 @@ public class BetAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateVendorUsername(dto.getUserId());
+            ValidationUtils.validateVendorUsername(dto.getUserId()); // TODO: to support throwing of custom exception
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
@@ -65,28 +67,15 @@ public class BetAction {
 
             // TODO: check for duplicate reference
 
-//            // Get seamless bet request Id
-//            String seamlessBetRequestId = betService.getSeamlessBetRequestId(dto);
-
-//            if (seamlessBetRequestId == null){
-//                // If not finding seamless bet request id, then create one
-//                seamlessBetRequestId = betService.createLogSeamlessBetHistoryRequest(dto, requestBody);
-//            }
-
-//            // Create kafka seamless bet history request data for data transforming
-//            betService.createRecordToKafkaBetHistoryTopic(seamlessBetRequestId, authenticatedUser, requestBody);
-
             // 5. Send bet request to Operator and check if player has enough balance
-            BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
-            boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-            if (isNegativeBalance) throw new InsufficientBalanceException();
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
             // Emit event for additional asynchronous processing
-//            eventDispatcher.emit(getClass(), body);
+            EventDispatcherSystem.emitAsync(betEvent);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
-            responseVo.setCash(balance);
+            responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -107,12 +96,6 @@ public class BetAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setError(ResponseCodes.INSUFFICIENT_BALANCE);
-
-//        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
-//            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-
-//        } catch (CreateLogSeamlessBetHistoryException createLogSeamlessBetHistoryException) {
-//            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);

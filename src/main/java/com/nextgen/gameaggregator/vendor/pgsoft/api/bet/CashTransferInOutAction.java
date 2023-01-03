@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -18,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -74,11 +76,14 @@ public class CashTransferInOutAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             // 4. Send bet request to Operator and check if player has enough balance
-            BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+
+            // Emit event for additional asynchronous processing
+            EventDispatcherSystem.emitAsync(betEvent);
 
             //* hardcoded response
             responseVo.setUpdatedTime(now);
-            responseVo.setBalanceAmount(balance);
+            responseVo.setBalanceAmount(betEvent.getLastBalance());
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -86,6 +91,9 @@ public class CashTransferInOutAction {
 
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            // TODO: To set appropriate error code
 
         } finally {
             if (parentResponseVo.getError() != null) {

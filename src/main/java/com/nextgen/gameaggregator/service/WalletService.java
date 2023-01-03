@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -70,7 +71,7 @@ public class WalletService {
      * @param rawData Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BigDecimal processBet(String traceId, GameSession gameSession, BetData betData, String rawData) {
+    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws InsufficientBalanceException {
         Integer agentId = gameSession.getAgentId();
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
         String signature = ""; // TODO: implement signature generation
@@ -89,8 +90,13 @@ public class WalletService {
 
         WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
 
+        BetHistory betHistory = new BetHistory();
+        BigDecimal balance = BigDecimal.ZERO;
         if (balanceVo.getStatus() == ResponseCodes.Status.SC_OK) {
-            BetHistory betHistory = new BetHistory();
+            balance = balanceVo.getData().getBalance();
+            boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+            if (isNegativeBalance) throw new InsufficientBalanceException();
+
             betHistory.setId(traceId);
             betHistory.setExternalTransactionId(walletBetDto.getExternalTransactionId());
             betHistory.setRoundId(walletBetDto.getRoundId());
@@ -114,7 +120,8 @@ public class WalletService {
             // TODO: to decide whether to save bet record for insufficient balance
         }
 
-        return balanceVo.getData().getBalance();
+        // TODO: check for null pointer
+        return new BetEvent(betHistory, balance);
     }
 
     /**
