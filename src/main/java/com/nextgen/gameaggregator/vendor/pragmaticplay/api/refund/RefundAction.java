@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @RestController
@@ -66,9 +65,6 @@ public class RefundAction {
             EventDispatcherSystem.emitAsync(betRefundEvent);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(betRefundEvent.getCurrency()); // TODO: vendor currency map
-            responseVo.setCash(betRefundEvent.getBalance());
-            responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
@@ -85,7 +81,8 @@ public class RefundAction {
             responseVo.setError(ResponseCodes.INVALID_HASH);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            // Don't throw error even if Bet is not found
+            responseVo.setTransactionId(traceId); // TODO: need to update to the correct refund Id
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered

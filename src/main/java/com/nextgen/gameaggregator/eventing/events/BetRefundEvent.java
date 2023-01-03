@@ -13,6 +13,5 @@ import java.math.BigDecimal;
 public class BetRefundEvent implements Event {
     private BetHistory betHistory;
     private BetRefundLog betRefundLog;
-    private String currency;
-    private BigDecimal balance;
+    private BigDecimal lastBalance;
 }
