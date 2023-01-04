@@ -36,6 +36,7 @@ public class BetAction {
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
+        //TODO (by Alex), should httpService.logRequest throw exception instead try catch within its method
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         BetVo responseVo = new BetVo();
         String traceId = UUID.randomUUID().toString();
@@ -50,10 +51,17 @@ public class BetAction {
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateVendorUsername(dto.getUserId()); // TODO: to support throwing of custom exception
+
+            //TODO (by Alex), get the provider ID from vendor_line_credentials tables and also the check the line status
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+
+            //TODO (by Alex), should check the credential line status based on game_sessions table's vendor_line_id and block if the credential line status is disable
+
+            //TODO (by Alex), should check the agent player status based on game_sessions table's agent_player_id and block if the player status is disable
+
             // Throw exception if received username differs from game session
             if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
                 throw new InvalidPlayerException();
@@ -61,6 +69,9 @@ public class BetAction {
 
             // 3. Retrieve vendor line credentials and secretKey for hash validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+            //TODO (by Alex), validate gameId is existed in DB and the status is enable
+            //TODO (by Alex), should have child game table for save vendor game code by language, platform
 
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
@@ -110,6 +121,7 @@ public class BetAction {
             ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
+        //TODO should the trace Id return for all the responses even the request is fail?
         return responseVo;
     }
 }

@@ -36,6 +36,7 @@ public class ResultAction {
 
     @PostMapping(path = Endpoints.RESULT)
     public ResponseVo betResult(HttpServletRequest request) {
+        //TODO (by Alex), should httpService.logRequest throw exception instead try catch within its method
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         ResultVo responseVo = new ResultVo();
         String traceId = UUID.randomUUID().toString();
@@ -50,6 +51,8 @@ public class ResultAction {
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateVendorUsername(dto.getUserId());
+
+            //TODO (by Alex), get the provider ID from vendor_line_credentials tables
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // TODO: validate gameId
@@ -64,11 +67,16 @@ public class ResultAction {
             // 3. Retrieve vendor line credentials and secretKey for hash validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
+            //TODO (by Alex), validate gameId is existed in DB
+            //TODO (by Alex), pre-handle if gameId is not existed in DB
+
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
             // 5. Send win result to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
+
+            //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
 
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(betResultEvent);
@@ -117,6 +125,7 @@ public class ResultAction {
             ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
         }
 
+        //TODO should the trace Id return for all the responses even the request is fail?
         return responseVo;
     }
 }

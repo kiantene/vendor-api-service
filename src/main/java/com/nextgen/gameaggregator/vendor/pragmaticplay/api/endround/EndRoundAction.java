@@ -63,11 +63,17 @@ public class EndRoundAction {
             // 3. Retrieve vendor line credentials and secretKey for hash validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
+            //TODO (by Alex), validate gameId is existed in DB
+            //TODO (by Alex), pre-handle if gameId is not existed in DB
+
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
             // 5. Retrieve the bet transaction
             BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
+            //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
+
 
             // 6. Retrieve the latest wallet balance from Operator
             // TODO: performance tuning, may cache the last balance from Result and use that
