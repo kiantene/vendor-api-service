@@ -2,6 +2,15 @@ server:
   port: 8082
   http2:
     enabled: true
+  tomcat:
+    accept-count: 1000 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
+    max-connections: 10000 # Maximum number of connections that the server accepts and processes at any given time.
+    max-threads: 500 # Maximum amount of worker threads.
+    min-spare-threads: 50 # Minimum amount of worker threads.
+    accesslog:
+      enabled: true
+    basedir: .. # pointing to parent folder, to be configured when deploying to server
+
 mavenTimestamp: @timestamp@
 sas:
   enabled: false
