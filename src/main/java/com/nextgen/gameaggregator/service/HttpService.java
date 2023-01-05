@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
@@ -53,7 +55,8 @@ public class HttpService {
     public void logResponse(HttpRequestLog requestLog, Object responseVo, String traceId) {
         if (requestLog != null) {
             try {
-                String responseBody = new ObjectMapper().writeValueAsString(responseVo);
+                Gson gson = new GsonBuilder().create();
+                String responseBody = gson.toJson(responseVo);
                 requestLog.setResponseBody(responseBody);
                 requestLog.setTraceId(traceId);
                 if (requestLog.getEndTime() == null) {
