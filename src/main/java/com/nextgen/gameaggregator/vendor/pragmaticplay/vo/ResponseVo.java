@@ -14,7 +14,7 @@ public class ResponseVo {
     }
 
     @JsonIgnore
-    public boolean isError() {
+    public boolean hasError() {
         return !this.error.equals(ResponseCodes.SUCCESS);
     }
 }

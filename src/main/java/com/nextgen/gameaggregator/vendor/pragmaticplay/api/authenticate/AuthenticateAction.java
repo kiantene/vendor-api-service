@@ -92,8 +92,8 @@ public class AuthenticateAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo, responseVo.isError());
+            responseVo.setDescription( ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
+            httpService.end(httpRequestLog, responseVo, responseVo.hasError());
         }
 
         return responseVo;
