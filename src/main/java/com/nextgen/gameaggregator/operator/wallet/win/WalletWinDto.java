@@ -15,7 +15,7 @@ public class WalletWinDto {
     private BigDecimal amount;
     private String currency;
     private String token;
-    private String gameId;
+    private String gameCode;
     private String roundId;
     private WinType winType;
     private Long timestamp;

@@ -84,7 +84,7 @@ public class WalletService {
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
         walletBetDto.setAmount(betData.getAmount());
-        walletBetDto.setGameId(betData.getGameId()); // TODO: game code mapping
+        walletBetDto.setGameCode(betData.getGameId()); // TODO: game code mapping
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
 
@@ -164,7 +164,7 @@ public class WalletService {
         walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(betHistory.getId());
         walletWinDto.setAmount(winData.getAmount());
-        walletWinDto.setGameId(winData.getGameId()); // TODO: game code mapping
+        walletWinDto.setGameCode(winData.getGameId()); // TODO: game code mapping
         walletWinDto.setRoundId(roundId);
         walletWinDto.setWinType(winData.getWinType());
         walletWinDto.setTimestamp(winData.getTimestamp());
@@ -230,7 +230,7 @@ public class WalletService {
         walletRefundDto.setUsername(agentPlayer.getUsername());
         walletRefundDto.setExternalTransactionId(externalTransactionId);
         walletRefundDto.setReferenceTransactionId(betHistory.getId());
-        walletRefundDto.setGameId(betHistory.getVendorGameId().toString()); // TODO: update to correct game Id
+        walletRefundDto.setGameCode(betHistory.getVendorGameId().toString()); // TODO: update to correct game Id
         walletRefundDto.setRoundId(betHistory.getRoundId());
         walletRefundDto.setTimestamp(currentTimestamp);
 

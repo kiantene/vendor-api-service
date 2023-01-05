@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,8 +29,6 @@ public class GameUrlAction {
     private VendorLineService vendorLineService;
     @Autowired
     private GameSessionService gameSessionService;
-    @Autowired
-    private VendorService vendorService;
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
@@ -63,7 +60,7 @@ public class GameUrlAction {
             gameUrlService.checkCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
 
             // 5. Check if game is supported
-            VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameId());
+            VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameCode());
 
             // TODO: to check available platform
 

@@ -13,7 +13,7 @@ public class WalletBetDto {
     private BigDecimal amount;
     private String currency;
     private String token;
-    private String gameId;
+    private String gameCode;
     private String roundId;
     private Long timestamp;
 }

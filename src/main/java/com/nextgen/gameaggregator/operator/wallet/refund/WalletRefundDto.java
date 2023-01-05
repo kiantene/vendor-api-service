@@ -9,7 +9,7 @@ public class WalletRefundDto {
     private String transactionId;
     private String externalTransactionId;
     private String referenceTransactionId;
-    private String gameId;
+    private String gameCode;
     private String roundId;
     private Long timestamp;
 }

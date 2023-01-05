@@ -17,10 +17,10 @@ public class GameUrlDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String username;
 
-    @NotNull
-    @Digits(integer = 5, fraction = 0)
-    // TODO: to be changed to string type game code instead
-    private Integer gameId;
+    @NotBlank
+    @Size(min = 1, max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    private String gameCode;
 
     @NotBlank
     @Size(min = 2, max = 2)
