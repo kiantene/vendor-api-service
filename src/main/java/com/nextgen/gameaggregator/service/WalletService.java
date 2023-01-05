@@ -114,6 +114,8 @@ public class WalletService {
             betHistory.setVendorBetTime(walletBetDto.getTimestamp());
 
             betHistoryService.create(betHistory);
+        } else if (balanceVo.getStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS) {
+            throw new InsufficientBalanceException();
         } else {
             // TODO: throw exception
             log.error("ProcessBet: " + balanceVo);
