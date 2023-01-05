@@ -76,19 +76,24 @@ public class VerifySessionAction {
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (AuthenticationException authenticationException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         }  catch (NoAvailableLineException noAvailableLineException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (Exception exception) { // any other exception encountered
-            parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
+            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
             httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
         } finally {
             if (parentResponseVo.getError() != null) {
