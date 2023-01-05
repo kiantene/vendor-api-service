@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -35,9 +34,9 @@ public class RefundAction {
 
     @PostMapping(path = Endpoints.REFUND)
     public ResponseVo refund(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
         RefundVo responseVo = new RefundVo();
-        String traceId = UUID.randomUUID().toString();
+        String traceId = httpRequestLog.getTraceId();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -83,19 +82,15 @@ public class RefundAction {
         } catch (BetNotFoundException betNotFoundException) {
             // Don't throw error even if Bet is not found
             responseVo.setTransactionId(traceId); // TODO: need to update to the correct refund Id
-            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, responseVo.isError());
         }
 
         return responseVo;

@@ -1,27 +1,32 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.authenticate;
+package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.vendor.cq9.api.balance.BalanceDto;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class CheckPlayerAction {
+public class BetAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -31,43 +36,29 @@ public class CheckPlayerAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @GetMapping(path = EndPoints.AUTHENTICATE)
-    public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request) {
+    @GetMapping(path = EndPoints.BET)
+    public ResponseVo<CommonVo> bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
         // Construct Vo
-        ResponseVo<Boolean> responseVo = new ResponseVo<>();
+        ResponseVo<CommonVo> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
 
-        Boolean isValid = false;
+        CommonVo commonVo = new CommonVo();
 
         try {
-            /*
-            // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(checkPlayerDto);
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
 
-            // 2. Verify session token
-            // Need to retrieve line credentials from game session in order to validate hash
-            // If Token has been tampered, then AuthenticationException will be thrown
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // Convert original request body into dto
+            BalanceDto balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
 
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            commonVo.setBalance(BigDecimal.valueOf(100));
+            commonVo.setCurrency("CNY");
 
-            // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
-
-            // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
-            // Emit event for additional asynchronous processing
-            // eventDispatcher.emit(getClass(), body);
-            */
-            isValid = true;
-
-            responseVo.setData(isValid);
+            responseVo.setData(commonVo);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

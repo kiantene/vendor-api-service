@@ -22,7 +22,6 @@ import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 @RestController
 @RequestScope
@@ -40,17 +39,20 @@ public class CashGetAction {
 
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo<CashGetVo> balance(WebRequestWrapper request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getTraceId();
+
+        System.out.println("====================hello check balance =============================");
         // Construct Vo
         ResponseVo<CashGetVo> parentResponseVo = new ResponseVo<>();
         CashGetVo responseVo = new CashGetVo();
         parentResponseVo.setData(responseVo);
 
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        String traceId = UUID.randomUUID().toString();
-
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
+            System.out.println(body);
+
             // Convert original request body into dto
             CashGetDto dto = HttpService.convertQueryStringToDto(body, CashGetDto.class);
 
@@ -75,39 +77,43 @@ public class CashGetAction {
 
             // 6. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
             // Fill VO required values
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
 
         } catch (InvalidRequestException invalidRequestException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (AuthenticationException authenticationException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
 
         } catch (InvalidPlayerException invalidPlayerException) {
-            parentResponseVo.setError(ResponseCodes.PLAYER_DOES_NOT_EXIST);
+            parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (NoAvailableLineException noAvailableLineException) {
-            parentResponseVo.setError(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
+            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
 
         } catch (Exception exception) { // any other exception encountered
-            parentResponseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR);
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (parentResponseVo.getError() != null) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, parentResponseVo, parentResponseVo.isError());
         }
 
         //

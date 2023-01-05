@@ -27,12 +27,13 @@ public class BetResultEventListener implements EventListener<BetResultEvent> {
         // TODO: to review the following business logic, in case of data overwritten
         if (BetStatus.UNSETTLED.isValueOf(betHistory.getStatus())) {
             BigDecimal betAmount = betHistory.getBetAmount();
-            BigDecimal winAmount = resultLog.getWinAmount();
-            BigDecimal winLoss = winAmount.subtract(betAmount);
+            BigDecimal winAmount = betHistory.getWinAmount();
+            BigDecimal finalWinAmount = winAmount.add(resultLog.getWinAmount());
+            BigDecimal winLoss = finalWinAmount.subtract(betAmount);
 
-            betHistory.setWinAmount(winAmount);
+            betHistory.setWinAmount(finalWinAmount);
             betHistory.setWinLoss(winLoss);
-            betHistory.setEffectiveTurnover(winAmount); // TODO: to confirm logic of effective turnover
+            betHistory.setEffectiveTurnover(betAmount); // TODO: to confirm logic of effective turnover
             betHistory.setResultType(resultLog.getResultType());
             betHistory.setVendorSettleTime(resultLog.getVendorTime());
             betHistory.setResultTime(System.currentTimeMillis());

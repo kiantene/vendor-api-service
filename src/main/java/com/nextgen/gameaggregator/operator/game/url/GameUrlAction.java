@@ -35,7 +35,7 @@ public class GameUrlAction {
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
 
         try {
@@ -45,6 +45,7 @@ public class GameUrlAction {
             // Convert original json string into dto
             GameUrlDto dto = HttpService.convertJsonToDto(body, GameUrlDto.class);
             responseVo.setTraceId(dto.getTraceId());
+            httpRequestLog.setTraceId(dto.getTraceId());
             log.info(dto.toString());
 
             // 1. Validate all fields in the request object
@@ -115,14 +116,12 @@ public class GameUrlAction {
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-            httpRequestLog.setStatus(1); // TODO: use enum
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getStatus()));
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, responseVo.getTraceId()));
+            httpService.end(httpRequestLog, responseVo, responseVo.isError());
         }
 
         return responseVo;

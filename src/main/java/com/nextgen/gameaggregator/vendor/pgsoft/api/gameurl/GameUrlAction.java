@@ -44,7 +44,6 @@ public class GameUrlAction implements GameUrl {
         // 9. Save this player's game session
         // Set the game URL and return to Operator
         responseVo.setGameUrl(gameUrl);
-//        responseVo.setGameUrl("https://m.pg-redirect.net/128/index.html?l=zh-cn&btt=1&ot=2f251cc0df2cc59265fe0e50ddc73e16&ops=55e9a80e-d8ce-4f63-b0a6-550aa4558f1");
 
         return responseVo;
     }

@@ -1,10 +1,14 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.balance;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +22,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -34,15 +37,16 @@ public class BalanceAction {
     private VendorLineService vendorLineService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<BalanceVo> balance(@PathVariable("account") String account, HttpServletRequest request) {
+    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getTraceId();
+
         // Construct Vo
-        ResponseVo<BalanceVo> responseVo = new ResponseVo<>();
+        ResponseVo<CommonVo> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
 
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        BalanceVo balanceVo = new BalanceVo();
-        String traceId = UUID.randomUUID().toString();
+        CommonVo commonVo = new CommonVo();
 
         try {
             // Retrieve request body in original string format
@@ -51,21 +55,19 @@ public class BalanceAction {
             // Convert original request body into dto
             BalanceDto balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
 
-            balanceVo.setBalance(BigDecimal.valueOf(100));
-            balanceVo.setCurrency("CNY");
+            commonVo.setBalance(BigDecimal.valueOf(100));
+            commonVo.setCurrency("CNY");
 
-            responseVo.setData(balanceVo);
+            responseVo.setData(commonVo);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (!statusVo.getCode().equals("0")) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, statusVo.isError());
         }
 
         return responseVo;

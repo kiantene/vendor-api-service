@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import lombok.Data;
@@ -17,4 +18,9 @@ public class OperatorResponseVo<T> {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private T data;
+
+    @JsonIgnore
+    public boolean isError() {
+        return !this.status.equals(ResponseCodes.Status.SC_OK);
+    }
 }

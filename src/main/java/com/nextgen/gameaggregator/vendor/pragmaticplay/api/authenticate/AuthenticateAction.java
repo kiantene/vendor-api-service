@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -34,9 +33,9 @@ public class AuthenticateAction {
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
         AuthenticateVo responseVo = new AuthenticateVo();
-        String traceId = UUID.randomUUID().toString();
+        String traceId = httpRequestLog.getTraceId();
 
         try {
             // Retrieve request body in original string format
@@ -86,19 +85,15 @@ public class AuthenticateAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setErrorMessage(credentialNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, responseVo.isError());
         }
 
         return responseVo;
