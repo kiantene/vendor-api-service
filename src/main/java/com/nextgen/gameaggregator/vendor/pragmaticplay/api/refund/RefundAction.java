@@ -90,7 +90,7 @@ public class RefundAction {
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo, responseVo.isError());
+            httpService.end(httpRequestLog, responseVo, responseVo.hasError());
         }
 
         return responseVo;
