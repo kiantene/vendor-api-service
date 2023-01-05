@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +20,7 @@ import java.util.Date;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CheckPlayerAction {
     @Autowired
