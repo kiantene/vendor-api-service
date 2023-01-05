@@ -55,8 +55,7 @@ public class HttpService {
     public void logResponse(HttpRequestLog requestLog, Object responseVo, String traceId) {
         if (requestLog != null) {
             try {
-                Gson gson = new GsonBuilder().create();
-                String responseBody = gson.toJson(responseVo);
+                String responseBody = new ObjectMapper().writeValueAsString(responseVo);
                 requestLog.setResponseBody(responseBody);
                 requestLog.setTraceId(traceId);
                 if (requestLog.getEndTime() == null) {
