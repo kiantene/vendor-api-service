@@ -4,8 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -40,20 +39,20 @@ public class GameUrlAction implements GameUrl {
         String secretKey = credentials.get(Credentials.SECRET_KEY);
         Optional.ofNullable(secretKey).orElseThrow(InvalidVendorLineException::new);
 
-        log.info("Calling " + apiUrl + Endpoints.GAME_URL);
+        log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info(formData.toString());
 
         // TODO: need to add error handling
-        ResponseVo responseVo = WebClient.create(apiUrl)
+        GameUrlVendorResponseVo responseVo = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.GAME_URL)
+                .uri(EndPoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromFormData(formData))
                 .header("Authorization", secretKey)
                 .retrieve()
-                .bodyToMono(ResponseVo.class)
+                .bodyToMono(GameUrlVendorResponseVo.class)
                 .block();
 
-        return (GameUrlVo) responseVo.getData();
+        return responseVo.getData();
     }
 }
