@@ -29,6 +29,8 @@ public class GameSessionService {
     public GameSession verifyToken(String token) throws AuthenticationException {
         GameSession session = gameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
+
+        //TODO (by Alex), validate gameId param from vendor is match with game_sessions table's vendor_game_id
         return session;
     }
 

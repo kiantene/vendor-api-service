@@ -45,6 +45,8 @@ public class GameUrlService {
             className = "com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl.GameUrlAction";
         } else if (vendorId == 2) {
             className = "com.nextgen.gameaggregator.vendor.pgsoft.api.gameurl.GameUrlAction";
+        } else if (vendorId == 3) {
+            className = "com.nextgen.gameaggregator.vendor.cq9.api.gameurl.GameUrlAction";
         }
 
         GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
