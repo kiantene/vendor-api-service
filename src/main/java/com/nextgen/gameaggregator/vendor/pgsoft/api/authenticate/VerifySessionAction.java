@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -38,11 +37,10 @@ public class VerifySessionAction {
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo<VerifySessionVo> authenticate(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+
         // Construct Vo
         ResponseVo<VerifySessionVo> parentResponseVo = new ResponseVo<>();
-
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        String traceId = UUID.randomUUID().toString();
 
         try {
 
@@ -94,13 +92,10 @@ public class VerifySessionAction {
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (parentResponseVo.getError() != null) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, parentResponseVo, traceId));
+            httpService.end(httpRequestLog, parentResponseVo, parentResponseVo.isError());
         }
 
         //

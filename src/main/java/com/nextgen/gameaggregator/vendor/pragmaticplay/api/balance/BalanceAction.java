@@ -36,9 +36,9 @@ public class BalanceAction {
 
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo balance(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
         BalanceVo responseVo = new BalanceVo();
-        String traceId = UUID.randomUUID().toString();
+        String traceId = httpRequestLog.getTraceId();
 
         try {
             // Retrieve request body in original string format
@@ -91,23 +91,19 @@ public class BalanceAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setErrorMessage(credentialNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
-            httpRequestLog.setErrorMessage(invalidOperatorResponseException.getMessage());
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, responseVo.isError());
         }
 
         return responseVo;

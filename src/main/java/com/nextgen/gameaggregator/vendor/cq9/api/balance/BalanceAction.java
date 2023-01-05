@@ -35,14 +35,15 @@ public class BalanceAction {
 
     @GetMapping(path = EndPoints.BALANCE)
     public ResponseVo<BalanceVo> balance(@PathVariable("account") String account, HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getTraceId();
+
         // Construct Vo
         ResponseVo<BalanceVo> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
 
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
         BalanceVo balanceVo = new BalanceVo();
-        String traceId = UUID.randomUUID().toString();
 
         try {
             // Retrieve request body in original string format
@@ -58,14 +59,12 @@ public class BalanceAction {
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (!statusVo.getCode().equals("0")) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, statusVo.isError());
         }
 
         return responseVo;

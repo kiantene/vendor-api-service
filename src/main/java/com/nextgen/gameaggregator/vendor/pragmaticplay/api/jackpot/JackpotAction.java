@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -36,9 +35,9 @@ public class JackpotAction {
 
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
         JackpotVo responseVo = new JackpotVo();
-        String traceId = UUID.randomUUID().toString();
+        String traceId = httpRequestLog.getTraceId();
 
         try {
             // Retrieve request body in original string format
@@ -95,23 +94,19 @@ public class JackpotAction {
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+            httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setError(ResponseCodes.INVALID_REQUEST);
-            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            if (!responseVo.getError().equals(ResponseCodes.SUCCESS)) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, responseVo.isError());
         }
 
         return responseVo;

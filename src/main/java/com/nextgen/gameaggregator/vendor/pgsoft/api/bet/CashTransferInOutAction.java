@@ -23,9 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 @RestController
 @RequestScope
@@ -45,11 +43,11 @@ public class CashTransferInOutAction {
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(WebRequestWrapper request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getTraceId();
+
         // Construct Vo
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
-
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        String traceId = UUID.randomUUID().toString();
         Long now = Instant.now().toEpochMilli();
 
         try {
@@ -167,11 +165,7 @@ public class CashTransferInOutAction {
         } catch (InvalidOperatorResponseException e) {
             throw new RuntimeException(e);
         } finally {
-            if (parentResponseVo.getError() != null) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, parentResponseVo, traceId));
+            httpService.end(httpRequestLog, parentResponseVo, parentResponseVo.isError());
         }
         System.out.println("=============================error =======================");
         System.out.println(parentResponseVo.toString());

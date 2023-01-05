@@ -22,7 +22,6 @@ import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 @RestController
 @RequestScope
@@ -40,14 +39,14 @@ public class CashGetAction {
 
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo<CashGetVo> balance(WebRequestWrapper request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getTraceId();
+
         System.out.println("====================hello check balance =============================");
         // Construct Vo
         ResponseVo<CashGetVo> parentResponseVo = new ResponseVo<>();
         CashGetVo responseVo = new CashGetVo();
         parentResponseVo.setData(responseVo);
-
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
-        String traceId = UUID.randomUUID().toString();
 
         try {
             // Retrieve request body in original string format
@@ -111,13 +110,10 @@ public class CashGetAction {
             parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
 
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (parentResponseVo.getError() != null) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, parentResponseVo, traceId));
+            httpService.end(httpRequestLog, parentResponseVo, parentResponseVo.isError());
         }
 
         //

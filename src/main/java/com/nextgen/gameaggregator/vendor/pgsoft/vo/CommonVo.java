@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.vo;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
@@ -26,5 +27,10 @@ public class CommonVo {
             this.setError(new CommonErrorVo());
         }
         this.error.setMessage(message);
+    }
+
+    @JsonIgnore
+    public boolean isError() {
+        return this.error != null;
     }
 }

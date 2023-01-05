@@ -2,8 +2,6 @@ package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
@@ -17,7 +15,9 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -26,18 +26,21 @@ public class HttpService {
     public static final Integer COMPLETED = 2;
     public static final Integer ERROR = -1;
 
+    private static final Integer THREAD_SIZE = 8;
+    public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
+
     @Autowired
     private HttpRequestLogRepository httpRequestLogRepository;
 
-    public HttpRequestLog logRequest(HttpServletRequest request) {
+    public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
 
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
             String requestBody = this.getRawRequestBody(request);
-            log.info(requestBody);
 
+            httpRequestLog.setTraceId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
             httpRequestLog.setHeaders(headersJson);
@@ -52,24 +55,34 @@ public class HttpService {
         return httpRequestLog;
     }
 
-    public void logResponse(HttpRequestLog requestLog, Object responseVo, String traceId) {
+    public void end(HttpRequestLog requestLog, Object responseVo, boolean isError) {
         if (requestLog != null) {
-            try {
-                String responseBody = new ObjectMapper().writeValueAsString(responseVo);
-                requestLog.setResponseBody(responseBody);
-                requestLog.setTraceId(traceId);
-                if (requestLog.getEndTime() == null) {
-                    requestLog.setEndTime(System.currentTimeMillis());
-                }
-                requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                if (requestLog.getStatus().equals(PROCESSING)) {
-                    requestLog.setStatus(COMPLETED);
-                }
+            requestLog.setEndTime(System.currentTimeMillis());
+            THREAD_POOL.submit(() -> {
+                try {
+                    String responseBody = new ObjectMapper().writeValueAsString(responseVo);
+                    requestLog.setResponseBody(responseBody);
+                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
+                    requestLog.setStatus(!isError ? COMPLETED : ERROR);
 
-                httpRequestLogRepository.save(requestLog);
-            } catch (Exception exception) {
-                log.error(exception.getMessage());
-            }
+                    httpRequestLogRepository.save(requestLog);
+                } catch (Exception exception) {
+                    log.error(exception.getMessage());
+                }
+            });
+        } else {
+            log.warn("HttpService.end: requestLog is null");
+        }
+    }
+
+    public void logError(HttpRequestLog requestLog, Exception exception) {
+        if (requestLog != null) {
+            String stackTrace = HttpService.getStackTrace(exception);
+            requestLog.setStatus(ERROR);
+            requestLog.setErrorMessage(stackTrace);
+        } else {
+            log.warn("HttpService.logError: requestLog is null");
+            exception.printStackTrace();
         }
     }
 

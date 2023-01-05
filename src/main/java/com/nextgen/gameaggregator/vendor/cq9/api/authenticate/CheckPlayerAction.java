@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -34,14 +33,15 @@ public class CheckPlayerAction {
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
     public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getTraceId();
+
         // Construct Vo
         ResponseVo<Boolean> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
 
-        HttpRequestLog httpRequestLog = httpService.logRequest(request);
         Boolean isValid = false;
-        String traceId = UUID.randomUUID().toString();
 
         try {
             /*
@@ -71,15 +71,12 @@ public class CheckPlayerAction {
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            httpRequestLog.setErrorMessage(HttpService.getStackTrace(exception));
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            if (!statusVo.getCode().equals("0")) {
-                httpRequestLog.setStatus(HttpService.ERROR);
-            }
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
-            httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            httpService.end(httpRequestLog, responseVo, statusVo.isError());
         }
 
         return responseVo;
