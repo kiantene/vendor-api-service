@@ -40,8 +40,6 @@ public class VerifySessionAction {
     public ResponseVo<VerifySessionVo> authenticate(HttpServletRequest request) {
         // Construct Vo
         ResponseVo<VerifySessionVo> parentResponseVo = new ResponseVo<>();
-        VerifySessionVo responseVo = new VerifySessionVo();
-        parentResponseVo.setData(responseVo);
 
         HttpRequestLog httpRequestLog = httpService.logRequest(request);
         String traceId = UUID.randomUUID().toString();
@@ -72,6 +70,8 @@ public class VerifySessionAction {
 //            eventDispatcher.emit(getClass(), body);
 
             // Fill VO required values
+            VerifySessionVo responseVo = new VerifySessionVo();
+            parentResponseVo.setData(responseVo);
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
@@ -100,7 +100,7 @@ public class VerifySessionAction {
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
             httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, parentResponseVo, traceId));
         }
 
         //

@@ -148,10 +148,6 @@ public class CashTransferInOutAction {
             responseVo.setBalanceAmount(walletService.getBalance(traceId, gameSession));
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
 
-//            System.out.println("woiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii");
-//            parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
-//            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
-
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
@@ -161,7 +157,6 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            System.out.println("catch insufficient");
             parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
 

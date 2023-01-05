@@ -78,20 +78,9 @@ public class CashGetAction {
 
             // 6. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
-            System.out.println("========ddasasda================================");
-            System.out.println(balance);
-System.out.println("========ddasasda================================");
             // Fill VO required values
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
-            if (balance.compareTo(BigDecimal.ZERO) < 0){
-                responseVo.setBalanceAmount(BigDecimal.ZERO);
-            } else {
-                responseVo.setBalanceAmount(balance);
-            }
-            System.out.println("========ffkfkfk================================");
-                        System.out.println(responseVo.getBalanceAmount());
-            System.out.println("========ffkfkfk================================");
-
+            responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -128,7 +117,7 @@ System.out.println("========ddasasda================================");
                 httpRequestLog.setStatus(HttpService.ERROR);
             }
             httpRequestLog.setEndTime(System.currentTimeMillis());
-            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, responseVo, traceId));
+            ConcurrencyService.THREAD_POOL.submit(() -> httpService.logResponse(httpRequestLog, parentResponseVo, traceId));
         }
 
         //

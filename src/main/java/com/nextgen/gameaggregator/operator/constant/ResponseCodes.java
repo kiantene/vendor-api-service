@@ -17,7 +17,8 @@ public class ResponseCodes {
         SC_CURRENCY_NOT_SUPPORTED,
         SC_UNDER_MAINTENANCE,
         SC_UNKNOWN_ERROR,
-        SC_MISMATCHED_DATA_TYPE
+        SC_MISMATCHED_DATA_TYPE,
+        SC_INSUFFICIENT_FUNDS
     }
 
     public static final Map<Status, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
