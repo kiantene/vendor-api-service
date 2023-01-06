@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VendorGameRepository extends JpaRepository<VendorGame, Integer> {
     VendorGame findByCode(String code);
+    VendorGame findByIdAndStatus(Integer id, Integer status);
+    VendorGame findByVendorGameCode(String vendorGameCode);
 }

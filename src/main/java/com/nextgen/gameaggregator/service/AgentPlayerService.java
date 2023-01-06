@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.AgentPlayer;
+import com.nextgen.gameaggregator.exception.DisableAgentPlayerException;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,5 +26,10 @@ public class AgentPlayerService {
         optional.orElseThrow(RecordNotFoundException::new);
 
         return optional.get();
+    }
+
+    public void verifyAgentPlayerStatus(Long id)throws DisableAgentPlayerException {
+        AgentPlayer agentPlayer = agentPlayerRepository.findByIdAndStatus(id, 1);
+        Optional.ofNullable(agentPlayer).orElseThrow(DisableAgentPlayerException::new);
     }
 }

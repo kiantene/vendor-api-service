@@ -32,6 +32,13 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
+
+    @Autowired
+    private AgentApiCredentialService agentApiCredentialService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
@@ -55,27 +62,33 @@ public class BetAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            //TODO (by Alex), should check the credential line status based on game_sessions table's vendor_line_id and block if the credential line status is disable
+            // 3. Verify received username differs from game session
+            gameSessionService.verifyUsername(gameSession.getVendorPlayerUsername(), dto.getUserId());
 
-            //TODO (by Alex), should check the agent player status based on game_sessions table's agent_player_id and block if the player status is disable
-
-            //TODO (by Alex), validate game login token game Id match with bet request
-
-            // Throw exception if received username differs from game session
-            if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
-                throw new InvalidPlayerException();
-            }
-
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
+            // 4. Retrieve vendor line credentials and secretKey for hash validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-            //TODO (by Alex), validate gameId is existed in DB and the status is enable
+            // 5. Validate game login token gameId whether match with bet request
+            gameSessionService.verifyGameId(gameSession.getVendorGameCode(), dto.getGameId());
+
+            // 6. Verify vendor line status
+            vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+            // 7. Verify Agent Player status
+            agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+            // 8. Verify Agent API Credential status
+            agentApiCredentialService.verifyAgentStatus(gameSession.getAgentId());
+
+            // 9. Verify Vendor Game status
+            vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
             //TODO (by Alex), should have child game table for save vendor game code by language, platform
 
-            // 4. Validate request signature
+            // 10. Validate request signature
             VendorService.validateHash(body, secretKey);
 
-            // 5. Send bet request to Operator and check if player has enough balance
+            // 11. Send bet request to Operator and check if player has enough balance
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
             // Emit event for additional asynchronous processing
@@ -100,6 +113,12 @@ public class BetAction {
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 
+        } catch (DisableAgentPlayerException disableAgentPlayerException) {
+            responseVo.setError(ResponseCodes.PLAYER_FROZEN);
+
+        } catch (DisableAgentException disableAgentException) {
+            responseVo.setError(ResponseCodes.PLAYER_FROZEN);
+
         } catch (AuthenticationException authenticationException) {
             responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
@@ -108,6 +127,12 @@ public class BetAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setError(ResponseCodes.INSUFFICIENT_BALANCE);
+
+        } catch (DisableVendorLineException disableVendorLineException) {
+            responseVo.setError(ResponseCodes.BET_NOT_ALLOWED);
+
+        } catch (DisableGameException disableGameException) {
+            responseVo.setError(ResponseCodes.INVALID_GAME);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);

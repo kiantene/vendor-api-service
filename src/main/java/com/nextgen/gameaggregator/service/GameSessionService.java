@@ -42,7 +42,6 @@ public class GameSessionService {
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
         gameSession.setVendorGameId(vendorGame.getId());
-        System.err.println(vendorGame.getVendorGameCode());
         gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
@@ -51,6 +50,18 @@ public class GameSessionService {
         gameSessionRepository.save(gameSession);
 
         return gameSession;
+    }
+
+    public void verifyUsername(String sessionUsername, String vendorUsername) throws InvalidPlayerException{
+        if (!sessionUsername.equals(vendorUsername)) {
+            throw new InvalidPlayerException();
+        }
+    }
+
+    public void verifyGameId(String sessionVendorGameCode, String vendorGameCode) throws AuthenticationException {
+        if (!sessionVendorGameCode.equals(vendorGameCode)) {
+            throw new AuthenticationException();
+        }
     }
 
     public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {

@@ -38,14 +38,14 @@ public class AgentPlayerController {
 
 
         if(vendorPlayer!=null){
-            AgentPlayer agentPlayer = agentPlayerRepository.findById(vendorPlayer.getId()).orElse(null);
+            AgentPlayer agentPlayer = agentPlayerRepository.findById(vendorPlayer.getAgentPlayerId()).orElse(null);
 
             if(agentPlayer !=null){
                 agentPlayer.setStatus(Integer.parseInt(json.get("status").toString()));
                 agentPlayerRepository.save(agentPlayer);
 
                 responseMap.put("status", "Success");
-                responseMap.put("username", json.get("username").toString());
+                responseMap.put("username", json.get("username").asText());
                 return new ResponseEntity<>(
                         responseMap ,
                         HttpStatus.OK);
