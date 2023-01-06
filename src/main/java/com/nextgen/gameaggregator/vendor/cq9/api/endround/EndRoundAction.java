@@ -5,7 +5,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.vendor.cq9.api.balance.BalanceDto;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
@@ -54,7 +54,14 @@ public class EndRoundAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            BalanceDto balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
+            EndRoundDto endRoundDto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
+
+            // 1. Validate request parameters from vendor
+            ValidationUtils.validateRequest(endRoundDto);
+            ValidationUtils.validateVendorUsername(endRoundDto.getAccount());
+
+            // TODO (By Poseidon)
+            // Vendor only send vendor player username, need to get game session by vendor player username
 
             commonVo.setBalance(BigDecimal.valueOf(100));
             commonVo.setCurrency("CNY");
