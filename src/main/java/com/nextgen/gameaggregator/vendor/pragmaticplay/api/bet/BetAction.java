@@ -50,7 +50,6 @@ public class BetAction {
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateVendorUsername(dto.getUserId()); // TODO: to support throwing of custom exception
 
-            //TODO (by Alex), get the provider ID from vendor_line_credentials tables and also the check the line status
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
@@ -59,6 +58,8 @@ public class BetAction {
             //TODO (by Alex), should check the credential line status based on game_sessions table's vendor_line_id and block if the credential line status is disable
 
             //TODO (by Alex), should check the agent player status based on game_sessions table's agent_player_id and block if the player status is disable
+
+            //TODO (by Alex), validate game login token game Id match with bet request
 
             // Throw exception if received username differs from game session
             if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
