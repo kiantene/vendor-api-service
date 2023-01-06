@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
+package com.nextgen.gameaggregator.vendor.pgsoft.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -8,15 +8,13 @@ import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CashTransferInOut_WinDto extends CommonDto implements WinData {
+public class ResultDto extends CommonDto implements WinData {
 
     /**
      * Authentication Information

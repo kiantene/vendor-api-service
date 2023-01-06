@@ -1,0 +1,29 @@
+package com.nextgen.gameaggregator.vendor.pgsoft.api.result;
+
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ResultService {
+    @Autowired
+    private WalletService walletService;
+    public BetResultEvent process(String traceId, GameSession gameSession, String body) throws InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException {
+
+        // Construct result dto
+        ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);
+        BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
+        EventDispatcherSystem.emitAsync(betResultEvent);
+
+        return betResultEvent;
+    }
+
+}

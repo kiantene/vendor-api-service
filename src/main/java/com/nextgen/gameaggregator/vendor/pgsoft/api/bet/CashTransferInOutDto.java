@@ -20,6 +20,7 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     /**
      * Authentication Information
      */
+    @Size(min = 1, max = 100)
     //* Below are not mandatory
     private String operatorPlayerSession;
 
@@ -29,6 +30,7 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
 
     //* Below are mandatory
     @NotBlank
+    @Size(min = 3, max = 50)
     private String playerName;
 
     @NotNull
