@@ -11,6 +11,7 @@ public class VendorGame {
     @Id
     private Integer id;
     private String code;
+    private String vendorGameCode;
     private String name;
     private Integer gameCategoryId;
     private Integer vendorId;

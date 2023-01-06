@@ -10,8 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.InvocationTargetException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,7 +34,7 @@ public class GameUrlService {
             ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             InstantiationException, IllegalAccessException, InvalidVendorLineException {
 
-        String gameCode = vendorGame.getCode();
+        String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();
         Integer vendorId = vendorGame.getVendorId();
         String className = "";
@@ -62,15 +60,14 @@ public class GameUrlService {
         return gameUrlData;
     }
 
-    public VendorGame checkGameSupported(Integer gameId) throws GameNotSupportedException {
-        Optional<VendorGame> entity = vendorGameRepository.findById(gameId);
-        entity.orElseThrow(GameNotSupportedException::new);
+    public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException {
+        VendorGame entity = vendorGameRepository.findByCode(gameCode);
+        Optional.ofNullable(entity).orElseThrow(GameNotSupportedException::new);
 
-        VendorGame vendorGame = entity.get();
-        if (vendorGame.getStatus() == 0) {
+        if (entity.getStatus() == 0) {
             throw new GameNotSupportedException();
         }
-        return vendorGame;
+        return entity;
     }
 
     public void checkCurrencySupported(Currency currency, String currencyCode) throws CurrencyNotSupportedException {
