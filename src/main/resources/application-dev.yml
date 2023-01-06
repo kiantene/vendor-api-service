@@ -23,6 +23,7 @@ spring:
         maria-dialect: org.hibernate.dialect.MariaDB103Dialect
         format_sql: false
   redis:
+    database: 0
     host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
     port: 6379
     username: dev

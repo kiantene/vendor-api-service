@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.repository.GameSessionRepository;
 import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -26,6 +27,7 @@ public class GameSessionService {
     @Autowired
     private AgentRepository agentRepository;
 
+    @Cacheable(value = "GameSessions", key = "#token")
     public GameSession verifyToken(String token) throws AuthenticationException {
         GameSession session = gameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
@@ -34,7 +36,8 @@ public class GameSessionService {
         return session;
     }
 
-    public void createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency) {
+    @Cacheable(value = "GameSessions", key = "#gameSession.token")
+    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency) {
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
@@ -44,6 +47,8 @@ public class GameSessionService {
         gameSession.setCurrencyCode(currency.getCode());
 
         gameSessionRepository.save(gameSession);
+
+        return gameSession;
     }
 
     public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {

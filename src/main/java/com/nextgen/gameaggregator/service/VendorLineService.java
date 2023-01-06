@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
 import com.nextgen.gameaggregator.repository.VendorLineCredentialRepository;
 import com.nextgen.gameaggregator.repository.VendorLineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -42,6 +43,7 @@ public class VendorLineService {
         return vendorLine;
     }
 
+    @Cacheable(value = "vendorLines", key = "{#vendorLineId, #name}")
     public String getCredentialValueByName(Integer vendorLineId, String name) throws CredentialNotFoundException {
         final Integer status = 1;
         VendorLineCredential credential = vendorLineCredentialRepository.findByVendorLineIdAndNameAndStatus(vendorLineId, name, status);
