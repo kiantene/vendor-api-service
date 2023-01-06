@@ -42,6 +42,8 @@ public class GameSessionService {
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
         gameSession.setVendorGameId(vendorGame.getId());
+        System.err.println(vendorGame.getVendorGameCode());
+        gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
