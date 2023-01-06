@@ -72,126 +72,36 @@ public class CashTransferInOutAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
+            // === Debugging Purpose ==============================================================================
             String betType = VendorService.identifyBetType(dto);
             System.out.println("============= Bet Type ================================================");
             System.out.println(betType);
             System.out.println("------ " + dto.getExternalTransactionId() + "-----------");
             System.out.println(body);
             System.out.println("=========================================================================");
+            // === Debugging Purpose ==============================================================================
 
             // Vendor resent this bet for validation
             if (VendorService.isResentForValidate(dto)) {
                 // TODO see how to handle this
             } else {
-                // Is a bet request
+
+                // Only process as an BetRequest if it is an BetRequest
                 if (VendorService.isBetRequest(dto)) {
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     EventDispatcherSystem.emitAsync(betEvent);
                 }
 
-                // Process result
+                // Has to process result regardless win or lose
                 BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
 
-                // End round
+                // Only process as an EndRound if it is an EndRound
                 if (VendorService.isRoundEnded(dto)) {
                     endRoundService.process(betResultEvent);
                 }
             }
 
-            // 4. Send bet request to Operator and check if player has enough balance
-//            switch (betType) {
-//                case BetTypes.REQUEST_AND_WIN_AND_END_ROUND: { // 2
-//                    // Bet request
-//                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-//                    EventDispatcherSystem.emitAsync(betEvent);
-//                    // Construct win dto
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    // Win
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    // End round
-//                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-//                    break;
-//                }
-//                case BetTypes.REQUEST_AND_WIN_AND_ONGOING: { // 1
-//                    // Bet request
-//                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-//                    EventDispatcherSystem.emitAsync(betEvent);
-//                    // Construct win dto
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    // Win
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    break;
-//                }
-//                case BetTypes.REQUEST_AND_LOSE_AND_ONGOING: { // 11
-//                    // Bet request
-//                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-//                    EventDispatcherSystem.emitAsync(betEvent);
-//                    break;
-//                }
-//                case BetTypes.REQUEST_AND_LOSE_AND_END_ROUND: { // 3
-//                    // Bet request
-//                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-//                    EventDispatcherSystem.emitAsync(betEvent);
-//                    Boolean haha = false;
-//                    // Construct win dto (with 0 win amount)
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    // End round
-//                    // TODO processLose
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    log.info(betResultEvent.toString());
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    // End round
-//                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-//                    break;
-//                }
-//                case BetTypes.WIN_AND_END_ROUND: { // 7
-//                    // Construct win dto
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    // Win
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    // End round
-//                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-//                    break;
-//                }
-//                case BetTypes.LOSE_AND_END_ROUND: { // 8
-//                    // Construct win dto (with 0 win amount)
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    // End round
-//                    Boolean haha = true;
-//                    // TODO processLose
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    // End round
-//                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-//                    break;
-//                }
-//                case BetTypes.FREESPIN_WIN_AND_ONGOING: { // 5
-//                    // Consturct win dto
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    // Win
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    break;
-//                }
-//                case BetTypes.FREESPIN_LOSE_AND_ONGOING: { // 6
-//                    Boolean dd = true;
-//                    // Consturct win dto
-//                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-//                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-//                    // Win
-//                    EventDispatcherSystem.emitAsync(betResultEvent);
-//                    break;
-//                }
-//                case BetTypes.RESENT_FOR_VALIDATION: { // 10
-//                    break;
-//                }
-//                default:
-//                    break;
-//            }
-
+            // Only set data of parent response if nothing goes wrong
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
 
