@@ -35,15 +35,19 @@ public class VendorService {
     }
 
     public static String identifyBetType(CashTransferInOutDto dto) {
-        // 1. If parent bet ID = bet ID means this is a bet request
-        // if bet amount is 0 and still on going, means free spin
+        // To determine a bet request, parent bet ID must be equalise to bet ID
         Boolean isBetRequest = dto.getParentBetId().equals(dto.getBetId());
         Boolean isRoundEnded = dto.getIsEndRound();
+        // if bet amount is 0 and still on going, means free spin
         Boolean hasWinAmount = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0;
+        Boolean isResentForValidate = dto.getIsValidateBet() != null && dto.getIsValidateBet() == true;
 
         /**
          * Scenario 1
          */
+        if (isResentForValidate) {
+            return BetTypes.RESENT_FOR_VALIDATION;
+        }
         if (isBetRequest) {
             if (isRoundEnded) {
                 if (hasWinAmount) {
@@ -54,13 +58,23 @@ public class VendorService {
                     return BetTypes.REQUEST_AND_LOSE_AND_END_ROUND;
                 }
             } else {
-                // Win Bet Request
-                return BetTypes.REQUEST_AND_WIN_AND_ONGOING;
+                if (hasWinAmount) {
+                    // Win Bet Request
+                    return BetTypes.REQUEST_AND_WIN_AND_ONGOING;
+                } else {
+                    // Lose Bet Request
+                    return BetTypes.REQUEST_AND_LOSE_AND_ONGOING;
+                }
             }
         } else { // is not a bet request
             if (isRoundEnded) {
-                // Win End Round
-                return BetTypes.END_ROUND;
+                if (hasWinAmount) {
+                    // Freespin Lose
+                    return BetTypes.WIN_AND_END_ROUND;
+                } else {
+                    // Freespin Win
+                    return BetTypes.LOSE_AND_END_ROUND;
+                }
             } else { // round not ended
                 if (hasWinAmount) {
                     // Freespin Lose

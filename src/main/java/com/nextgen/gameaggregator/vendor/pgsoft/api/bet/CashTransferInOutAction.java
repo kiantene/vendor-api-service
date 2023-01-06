@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import com.nextgen.sas.core.web.wrapper.WebRequestWrapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +29,7 @@ import java.time.Instant;
 @RestController
 @RequestScope
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@Slf4j
 public class CashTransferInOutAction {
 
     @Autowired
@@ -70,7 +72,7 @@ public class CashTransferInOutAction {
             String betType = VendorService.identifyBetType(dto);
             System.out.println("============= Bet Type ================================================");
             System.out.println(betType);
-            System.out.println("-----------------");
+            System.out.println("------ " + dto.getExternalTransactionId() + "-----------");
             System.out.println(body);
             System.out.println("=========================================================================");
 
@@ -78,7 +80,7 @@ public class CashTransferInOutAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             // 4. Send bet request to Operator and check if player has enough balance
             switch (betType) {
-                case BetTypes.REQUEST_AND_WIN_AND_END_ROUND: {
+                case BetTypes.REQUEST_AND_WIN_AND_END_ROUND: { // 2
                     // Bet request
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     EventDispatcherSystem.emitAsync(betEvent);
@@ -91,17 +93,24 @@ public class CashTransferInOutAction {
                     EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
                     break;
                 }
-                case BetTypes.REQUEST_AND_WIN_AND_ONGOING: {
+                case BetTypes.REQUEST_AND_WIN_AND_ONGOING: { // 1
                     // Bet request
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     EventDispatcherSystem.emitAsync(betEvent);
                     // Construct win dto
                     CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
-                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
                     // Win
+                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
                     EventDispatcherSystem.emitAsync(betResultEvent);
+                    break;
                 }
-                case BetTypes.REQUEST_AND_LOSE_AND_END_ROUND: {
+                case BetTypes.REQUEST_AND_LOSE_AND_ONGOING: { // 11
+                    // Bet request
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+                    EventDispatcherSystem.emitAsync(betEvent);
+                    break;
+                }
+                case BetTypes.REQUEST_AND_LOSE_AND_END_ROUND: { // 3
                     // Bet request
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     EventDispatcherSystem.emitAsync(betEvent);
@@ -113,28 +122,41 @@ public class CashTransferInOutAction {
                     EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
                     break;
                 }
-                case BetTypes.END_ROUND: {
+                case BetTypes.WIN_AND_END_ROUND: { // 7
+                    // Construct win dto
+                    CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
+                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
+                    // Win
+                    EventDispatcherSystem.emitAsync(betResultEvent);
+                    // End round
+                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+                    break;
+                }
+                case BetTypes.LOSE_AND_END_ROUND: { // 8
                     BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
                     // End round
                     EventDispatcherSystem.emitAsync(new EndRoundEvent(betHistory));
                     break;
                 }
-                case BetTypes.FREESPIN_WIN_AND_ONGOING: {
+                case BetTypes.FREESPIN_WIN_AND_ONGOING: { // 5
                     // Consturct win dto
                     CashTransferInOut_WinDto winDto = HttpService.convertQueryStringToDto(body, CashTransferInOut_WinDto.class);
+                    log.info(winDto.toString());
                     BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
                     // Win
                     EventDispatcherSystem.emitAsync(betResultEvent);
                     break;
                 }
-                case BetTypes.FREESPIN_LOSE_AND_ONGOING: {
+                case BetTypes.FREESPIN_LOSE_AND_ONGOING: { // 6
+                    break;
+                }
+                case BetTypes.RESENT_FOR_VALIDATION: { // 10
                     break;
                 }
                 default:
                     break;
 
             }
-
 
 //            // Emit event for additional asynchronous processing
 //            EventDispatcherSystem.emitAsync(betEvent);
