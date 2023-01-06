@@ -51,7 +51,9 @@ public class BalanceAction {
             // TODO (By Poseidon)
             // Vendor only send vendor player username, need to get game session by vendor player username
 
-            commonVo.setBalance(BigDecimal.valueOf(0));
+            BigDecimal balance = walletService.getBalance(traceId, account);
+
+            commonVo.setBalance(balance);
             commonVo.setCurrency("CNY");
 
             responseVo.setData(commonVo);
