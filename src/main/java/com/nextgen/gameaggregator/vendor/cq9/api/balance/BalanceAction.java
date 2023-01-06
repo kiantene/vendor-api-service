@@ -13,10 +13,8 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
@@ -37,9 +35,10 @@ public class BalanceAction {
     private VendorLineService vendorLineService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request) {
+    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, @RequestBody HttpServletRequest request, @RequestHeader MultiValueMap<String, String> headers) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
+        System.out.println(headers);
 
         // Construct Vo
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
@@ -54,6 +53,9 @@ public class BalanceAction {
 
             // Convert original request body into dto
             BalanceDto balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
+
+            // TODO (By Poseidon)
+            // Vendor only send vendor player username, need to get game session by vendor player username
 
             commonVo.setBalance(BigDecimal.valueOf(100));
             commonVo.setCurrency("CNY");

@@ -44,27 +44,10 @@ public class CheckPlayerAction {
         Boolean isValid = false;
 
         try {
-            /*
-            // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(checkPlayerDto);
+            // TODO (By Poseidon)
+            // Vendor will call this API to verify is player exists in our system
+            // Vendor only send vendor player username
 
-            // 2. Verify session token
-            // Need to retrieve line credentials from game session in order to validate hash
-            // If Token has been tampered, then AuthenticationException will be thrown
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-
-            // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
-
-            // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
-            // Emit event for additional asynchronous processing
-            // eventDispatcher.emit(getClass(), body);
-            */
             isValid = true;
 
             responseVo.setData(isValid);
