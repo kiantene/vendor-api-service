@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -58,7 +59,7 @@ public class BetAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertQueryStringToDto(body, BetDto.class);
+            BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(body, BetDto.class);
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(betDto);
@@ -82,6 +83,9 @@ public class BetAction {
             commonVo.setCurrency(gameSession.getCurrencyCode());
 
             responseVo.setData(commonVo);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

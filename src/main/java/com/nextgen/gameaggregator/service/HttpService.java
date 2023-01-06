@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -105,6 +108,36 @@ public class HttpService {
 
     public static <T> T convertQueryStringToDto(String queryString, Class<T> objectClass) throws InvalidRequestException {
         Map<String, String> queryParameterMap = new HashMap<>();
+        String[] fields = queryString.split("&");
+
+        for (String field : fields) {
+            String[] kv = field.split("=");
+            if (kv.length == 2) queryParameterMap.put(kv[0], kv[1]);
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        T object;
+
+        // TODO: To review on this exception handling
+        try {
+            object = mapper.convertValue(queryParameterMap, objectClass);
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new InvalidRequestException(); // re-throw as InvalidRequest
+        }
+
+        return object;
+    }
+
+    public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
+        Map<String, String> queryParameterMap = new HashMap<>();
+
+        // TODO: To review on this exception handling
+        try {
+            queryString = URLDecoder.decode(queryString, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
         String[] fields = queryString.split("&");
 
         for (String field : fields) {

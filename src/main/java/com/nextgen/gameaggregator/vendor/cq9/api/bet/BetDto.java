@@ -27,7 +27,6 @@ public class BetDto implements BetData {
     private String roundid;
     @NotNull
     @Positive
-    @Digits(integer = 16, fraction = 4)
     private BigDecimal amount;
     @NotBlank
     @Size(min = 1, max = 70)
