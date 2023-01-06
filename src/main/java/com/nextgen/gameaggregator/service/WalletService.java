@@ -71,8 +71,14 @@ public class WalletService {
      * @param rawData Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws InsufficientBalanceException {
+    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws InsufficientBalanceException, DuplicateExternalTransactionIdException {
         Integer agentId = gameSession.getAgentId();
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+
+        // 1. Check for duplicate transaction Id
+        betHistoryService.checkDuplicateExternalTransaction(betData.getExternalTransactionId(), vendorGameId, vendorPlayerId);
+
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
         String signature = ""; // TODO: implement signature generation
 

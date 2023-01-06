@@ -75,8 +75,6 @@ public class BetAction {
             // 4. Validate request signature
             VendorService.validateHash(body, secretKey);
 
-            // TODO: check for duplicate reference
-
             // 5. Send bet request to Operator and check if player has enough balance
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
@@ -94,6 +92,10 @@ public class BetAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
