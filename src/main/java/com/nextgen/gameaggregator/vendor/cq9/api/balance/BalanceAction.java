@@ -35,7 +35,7 @@ public class BalanceAction {
     private VendorLineService vendorLineService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, @RequestBody HttpServletRequest request, @RequestHeader MultiValueMap<String, String> headers) {
+    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request, @RequestHeader MultiValueMap<String, String> headers) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
         System.out.println(headers);
@@ -48,12 +48,6 @@ public class BalanceAction {
         CommonVo commonVo = new CommonVo();
 
         try {
-            // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
-
-            // Convert original request body into dto
-            BalanceDto balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
-
             // TODO (By Poseidon)
             // Vendor only send vendor player username, need to get game session by vendor player username
 

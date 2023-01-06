@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import lombok.Data;
 
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -12,15 +13,30 @@ import java.util.Date;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto implements BetData {
+    @NotBlank
+    @Size(min = 1, max = 36)
     private String account;
-    private String eventTime;
+    @NotBlank
+    @Size(min = 1, max = 36)
     private String gamehall;
+    @NotBlank
+    @Size(min = 1, max = 36)
     private String gamecode;
+    @NotBlank
+    @Size(min = 1, max = 50)
     private String roundid;
+    @NotNull
+    @Positive
+    @Digits(integer = 16, fraction = 4)
     private BigDecimal amount;
+    @NotBlank
+    @Size(min = 1, max = 70)
     private String mtcode;
+    @NotBlank
     private String session;
     private String platform;
+    @NotBlank
+    private String eventTime;
 
     @Override
     public String getExternalTransactionId() {
