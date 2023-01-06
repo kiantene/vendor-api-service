@@ -1,11 +1,16 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.vendor.cq9.api.balance.BalanceDto;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
@@ -14,17 +19,17 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 @Slf4j
 public class BetAction {
     @Autowired
@@ -53,12 +58,33 @@ public class BetAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            BalanceDto balanceDto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
+            BetDto betDto = HttpService.convertQueryStringToDto(body, BetDto.class);
 
-            commonVo.setBalance(BigDecimal.valueOf(100));
-            commonVo.setCurrency("CNY");
+            // 1. Validate request parameters from vendor
+            ValidationUtils.validateRequest(betDto);
+            ValidationUtils.validateVendorUsername(betDto.getAccount());
+
+            // 2. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());
+
+            // Throw exception if received username differs from game session
+            if (!gameSession.getVendorPlayerUsername().equals(betDto.getAccount())) {
+                throw new InvalidPlayerException();
+            }
+
+            // 5. Send bet request to Operator and check if player has enough balance
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+
+            // Emit event for additional asynchronous processing
+            EventDispatcherSystem.emitAsync(betEvent);
+
+            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setCurrency(gameSession.getCurrencyCode());
 
             responseVo.setData(commonVo);
+
+        } catch (AuthenticationException authenticationException) {
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
