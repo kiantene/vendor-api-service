@@ -18,7 +18,7 @@ public class GameUrlDto {
     private String username;
 
     @NotBlank
-    @Size(min = 1, max = 50)
+    @Size(min = 3, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
     private String gameCode;
 

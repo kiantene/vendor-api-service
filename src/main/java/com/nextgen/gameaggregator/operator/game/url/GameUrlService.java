@@ -40,7 +40,7 @@ public class GameUrlService {
         String className = "";
 
         if (vendorId == 1) { // TODO: to get classname from db
-            className = "com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl.GameUrlAction";
+            className = "com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl.GameUrlService";
         } else if (vendorId == 2) {
             className = "com.nextgen.gameaggregator.vendor.pgsoft.api.gameurl.GameUrlAction";
         } else if (vendorId == 3) {

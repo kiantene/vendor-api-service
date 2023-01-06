@@ -113,7 +113,7 @@ public class CashGetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            httpService.end(httpRequestLog, parentResponseVo, parentResponseVo.isError());
+            httpService.end(httpRequestLog, parentResponseVo);
         }
 
         //

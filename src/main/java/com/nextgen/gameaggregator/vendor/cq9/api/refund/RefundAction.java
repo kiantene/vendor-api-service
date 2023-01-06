@@ -67,7 +67,7 @@ public class RefundAction {
         } finally {
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
-            httpService.end(httpRequestLog, responseVo, statusVo.isError());
+            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;

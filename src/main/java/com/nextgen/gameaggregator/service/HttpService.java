@@ -55,15 +55,15 @@ public class HttpService {
         return httpRequestLog;
     }
 
-    public void end(HttpRequestLog requestLog, Object responseVo, boolean isError) {
-        if (requestLog != null) {
+    public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
+        if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
             THREAD_POOL.submit(() -> {
                 try {
                     String responseBody = new ObjectMapper().writeValueAsString(responseVo);
                     requestLog.setResponseBody(responseBody);
                     requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                    requestLog.setStatus(!isError ? COMPLETED : ERROR);
+                    requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
                     httpRequestLogRepository.save(requestLog);
                 } catch (Exception exception) {
@@ -71,7 +71,7 @@ public class HttpService {
                 }
             });
         } else {
-            log.warn("HttpService.end: requestLog is null");
+            log.warn("HttpService.end: requestLog or responseVo is null");
         }
     }
 

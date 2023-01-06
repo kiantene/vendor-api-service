@@ -113,7 +113,7 @@ public class BetAction {
 
         } finally {
             responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo, responseVo.hasError());
+            httpService.end(httpRequestLog, responseVo);
         }
 
         //TODO should the trace Id return for all the responses even the request is fail?

@@ -1,14 +1,14 @@
 package com.nextgen.gameaggregator.operator.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
 import java.util.Map;
 
 @Data
-public class OperatorResponseVo<T> {
+public class OperatorResponseVo<T> implements HttpResponse {
     private String traceId;
     private ResponseCodes.Status status = ResponseCodes.Status.SC_OK;
     private String message;
@@ -19,8 +19,8 @@ public class OperatorResponseVo<T> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private T data;
 
-    @JsonIgnore
-    public boolean isError() {
+    @Override
+    public boolean hasError() {
         return !this.status.equals(ResponseCodes.Status.SC_OK);
     }
 }

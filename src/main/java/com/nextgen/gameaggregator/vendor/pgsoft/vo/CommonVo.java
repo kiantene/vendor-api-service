@@ -1,16 +1,13 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
-
-import javax.annotation.Nullable;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CommonVo {
+public class CommonVo implements HttpResponse {
     // This variable will be null when there is no error.
 //    @Nullable
     private CommonErrorVo error = null;
@@ -29,8 +26,8 @@ public class CommonVo {
         this.error.setMessage(message);
     }
 
-    @JsonIgnore
-    public boolean isError() {
+    @Override
+    public boolean hasError() {
         return this.error != null;
     }
 }

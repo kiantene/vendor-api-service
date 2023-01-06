@@ -93,7 +93,7 @@ public class AuthenticateAction {
 
         } finally {
             responseVo.setDescription( ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo, responseVo.hasError());
+            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;

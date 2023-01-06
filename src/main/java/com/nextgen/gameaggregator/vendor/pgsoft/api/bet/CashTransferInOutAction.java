@@ -165,7 +165,7 @@ public class CashTransferInOutAction {
         } catch (InvalidOperatorResponseException e) {
             throw new RuntimeException(e);
         } finally {
-            httpService.end(httpRequestLog, parentResponseVo, parentResponseVo.isError());
+            httpService.end(httpRequestLog, parentResponseVo);
         }
         System.out.println("=============================error =======================");
         System.out.println(parentResponseVo.toString());

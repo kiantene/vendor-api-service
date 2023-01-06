@@ -118,7 +118,7 @@ public class GameUrlAction {
 
         } finally {
             responseVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getStatus()));
-            httpService.end(httpRequestLog, responseVo, responseVo.isError());
+            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;
