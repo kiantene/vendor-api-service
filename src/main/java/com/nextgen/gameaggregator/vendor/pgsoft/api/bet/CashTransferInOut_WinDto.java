@@ -131,6 +131,6 @@ public class CashTransferInOut_WinDto extends CommonDto implements WinData {
 
     @Override
     public WinType getWinType() {
-        return WinType.WIN;
+        return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }
