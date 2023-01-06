@@ -24,6 +24,8 @@ public class WalletService {
     @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
+    private VendorPlayerService vendorPlayerService;
+    @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
     private BetResultLogService betResultLogService;
@@ -38,6 +40,33 @@ public class WalletService {
     @Autowired
     private WalletRefundAction walletRefundAction;
 
+    public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException {
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(username);
+        AgentPlayer agentPlayer;
+
+        try {
+            agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
+        } catch (RecordNotFoundException recordNotFoundException) {
+            throw new InvalidPlayerException();
+        }
+
+        Integer agentId = agentPlayer.getAgentId();
+        String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String signature = ""; // TODO: implement signature generation
+
+        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+        walletBalanceDto.setTraceId(traceId);
+        walletBalanceDto.setUsername(agentPlayer.getUsername());
+        walletBalanceDto.setCurrency("CNY"); // TODO: to get from game session
+        walletBalanceDto.setToken(""); // TODO: to get from game session
+
+        WalletBalanceVo balanceVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
+
+
+        // TODO: to handle balance returned with more than 4 decimals
+        // TODO: implement error handling
+        return balanceVo.getData().getBalance();
+    }
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException {
         Integer agentId = gameSession.getAgentId();
