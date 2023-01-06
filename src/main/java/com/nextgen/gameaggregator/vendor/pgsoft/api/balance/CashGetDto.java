@@ -14,10 +14,12 @@ import javax.validation.constraints.Size;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class CashGetDto extends CommonDto {
     @NotBlank
-    @Size(min = 1, max = 50)
+    @Size(min = 3, max = 50)
     private String playerName;
 
     //* Below are not mandatory
+    @NotBlank
+    @Size(min = 1, max = 100)
     private String operatorPlayerSession;
     private Integer gameId;
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.service;
 
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
@@ -22,6 +23,12 @@ public class VendorService {
         }
     }
 
+    public static void validateGameId(Integer gameIdFromRequest, String gameIdFromSession) throws GameNotSupportedException {
+        if (!String.valueOf(gameIdFromRequest).equals(gameIdFromSession)) {
+            throw new GameNotSupportedException();
+        }
+    }
+
     public static void validatePlayerUsername(String vendorPlayerUsernameFromRequest, String vendorPlayerUsernameFromSession) throws InvalidPlayerException {
         if (!vendorPlayerUsernameFromRequest.equals(vendorPlayerUsernameFromSession)) {
             throw new InvalidPlayerException();
@@ -32,6 +39,23 @@ public class VendorService {
         // https://m.pg-redirect.net/{gameID}/index.html?l={0}&btt=1&ot={2}&ops={3}
         String gameUrl = MessageFormat.format(urlTemplate, gameCode, languageCode, operatorToken, playerGameSessionToken);
         return gameUrl;
+    }
+
+
+    public static Boolean isBetRequest(CashTransferInOutDto dto) {
+        return dto.getParentBetId().equals(dto.getBetId());
+    }
+
+    public static Boolean isRoundEnded(CashTransferInOutDto dto) {
+        return dto.getIsEndRound();
+    }
+
+    public static Boolean hasWinAmount(CashTransferInOutDto dto) {
+        return dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    public static Boolean isResentForValidate(CashTransferInOutDto dto) {
+        return dto.getIsValidateBet() != null && dto.getIsValidateBet() == true;
     }
 
     public static String identifyBetType(CashTransferInOutDto dto) {
