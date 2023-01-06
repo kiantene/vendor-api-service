@@ -14,6 +14,7 @@ import java.util.Map;
 @Service
 public class GameUrlService implements GameUrl {
 
+    @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("gameCode", gameCode);
@@ -22,6 +23,7 @@ public class GameUrlService implements GameUrl {
         return formData;
     }
 
+    @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
         GameUrlVo responseVo = new GameUrlVo();
 
