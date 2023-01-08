@@ -63,7 +63,7 @@ public class BetAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(betDto);
-            ValidationUtils.validateVendorUsername(betDto.getAccount());
+            ValidationUtils.validateLength(betDto.getAccount(), 3, 36, InvalidPlayerException::new);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());

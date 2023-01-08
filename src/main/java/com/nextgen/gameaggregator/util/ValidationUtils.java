@@ -7,10 +7,10 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class ValidationUtils {
 
@@ -37,19 +37,19 @@ public class ValidationUtils {
         }
     }
 
-    public static void validateVendorUsername(String username) throws InvalidPlayerException {
-        // Max length is based on database type length
-        final int min = 3;
-        final int max = 100;
-
-        if (username.length() < min || username.length() > max) {
-            throw new InvalidPlayerException();
+    public static <X extends Throwable> void validateLength(String value, final int min, final int max, Supplier<? extends X> exceptionSupplier) throws X {
+        if (value.length() < min || value.length() > max) {
+            throw exceptionSupplier.get();
         }
     }
 
     public static void validateEquals(String expected, String actual) throws InvalidRequestException {
-        if (!expected.equals(actual)) {
-            throw new InvalidRequestException();
+        validateEquals(expected, actual, InvalidRequestException::new);
+    }
+
+    public static <X extends Throwable> void validateEquals(String expected, String actual, Supplier<? extends X> exceptionSupplier) throws X {
+        if (!expected.equalsIgnoreCase(actual)) {
+            throw exceptionSupplier.get();
         }
     }
 }

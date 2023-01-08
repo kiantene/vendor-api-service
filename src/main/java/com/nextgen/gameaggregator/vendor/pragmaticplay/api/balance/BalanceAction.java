@@ -49,7 +49,7 @@ public class BalanceAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateVendorUsername(dto.getUserId());
+            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token

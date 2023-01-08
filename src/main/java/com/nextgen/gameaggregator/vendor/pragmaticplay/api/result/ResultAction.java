@@ -48,8 +48,7 @@ public class ResultAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateVendorUsername(dto.getUserId());
-
+            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
             //TODO (by Alex), get the provider ID from vendor_line_credentials tables
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 

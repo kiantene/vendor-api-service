@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -58,7 +59,7 @@ public class EndRoundAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(endRoundDto);
-            ValidationUtils.validateVendorUsername(endRoundDto.getAccount());
+            ValidationUtils.validateLength(endRoundDto.getAccount(), 3, 36, InvalidPlayerException::new);
 
             // TODO (By Poseidon)
             // Vendor only send vendor player username, need to get game session by vendor player username

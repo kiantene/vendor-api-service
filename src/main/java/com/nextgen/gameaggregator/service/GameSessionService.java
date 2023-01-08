@@ -52,18 +52,6 @@ public class GameSessionService {
         return gameSession;
     }
 
-    public void verifyUsername(String sessionUsername, String vendorUsername) throws InvalidPlayerException{
-        if (!sessionUsername.equals(vendorUsername)) {
-            throw new InvalidPlayerException();
-        }
-    }
-
-    public void verifyGameId(String sessionVendorGameCode, String vendorGameCode) throws AuthenticationException {
-        if (!sessionVendorGameCode.equals(vendorGameCode)) {
-            throw new AuthenticationException();
-        }
-    }
-
     public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {
         // TODO: require optimisation
         Optional<AgentPlayer> agentPlayer = agentPlayerRepository.findById(agentPlayerId);

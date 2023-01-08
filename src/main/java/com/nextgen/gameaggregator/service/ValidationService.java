@@ -35,10 +35,6 @@ public class ValidationService {
         }
 
         String actualSignature = ApiSecurityUtils.getHmacSignature(payload, secret);
-        log.info(payload);
-        log.info(secret);
-        log.info(actualSignature);
-
         if (!signature.equals(actualSignature)) {
             throw new InvalidSignatureException();
         }

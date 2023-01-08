@@ -51,7 +51,8 @@ public class EndRoundAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateVendorUsername(dto.getUserId());
+            // TODO: refactor min, max
+            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
             ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // TODO: validate gameId
