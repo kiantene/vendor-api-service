@@ -56,6 +56,7 @@ spring:
         timeout:
           ms: '45000'
 logging:
+  config: classpath:logback-spring.xml
   level:
     org:
       hibernate:
@@ -64,6 +65,9 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
+logstash:
+  host: logstash
+  port: 5000
 eureka:
   client:
     serviceUrl:

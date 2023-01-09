@@ -28,5 +28,3 @@ springdoc:
     path: /${spring.application.name}/swagger-ui.html
     tryItOutEnabled: true
   paths-to-match: /**
-#logging:
-#  config: classpath:logback-spring.xml

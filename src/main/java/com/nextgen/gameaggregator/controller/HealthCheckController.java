@@ -6,10 +6,13 @@ import org.springframework.web.bind.annotation.*;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping(path = "health/")
 public class HealthCheckController {
+    private static final Logger log = LoggerFactory.getLogger(HealthCheckController.class);
 
     @Value("${mavenTimestamp}")
     private String timestamp;

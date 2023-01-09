@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+	<!--从配置文件读取配置路径，并且添加默认值 -->
+	<include resource="org/springframework/boot/logging/logback/base.xml"/>
+	<!--从SpringBoot配置文件读取项目名，环境，以及logstash地址 -->
+	<springProperty scope="context" name="springAppName" source="spring.application.name" />
+	<springProperty scope="context" name="springProfile" source="spring.profiles.active" />
+	<!--这个地址必须写在bootstrap.yml中。否则读取不到 -->
+	<springProperty scope="context" name="logstashHost" source="logstash.host" />
+	<springProperty scope="context" name="logstashPort" source="logstash.port" />
+	<springProperty scope="context" name="info.path" source="log.info.path" defaultValue="syd-logs/" />
+	<!--日志全局设置 -->
+	<springProperty scope="context" name="log.charset" source="log.charset" defaultValue="UTF-8" />
+	<springProperty scope="context" name="log.pattern" source="log.pattern" defaultValue="%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %green(%logger{36}) - %msg%n" />
+
+	<!--控制台日志打印格式 -->
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>${log.pattern}</pattern>
+			<charset>${log.charset}</charset>
+		</encoder>
+	</appender>
+
+	<!-- 上报给logstash -->
+	<appender name="logstash" class="com.nextgen.sas.core.logstash.LogstashTcpSocketAppender">
+
+		<destination>${logstashHost}:${logstashPort}</destination>
+		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+			<customFields>
+				{ "app": "${springAppName:-}", "profile": "${springProfile:-}" }
+			</customFields>
+		</encoder>
+
+		<connectionStrategy>
+			<roundRobin>
+				<connectionTTL>5 minutes</connectionTTL>
+			</roundRobin>
+		</connectionStrategy>
+	</appender>
+
+	<root level="info">
+		<appender-ref ref="STDOUT" />
+		<appender-ref ref="logstash" />
+	</root>
+</configuration>

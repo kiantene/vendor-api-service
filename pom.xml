@@ -70,6 +70,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>net.logstash.logback</groupId>
+			<artifactId>logstash-logback-encoder</artifactId>
+			<version>7.2</version>
+		</dependency>
+
+		<dependency>
 			<groupId>com.nextgen.sas</groupId>
 			<artifactId>core</artifactId>
 			<version>1.8.x</version>
