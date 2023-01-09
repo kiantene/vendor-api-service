@@ -1,20 +1,18 @@
 before_script:
   - export JAVA_HOME=/usr/lib/jvm/jdk-18/
-  - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/CD.pem"
-  - chmod 400 "$(pwd)/CD.pem"
 
 variables:
   STG_POINTING_BRANCH: "staging"
   STG_DOCKER_REGISTRY: local/ga-vendor-api-service
   STG_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
-  STG_SERVER : ubuntu@ec2-43-198-83-19.ap-east-1.compute.amazonaws.com
+  STG_SERVER: ubuntu@ec2-43-198-83-19.ap-east-1.compute.amazonaws.com
   STG_FOLDER_PATH: /home/ubuntu/game_aggregator/ga-vendor-api-service
   STG_MVN: /home/ubuntu/apache_maven/bin/mvn
 
   QA_POINTING_BRANCH: "qa"
   QA_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
   QA_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
-  QA_SERVER : root@47.254.202.80
+  QA_SERVER: root@47.254.202.80
 
 stages:
   - pull-git
@@ -44,17 +42,19 @@ stg-aws-build:
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $STG_SERVER -p 22 "cd $STG_FOLDER_PATH && $STG_MVN clean package -DskipTests=true && docker build -t $STG_DOCKER_REGISTRY:latest $STG_FOLDER_PATH"
 
 stg-aws-deploy:
-    stage: deploy
-    needs: ["stg-aws-build"]
-    extends: .stg-deploy-rule
-    script:
+  stage: deploy
+  needs: ["stg-aws-build"]
+  extends: .stg-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/CD.pem"
+    - chmod 400 "$(pwd)/CD.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $STG_SERVER -p 22 "docker service update --force --image $STG_POINTING_BRANCH:latest $STG_PORTAINER_NAME"
 
 qa-gitlab-build:
   stage: build
   extends: .qa-deploy-rule
   script:
-    - 'mvn clean deploy -s ./ci_setting.xml -DskipTests=true'
+    - "mvn clean deploy -s ./ci_setting.xml -DskipTests=true"
   artifacts:
     paths:
       - ./target/*.jar
@@ -69,10 +69,10 @@ qa-push-dockerhub:
     - docker push $QA_DOCKER_REGISTRY:latest
 
 qa-ali-deploy:
-    stage: deploy
-    needs: ["qa-push-dockerhub"]
-    extends: .qa-deploy-rule
-    script:
-      - echo "$CD_PRIVATE_KEY" > "$(pwd)/CD.pem"
-      - chmod 400 "$(pwd)/CD.pem"
-      - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $QA_SERVER -p 22 "docker pull $QA_DOCKER_REGISTRY:latest && docker service update --force --image $QA_DOCKER_REGISTRY:latest $QA_PORTAINER_NAME"
+  stage: deploy
+  needs: ["qa-push-dockerhub"]
+  extends: .qa-deploy-rule
+  script:
+    - echo "$CD_PRIVATE_KEY" > "$(pwd)/CD.pem"
+    - chmod 400 "$(pwd)/CD.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $QA_SERVER -p 22 "docker pull $QA_DOCKER_REGISTRY:latest && docker service update --force --image $QA_DOCKER_REGISTRY:latest $QA_PORTAINER_NAME"
