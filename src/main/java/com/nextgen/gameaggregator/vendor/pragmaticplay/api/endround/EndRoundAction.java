@@ -83,6 +83,9 @@ public class EndRoundAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 

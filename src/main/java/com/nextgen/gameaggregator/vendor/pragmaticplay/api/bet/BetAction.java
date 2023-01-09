@@ -80,6 +80,9 @@ public class BetAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             responseVo.setError(ResponseCodes.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());

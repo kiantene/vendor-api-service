@@ -265,14 +265,14 @@ public class WalletService {
      *
      * @param traceId A unique Id for this request
      * @param externalTransactionId Vendor's bet transaction Id of a previous bet record
-     * @param vendorPlayer A VendorPlayer entity object containing information about the player
+     * @param gameSession GameSession object containing information of the vendor, game, player
      * @param rawData Raw data sent by vendor containing information of the Refund
      * @return BetRefundEvent An event object containing Bet and Refund information to be used for further processing, if required
      * @throws BetNotFoundException If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BetRefundEvent processRefund(String traceId, String externalTransactionId, VendorPlayer vendorPlayer, String rawData) throws BetNotFoundException, RecordNotFoundException {
-        Integer vendorId = vendorPlayer.getVendorId();
+    public BetRefundEvent processRefund(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws BetNotFoundException, RecordNotFoundException {
+        Integer vendorId = gameSession.getVendorId();
         Long currentTimestamp = System.currentTimeMillis();
 
         // 1. Retrieve the bet transaction

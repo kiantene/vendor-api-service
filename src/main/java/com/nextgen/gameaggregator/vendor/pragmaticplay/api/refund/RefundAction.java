@@ -1,13 +1,15 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,8 @@ public class RefundAction {
     @Autowired
     private HttpService httpService;
     @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
     private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
@@ -43,22 +47,17 @@ public class RefundAction {
             String body = httpRequestLog.getRequestBody();
             RefundDto dto = HttpService.convertQueryStringToDto(body, RefundDto.class);
 
-            // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            // 1. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
-            // 2. Retrieve vendor player information based on given userId
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(dto.getUserId());
+            // 2. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            // 3. Retrieve vendor line's secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(vendorPlayer.getVendorLineId(), Credentials.SECRET_KEY);
-
-            // 4. Validate request signature
-            VendorService.verifyHash(body, secretKey);
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getExternalTransactionId(), vendorPlayer, body);
+            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getExternalTransactionId(), gameSession, body);
 
             // Emit event for additional asynchronous processing such as publishing data to a kafka topic
             EventDispatcherSystem.emitAsync(betRefundEvent);
@@ -75,6 +74,9 @@ public class RefundAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setError(ResponseCodes.INVALID_HASH);
@@ -94,5 +96,26 @@ public class RefundAction {
         }
 
         return responseVo;
+    }
+
+    private void doValidation(RefundDto dto) throws InvalidRequestException, InvalidPlayerException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+        // Validation with custom exception
+        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
+        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
+        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+    }
+
+    private void doVerification(HttpRequestLog request, RefundDto dto, GameSession gameSession) throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException {
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+        // 3. Verify request signature is valid
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
+
     }
 }

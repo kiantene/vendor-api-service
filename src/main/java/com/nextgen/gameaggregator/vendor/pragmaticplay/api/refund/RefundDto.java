@@ -1,13 +1,12 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.*;
-import java.math.BigDecimal;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -19,7 +18,6 @@ public class RefundDto {
 
     // Identifier of the user within the Casino Operator’s system.
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String userId;
 
     // Unique reference of this transaction.
