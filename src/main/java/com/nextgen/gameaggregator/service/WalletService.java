@@ -6,12 +6,20 @@ import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.wallet.balance.*;
-import com.nextgen.gameaggregator.operator.wallet.bet.*;
-import com.nextgen.gameaggregator.operator.wallet.refund.*;
-import com.nextgen.gameaggregator.operator.wallet.win.*;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
+import com.nextgen.gameaggregator.operator.wallet.refund.WalletRefundAction;
+import com.nextgen.gameaggregator.operator.wallet.refund.WalletRefundDto;
+import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
+import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
+import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -105,9 +113,6 @@ public class WalletService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
 
-        // 1. Check for duplicate transaction Id
-        betHistoryService.checkDuplicateExternalTransaction(betData.getExternalTransactionId(), vendorGameId, vendorPlayerId);
-
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
         String signature = ""; // TODO: implement signature generation
 
@@ -148,7 +153,13 @@ public class WalletService {
             betHistory.setRawData(rawData);
             betHistory.setVendorBetTime(walletBetDto.getTimestamp());
 
-            betHistoryService.create(betHistory);
+            try{
+                // 1. Check for duplicate transaction Id
+                betHistoryService.create(betHistory);
+            }catch (DataIntegrityViolationException dataIntegrityViolationException){
+                throw new DuplicateExternalTransactionIdException();
+            }
+
         } else if (balanceVo.getStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS) {
             throw new InsufficientBalanceException();
         } else {
