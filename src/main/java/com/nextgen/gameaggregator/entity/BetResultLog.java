@@ -20,6 +20,7 @@ public class BetResultLog {
     private Long vendorPlayerId;
     private Long agentPlayerId;
     private Integer agentId;
+    private Integer vendorLineId;
     private Integer currencyId;
     private BigDecimal winAmount;
     private Integer resultType;

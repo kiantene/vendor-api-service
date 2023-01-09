@@ -128,6 +128,7 @@ public class WalletService {
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
 
+        //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_history then only call to operator. So that we able to block duplicate bet.
         WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
 
         BetHistory betHistory = new BetHistory();
@@ -145,6 +146,7 @@ public class WalletService {
             betHistory.setVendorId(gameSession.getVendorId());
             betHistory.setAgentPlayerId(gameSession.getAgentPlayerId());
             betHistory.setAgentId(gameSession.getAgentId());
+            betHistory.setVendorLineId(gameSession.getVendorLineId());
             betHistory.setMasterAgentId(0);
             betHistory.setHouseId(0);
             betHistory.setGameCategoryId(gameSession.getGameCategoryId());
@@ -154,10 +156,13 @@ public class WalletService {
             betHistory.setVendorBetTime(walletBetDto.getTimestamp());
 
             try{
-                // 1. Check for duplicate transaction Id
                 betHistoryService.create(betHistory);
             }catch (DataIntegrityViolationException dataIntegrityViolationException){
-                throw new DuplicateExternalTransactionIdException();
+                // 1. Check for duplicate transaction Id
+                throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
+                        ", external_transaction_id:"+betHistory.getExternalTransactionId() +
+                        ", round_id:"+betHistory.getRoundId() +
+                        ", vendor_line_id:"+betHistory.getVendorLineId());
             }
 
         } else if (balanceVo.getStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS) {
@@ -191,13 +196,11 @@ public class WalletService {
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = winData.getRoundId();
 
-        // 1. Check for duplicate transaction Id
-        betHistoryService.checkDuplicateExternalTransaction(winData.getExternalTransactionId(), vendorGameId, vendorPlayerId);
-
-        // 2. Retrieve the bet transaction
+        // 1. Retrieve the bet transaction
         BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(roundId, vendorGameId, vendorPlayerId);
 
         // TODO: add caching for callback url
+        // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
         String signature = ""; // TODO: implement signature generation
 
@@ -215,6 +218,7 @@ public class WalletService {
         walletWinDto.setWinType(winData.getWinType());
         walletWinDto.setTimestamp(winData.getTimestamp());
 
+        //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_result_log then only call to operator. So that we able to block duplicate bet.
         WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
 
         BetResultLog betResultLog = new BetResultLog();
@@ -230,6 +234,7 @@ public class WalletService {
             betResultLog.setVendorPlayerId(vendorPlayerId);
             betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
             betResultLog.setAgentId(gameSession.getAgentId());
+            betResultLog.setVendorLineId(gameSession.getVendorLineId());
             betResultLog.setCurrencyId(gameSession.getCurrencyId());
             betResultLog.setWinAmount(walletWinDto.getAmount());
             betResultLog.setResultType(winData.getWinType().code);
@@ -237,7 +242,15 @@ public class WalletService {
             betResultLog.setRawData(rawData);
             betResultLog.setVendorTime(walletWinDto.getTimestamp());
 
-            betResultLogService.create(betResultLog);
+            try{
+                betResultLogService.create(betResultLog);
+            }catch (DataIntegrityViolationException dataIntegrityViolationException){
+                // 2. Check for duplicate transaction Id
+                throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
+                        ", external_transaction_id:"+betResultLog.getExternalTransactionId() +
+                        ", round_id:"+betResultLog.getRoundId() +
+                        ", vendor_line_id:"+betResultLog.getVendorLineId());
+            }
         } else {
             // TODO: throw exception
             log.error("ProcessWin: " + balanceVo);

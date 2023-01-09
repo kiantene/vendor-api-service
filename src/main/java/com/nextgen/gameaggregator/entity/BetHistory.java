@@ -4,10 +4,8 @@ import lombok.Data;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Entity
 @Table(name = "bet_history")
@@ -20,6 +18,7 @@ public class BetHistory {
     private Integer vendorGameId;
     private Long vendorPlayerId;
     private Integer vendorId;
+    private Integer vendorLineId;
     private Long agentPlayerId;
     private Integer agentId;
     private Integer masterAgentId;
