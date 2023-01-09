@@ -50,7 +50,7 @@ public class ResultAction {
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
             //TODO (by Alex), get the provider ID from vendor_line_credentials tables
-            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // TODO: validate gameId
 
@@ -68,7 +68,7 @@ public class ResultAction {
             //TODO (by Alex), pre-handle if gameId is not existed in DB
 
             // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
+            VendorService.verifyHash(body, secretKey);
 
             // 5. Send win result to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);

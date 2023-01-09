@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.exception.DisableAgentException;
+import com.nextgen.gameaggregator.exception.DisabledAgentException;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,8 +20,8 @@ public class AgentApiCredentialService {
         return credential.getCallbackUrl();
     }
 
-    public void verifyAgentStatus(Integer id)throws DisableAgentException {
+    public void verifyAgentStatus(Integer id)throws DisabledAgentException {
         AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentIdAndStatus(id, 1);
-        Optional.ofNullable(agentApiCredential).orElseThrow(DisableAgentException::new);
+        Optional.ofNullable(agentApiCredential).orElseThrow(DisabledAgentException::new);
     }
 }

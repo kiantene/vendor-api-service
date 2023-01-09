@@ -46,7 +46,7 @@ public class RefundAction {
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Retrieve vendor player information based on given userId
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(dto.getUserId());
@@ -55,7 +55,7 @@ public class RefundAction {
             String secretKey = vendorLineService.getCredentialValueByName(vendorPlayer.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
+            VendorService.verifyHash(body, secretKey);
 
             // 5. Send refund to Operator
             BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getExternalTransactionId(), vendorPlayer, body);

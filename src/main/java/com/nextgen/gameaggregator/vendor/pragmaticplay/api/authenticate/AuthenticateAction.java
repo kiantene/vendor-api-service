@@ -46,7 +46,7 @@ public class AuthenticateAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // 2. Verify session token
             // Need to retrieve line credentials from game session in order to validate hash
@@ -57,7 +57,7 @@ public class AuthenticateAction {
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
+            VendorService.verifyHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);

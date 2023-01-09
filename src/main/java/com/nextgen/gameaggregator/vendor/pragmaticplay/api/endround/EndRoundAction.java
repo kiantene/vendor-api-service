@@ -53,7 +53,7 @@ public class EndRoundAction {
             ValidationUtils.validateRequest(dto);
             // TODO: refactor min, max
             ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // TODO: validate gameId
 
@@ -67,7 +67,7 @@ public class EndRoundAction {
             //TODO (by Alex), pre-handle if gameId is not existed in DB
 
             // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
+            VendorService.verifyHash(body, secretKey);
 
             // 5. Retrieve the bet transaction
             BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());

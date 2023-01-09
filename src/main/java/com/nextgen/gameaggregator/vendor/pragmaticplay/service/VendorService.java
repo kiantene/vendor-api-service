@@ -47,7 +47,7 @@ public class VendorService {
         return queryParameterMap;
     }
 
-    public static void validateHash(String requestBody, String secretKey) throws InvalidSignatureException {
+    public static void verifyHash(String requestBody, String secretKey) throws InvalidSignatureException {
         Map<String, String> map = convertQueryStringToMap(requestBody);
         String hash = map.get("hash");
         map.remove("hash");

@@ -47,46 +47,20 @@ public class BetAction {
         String traceId = httpRequestLog.getTraceId();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
-            // Convert original request body into dto
             BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
 
-            // 1. Validate request parameters from vendor
-            this.doValidate(dto);
+            // 1. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
-            // 2. Verify session token
+            // 2. Retrieve and verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            // 3. Verify received username differs from game session
-            ValidationUtils.validateEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 4. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-
-            // 5. Validate request signature
-            VendorService.validateHash(body, secretKey);
-
-            // 6. Validate game login token gameId whether match with bet request
-            // TODO: review this exception
-            ValidationUtils.validateEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-
-            // 7. Verify vendor line status
-            vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-            // 8. Verify Agent Player status
-            agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-            // 9. Verify Agent API Credential status
-            agentApiCredentialService.verifyAgentStatus(gameSession.getAgentId());
-
-            // 10. Verify Vendor Game status
-            vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-            //TODO (by Alex), should have child game table for save vendor game code by language, platform
-
-            // 11. Send bet request to Operator and check if player has enough balance
+            // 4. Send bet request to Operator and check if player has enough balance
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
             // Emit event for additional asynchronous processing
@@ -111,10 +85,10 @@ public class BetAction {
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (DisableAgentPlayerException disableAgentPlayerException) {
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_FROZEN);
 
-        } catch (DisableAgentException disableAgentException) {
+        } catch (DisabledAgentException disabledAgentException) {
             // TODO: to review response code
             responseVo.setError(ResponseCodes.PLAYER_FROZEN);
 
@@ -127,10 +101,10 @@ public class BetAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setError(ResponseCodes.INSUFFICIENT_BALANCE);
 
-        } catch (DisableVendorLineException disableVendorLineException) {
+        } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setError(ResponseCodes.BET_NOT_ALLOWED);
 
-        } catch (DisableGameException disableGameException) {
+        } catch (DisabledGameException disabledGameException) {
             responseVo.setError(ResponseCodes.INVALID_GAME);
 
         } catch (Exception exception) { // any other exception encountered
@@ -145,11 +119,44 @@ public class BetAction {
         return responseVo;
     }
 
-    private void doValidate(BetDto dto) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(BetDto dto) throws InvalidRequestException, InvalidPlayerException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-        ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+    }
+
+    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws
+            AuthenticationException, InvalidPlayerException, CredentialNotFoundException,
+            InvalidSignatureException, DisabledVendorLineException, DisabledAgentPlayerException,
+            DisabledAgentException, DisabledGameException {
+
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // 2. Verify received game id is the same from game session
+        // TODO: review this exception
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+
+        // 3. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // 4. Retrieve vendor line credentials and secretKey for hash validation
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+        // 5. Verify request signature is valid
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
+
+        // 6. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 7. Verify agent line is active
+        agentApiCredentialService.verifyAgentStatus(gameSession.getAgentId());
+
+        // 8. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        //TODO (by Alex), should have child game table for save vendor game code by language, platform
     }
 }

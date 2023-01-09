@@ -43,11 +43,11 @@ public class ValidationUtils {
         }
     }
 
-    public static void validateEquals(String expected, String actual) throws InvalidRequestException {
-        validateEquals(expected, actual, InvalidRequestException::new);
+    public static void isEquals(String expected, String actual) throws InvalidRequestException {
+        isEquals(expected, actual, InvalidRequestException::new);
     }
 
-    public static <X extends Throwable> void validateEquals(String expected, String actual, Supplier<? extends X> exceptionSupplier) throws X {
+    public static <X extends Throwable> void isEquals(String expected, String actual, Supplier<? extends X> exceptionSupplier) throws X {
         if (!expected.equalsIgnoreCase(actual)) {
             throw exceptionSupplier.get();
         }

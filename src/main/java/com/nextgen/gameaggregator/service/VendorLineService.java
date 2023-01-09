@@ -3,8 +3,9 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.AgentVendorLine;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.entity.VendorLineCredential;
+import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.DisableVendorLineException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
@@ -32,7 +33,8 @@ public class VendorLineService {
         Optional.ofNullable(agentVendorLine).orElseThrow(InvalidVendorLineException::new);
 
         VendorLine vendorLine = agentVendorLine.getVendorLine();
-        if (vendorLine == null || agentVendorLine.getStatus() == 0 || vendorLine.getStatus() == 0) {
+        final Integer INACTIVE = Status.INACTIVE.code;
+        if (vendorLine == null || agentVendorLine.getStatus().equals(INACTIVE) || vendorLine.getStatus().equals(INACTIVE)) {
             throw new NoAvailableLineException();
         }
         return vendorLine;
@@ -40,8 +42,8 @@ public class VendorLineService {
 
     @Cacheable(value = "vendorLines", key = "{#vendorLineId, #name}")
     public String getCredentialValueByName(Integer vendorLineId, String name) throws CredentialNotFoundException {
-        final Integer status = 1;
-        VendorLineCredential credential = vendorLineCredentialRepository.findByVendorLineIdAndNameAndStatus(vendorLineId, name, status);
+        final Integer ACTIVE = Status.ACTIVE.code;
+        VendorLineCredential credential = vendorLineCredentialRepository.findByVendorLineIdAndNameAndStatus(vendorLineId, name, ACTIVE);
         Optional.ofNullable(credential).orElseThrow(CredentialNotFoundException::new);
 
         if (credential.getValue().isEmpty()) {
@@ -50,14 +52,14 @@ public class VendorLineService {
         return credential.getValue();
     }
 
-    public void verifyVendorLineStatus(Integer vendorLineId)throws DisableVendorLineException {
-        VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, 1);
-        Optional.ofNullable(vendorLine).orElseThrow(DisableVendorLineException::new);
+    public void verifyVendorLineStatus(Integer vendorLineId)throws DisabledVendorLineException {
+        VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, Status.ACTIVE.code);
+        Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {
         return vendorLine.getCredentials().stream()
-                .filter(v -> v.getStatus() == 1)
+                .filter(v -> v.getStatus().equals(Status.ACTIVE.code))
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 }

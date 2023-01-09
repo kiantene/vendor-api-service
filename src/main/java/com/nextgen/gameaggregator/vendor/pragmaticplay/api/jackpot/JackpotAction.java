@@ -49,7 +49,7 @@ public class JackpotAction {
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
             ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.validateEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
 
             // TODO: validate gameId with gameSession
 
@@ -64,7 +64,7 @@ public class JackpotAction {
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
             // 4. Validate request signature
-            VendorService.validateHash(body, secretKey);
+            VendorService.verifyHash(body, secretKey);
 
             // 5. Send win result to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
