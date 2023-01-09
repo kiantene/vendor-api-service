@@ -46,6 +46,8 @@ public class CashTransferInOutAction {
     @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
+    private BetService betService;
+    @Autowired
     private ResultService resultService;
     @Autowired
     private EndRoundService endRoundService;
@@ -73,12 +75,12 @@ public class CashTransferInOutAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
             // === Debugging Purpose ==============================================================================
-            String betType = VendorService.identifyBetType(dto);
-            System.out.println("============= Bet Type ================================================");
-            System.out.println(betType);
-            System.out.println("------ " + dto.getExternalTransactionId() + "-----------");
-            System.out.println(body);
-            System.out.println("=========================================================================");
+//            String betType = VendorService.identifyBetType(dto);
+//            System.out.println("============= Bet Type ================================================");
+//            System.out.println(betType);
+//            System.out.println("------ " + dto.getExternalTransactionId() + "-----------");
+//            System.out.println(body);
+//            System.out.println("=========================================================================");
             // === Debugging Purpose ==============================================================================
 
             // Vendor resent this bet for validation
@@ -88,8 +90,7 @@ public class CashTransferInOutAction {
 
                 // Only process as an BetRequest if it is an BetRequest
                 if (VendorService.isBetRequest(dto)) {
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-                    EventDispatcherSystem.emitAsync(betEvent);
+                    betService.process(traceId, gameSession, dto, body);
                 }
 
                 // Has to process result regardless win or lose
@@ -131,9 +132,9 @@ public class CashTransferInOutAction {
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
-        System.out.println("=============================error =======================");
-        System.out.println(parentResponseVo.toString());
-        System.out.println("====================================================");
+//        System.out.println("=============================error =======================");
+//        System.out.println(parentResponseVo.toString());
+//        System.out.println("====================================================");
         return parentResponseVo;
     }
 

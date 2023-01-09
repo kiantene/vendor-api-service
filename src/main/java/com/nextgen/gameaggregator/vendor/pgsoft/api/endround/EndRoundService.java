@@ -9,8 +9,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class EndRoundService {
-    @Autowired
-    private WalletService walletService;
     public void process (BetResultEvent betResultEvent) {
         EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
     }
