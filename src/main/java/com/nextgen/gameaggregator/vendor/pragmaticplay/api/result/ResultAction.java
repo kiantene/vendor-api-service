@@ -120,7 +120,7 @@ public class ResultAction {
     }
 
     private void doVerification(HttpRequestLog request, ResultDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, DisabledVendorLineException {
+            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException {
 
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);

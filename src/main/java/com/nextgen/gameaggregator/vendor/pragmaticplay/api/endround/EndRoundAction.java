@@ -8,7 +8,9 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -49,27 +51,16 @@ public class EndRoundAction {
             // Convert original request body into dto
             EndRoundDto dto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
 
-            // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(dto);
-            // TODO: refactor min, max
-            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
-
-            // TODO: validate gameId
+            // 1. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-            //TODO (by Alex), validate gameId is existed in DB
-            //TODO (by Alex), pre-handle if gameId is not existed in DB
-
-            // 4. Validate request signature
-            VendorService.verifyHash(body, secretKey);
-
-            // 5. Retrieve the bet transaction
+            // 4. Retrieve the bet transaction
             BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
             //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
@@ -102,7 +93,7 @@ public class EndRoundAction {
             responseVo.setError(ResponseCodes.INVALID_HASH);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            responseVo.setError(ResponseCodes.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
@@ -115,5 +106,30 @@ public class EndRoundAction {
         }
 
         return responseVo;
+    }
+
+    private void doValidation(EndRoundDto dto) throws InvalidRequestException, InvalidPlayerException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+        // Validation with custom exception
+        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
+        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
+        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+    }
+
+    private void doVerification(HttpRequestLog request, EndRoundDto dto, GameSession gameSession) throws
+            InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // 2. Verify received game id is the same from game session
+        // TODO: review this exception
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+
+        // 3. Retrieve vendor line credentials and secretKey for hash validation
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+        // 4. Validate request signature
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
     }
 }
