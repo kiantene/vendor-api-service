@@ -9,6 +9,8 @@ import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
+import org.hibernate.validator.constraints.Range;
+import org.intellij.lang.annotations.RegExp;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -30,12 +32,13 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
      */
 
     //* Below are mandatory
-    @NotBlank
+    @NotEmpty
     @Size(min = 3, max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String playerName;
 
     @NotNull
-    @Positive
+    @Range(min = 0)
     private Integer gameId;
 
     @NotBlank
@@ -50,21 +53,24 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     private String currencyCode;
 
     @NotNull
-    @Positive
+    @Range(min = 0)
     @Digits(integer = 8, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
+    @Range(min = 0)
+    @Digits(integer = 8, fraction = 2)
     private BigDecimal winAmount;
 
     @NotNull
+    @Digits(integer = 8, fraction = 2)
     private BigDecimal transferAmount;
 
     @NotBlank
     private String transactionId;
 
     @NotNull
-    @Positive
+    @Range(min = 1, max = 3)
     private Integer betType;
 
     @Positive

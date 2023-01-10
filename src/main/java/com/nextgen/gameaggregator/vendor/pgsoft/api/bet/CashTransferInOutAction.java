@@ -44,6 +44,8 @@ public class CashTransferInOutAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
+    private VendorGameService vendorGameService;
+    @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
     private BetService betService;
@@ -70,10 +72,15 @@ public class CashTransferInOutAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
-
+            // 3. Validate vendor player username
+            VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
+            // 4. Verify Game
+            vendorGameService.verifyGameByVendorGameCodeAndVendorId(dto.getGameId() ,gameSession.getVendorId());
+            // 5. Validate vendor player username
+            // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
+            VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
             // === Debugging Purpose ==============================================================================
 //            String betType = VendorService.identifyBetType(dto);
 //            System.out.println("============= Bet Type ================================================");
@@ -123,12 +130,24 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
 
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_EXISTED);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_EXISTED));
+            // throw new RuntimeException(duplicateExternalTransactionIdException);
+        } catch (GameNotSupportedException e) {
+            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+
         } catch (BetNotFoundException e) {
             throw new RuntimeException(e);
-        } catch (DuplicateExternalTransactionIdException betNotFoundException) {
-            throw new RuntimeException(betNotFoundException);
+
         } catch (InvalidOperatorResponseException e) {
             throw new RuntimeException(e);
+
+        } catch (InvalidPlayerException e) {
+            parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
+
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
 import lombok.Data;
+import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.*;
 
@@ -20,7 +21,7 @@ public class VerifySessionDto extends CommonDto {
     private String ip;
     private String customParameter;
     @NotNull
-    @Positive
+    @Range(min = 0)
     private Integer gameId;
 
 }
