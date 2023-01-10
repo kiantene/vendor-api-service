@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.redis.core.RedisHash;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -39,8 +38,12 @@ public class GameSessionService {
         return session;
     }
 
+
     @Cacheable(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
-    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency) {
+    public GameSession createSession(
+            GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency,
+            VendorLineCurrency vendorLineCurrency) {
+
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
@@ -49,7 +52,8 @@ public class GameSessionService {
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
-
+        gameSession.setGameCode(vendorGame.getCode());
+        gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
         gameSessionRepository.save(gameSession);
 
         return gameSession;

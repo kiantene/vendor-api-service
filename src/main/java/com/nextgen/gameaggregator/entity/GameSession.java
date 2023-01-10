@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.entity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.springframework.data.redis.core.RedisHash;
 
 import javax.persistence.*;
 
@@ -24,8 +23,10 @@ public class GameSession extends BaseEntity {
     private Long vendorPlayerId;
     private Integer vendorId;
     private Integer vendorLineId;
+    private String gameCode;
     private Integer vendorGameId;
     private String vendorGameCode;
+    private String vendorCurrencyCode;
     private Integer gameCategoryId;
     private String language;
     private Integer currencyId;

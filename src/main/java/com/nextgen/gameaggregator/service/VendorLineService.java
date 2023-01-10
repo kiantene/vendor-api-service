@@ -3,13 +3,12 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.AgentVendorLine;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.entity.VendorLineCredential;
+import com.nextgen.gameaggregator.entity.VendorLineCurrency;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.NoAvailableLineException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
 import com.nextgen.gameaggregator.repository.VendorLineCredentialRepository;
+import com.nextgen.gameaggregator.repository.VendorLineCurrencyRepository;
 import com.nextgen.gameaggregator.repository.VendorLineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -27,6 +26,9 @@ public class VendorLineService {
     private VendorLineCredentialRepository vendorLineCredentialRepository;
     @Autowired
     private AgentVendorLineRepository agentVendorLineRepository;
+
+    @Autowired
+    private VendorLineCurrencyRepository vendorLineCurrencyRepository;
 
     public VendorLine getVendorLineByAgent(Integer agentId, Integer vendorId, Integer currencyId) throws NoAvailableLineException, InvalidVendorLineException {
         AgentVendorLine agentVendorLine = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyId(agentId, vendorId, currencyId);
@@ -58,6 +60,18 @@ public class VendorLineService {
         Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
 
         return vendorLine.getId();
+    }
+
+
+    public VendorLineCurrency checkVendorLineSupportedCurrency(Integer vendorLineId, Integer currencyId) throws CurrencyNotSupportedException {
+        final Integer ACTIVE = Status.ACTIVE.code;
+        VendorLineCurrency entity = vendorLineCurrencyRepository.findByVendorLineIdAndCurrencyIdAndStatus(vendorLineId, currencyId, ACTIVE);
+        Optional.ofNullable(entity).orElseThrow(CurrencyNotSupportedException::new);
+
+        if (entity.getVendorCurrencyCode().isEmpty()) {
+            throw new CurrencyNotSupportedException();
+        }
+        return entity;
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {

@@ -4,15 +4,19 @@ import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import javax.servlet.http.HttpServletRequest;
-
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -36,11 +40,10 @@ public class GameUrlAction {
         OperatorResponseVo<GameUrlData> responseVo = new OperatorResponseVo<>();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
-            // Convert original json string into dto
             GameUrlDto dto = HttpService.convertJsonToDto(body, GameUrlDto.class);
+
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setTraceId(dto.getTraceId());
             log.info(dto.toString());
@@ -62,6 +65,8 @@ public class GameUrlAction {
             // 5. Check if game is supported
             VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameCode());
 
+
+
             // TODO: to check available platform
 
             Integer agentId = apiCredential.getAgent().getId();
@@ -77,7 +82,11 @@ public class GameUrlAction {
 
             // 8. Check if vendor player account exists
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
-            gameSessionService.createSession(gameSession, dto, vendorGame, currency);
+
+            //6. Check if Vendor Line currency is supported
+            VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(),  currency.getId());
+
+            gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
             log.info(gameSession.toString());
 
             // 9. Request game url from vendor
@@ -123,4 +132,5 @@ public class GameUrlAction {
 
         return responseVo;
     }
+
 }
