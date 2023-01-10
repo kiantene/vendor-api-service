@@ -11,12 +11,15 @@ import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.redis.core.RedisHash;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
 @Service
 @Slf4j
+@ComponentScan(basePackages = "com.nextgen.gameaggregator.redis.config")
 public class GameSessionService {
     @Autowired
     private GameSessionRepository gameSessionRepository;
@@ -36,7 +39,7 @@ public class GameSessionService {
         return session;
     }
 
-    @Cacheable(value = "GameSessions", key = "#gameSession.token")
+    @Cacheable(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency) {
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());

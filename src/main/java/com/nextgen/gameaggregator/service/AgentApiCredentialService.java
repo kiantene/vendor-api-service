@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.exception.DisabledAgentException;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -13,6 +14,7 @@ public class AgentApiCredentialService {
     @Autowired
     private AgentApiCredentialRepository agentApiCredentialRepository;
 
+    @Cacheable(value = "AgentApiCredentials", key = "#agentId", cacheManager = "cacheManager")
     public String getCallbackUrl(Integer agentId) {
         // TODO: error handling
         final Integer STATUS_ACTIVE = 1; // TODO: to refactor
@@ -20,8 +22,12 @@ public class AgentApiCredentialService {
         return credential.getCallbackUrl();
     }
 
-    public void verifyAgentStatus(Integer id)throws DisabledAgentException {
+    @Cacheable(value = "AgentApiCredentials", key = "#id", cacheManager = "cacheManager")
+    public String verifyAgentStatus(Integer id)throws DisabledAgentException {
         AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentIdAndStatus(id, 1);
         Optional.ofNullable(agentApiCredential).orElseThrow(DisabledAgentException::new);
+
+        //for getCallbackUrl caching purposes
+        return agentApiCredential.getCallbackUrl();
     }
 }

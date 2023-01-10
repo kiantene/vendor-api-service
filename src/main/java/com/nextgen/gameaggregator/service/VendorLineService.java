@@ -40,7 +40,7 @@ public class VendorLineService {
         return vendorLine;
     }
 
-    @Cacheable(value = "vendorLines", key = "{#vendorLineId, #name}")
+    @Cacheable(value = "VendorLineCredentials", key = "{#vendorLineId, #name}", cacheManager = "cacheManager")
     public String getCredentialValueByName(Integer vendorLineId, String name) throws CredentialNotFoundException {
         final Integer ACTIVE = Status.ACTIVE.code;
         VendorLineCredential credential = vendorLineCredentialRepository.findByVendorLineIdAndNameAndStatus(vendorLineId, name, ACTIVE);
@@ -52,9 +52,12 @@ public class VendorLineService {
         return credential.getValue();
     }
 
-    public void verifyVendorLineStatus(Integer vendorLineId)throws DisabledVendorLineException {
+    @Cacheable(value = "VendorLines", key = "#vendorLineId", cacheManager = "cacheManager")
+    public Integer verifyVendorLineStatus(Integer vendorLineId) throws DisabledVendorLineException {
         VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, Status.ACTIVE.code);
         Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
+
+        return vendorLine.getId();
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {

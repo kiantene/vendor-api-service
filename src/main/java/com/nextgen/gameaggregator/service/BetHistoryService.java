@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -31,6 +32,7 @@ public class BetHistoryService {
      * @param entity BetHistory entity object containing information of a single bet
      * @return BetHistory entity object after a successful save
      */
+    @Cacheable(value = "BetHistories", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public BetHistory create(BetHistory entity) {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
@@ -40,15 +42,16 @@ public class BetHistoryService {
         entity.setResultType(WinType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
+        betHistoryRepository.save(entity);
 
-        return betHistoryRepository.save(entity);
+        return entity;
     }
 
     /**
      * Check for a duplicate vendor transaction Id
      *
-     * @param txnId Vendor's unique Id for each transaction
-     * @param gameId Game Id within Game Aggregator System
+     * @param txnId          Vendor's unique Id for each transaction
+     * @param gameId         Game Id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @throws DuplicateExternalTransactionIdException If a matching external_transaction_id is found.
      */
@@ -63,8 +66,8 @@ public class BetHistoryService {
     /**
      * Retrieve a bet transaction record based on vendor's round Id
      *
-     * @param roundId Vendor's round Id
-     * @param gameId Game Id within Game Aggregator System
+     * @param roundId        Vendor's round Id
+     * @param gameId         Game Id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return BetHistory entity object containing all information of a single Bet
      * @throws BetNotFoundException If no bet record is found
@@ -82,7 +85,7 @@ public class BetHistoryService {
      * Retrieve a bet transaction record based on vendor's unique transaction Id
      *
      * @param externalTransactionId Vendor's unique transaction Id mapped to this field
-     * @param vendorId Vendor's Id with Game Aggregator System
+     * @param vendorId              Vendor's Id with Game Aggregator System
      * @return BetHistory entity object containing all information of a single Bet
      * @throws BetNotFoundException If no bet record is found
      */

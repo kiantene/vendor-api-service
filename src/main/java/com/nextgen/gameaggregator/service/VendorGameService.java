@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -15,8 +16,10 @@ public class VendorGameService {
     @Autowired
     private VendorGameRepository vendorGameRepository;
 
-    public void verifyGameStatus(Integer gameId) throws DisabledGameException {
+    @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
+    public VendorGame verifyGameStatus(Integer gameId) throws DisabledGameException {
         VendorGame vendorGame = vendorGameRepository.findByIdAndStatus(gameId, Status.ACTIVE.code);
         Optional.ofNullable(vendorGame).orElseThrow(DisabledGameException::new);
+        return vendorGame;
     }
 }
