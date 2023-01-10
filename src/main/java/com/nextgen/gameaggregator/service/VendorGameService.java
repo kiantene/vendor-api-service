@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,6 +21,16 @@ public class VendorGameService {
     public VendorGame verifyGameStatus(Integer gameId) throws DisabledGameException {
         VendorGame vendorGame = vendorGameRepository.findByIdAndStatus(gameId, Status.ACTIVE.code);
         Optional.ofNullable(vendorGame).orElseThrow(DisabledGameException::new);
+        return vendorGame;
+    }
+
+    public VendorGame getByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) throws GameNotSupportedException {
+        VendorGame vendorGame = vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
+        Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+
+        if (vendorGame.getStatus() == 0) {
+            throw new GameNotSupportedException();
+        }
         return vendorGame;
     }
 }

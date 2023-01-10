@@ -34,6 +34,7 @@ public class BetHistory {
     private Integer resultType;
     private String rawData;
     private Integer status;
+    private String gameSessionToken;
     private Long vendorBetTime;
     private Long vendorSettleTime;
     private Long createTime;
