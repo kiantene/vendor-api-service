@@ -58,14 +58,6 @@ spring:
           ms: "45000"
 logging:
   config: classpath:logback-spring.xml
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-        type:
-          descriptor:
-            sql:
-              BasicBinder: TRACE
 logstash:
   host: logstash
   port: 5000
