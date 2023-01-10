@@ -126,7 +126,7 @@ public class GameUrlAction {
             exception.printStackTrace();
 
         } finally {
-            responseVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getStatus()));
+            responseVo.setMessage(responseVo.getStatus().description);
             httpService.end(httpRequestLog, responseVo);
         }
 
