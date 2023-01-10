@@ -34,7 +34,7 @@ stg-aws-pull-git:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $STG_SERVER -p 22 "cd $STG_FOLDER_PATH && git fetch --all && git checkout staging && git reset --hard origin/staging"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "cd $STG_FOLDER_PATH && git fetch --all && git checkout staging && git reset --hard origin/staging"
 
 stg-aws-build:
   stage: build
@@ -43,16 +43,16 @@ stg-aws-build:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $STG_SERVER -p 22 "cd $STG_FOLDER_PATH && $STG_MVN clean package -DskipTests=true && docker build -t $STG_DOCKER_REGISTRY:latest $STG_FOLDER_PATH"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "cd $STG_FOLDER_PATH && $STG_MVN clean package -DskipTests=true && docker build -t $STG_DOCKER_REGISTRY:latest $STG_FOLDER_PATH"
 
 stg-aws-deploy:
   stage: deploy
   needs: ["stg-aws-build"]
   extends: .stg-deploy-rule
   script:
-    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/CD.pem"
-    - chmod 400 "$(pwd)/CD.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $STG_SERVER -p 22 "docker service update --force --image $STG_POINTING_BRANCH:latest $STG_PORTAINER_NAME"
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
+    - chmod 400 "$(pwd)/stg-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker service update --force --image $STG_POINTING_BRANCH:latest $STG_PORTAINER_NAME"
 
 qa-gitlab-build:
   stage: build
@@ -77,6 +77,6 @@ qa-ali-deploy:
   needs: ["qa-push-dockerhub"]
   extends: .qa-deploy-rule
   script:
-    - echo "$CD_PRIVATE_KEY" > "$(pwd)/CD.pem"
-    - chmod 400 "$(pwd)/CD.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/CD.pem" $QA_SERVER -p 22 "docker pull $QA_DOCKER_REGISTRY:latest && docker service update --force --image $QA_DOCKER_REGISTRY:latest $QA_PORTAINER_NAME"
+    - echo "$CD_PRIVATE_KEY" > "$(pwd)/qa-key.pem"
+    - chmod 400 "$(pwd)/qa-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker pull $QA_DOCKER_REGISTRY:latest && docker service update --force --image $QA_DOCKER_REGISTRY:latest $QA_PORTAINER_NAME"
