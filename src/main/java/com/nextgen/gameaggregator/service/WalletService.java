@@ -98,80 +98,43 @@ public class WalletService {
     /**
      * To process the bet by sending the bet data to Operator to validate the player has sufficient balance
      * to place the bet.
-     *
+     * <p>
      * When the Operator has responded with sufficient balance, we will save a record of the bet
      * as Unsettled.
      *
-     * @param traceId A unique Id for this request
+     * @param traceId     A unique Id for this request
      * @param gameSession GameSession object containing information of the vendor, game, player
-     * @param betData BetData object containing information of the bet such as betAmount, game, betTime
-     * @param rawData Raw data sent by vendor containing information of the bet
+     * @param betData     BetData object containing information of the bet such as betAmount, game, betTime
+     * @param rawData     Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws InsufficientBalanceException, DuplicateExternalTransactionIdException {
+    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData)
+            throws InsufficientBalanceException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException {
+
         Integer agentId = gameSession.getAgentId();
-        Integer vendorGameId = gameSession.getVendorGameId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
 
         String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
         String signature = ""; // TODO: implement signature generation
 
-        WalletBetDto walletBetDto = new WalletBetDto();
-        walletBetDto.setTraceId(traceId);
-        walletBetDto.setTransactionId(traceId);
-        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetDto.setToken(gameSession.getToken());
-        walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
-        walletBetDto.setAmount(betData.getAmount());
-        walletBetDto.setGameCode(betData.getGameId()); // TODO: game code mapping
-        walletBetDto.setRoundId(betData.getRoundId());
-        walletBetDto.setTimestamp(betData.getTimestamp());
+        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
 
         //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_history then only call to operator. So that we able to block duplicate bet.
         WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
 
-        BetHistory betHistory = new BetHistory();
-        BigDecimal balance = BigDecimal.ZERO;
-        if (balanceVo.getStatus() == ResponseCodes.Status.SC_OK) {
-            balance = balanceVo.getData().getBalance();
-            boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-            if (isNegativeBalance) throw new InsufficientBalanceException();
+        BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
+        BigDecimal balance = balanceVo.getData().getBalance();
 
-            betHistory.setId(traceId);
-            betHistory.setExternalTransactionId(walletBetDto.getExternalTransactionId());
-            betHistory.setRoundId(walletBetDto.getRoundId());
-            betHistory.setVendorGameId(gameSession.getVendorGameId());
-            betHistory.setVendorPlayerId(gameSession.getVendorPlayerId());
-            betHistory.setVendorId(gameSession.getVendorId());
-            betHistory.setAgentPlayerId(gameSession.getAgentPlayerId());
-            betHistory.setAgentId(gameSession.getAgentId());
-            betHistory.setVendorLineId(gameSession.getVendorLineId());
-            betHistory.setMasterAgentId(0);
-            betHistory.setHouseId(0);
-            betHistory.setGameCategoryId(gameSession.getGameCategoryId());
-            betHistory.setCurrencyId(gameSession.getCurrencyId());
-            betHistory.setBetAmount(walletBetDto.getAmount());
-            betHistory.setRawData(rawData);
-            betHistory.setVendorBetTime(walletBetDto.getTimestamp());
-
-            try{
-                betHistoryService.create(betHistory);
-            }catch (DataIntegrityViolationException dataIntegrityViolationException){
-                // 1. Check for duplicate transaction Id
-                throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
-                        ", external_transaction_id:"+betHistory.getExternalTransactionId() +
-                        ", round_id:"+betHistory.getRoundId() +
-                        ", vendor_line_id:"+betHistory.getVendorLineId());
-            }
-
-        } else if (balanceVo.getStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS) {
-            throw new InsufficientBalanceException();
-        } else {
-            // TODO: throw exception
-            log.error("ProcessBet: " + balanceVo);
-            // TODO: to decide whether to save bet record for insufficient balance
+        try {
+            betHistoryService.create(betHistory);
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            // 1. Check for duplicate transaction Id
+            throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
+                    ", external_transaction_id:" + betHistory.getExternalTransactionId() +
+                    ", round_id:" + betHistory.getRoundId() +
+                    ", vendor_line_id:" + betHistory.getVendorLineId());
         }
+
+        // TODO: to decide whether to save bet record for insufficient balance
 
         // TODO: check for null pointer
         return new BetEvent(betHistory, balance);
@@ -181,13 +144,13 @@ public class WalletService {
      * To process the result of a bet by sending the bet result data to Operator so that the Operator can update
      * the player's balance.
      *
-     * @param traceId A unique Id for this request
+     * @param traceId     A unique Id for this request
      * @param gameSession GameSession object containing information of the vendor, game, player
-     * @param winData WinData object containing information of the bet result
-     * @param rawData Raw data sent by vendor containing information of the bet result
+     * @param winData     WinData object containing information of the bet result
+     * @param rawData     Raw data sent by vendor containing information of the bet result
      * @return BetResultEvent An event object containing Bet and Bet Result information as well as the last balance
-     *                        that can be used for further processing, if required
-     * @throws BetNotFoundException If no bet record is found
+     * that can be used for further processing, if required
+     * @throws BetNotFoundException                    If no bet record is found
      * @throws DuplicateExternalTransactionIdException If vendor's transaction Id is found
      */
     public BetResultEvent processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws BetNotFoundException, DuplicateExternalTransactionIdException {
@@ -242,14 +205,14 @@ public class WalletService {
             betResultLog.setRawData(rawData);
             betResultLog.setVendorTime(walletWinDto.getTimestamp());
 
-            try{
+            try {
                 betResultLogService.create(betResultLog);
-            }catch (DataIntegrityViolationException dataIntegrityViolationException){
+            } catch (DataIntegrityViolationException dataIntegrityViolationException) {
                 // 2. Check for duplicate transaction Id
                 throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
-                        ", external_transaction_id:"+betResultLog.getExternalTransactionId() +
-                        ", round_id:"+betResultLog.getRoundId() +
-                        ", vendor_line_id:"+betResultLog.getVendorLineId());
+                        ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
+                        ", round_id:" + betResultLog.getRoundId() +
+                        ", vendor_line_id:" + betResultLog.getVendorLineId());
             }
         } else {
             // TODO: throw exception
@@ -329,12 +292,12 @@ public class WalletService {
      * To process the reversal of a bet by sending the refund instruction to Operator so that the Operator can perform
      * a reversal and return the updated balance of the player.
      *
-     * @param traceId A unique Id for this request
+     * @param traceId               A unique Id for this request
      * @param externalTransactionId Vendor's bet transaction Id of a previous bet record
-     * @param gameSession GameSession object containing information of the vendor, game, player
-     * @param rawData Raw data sent by vendor containing information of the Refund
+     * @param gameSession           GameSession object containing information of the vendor, game, player
+     * @param rawData               Raw data sent by vendor containing information of the Refund
      * @return BetRefundEvent An event object containing Bet and Refund information to be used for further processing, if required
-     * @throws BetNotFoundException If no bet record is found
+     * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
     public BetRefundEvent processRefund(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws BetNotFoundException, RecordNotFoundException {
@@ -387,5 +350,43 @@ public class WalletService {
 
         // TODO: to refactor currency
         return new BetRefundEvent(betHistory, betRefundLog, balance);
+    }
+
+    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetData betData) {
+        WalletBetDto walletBetDto = new WalletBetDto();
+        walletBetDto.setTraceId(traceId);
+        walletBetDto.setTransactionId(traceId);
+        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(gameSession.getCurrencyCode());
+        walletBetDto.setToken(gameSession.getToken());
+        walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
+        walletBetDto.setAmount(betData.getAmount());
+        walletBetDto.setGameCode(betData.getGameId()); // TODO: game code mapping
+        walletBetDto.setRoundId(betData.getRoundId());
+        walletBetDto.setTimestamp(betData.getTimestamp());
+
+        return walletBetDto;
+    }
+
+    private BetHistory newBetHistory(WalletBetDto walletBetDto, GameSession gameSession, String rawData) {
+        BetHistory betHistory = new BetHistory();
+        betHistory.setId(walletBetDto.getTraceId());
+        betHistory.setExternalTransactionId(walletBetDto.getExternalTransactionId());
+        betHistory.setRoundId(walletBetDto.getRoundId());
+        betHistory.setVendorGameId(gameSession.getVendorGameId());
+        betHistory.setVendorPlayerId(gameSession.getVendorPlayerId());
+        betHistory.setVendorId(gameSession.getVendorId());
+        betHistory.setAgentPlayerId(gameSession.getAgentPlayerId());
+        betHistory.setAgentId(gameSession.getAgentId());
+        betHistory.setVendorLineId(gameSession.getVendorLineId());
+        betHistory.setMasterAgentId(0); // TODO: populate with actual value
+        betHistory.setHouseId(0);
+        betHistory.setGameCategoryId(gameSession.getGameCategoryId());
+        betHistory.setCurrencyId(gameSession.getCurrencyId());
+        betHistory.setBetAmount(walletBetDto.getAmount());
+        betHistory.setRawData(rawData);
+        betHistory.setVendorBetTime(walletBetDto.getTimestamp());
+
+        return betHistory;
     }
 }
