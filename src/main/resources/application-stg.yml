@@ -65,6 +65,9 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
+logstash:
+  host: logstash
+  port: 5000
 eureka:
   client:
     serviceUrl:
