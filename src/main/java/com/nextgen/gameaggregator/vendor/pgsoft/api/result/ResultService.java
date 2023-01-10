@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
 public class ResultService {
     @Autowired
     private WalletService walletService;
-    public BetResultEvent process(String traceId, GameSession gameSession, String body) throws InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException {
+    public BetResultEvent process(String traceId, GameSession gameSession, String body) throws InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException, InvalidAgentApiCredentialException {
 
         // Construct result dto
         ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);

@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.exception.DisabledAgentException;
+import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -15,19 +16,10 @@ public class AgentApiCredentialService {
     private AgentApiCredentialRepository agentApiCredentialRepository;
 
     @Cacheable(value = "AgentApiCredentials", key = "#agentId", cacheManager = "cacheManager")
-    public String getCallbackUrl(Integer agentId) {
-        // TODO: error handling
-        final Integer STATUS_ACTIVE = 1; // TODO: to refactor
-        AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, STATUS_ACTIVE);
-        return credential.getCallbackUrl();
-    }
+    public AgentApiCredential getAgentApiCredential(Integer agentId) throws InvalidAgentApiCredentialException {
+        AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
+        Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
 
-    @Cacheable(value = "AgentApiCredentials", key = "#id", cacheManager = "cacheManager")
-    public String verifyAgentStatus(Integer id)throws DisabledAgentException {
-        AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentIdAndStatus(id, 1);
-        Optional.ofNullable(agentApiCredential).orElseThrow(DisabledAgentException::new);
-
-        //for getCallbackUrl caching purposes
-        return agentApiCredential.getCallbackUrl();
+        return credential;
     }
 }

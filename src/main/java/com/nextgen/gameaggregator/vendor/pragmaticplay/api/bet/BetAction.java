@@ -93,7 +93,7 @@ public class BetAction {
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setError(ResponseCodes.PLAYER_FROZEN);
 
-        } catch (DisabledAgentException disabledAgentException) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             // TODO: to review response code
             responseVo.setError(ResponseCodes.PLAYER_FROZEN);
 
@@ -135,7 +135,7 @@ public class BetAction {
     private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws
             AuthenticationException, InvalidPlayerException, CredentialNotFoundException,
             InvalidSignatureException, DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledAgentException, DisabledGameException {
+            DisabledGameException {
 
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
@@ -156,10 +156,7 @@ public class BetAction {
         // 6. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 7. Verify agent line is active
-        agentApiCredentialService.verifyAgentStatus(gameSession.getAgentId());
-
-        // 8. Verify vendor game is active
+        // 7. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         //TODO (by Alex), should have child game table for save vendor game code by language, platform

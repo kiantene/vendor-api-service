@@ -133,15 +133,17 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (BetNotFoundException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e); // TODO: add appropriate response code
 
         } catch (InvalidOperatorResponseException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e); // TODO: add appropriate response code
 
         } catch (InvalidPlayerException e) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
 
+        } catch (InvalidAgentApiCredentialException e) {
+            throw new RuntimeException(e); // TODO: add appropriate response code
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }

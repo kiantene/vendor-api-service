@@ -48,7 +48,7 @@ public class WalletService {
     @Autowired
     private WalletRefundAction walletRefundAction;
 
-    public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException {
+    public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException, InvalidAgentApiCredentialException {
         VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(username);
         AgentPlayer agentPlayer;
 
@@ -59,7 +59,7 @@ public class WalletService {
         }
 
         Integer agentId = agentPlayer.getAgentId();
-        String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
         String signature = ""; // TODO: implement signature generation
 
         WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
@@ -76,9 +76,9 @@ public class WalletService {
         return balanceVo.getData().getBalance();
     }
 
-    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException {
+    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         Integer agentId = gameSession.getAgentId();
-        String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
         String signature = ""; // TODO: implement signature generation
 
         WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
@@ -108,12 +108,13 @@ public class WalletService {
      * @param rawData     Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData)
-            throws InsufficientBalanceException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException {
+    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
+            InsufficientBalanceException, DuplicateExternalTransactionIdException,
+            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         Integer agentId = gameSession.getAgentId();
 
-        String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
         String signature = ""; // TODO: implement signature generation
 
         WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
@@ -153,7 +154,9 @@ public class WalletService {
      * @throws BetNotFoundException                    If no bet record is found
      * @throws DuplicateExternalTransactionIdException If vendor's transaction Id is found
      */
-    public BetResultEvent processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws BetNotFoundException, DuplicateExternalTransactionIdException {
+    public BetResultEvent processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws
+            BetNotFoundException, DuplicateExternalTransactionIdException, InvalidAgentApiCredentialException {
+
         Integer agentId = gameSession.getAgentId();
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
@@ -164,7 +167,7 @@ public class WalletService {
 
         // TODO: add caching for callback url
         // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
-        String callbackUrl = agentApiCredentialService.getCallbackUrl(agentId);
+        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
         String signature = ""; // TODO: implement signature generation
 
         WalletWinDto walletWinDto = new WalletWinDto();
@@ -234,7 +237,9 @@ public class WalletService {
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BetRefundEvent processRefund(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws BetNotFoundException, RecordNotFoundException {
+    public BetRefundEvent processRefund(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws
+            BetNotFoundException, RecordNotFoundException, InvalidAgentApiCredentialException {
+
         Integer vendorId = gameSession.getVendorId();
         Long currentTimestamp = System.currentTimeMillis();
 
@@ -243,7 +248,7 @@ public class WalletService {
         AgentPlayer agentPlayer = agentPlayerService.get(betHistory.getAgentPlayerId());
 
         // TODO: add caching for callback url
-        String callbackUrl = agentApiCredentialService.getCallbackUrl(betHistory.getAgentId());
+        String callbackUrl = agentApiCredentialService.getAgentApiCredential(betHistory.getAgentId()).getCallbackUrl();
         String signature = ""; // TODO: implement signature generation
 
         WalletRefundDto walletRefundDto = new WalletRefundDto();
