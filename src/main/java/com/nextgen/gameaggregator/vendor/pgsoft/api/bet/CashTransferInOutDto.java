@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -38,15 +39,19 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     private Integer gameId;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String parentBetId;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String betId;
 
     @NotBlank
     private String currencyCode;
 
     @NotNull
+    @Positive
+    @Digits(integer = 8, fraction = 2)
     private BigDecimal betAmount;
 
     @NotNull
