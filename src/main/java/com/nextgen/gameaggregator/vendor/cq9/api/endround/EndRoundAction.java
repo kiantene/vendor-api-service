@@ -55,16 +55,17 @@ public class EndRoundAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            EndRoundDto endRoundDto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
+//            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
 
             // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(endRoundDto);
-            ValidationUtils.validateLength(endRoundDto.getAccount(), 3, 36, InvalidPlayerException::new);
+
+//            ValidationUtils.validateRequest(endRoundDto);
+//            ValidationUtils.validateLength(endRoundDto.getAccount(), 3, 36, InvalidPlayerException::new);
 
             // TODO (By Poseidon)
             // Vendor only send vendor player username, need to get game session by vendor player username
 
-            commonVo.setBalance(BigDecimal.valueOf(100));
+            commonVo.setBalance(BigDecimal.valueOf(1000));
             commonVo.setCurrency("CNY");
 
             responseVo.setData(commonVo);

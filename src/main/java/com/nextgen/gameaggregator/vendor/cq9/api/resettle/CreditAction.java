@@ -1,10 +1,11 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.balance;
+package com.nextgen.gameaggregator.vendor.cq9.api.resettle;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.vendor.cq9.api.endround.ResettleDto;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
@@ -13,8 +14,10 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
@@ -24,7 +27,7 @@ import java.util.Date;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class CreditAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -34,8 +37,8 @@ public class BalanceAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request, @RequestHeader MultiValueMap<String, String> headers) {
+    @PostMapping(path = EndPoints.CREDIT, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseVo<CommonVo> credit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -47,12 +50,13 @@ public class BalanceAction {
         CommonVo commonVo = new CommonVo();
 
         try {
-            // TODO (By Poseidon)
-            // Vendor only send vendor player username, need to get game session by vendor player username
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
 
-            BigDecimal balance = walletService.getBalance(traceId, account);
+            // Convert original request body into dto
+            ResettleDto resettleDto = HttpService.convertQueryStringToDto(body, ResettleDto.class);
 
-            commonVo.setBalance(balance);
+            commonVo.setBalance(BigDecimal.valueOf(100));
             commonVo.setCurrency("CNY");
 
             responseVo.setData(commonVo);

@@ -8,4 +8,6 @@ public class EndPoints {
     public static final String BET = "/transaction/game/bet";
     public static final String END_ROUND = "/transaction/game/endround";
     public static final String REFUND = "/transaction/game/refund";
+    public static final String DEBIT = "/transaction/game/debit";
+    public static final String CREDIT = "/transaction/game/credit";
 }
