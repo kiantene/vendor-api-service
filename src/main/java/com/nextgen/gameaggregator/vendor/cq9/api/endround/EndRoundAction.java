@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
@@ -37,6 +34,10 @@ public class EndRoundAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private BetHistoryService betHistoryService;
+    private VendorGameService vendorGameService;
+    private VendorPlayerService vendorPlayerService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
@@ -55,15 +56,19 @@ public class EndRoundAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-//            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
+            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
 
             // 1. Validate request parameters from vendor
+            ValidationUtils.validateRequest(endRoundDto);
+            ValidationUtils.validateLength(endRoundDto.getAccount(), 3, 36, InvalidPlayerException::new);
 
-//            ValidationUtils.validateRequest(endRoundDto);
-//            ValidationUtils.validateLength(endRoundDto.getAccount(), 3, 36, InvalidPlayerException::new);
+            // 2. Gather require data
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
+            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
+            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(endRoundDto.getRoundid(), vendorGame.getId(), vendorPlayer.getId());
 
-            // TODO (By Poseidon)
-            // Vendor only send vendor player username, need to get game session by vendor player username
+            // 3. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             commonVo.setBalance(BigDecimal.valueOf(1000));
             commonVo.setCurrency("CNY");
