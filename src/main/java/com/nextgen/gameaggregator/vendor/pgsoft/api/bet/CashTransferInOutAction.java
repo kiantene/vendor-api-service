@@ -1,19 +1,13 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.endround.EndRoundService;
-import com.nextgen.gameaggregator.vendor.pgsoft.api.result.ResultDto;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.result.ResultService;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.BetTypes;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
@@ -76,8 +70,8 @@ public class CashTransferInOutAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             // 3. Validate vendor player username
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
-            // 4. Verify Game
-            vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+            // 4. Verify VendorGameCode from request body is match with session
+            VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
             // 5. Validate vendor player username
             // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
@@ -135,8 +129,8 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_EXISTED));
             // throw new RuntimeException(duplicateExternalTransactionIdException);
         } catch (GameNotSupportedException gameNotSupportedException) {
-            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
 
         } catch (BetNotFoundException e) {
             throw new RuntimeException(e);

@@ -51,7 +51,7 @@ public class VerifySessionAction {
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             // 3. Validate vendor game code
-            VendorService.validateGameId(dto.getGameId(), gameSession.getVendorGameCode());
+            VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
             // 4. Retrieve vendor line operatorToken and secretKey for validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
             String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);

@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.service;
 
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
-import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutAction;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.BetTypes;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +21,16 @@ public class VendorService {
         }
     }
 
-    public static void validateGameId(Integer gameIdFromRequest, String gameIdFromSession) throws GameNotSupportedException {
-        if (!String.valueOf(gameIdFromRequest).equals(gameIdFromSession)) {
+    // Overloading with below
+    public static void validateVendorGameCode(String vendorGameCodeFromRequest, String vendorGameCodeFromSession) throws GameNotSupportedException {
+        if (!vendorGameCodeFromRequest.equals(vendorGameCodeFromSession)) {
+            throw new GameNotSupportedException();
+        }
+    }
+
+    // Overloading with above
+    public static void validateVendorGameCode(Integer vendorGameCodeFromRequest, String vendorGameCodeFromSession) throws GameNotSupportedException {
+        if (!String.valueOf(vendorGameCodeFromRequest).equals(vendorGameCodeFromSession)) {
             throw new GameNotSupportedException();
         }
     }
