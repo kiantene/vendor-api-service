@@ -57,6 +57,7 @@ spring:
         timeout:
           ms: "45000"
 logging:
+  config: classpath:logback-spring.xml
   level:
     org:
       hibernate:
