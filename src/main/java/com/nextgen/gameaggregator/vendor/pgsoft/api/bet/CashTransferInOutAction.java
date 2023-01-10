@@ -77,7 +77,7 @@ public class CashTransferInOutAction {
             // 3. Validate vendor player username
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
             // 4. Verify Game
-            vendorGameService.verifyGameByVendorGameCodeAndVendorId(dto.getGameId() ,gameSession.getVendorId());
+            vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
             // 5. Validate vendor player username
             // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
@@ -134,7 +134,7 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_EXISTED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_EXISTED));
             // throw new RuntimeException(duplicateExternalTransactionIdException);
-        } catch (GameNotSupportedException e) {
+        } catch (GameNotSupportedException gameNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
 
