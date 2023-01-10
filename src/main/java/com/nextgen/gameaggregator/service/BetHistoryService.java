@@ -93,4 +93,22 @@ public class BetHistoryService {
         }
         return betHistory;
     }
+
+    /**
+     * Retrieve a bet transaction record based on vendor's round Id and vendor's Id
+     *
+     * @param roundId Vendor's round Id
+     * @param vendorId Vendor Id within Game Aggregator System
+     * @param vendorPlayerId Id of the record in VendorPlayer
+     * @return BetHistory entity object containing all information of a single Bet
+     * @throws BetNotFoundException If no bet record is found
+     */
+    // TODO: performance tuning, read from cache
+    public BetHistory getBetTransactionByVendorIdAndRoundId(String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
+        BetHistory betHistory = betHistoryRepository.findByRoundIdAndVendorIdAndVendorPlayerId(roundId, vendorId, vendorPlayerId);
+        if (betHistory == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("Cannot find round Id: " + roundId);
+        }
+        return betHistory;
+    }
 }
