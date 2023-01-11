@@ -72,44 +72,30 @@ public class CashTransferInOutAction {
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
             // 4. Verify VendorGameCode from request body is match with session
             VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
-            // 4. Verify CurrencyCode from request bod is match with session vendorCurrencyCode
+            // 5. Verify CurrencyCode from request bod is match with session vendorCurrencyCode
             VendorService.validateVendorCurrencyCode(dto.getCurrencyCode(), gameSession.getVendorCurrencyCode());
-            // 5. Validate vendor player username
+            // 6. Validate vendor player username
             // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
-            // === Debugging Purpose ==============================================================================
-//            String betType = VendorService.identifyBetType(dto);
-//            System.out.println("============= Bet Type ================================================");
-//            System.out.println(betType);
-//            System.out.println("------ " + dto.getExternalTransactionId() + "-----------");
-//            System.out.println(body);
-//            System.out.println("=========================================================================");
-            // === Debugging Purpose ==============================================================================
 
             // Vendor resent this bet for validation
             if (VendorService.isResentForValidate(dto)) {
                 // TODO see how to handle this
             } else {
+                // If this is a BetRequest, process it as a BetRequest
+                if (VendorService.isBetRequest(dto)) { betService.process(traceId, gameSession, dto, body); }
 
-                // Only process as an BetRequest if it is an BetRequest
-                if (VendorService.isBetRequest(dto)) {
-                    betService.process(traceId, gameSession, dto, body);
-                }
-
-                // Has to process result regardless win or lose
+                // Has to process as a result regardless win or lose
                 BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
 
-                // Only process as an EndRound if it is an EndRound
-                if (VendorService.isRoundEnded(dto)) {
-                    endRoundService.process(betResultEvent);
-                }
+                // If This is an EndRound, process it as an EndRound
+                if (VendorService.isRoundEnded(dto)) { endRoundService.process(betResultEvent); }
             }
 
             // Only set data of parent response if nothing goes wrong
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
-
-            //* hardcoded response
+            //
             responseVo.setUpdatedTime(now);
             responseVo.setBalanceAmount(walletService.getBalance(traceId, gameSession));
             responseVo.setCurrencyCode(gameSession.getCurrencyCode());
@@ -134,29 +120,28 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED));
 
-        } catch (CurrencyNotSupportedException e) {
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED));
 
-        } catch (BetNotFoundException e) {
+        } catch (BetNotFoundException betNotFoundException) {
             parentResponseVo.setErrorCode(ResponseCodes.NO_BET_EXISTS);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
 
-        } catch (InvalidOperatorResponseException e) {
-            throw new RuntimeException(e); // TODO: add appropriate response code
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            throw new RuntimeException(invalidOperatorResponseException); // TODO: add appropriate response code
 
-        } catch (InvalidPlayerException e) {
+        } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
 
-        } catch (InvalidAgentApiCredentialException e) {
-            throw new RuntimeException(e); // TODO: add appropriate response code
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            throw new RuntimeException(invalidAgentApiCredentialException); // TODO: add appropriate response code
+
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
-//        System.out.println("=============================error =======================");
-//        System.out.println(parentResponseVo.toString());
-//        System.out.println("====================================================");
+        //
         return parentResponseVo;
     }
 
