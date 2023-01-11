@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -58,9 +57,6 @@ public class RefundAction {
 
             // 5. Send refund to Operator
             BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getExternalTransactionId(), gameSession, body);
-
-            // Emit event for additional asynchronous processing such as publishing data to a kafka topic
-            EventDispatcherSystem.emitAsync(betRefundEvent);
 
             responseVo.setTransactionId(traceId);
 
