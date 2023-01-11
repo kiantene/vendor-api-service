@@ -10,7 +10,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -45,10 +45,8 @@ public class EndRoundAction {
         String traceId = httpRequestLog.getTraceId();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
-            // Convert original request body into dto
             EndRoundDto dto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
 
             // 1. Validate request parameters (Non-database calls)
@@ -65,7 +63,6 @@ public class EndRoundAction {
 
             //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
 
-
             // 6. Retrieve the latest wallet balance from Operator
             // TODO: performance tuning, may cache the last balance from Result and use that
             //  last balance to return to vendor, instead of making another call to Operator
@@ -78,36 +75,33 @@ public class EndRoundAction {
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidPlayerException invalidPlayerException) {
-            responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
+            responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
-            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
-            responseVo.setError(ResponseCodes.INVALID_HASH);
+            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setError(ResponseCodes.BET_NOT_ALLOWED);
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
-            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
-
-        } finally {
-            responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo);
         }
 
+        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 
@@ -126,7 +120,6 @@ public class EndRoundAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        // TODO: review this exception
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation

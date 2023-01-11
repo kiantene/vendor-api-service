@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,7 @@ public class RefundAction {
             responseVo.setTransactionId(traceId);
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 String validations = invalidRequestException.getValidation().toString();
                 log.error(validations);
@@ -73,13 +73,13 @@ public class RefundAction {
             }
 
         } catch (InvalidPlayerException invalidPlayerException) {
-            responseVo.setError(ResponseCodes.PLAYER_NOT_FOUND);
+            responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
-            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
-            responseVo.setError(ResponseCodes.INVALID_HASH);
+            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
         } catch (BetNotFoundException betNotFoundException) {
             // Don't throw error even if Bet is not found
@@ -87,14 +87,11 @@ public class RefundAction {
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (Exception exception) { // any other exception encountered
-            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
-
-        } finally {
-            responseVo.setDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo);
         }
 
+        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 

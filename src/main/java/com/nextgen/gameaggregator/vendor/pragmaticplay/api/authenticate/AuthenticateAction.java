@@ -38,10 +38,8 @@ public class AuthenticateAction {
         String traceId = httpRequestLog.getTraceId();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
-            // Convert original request body into dto
             AuthenticateDto dto = HttpService.convertQueryStringToDto(body, AuthenticateDto.class);
 
             // 1. Validate request parameters from vendor
@@ -72,30 +70,27 @@ public class AuthenticateAction {
             responseVo.setToken(gameSession.getToken());
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setError(ResponseCodes.INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
         } catch (AuthenticationException authenticationException) {
-            responseVo.setError(ResponseCodes.AUTHENTICATION_ERROR);
+            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
-            responseVo.setError(ResponseCodes.INVALID_HASH);
+            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (Exception exception) { // any other exception encountered
-            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
-
-        } finally {
-            responseVo.setDescription( ResponseCodes.RESPONSE_DESCRIPTION.get(responseVo.getError()));
-            httpService.end(httpRequestLog, responseVo);
         }
 
+        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 }

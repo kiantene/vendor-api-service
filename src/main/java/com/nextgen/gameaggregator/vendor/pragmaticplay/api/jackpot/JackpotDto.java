@@ -17,10 +17,14 @@ public class JackpotDto implements WinData {
 
     // Hash code of the request
     @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
     private String hash;
 
     // Game Provider id.
     @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String providerId;
 
     // Date and time when the transaction is processed on the Pragmatic Play side
@@ -31,6 +35,8 @@ public class JackpotDto implements WinData {
 
     // Identifier of the user within the Casino Operator’s system.
     @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String userId;
 
     // Id of the game.
@@ -47,6 +53,8 @@ public class JackpotDto implements WinData {
 
     // Id of the jackpot.
     @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String jackpotId;
 
     // Amount of the bet. Minimum is 0.00.
@@ -63,6 +71,8 @@ public class JackpotDto implements WinData {
 
     // Token of the player from Authenticate response.
     @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String token;
 
     @Override
