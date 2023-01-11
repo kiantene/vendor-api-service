@@ -92,8 +92,7 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            // TODO: to review response code
-            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
@@ -140,7 +139,7 @@ public class BetAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        // TODO: review this exception
+        // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 3. Verify vendor line is active

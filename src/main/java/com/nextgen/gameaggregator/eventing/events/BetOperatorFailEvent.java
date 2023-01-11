@@ -9,5 +9,5 @@ import lombok.Data;
 @AllArgsConstructor
 public class BetOperatorFailEvent  implements Event {
     private BetHistory betHistory;
-    private String ExceptionName;
+    private Integer responseCode;
 }
