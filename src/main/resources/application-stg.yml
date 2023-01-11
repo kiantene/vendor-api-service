@@ -15,10 +15,10 @@ spring:
         format_sql: false
   redis:
     database: 0
-    host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
+    host: dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com
     port: 6379
-    username: dev
-    password: Asdf1234-
+    username:
+    password:
     jedis:
       pool:
         max-idle: 30
