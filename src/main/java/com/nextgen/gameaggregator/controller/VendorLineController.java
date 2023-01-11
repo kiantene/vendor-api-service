@@ -21,6 +21,9 @@ public class VendorLineController {
     @Autowired
     VendorLineRepository vendorLineRepository;
 
+    @Autowired
+    ControllerServices controllerServices;
+
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
@@ -28,6 +31,8 @@ public class VendorLineController {
 
 
         VendorLine vendorLine = vendorLineRepository.findById(Integer.parseInt(json.get("id").toString())).orElse(null);
+        controllerServices.clearVendorLines();
+
         if(vendorLine !=null){
             vendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
             vendorLineRepository.save(vendorLine);

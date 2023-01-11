@@ -27,6 +27,9 @@ public class AgentPlayerController {
     @Autowired
     VendorPlayerRepository vendorPlayerRepository;
 
+    @Autowired
+    ControllerServices controllerServices;
+
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
@@ -35,6 +38,7 @@ public class AgentPlayerController {
         responseMap.put("status", json.get("status").toString());
 
         VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
+        controllerServices.clearAgentPlayers();
 
 
         if(vendorPlayer!=null){

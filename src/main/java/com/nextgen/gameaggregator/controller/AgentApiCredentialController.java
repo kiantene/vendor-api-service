@@ -21,11 +21,15 @@ public class AgentApiCredentialController {
     @Autowired
     AgentApiCredentialRepository agentApiCredentialRepository;
 
+    @Autowired
+    ControllerServices controllerServices;
+
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
 
         AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
+        controllerServices.clearAgentApiCredentials();
 
         if(agentApiCredential !=null){
             agentApiCredential.setStatus(Integer.parseInt(json.get("status").toString()));
