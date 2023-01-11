@@ -52,7 +52,7 @@ stg-aws-deploy:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker service update --force --image $STG_POINTING_BRANCH:latest $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker service update --force --image $STG_DOCKER_REGISTRY:latest $STG_PORTAINER_NAME"
 
 qa-gitlab-build:
   stage: build
