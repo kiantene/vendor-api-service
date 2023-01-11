@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,7 @@ public class BetHistoryService {
      * @param entity BetHistory entity object containing information of a single bet
      * @return BetHistory entity object after a successful save
      */
-    @Cacheable(value = "BetHistories", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @CachePut(value = "BetHistories", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public BetHistory create(BetHistory entity) {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);

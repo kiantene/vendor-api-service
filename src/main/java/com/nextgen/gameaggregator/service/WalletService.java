@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
@@ -27,6 +28,8 @@ import java.math.BigDecimal;
 @Service
 @Slf4j
 public class WalletService {
+    @Autowired
+    private AuthenticationService authenticationService;
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
     @Autowired
@@ -110,14 +113,16 @@ public class WalletService {
      */
     public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
-            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+            InvalidOperatorResponseException, InvalidAgentApiCredentialException{
 
         Integer agentId = gameSession.getAgentId();
 
-        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
-        String signature = ""; // TODO: implement signature generation
+//        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String callbackUrl = agentApiCredential.getCallbackUrl();
 
         WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
+        String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
 
         //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_history then only call to operator. So that we able to block duplicate bet.
         WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
