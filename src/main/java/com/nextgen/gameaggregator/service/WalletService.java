@@ -114,11 +114,9 @@ public class WalletService {
      */
     public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
-            InvalidOperatorResponseException, InvalidAgentApiCredentialException{
+            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         Integer agentId = gameSession.getAgentId();
-
-//        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String callbackUrl = agentApiCredential.getCallbackUrl();
 
@@ -139,12 +137,12 @@ public class WalletService {
 
         try {
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
-            BetEvent betEvent =  new BetEvent(betHistory, balanceVo.getData().getBalance());
-            // TODO: to decide whether to save bet record for insufficient balance
+            BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
 
             // TODO: check for null pointer
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(betEvent);
+
             return betEvent;
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -153,14 +151,14 @@ public class WalletService {
                     new BetOperatorFailEvent(betHistory, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             EventDispatcherSystem.emitAsync(betOperatorFailEvent);
             throw insufficientBalanceException;
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException){
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //Update bet_history operator status based on exception
             BetOperatorFailEvent betOperatorFailEvent =
                     new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
             EventDispatcherSystem.emitAsync(betOperatorFailEvent);
             throw invalidOperatorResponseException;
         }
-
     }
 
     /**
