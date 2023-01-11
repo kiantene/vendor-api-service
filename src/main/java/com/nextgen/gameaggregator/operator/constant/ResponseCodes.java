@@ -2,30 +2,36 @@ package com.nextgen.gameaggregator.operator.constant;
 
 import lombok.AllArgsConstructor;
 
-import java.util.HashMap;
-import java.util.Map;
-
 
 public class ResponseCodes {
     @AllArgsConstructor
     public enum Status {
-        SC_OK (1, "Success"),
-        SC_INVALID_REQUEST (2, "Bad request, please check your post parameters."),
-        SC_AUTHENTICATION_FAILED (3, "Authentication failed. X-API-Key is missing or invalid."),
-        SC_INVALID_SIGNATURE (4, "Invalid signature."),
-        SC_INVALID_TOKEN (5, "Invalid token."),
-        SC_INVALID_GAME (6, "Game is not supported."),
-        SC_INVALID_CURRENCY (7, "Currency is not supported"),
-        SC_USER_NOT_EXISTS (8, "User does not exists."),
-        SC_DUPLICATE_REQUEST (9, "Duplicate request."),
-        SC_CURRENCY_NOT_SUPPORTED (10, "Currency is not supported."),
-        SC_UNDER_MAINTENANCE (11, "Game is under maintenance."),
-        SC_UNKNOWN_ERROR (12, "Internal server error."),
-        SC_MISMATCHED_DATA_TYPE (13, "Invalid data type."),
-        SC_INSUFFICIENT_FUNDS (14, "Insufficient funds.")
+
+        SC_OK (1, "Successful response."),
+        SC_UNKNOWN_ERROR (2, "Generic status code for unknown errors."),
+        SC_INVALID_REQUEST (3, "Wrong/missing parameters sent in request body."),
+        SC_INVALID_OPERATOR(4, "X-API-Key is invalid."),
+        SC_INVALID_SIGNATURE (5, "X-Signature verification failed."),
+        SC_INVALID_TOKEN (6, "Invalid token on Operator's system."),
+        SC_INVALID_GAME (7, "Not a valid game."),
+        SC_DUPLICATE_REQUEST (8, "Same traceId used in different request."),
+        SC_CURRENCY_NOT_SUPPORTED (9, "Currency is not supported."),
+        SC_WRONG_CURRENCY(10, "Transaction's currency is different from user's wallet currency."),
+        SC_INSUFFICIENT_FUNDS (11, "User's wallet does not have enough funds."),
+        SC_USER_NOT_EXISTS (12, "User does not exists in Operator's system"),
+        SC_USER_DISABLED(13, "User is disabled and not allowed to place bets."),
+        SC_TRANSACTION_DUPLICATED(14, "Duplicate transaction Id was sent."),
+        SC_TRANSACTION_NOT_EXISTS(15, "Corresponding bet transaction cannot be found."),
+        SC_VENDOR_ERROR(16, "Error encountered on game vendor."),
+        SC_AUTHENTICATION_FAILED (17, "Data type mismatched in one or more parameters."),
+        SC_INVALID_CURRENCY (18, "Currency is not supported"),
+        SC_UNDER_MAINTENANCE (19, "Game is under maintenance."),
+        SC_MISMATCHED_DATA_TYPE (20, "Invalid data type."),
+        SC_INVALID_RESPONSE(21, "Invalid response")
         ;
 
         public final Integer code;
         public final String description;
+
     }
 }
