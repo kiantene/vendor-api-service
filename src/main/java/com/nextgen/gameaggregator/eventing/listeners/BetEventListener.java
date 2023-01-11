@@ -19,9 +19,10 @@ public class BetEventListener implements EventListener<BetEvent> {
 
     @Override
     public void onEvent(BetEvent event) {
-        BetHistory betHistory = event.getBetHistory();
-        Gson gson = new GsonBuilder().create();
+//        BetHistory betHistory = event.getBetHistory();
+//        Gson gson = new GsonBuilder().create();
 
-        kafkaTemplate.send("topic_seamless_bet_transformation", betHistory.getId(), gson.toJson(betHistory));
+        // TODO: move kafka publishing logic to EndRound instead
+//        kafkaTemplate.send("topic_seamless_bet_transformation", betHistory.getId(), gson.toJson(betHistory));
     }
 }
