@@ -11,7 +11,7 @@ public class ResponseCodes {
     public enum Status {
         SC_OK (1, "Success"),
         SC_INVALID_REQUEST (2, "Bad request, please check your post parameters."),
-        SC_AUTHENTICATION_FAILED (3, "Data type mismatched in one or more parameters."),
+        SC_AUTHENTICATION_FAILED (3, "Authentication failed. X-API-Key is missing or invalid."),
         SC_INVALID_SIGNATURE (4, "Invalid signature."),
         SC_INVALID_TOKEN (5, "Invalid token."),
         SC_INVALID_GAME (6, "Game is not supported."),
