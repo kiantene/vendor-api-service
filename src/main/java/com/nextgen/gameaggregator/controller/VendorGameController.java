@@ -21,11 +21,15 @@ public class VendorGameController {
     @Autowired
     VendorGameRepository vendorGameRepository;
 
+    @Autowired
+    ControllerServices controllerServices;
+
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
 
         VendorGame vendorGame = vendorGameRepository.findByVendorGameCode(json.get("vendorGameCode").asText());
+        controllerServices.clearVendorGames();
         if(vendorGame !=null){
             vendorGame.setStatus(Integer.parseInt(json.get("status").toString()));
             vendorGameRepository.save(vendorGame);
