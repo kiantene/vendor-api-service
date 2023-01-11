@@ -31,7 +31,7 @@ public class GameUrlDto {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    @Pattern(regexp = ValidationUtils.WEB_OR_H5)
     private String platform;
 
     @NotBlank

@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.util;
 
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 
 import javax.validation.ConstraintViolation;
@@ -16,6 +15,7 @@ public class ValidationUtils {
 
     public static final String ALPHANUMERIC_REGEX = "^[a-zA-Z0-9]+$";
     public static final String ALPHANUMERIC_DASH_REGEX = "^[a-zA-Z0-9_-]+$";
+    public static final String WEB_OR_H5 = "^web|WEB|h5|H5+$";
 
     public static <T> void validateRequest(T requestObject) throws InvalidRequestException {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {

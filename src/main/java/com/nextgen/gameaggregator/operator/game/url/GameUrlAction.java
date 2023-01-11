@@ -65,10 +65,6 @@ public class GameUrlAction {
             // 5. Check if game is supported
             VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameCode());
 
-
-
-            // TODO: to check available platform
-
             Integer agentId = apiCredential.getAgent().getId();
             Integer vendorId = vendorGame.getVendorId();
             Currency currency = apiCredential.getAgent().getCurrency();
@@ -83,13 +79,13 @@ public class GameUrlAction {
             // 8. Check if vendor player account exists
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
 
-            //6. Check if Vendor Line currency is supported
-            VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(),  currency.getId());
+            // 9. Check if Vendor Line currency is supported
+            VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
             gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
             log.info(gameSession.toString());
 
-            // 9. Request game url from vendor
+            // 10. Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials);
             responseVo.setData(gameUrlData);
 
@@ -127,10 +123,9 @@ public class GameUrlAction {
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
-            httpService.end(httpRequestLog, responseVo);
         }
 
+        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
-
 }

@@ -34,6 +34,8 @@ public class GameUrlService implements GameUrl {
         formData.add("symbol", gameCode);
         formData.add("language", gameSession.getLanguage());
         formData.add("token", gameSession.getToken());
+        // TODO: send platform value, if not supported then send web as default
+        // Possible values for platform – WEB (for desktop devices) or MOBILE (for mobile devices)
         String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
 
