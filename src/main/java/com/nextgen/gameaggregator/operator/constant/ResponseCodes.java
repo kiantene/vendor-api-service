@@ -13,7 +13,7 @@ public class ResponseCodes {
         SC_INVALID_SIGNATURE (5, "X-Signature verification failed."),
         SC_INVALID_TOKEN (6, "Invalid token on Operator's system."),
         SC_INVALID_GAME (7, "Not a valid game."),
-        SC_DUPLICATE_REQUEST (8, "Same traceId used in different request."),
+        SC_DUPLICATE_REQUEST (8, "Duplicate request."),
         SC_CURRENCY_NOT_SUPPORTED (9, "Currency is not supported."),
         SC_WRONG_CURRENCY(10, "Transaction's currency is different from user's wallet currency."),
         SC_INSUFFICIENT_FUNDS (11, "User's wallet does not have enough funds."),
