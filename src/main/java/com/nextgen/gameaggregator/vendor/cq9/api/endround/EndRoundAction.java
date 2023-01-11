@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -64,6 +68,11 @@ public class EndRoundAction {
 
             // Convert original request body into dto
             EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
+            List<EndRoundDataDto> endRoundDataDtoList = new Gson().fromJson(endRoundDto.getData(), new TypeToken<List<EndRoundDataDto>>(){}.getType());
+            WinDataDto winDataDto = new ObjectMapper().convertValue(endRoundDto, WinDataDto.class);
+            winDataDto.setExternalTransactionId(endRoundDataDtoList.get(0).getMtcode());
+            winDataDto.setAmount(endRoundDataDtoList.get(0).getAmount());
+            winDataDto.setTimestamp(endRoundDataDtoList.get(0).getTimestamp());
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(endRoundDto);
@@ -72,13 +81,13 @@ public class EndRoundAction {
             // 2. Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
+            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(endRoundDto.getRoundid(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Process win data
-            BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
+            BetResultEvent betResultEvent = resultService.process(traceId, gameSession, winDataDto, body);
 
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(new EndRoundEvent(betHistory));
