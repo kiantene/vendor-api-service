@@ -1,9 +1,13 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
+import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.api.result.ResultService;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
@@ -18,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -36,8 +39,12 @@ public class EndRoundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private BetHistoryService betHistoryService;
+    @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
     private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private ResultService resultService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
@@ -65,13 +72,19 @@ public class EndRoundAction {
             // 2. Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(endRoundDto.getRoundid(), vendorGame.getId(), vendorPlayer.getId());
+            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
-            commonVo.setBalance(BigDecimal.valueOf(1000));
-            commonVo.setCurrency("CNY");
+            // 4. Process win data
+            BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
+
+            // Emit event for additional asynchronous processing
+            EventDispatcherSystem.emitAsync(new EndRoundEvent(betHistory));
+
+            commonVo.setBalance(walletService.getBalance(traceId, gameSession));
+            commonVo.setCurrency(gameSession.getCurrencyCode());
 
             responseVo.setData(commonVo);
 

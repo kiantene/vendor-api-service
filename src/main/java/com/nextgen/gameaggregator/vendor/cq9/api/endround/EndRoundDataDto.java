@@ -14,7 +14,7 @@ public class EndRoundDataDto {
     private String mtcode;
     @NotNull
     @Positive
-    @Digits(integer = 16, fraction = 4)
+//    @Digits(integer = 16, fraction = 4)
     private BigDecimal amount;
     @NotBlank
     private String eventtime;
