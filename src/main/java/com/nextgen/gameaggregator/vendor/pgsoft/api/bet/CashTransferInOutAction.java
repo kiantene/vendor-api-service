@@ -72,6 +72,8 @@ public class CashTransferInOutAction {
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
             // 4. Verify VendorGameCode from request body is match with session
             VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
+            // 4. Verify CurrencyCode from request bod is match with session vendorCurrencyCode
+            VendorService.validateVendorCurrencyCode(dto.getCurrencyCode(), gameSession.getVendorCurrencyCode());
             // 5. Validate vendor player username
             // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
@@ -127,13 +129,18 @@ public class CashTransferInOutAction {
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_EXISTED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_EXISTED));
-            // throw new RuntimeException(duplicateExternalTransactionIdException);
+
         } catch (GameNotSupportedException gameNotSupportedException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED));
+
+        } catch (CurrencyNotSupportedException e) {
+            parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED));
 
         } catch (BetNotFoundException e) {
-            throw new RuntimeException(e); // TODO: add appropriate response code
+            parentResponseVo.setErrorCode(ResponseCodes.NO_BET_EXISTS);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
 
         } catch (InvalidOperatorResponseException e) {
             throw new RuntimeException(e); // TODO: add appropriate response code
