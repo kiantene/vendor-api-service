@@ -20,7 +20,7 @@ public class BetDto implements BetData {
 
     // Identifier of the user within the Casino Operator’s system.
     @NotBlank
-    @Size(max = 50)
+    // Size checking is done on each Action
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String userId;
 
