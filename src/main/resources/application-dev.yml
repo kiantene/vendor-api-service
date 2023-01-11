@@ -5,18 +5,6 @@ spring:
       jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
       username: ga_admin
       password: Asdf1234-
-    maria-reader:
-      driver-class-name: org.mariadb.jdbc.Driver
-      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_qa?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: ga_admin
-      password: Asdf1234-
-    maria-writer:
-      driver-class-name: org.mariadb.jdbc.Driver
-      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_qa?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: ga_admin
-      password: Asdf1234-
-  liquibase:
-    change-log: /liquibase/master.xml
   jpa:
     properties:
       hibernate:
@@ -66,12 +54,12 @@ logging:
 #  address: "127.0.0.1:5000"
 
 # Micro-services list
-grpc:
-  server:
-    port: 9092
-  client:
-    game-aggregator-operator-api-service:
-      address: 'static://localhost:9093'
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
+#grpc:
+#  server:
+#    port: 9092
+#  client:
+#    game-aggregator-operator-api-service:
+#      address: 'static://localhost:9093'
+#      enableKeepAlive: true
+#      keepAliveWithoutCalls: true
+#      negotiationType: plaintext
