@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
@@ -21,8 +19,7 @@ public class BetService {
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
             InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
-        BetEvent betEvent = walletService.processBet(traceId, gameSession, betData, body);
-        EventDispatcherSystem.emitAsync(betEvent);
+        walletService.processBet(traceId, gameSession, betData, body);
     }
 
 }

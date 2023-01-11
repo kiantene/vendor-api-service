@@ -21,6 +21,7 @@ public class BetHistory {
     private Integer vendorLineId;
     private Long agentPlayerId;
     private Integer agentId;
+    private Integer operatorStatus;
     private Integer masterAgentId;
     private Integer houseId;
     private Integer gameCategoryId;
