@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.operator.constant;
 
 import lombok.AllArgsConstructor;
 
-
 public class ResponseCodes {
     @AllArgsConstructor
     public enum Status {
@@ -10,7 +9,7 @@ public class ResponseCodes {
         SC_OK (1, "Successful response."),
         SC_UNKNOWN_ERROR (2, "Generic status code for unknown errors."),
         SC_INVALID_REQUEST (3, "Wrong/missing parameters sent in request body."),
-        SC_INVALID_OPERATOR(4, "X-API-Key is invalid."),
+        SC_AUTHENTICATION_FAILED (4, "Authentication failed. X-API-Key is missing or invalid."),
         SC_INVALID_SIGNATURE (5, "X-Signature verification failed."),
         SC_INVALID_TOKEN (6, "Invalid token on Operator's system."),
         SC_INVALID_GAME (7, "Not a valid game."),
@@ -23,15 +22,13 @@ public class ResponseCodes {
         SC_TRANSACTION_DUPLICATED(14, "Duplicate transaction Id was sent."),
         SC_TRANSACTION_NOT_EXISTS(15, "Corresponding bet transaction cannot be found."),
         SC_VENDOR_ERROR(16, "Error encountered on game vendor."),
-        SC_AUTHENTICATION_FAILED (17, "Data type mismatched in one or more parameters."),
-        SC_INVALID_CURRENCY (18, "Currency is not supported"),
-        SC_UNDER_MAINTENANCE (19, "Game is under maintenance."),
-        SC_MISMATCHED_DATA_TYPE (20, "Invalid data type."),
-        SC_INVALID_RESPONSE(21, "Invalid response")
+        SC_INVALID_CURRENCY (17, "Currency is not supported"),
+        SC_UNDER_MAINTENANCE (18, "Game is under maintenance."),
+        SC_MISMATCHED_DATA_TYPE (19, "Invalid data type."),
+        SC_INVALID_RESPONSE(20, "Invalid response")
         ;
 
         public final Integer code;
         public final String description;
-
     }
 }

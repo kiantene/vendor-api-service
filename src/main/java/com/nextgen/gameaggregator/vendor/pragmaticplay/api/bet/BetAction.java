@@ -8,7 +8,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -111,7 +111,7 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) { // any other exception encountered
