@@ -29,7 +29,7 @@ public class AgentPlayerService {
         return optional.get();
     }
 
-//    @Cacheable(value = "AgentPlayers", key = "#id", cacheManager = "cacheManager")
+    @Cacheable(value = "AgentPlayers", key = "#id", cacheManager = "cacheManager")
     public AgentPlayer verifyAgentPlayerStatus(Long id) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByIdAndStatus(id, 1);
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);

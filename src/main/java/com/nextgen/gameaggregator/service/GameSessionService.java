@@ -29,7 +29,7 @@ public class GameSessionService {
     @Autowired
     private AgentRepository agentRepository;
 
-//    @Cacheable(value = "GameSessions", key = "#token")
+    @Cacheable(value = "GameSessions", key = "#token")
     public GameSession verifyToken(String token) throws AuthenticationException {
         GameSession session = gameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
