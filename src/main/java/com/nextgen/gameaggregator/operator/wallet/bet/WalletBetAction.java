@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,28 +20,31 @@ import java.util.Optional;
 public class WalletBetAction {
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
         log.info(dto.toString());
+        WalletBalanceVo responseVo = null;
+        try {
+            responseVo = WebClient.create(callbackUrl)
+                    .post()
+                    .uri(Endpoints.WALLET_BET)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .header(Endpoints.HEADER_SIGNATURE, signature)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
 
-        WalletBalanceVo responseVo = WebClient.create(callbackUrl)
-                .post()
-                .uri(Endpoints.WALLET_BET)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .header(Endpoints.HEADER_SIGNATURE, signature)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                // TODO: proper error handling
-                .onStatus(HttpStatus::isError, response ->
-                        response.bodyToMono(String.class)
-                                .doOnNext(responseBody ->
-                                        log.error("Error Operator API response from server: {}", responseBody)
-                                )
-                                // throw original error
-                                .then(response.createException())
-                )
-                .bodyToMono(WalletBalanceVo.class)
-                .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
-                .block();
+                    .onStatus(HttpStatus::isError,
+                            response -> {
+                                HttpStatus clientResponsestatus = response.statusCode();
+                                return response.bodyToMono(String.class).map(body ->
+                                        new InvalidOperatorResponseException("response status :" + clientResponsestatus + ", response body :" + body));
+                            })
+                    .bodyToMono(WalletBalanceVo.class)
+                    .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                    .block();
+        } catch (Exception exception) {
+            //TODO (by Alex), proper throw InvalidOperatorResponseException
+            throw new InvalidOperatorResponseException(exception.getMessage());
 
+        }
         // throw exception if response is null
         Optional.ofNullable(responseVo).orElseThrow(InvalidOperatorResponseException::new);
         log.info(responseVo.toString());
@@ -53,7 +55,6 @@ public class WalletBetAction {
                 boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
                 if (isNegativeBalance) throw new InsufficientBalanceException();
             }
-
             case SC_INSUFFICIENT_FUNDS -> throw new InsufficientBalanceException();
 
             default -> throw new InvalidOperatorResponseException(); // TODO: to add in specific exceptions

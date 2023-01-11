@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
@@ -75,9 +74,6 @@ public class BetAction {
 
             // 5. Send bet request to Operator and check if player has enough balance
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
-
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(betEvent);
 
             commonVo.setBalance(betEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getCurrencyCode());

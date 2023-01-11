@@ -2,12 +2,13 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -63,13 +64,10 @@ public class BetAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(betEvent);
+            BetEvent betEvent =  walletService.processBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
@@ -111,6 +109,10 @@ public class BetAction {
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

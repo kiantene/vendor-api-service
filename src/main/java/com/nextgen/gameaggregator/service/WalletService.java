@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.BetOperatorFailEvent;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -124,11 +126,7 @@ public class WalletService {
         WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
         String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
 
-        //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_history then only call to operator. So that we able to block duplicate bet.
-        WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
-
         BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
-        BigDecimal balance = balanceVo.getData().getBalance();
 
         try {
             betHistoryService.create(betHistory);
@@ -140,10 +138,28 @@ public class WalletService {
                     ", vendor_line_id:" + betHistory.getVendorLineId());
         }
 
-        // TODO: to decide whether to save bet record for insufficient balance
+        //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_history then only call to operator. So that we able to block duplicate bet.
+        try {
+            WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
+            BetEvent betEvent =  new BetEvent(betHistory, balanceVo.getData().getBalance());
+            // TODO: to decide whether to save bet record for insufficient balance
 
-        // TODO: check for null pointer
-        return new BetEvent(betHistory, balance);
+            // TODO: check for null pointer
+            // Emit event for additional asynchronous processing
+            EventDispatcherSystem.emitAsync(betEvent);
+
+            return betEvent;
+
+        } catch (InsufficientBalanceException | InvalidOperatorResponseException exception) {
+            //Update bet_history operator status based on exception
+            BetOperatorFailEvent betOperatorFailEvent = new BetOperatorFailEvent(betHistory, exception.getClass().getSimpleName());
+            EventDispatcherSystem.emitAsync(betOperatorFailEvent);
+
+            throw exception;
+        }
+
+
+
     }
 
     /**
@@ -331,6 +347,8 @@ public class WalletService {
         betHistory.setGameSessionToken(gameSession.getToken());
         betHistory.setRawData(rawData);
         betHistory.setVendorBetTime(walletBetDto.getTimestamp());
+        betHistory.setGameSessionToken(gameSession.getToken());
+        betHistory.setOperatorStatus(1);
 
         return betHistory;
     }
