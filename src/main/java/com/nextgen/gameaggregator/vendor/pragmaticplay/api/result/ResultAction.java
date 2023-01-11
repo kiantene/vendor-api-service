@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -63,8 +62,7 @@ public class ResultAction {
 
             //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
 
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(betResultEvent);
+
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map

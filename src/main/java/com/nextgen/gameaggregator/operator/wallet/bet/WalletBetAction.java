@@ -32,7 +32,6 @@ public class WalletBetAction {
                     .header(Endpoints.HEADER_SIGNATURE, signature)
                     .body(BodyInserters.fromValue(dto))
                     .retrieve()
-
                     .onStatus(HttpStatus::isError,
                             response -> {
                                 HttpStatus clientResponsestatus = response.statusCode();
@@ -55,6 +54,7 @@ public class WalletBetAction {
         switch (responseVo.getStatus()) {
             case SC_OK -> {
                 BigDecimal balance = responseVo.getData().getBalance();
+                //TODO to be discuss whether should system pre handle negative if
                 boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
                 if (isNegativeBalance) throw new InsufficientBalanceException(responseVo.toString());
             }

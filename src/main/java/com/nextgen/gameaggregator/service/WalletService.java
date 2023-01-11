@@ -175,74 +175,50 @@ public class WalletService {
      * @throws DuplicateExternalTransactionIdException If vendor's transaction Id is found
      */
     public BetResultEvent processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws
-            BetNotFoundException, DuplicateExternalTransactionIdException, InvalidAgentApiCredentialException {
+            BetNotFoundException, DuplicateExternalTransactionIdException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         Integer agentId = gameSession.getAgentId();
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = winData.getRoundId();
 
+        // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String callbackUrl = agentApiCredential.getCallbackUrl();
+
         // 1. Retrieve the bet transaction
         BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(roundId, vendorGameId, vendorPlayerId);
 
-        // TODO: add caching for callback url
-        // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
-        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
-        String signature = ""; // TODO: implement signature generation
+        WalletWinDto walletWinDto =  this.newWalletWinDto(traceId, gameSession, winData, betHistory);
+        String signature =  authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
 
-        WalletWinDto walletWinDto = new WalletWinDto();
-        walletWinDto.setTraceId(traceId);
-        walletWinDto.setTransactionId(traceId);
-        walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletWinDto.setCurrency(gameSession.getCurrencyCode());
-        walletWinDto.setToken(gameSession.getToken());
-        walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
-        walletWinDto.setReferenceTransactionId(betHistory.getId());
-        walletWinDto.setAmount(winData.getAmount());
-        walletWinDto.setGameCode(winData.getGameId()); // TODO: game code mapping
-        walletWinDto.setRoundId(roundId);
-        walletWinDto.setWinType(winData.getWinType());
-        walletWinDto.setTimestamp(winData.getTimestamp());
+        BetResultLog betResultLog = this.newBetResultLog(traceId, gameSession, winData, betHistory, walletWinDto, rawData);
 
-        //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_result_log then only call to operator. So that we able to block duplicate bet.
-        WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
-
-        BetResultLog betResultLog = new BetResultLog();
-        BigDecimal balance = null;
-        if (balanceVo.getStatus() == ResponseCodes.Status.SC_OK) {
-            balance = balanceVo.getData().getBalance(); // TODO: check for null
-
-            betResultLog.setId(traceId);
-            betResultLog.setBetHistoryId(walletWinDto.getReferenceTransactionId());
-            betResultLog.setExternalTransactionId(walletWinDto.getExternalTransactionId());
-            betResultLog.setRoundId(roundId);
-            betResultLog.setVendorGameId(vendorGameId);
-            betResultLog.setVendorPlayerId(vendorPlayerId);
-            betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
-            betResultLog.setAgentId(gameSession.getAgentId());
-            betResultLog.setVendorLineId(gameSession.getVendorLineId());
-            betResultLog.setCurrencyId(gameSession.getCurrencyId());
-            betResultLog.setWinAmount(walletWinDto.getAmount());
-            betResultLog.setResultType(winData.getWinType().code);
-            betResultLog.setBalance(balance);
-            betResultLog.setRawData(rawData);
-            betResultLog.setVendorTime(walletWinDto.getTimestamp());
-
-            try {
-                betResultLogService.create(betResultLog);
-            } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-                // 2. Check for duplicate transaction Id
-                throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
-                        ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
-                        ", round_id:" + betResultLog.getRoundId() +
-                        ", vendor_line_id:" + betResultLog.getVendorLineId());
-            }
-        } else {
-            // TODO: throw exception
-            log.error("ProcessWin: " + balanceVo);
+        try {
+            betResultLogService.create(betResultLog);
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            // 2. Check for duplicate transaction Id
+            throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
+                    ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
+                    ", round_id:" + betResultLog.getRoundId() +
+                    ", vendor_line_id:" + betResultLog.getVendorLineId());
         }
 
-        return new BetResultEvent(betHistory, betResultLog, balance);
+        try{
+            WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+            BetResultEvent betResultEvent =  new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
+            EventDispatcherSystem.emitAsync(betResultEvent);
+            return betResultEvent;
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException){
+            //Update bet_history operator status based on exception
+//            BetOperatorFailEvent betOperatorFailEvent =
+//                    new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
+//            EventDispatcherSystem.emitAsync(betOperatorFailEvent);
+            throw invalidOperatorResponseException;
+        }
+
+
+
     }
 
     /**
@@ -307,8 +283,11 @@ public class WalletService {
             log.error("ProcessRefund: " + balanceVo);
         }
 
+        BetRefundEvent betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, balance);
+        // Emit event for additional asynchronous processing such as publishing data to a kafka topic
+        EventDispatcherSystem.emitAsync(betRefundEvent);
         // TODO: to refactor currency
-        return new BetRefundEvent(betHistory, betRefundLog, balance);
+        return betRefundEvent;
     }
 
     private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetData betData) {
@@ -350,5 +329,44 @@ public class WalletService {
         betHistory.setOperatorStatus(1);
 
         return betHistory;
+    }
+
+    private WalletWinDto newWalletWinDto(String traceId, GameSession gameSession, WinData winData, BetHistory betHistory) {
+        WalletWinDto walletWinDto = new WalletWinDto();
+        walletWinDto.setTraceId(traceId);
+        walletWinDto.setTransactionId(traceId);
+        walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletWinDto.setCurrency(gameSession.getCurrencyCode());
+        walletWinDto.setToken(gameSession.getToken());
+        walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
+        walletWinDto.setReferenceTransactionId(betHistory.getId());
+        walletWinDto.setAmount(winData.getAmount());
+        walletWinDto.setGameCode(gameSession.getGameCode());
+        walletWinDto.setRoundId(winData.getRoundId());
+        walletWinDto.setWinType(winData.getWinType());
+        walletWinDto.setTimestamp(winData.getTimestamp());
+        return walletWinDto;
+    }
+
+    private BetResultLog newBetResultLog(String traceId, GameSession gameSession, WinData winData, BetHistory betHistory, WalletWinDto walletWinDto, String rawData){
+        BetResultLog betResultLog = new BetResultLog();
+
+        betResultLog.setId(traceId);
+        betResultLog.setBetHistoryId(walletWinDto.getReferenceTransactionId());
+        betResultLog.setExternalTransactionId(walletWinDto.getExternalTransactionId());
+        betResultLog.setRoundId(betHistory.getRoundId());
+        betResultLog.setVendorGameId(gameSession.getVendorGameId());
+        betResultLog.setVendorPlayerId(gameSession.getVendorPlayerId());
+        betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
+        betResultLog.setAgentId(gameSession.getAgentId());
+        betResultLog.setVendorLineId(gameSession.getVendorLineId());
+        betResultLog.setCurrencyId(gameSession.getCurrencyId());
+        betResultLog.setWinAmount(walletWinDto.getAmount());
+        betResultLog.setResultType(winData.getWinType().code);
+        betResultLog.setBalance(new BigDecimal(0));
+        betResultLog.setRawData(rawData);
+        betResultLog.setVendorTime(walletWinDto.getTimestamp());
+
+        return betResultLog;
     }
 }
