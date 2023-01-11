@@ -6,10 +6,10 @@ server:
     basedir: .. # pointing to parent folder, to be configured when deploying to server
     accesslog:
       enabled: true
-    accept-count: 1000 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
-    max-connections: 10000 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
-    max-threads: 3000
-    min-spare-threads: 200
+#    accept-count: 1000 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
+#    max-connections: 10000 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
+#    max-threads: 3000
+#    min-spare-threads: 200
 #    threads:
 #      min-spare: 100  # Default: 10 (Minimum amount of worker threads.)
 #      max: 4000       # Default: 200 (Maximum amount of worker threads.)
