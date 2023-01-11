@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class WalletBetAction {
         log.info(dto.toString());
         WalletBalanceVo responseVo = null;
         try {
+
             responseVo = WebClient.create(callbackUrl)
                     .post()
                     .uri(Endpoints.WALLET_BET)
@@ -35,29 +37,29 @@ public class WalletBetAction {
                             response -> {
                                 HttpStatus clientResponsestatus = response.statusCode();
                                 return response.bodyToMono(String.class).map(body ->
-                                        new InvalidOperatorResponseException("response status :" + clientResponsestatus + ", response body :" + body));
+                                        new InvalidOperatorResponseException
+                                                ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
                             })
                     .bodyToMono(WalletBalanceVo.class)
                     .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                     .block();
+
         } catch (Exception exception) {
             //TODO (by Alex), proper throw InvalidOperatorResponseException
-            throw new InvalidOperatorResponseException(exception.getMessage());
-
+            throw new InvalidOperatorResponseException(exception.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
         // throw exception if response is null
-        Optional.ofNullable(responseVo).orElseThrow(InvalidOperatorResponseException::new);
+        Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
         log.info(responseVo.toString());
 
         switch (responseVo.getStatus()) {
             case SC_OK -> {
                 BigDecimal balance = responseVo.getData().getBalance();
                 boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-                if (isNegativeBalance) throw new InsufficientBalanceException();
+                if (isNegativeBalance) throw new InsufficientBalanceException(responseVo.toString());
             }
-            case SC_INSUFFICIENT_FUNDS -> throw new InsufficientBalanceException();
-
-            default -> throw new InvalidOperatorResponseException(); // TODO: to add in specific exceptions
+            case SC_INSUFFICIENT_FUNDS -> throw new InsufficientBalanceException(responseVo.toString());
+            default -> throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
         }
 
         return responseVo;

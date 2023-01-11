@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -138,7 +137,6 @@ public class WalletService {
                     ", vendor_line_id:" + betHistory.getVendorLineId());
         }
 
-        //TODO (by Alex),To discuss whether should change the logic sequence where insert the bet_history then only call to operator. So that we able to block duplicate bet.
         try {
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             BetEvent betEvent =  new BetEvent(betHistory, balanceVo.getData().getBalance());
@@ -147,18 +145,21 @@ public class WalletService {
             // TODO: check for null pointer
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(betEvent);
-
             return betEvent;
 
-        } catch (InsufficientBalanceException | InvalidOperatorResponseException exception) {
+        } catch (InsufficientBalanceException insufficientBalanceException) {
             //Update bet_history operator status based on exception
-            BetOperatorFailEvent betOperatorFailEvent = new BetOperatorFailEvent(betHistory, exception.getClass().getSimpleName());
+            BetOperatorFailEvent betOperatorFailEvent =
+                    new BetOperatorFailEvent(betHistory, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             EventDispatcherSystem.emitAsync(betOperatorFailEvent);
-
-            throw exception;
+            throw insufficientBalanceException;
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException){
+            //Update bet_history operator status based on exception
+            BetOperatorFailEvent betOperatorFailEvent =
+                    new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
+            EventDispatcherSystem.emitAsync(betOperatorFailEvent);
+            throw invalidOperatorResponseException;
         }
-
-
 
     }
 
