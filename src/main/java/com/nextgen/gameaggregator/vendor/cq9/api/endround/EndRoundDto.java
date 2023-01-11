@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,5 +31,5 @@ public class EndRoundDto {
     private BigDecimal bonus;
     private BigDecimal luckydraw;
     private BigDecimal jackpot;
-    private List<BigDecimal> jackpotcontribution;
+//    private List<BigDecimal> jackpotcontribution;
 }
