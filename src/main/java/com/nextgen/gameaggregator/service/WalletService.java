@@ -323,6 +323,7 @@ public class WalletService {
         betHistory.setGameCategoryId(gameSession.getGameCategoryId());
         betHistory.setCurrencyId(gameSession.getCurrencyId());
         betHistory.setBetAmount(walletBetDto.getAmount());
+        betHistory.setGameSessionToken(gameSession.getToken());
         betHistory.setRawData(rawData);
         betHistory.setVendorBetTime(walletBetDto.getTimestamp());
 
