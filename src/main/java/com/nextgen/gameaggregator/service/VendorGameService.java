@@ -17,7 +17,7 @@ public class VendorGameService {
     @Autowired
     private VendorGameRepository vendorGameRepository;
 
-    @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
+//    @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
     public VendorGame verifyGameStatus(Integer gameId) throws DisabledGameException {
         VendorGame vendorGame = vendorGameRepository.findByIdAndStatus(gameId, Status.ACTIVE.code);
         Optional.ofNullable(vendorGame).orElseThrow(DisabledGameException::new);
