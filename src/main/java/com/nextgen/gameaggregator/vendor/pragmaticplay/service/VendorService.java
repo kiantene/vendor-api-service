@@ -53,10 +53,11 @@ public class VendorService {
         map.remove("hash");
 
         String generatedHash = generateHash(map, secretKey);
-        log.info("Request body: " + requestBody);
-        log.info("Generated hash: " + generatedHash);
         if (!hash.equals(generatedHash)) {
-            throw new InvalidSignatureException();
+            String msg = "Expected hash: " + generatedHash + ", but received: " + hash;
+            log.error("Request body: " + requestBody);
+            log.error(msg);
+            throw new InvalidSignatureException(msg);
         }
     }
 }
