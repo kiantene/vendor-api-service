@@ -38,7 +38,7 @@ public class GameSessionService {
         return session;
     }
 
-
+    //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @Cacheable(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
     public GameSession createSession(
             GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency,
@@ -54,6 +54,7 @@ public class GameSessionService {
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
+
         gameSessionRepository.save(gameSession);
 
         return gameSession;

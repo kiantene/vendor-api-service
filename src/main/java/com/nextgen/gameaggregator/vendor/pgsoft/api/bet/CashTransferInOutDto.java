@@ -24,6 +24,7 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
      * Authentication Information
      */
     @Size(min = 1, max = 100)
+    @NotBlank
     //* Below are not mandatory
     private String operatorPlayerSession;
 
@@ -50,6 +51,8 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     private String betId;
 
     @NotBlank
+    @Size(min = 1, max = 45)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String currencyCode;
 
     @NotNull
