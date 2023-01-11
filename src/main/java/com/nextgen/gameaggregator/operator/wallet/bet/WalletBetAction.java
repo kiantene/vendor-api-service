@@ -20,7 +20,7 @@ import java.util.Optional;
 @Slf4j
 public class WalletBetAction {
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
-        log.info(dto.toString());
+//        log.info(dto.toString());
         WalletBalanceVo responseVo = null;
         try {
 
@@ -49,7 +49,7 @@ public class WalletBetAction {
         }
         // throw exception if response is null
         Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-        log.info(responseVo.toString());
+//        log.info(responseVo.toString());
 
         switch (responseVo.getStatus()) {
             case SC_OK -> {
@@ -63,5 +63,20 @@ public class WalletBetAction {
         }
 
         return responseVo;
+    }
+
+    public WalletBalanceVo stub() throws InsufficientBalanceException, InvalidOperatorResponseException {
+        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
+        responseData.setBalance(BigDecimal.ONE);
+        WalletBalanceVo balanceVo = new WalletBalanceVo();
+        balanceVo.setData(responseData);
+
+        if (responseData.getBalance().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InsufficientBalanceException();
+        } else if (responseData.getBalance().compareTo(BigDecimal.ZERO) == 0) {
+            throw new InvalidOperatorResponseException();
+        }
+
+        return balanceVo;
     }
 }
