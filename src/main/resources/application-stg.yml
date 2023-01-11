@@ -8,18 +8,6 @@ spring:
       jdbc-url: jdbc:mariadb://dev.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
       username: svc_vendor_dev
       password: H2ftnFhNshRJ41
-    maria-reader:
-      driver-class-name: org.mariadb.jdbc.Driver
-      jdbc-url: jdbc:mariadb://dev.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: svc_vendor_dev
-      password: H2ftnFhNshRJ41
-    maria-writer:
-      driver-class-name: org.mariadb.jdbc.Driver
-      jdbc-url: jdbc:mariadb://dev.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: svc_vendor_dev
-      password: H2ftnFhNshRJ41
-  liquibase:
-    change-log: /liquibase/master.xml
   jpa:
     properties:
       hibernate:
@@ -68,12 +56,12 @@ eureka:
   instance:
     hostName: ga-vendor-api-service
     preferIpAddress: false
-grpc:
-  server:
-    port: 9092
-  client:
-    game-aggregator-operator-api-service:
-      address: "discovery:///operator-api"
-      enableKeepAlive: true
-      keepAliveWithoutCalls: true
-      negotiationType: plaintext
+#grpc:
+#  server:
+#    port: 9092
+#  client:
+#    game-aggregator-operator-api-service:
+#      address: "discovery:///operator-api"
+#      enableKeepAlive: true
+#      keepAliveWithoutCalls: true
+#      negotiationType: plaintext
