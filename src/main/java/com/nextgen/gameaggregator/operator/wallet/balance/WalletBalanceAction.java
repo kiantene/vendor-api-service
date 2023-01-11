@@ -38,7 +38,8 @@ public class WalletBalanceAction {
                 .block();
 
         if (responseVo != null) {
-            log.info(responseVo.toString());
+//            log.info(responseVo.toString());
+            // TODO: add exception handling
         }
 
         return responseVo;

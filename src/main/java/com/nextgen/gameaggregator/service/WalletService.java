@@ -189,8 +189,8 @@ public class WalletService {
         // 1. Retrieve the bet transaction
         BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(roundId, vendorGameId, vendorPlayerId);
 
-        WalletWinDto walletWinDto =  this.newWalletWinDto(traceId, gameSession, winData, betHistory);
-        String signature =  authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
+        WalletWinDto walletWinDto = this.newWalletWinDto(traceId, gameSession, winData, betHistory);
+        String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
 
         BetResultLog betResultLog = this.newBetResultLog(traceId, gameSession, winData, betHistory, walletWinDto, rawData);
 
@@ -204,21 +204,19 @@ public class WalletService {
                     ", vendor_line_id:" + betResultLog.getVendorLineId());
         }
 
-        try{
+        try {
             WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
-            BetResultEvent betResultEvent =  new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
+            BetResultEvent betResultEvent = new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
             EventDispatcherSystem.emitAsync(betResultEvent);
             return betResultEvent;
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException){
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //Update bet_history operator status based on exception
 //            BetOperatorFailEvent betOperatorFailEvent =
 //                    new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
 //            EventDispatcherSystem.emitAsync(betOperatorFailEvent);
             throw invalidOperatorResponseException;
         }
-
-
-
     }
 
     /**
@@ -299,7 +297,7 @@ public class WalletService {
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
         walletBetDto.setAmount(betData.getAmount());
-        walletBetDto.setGameCode(betData.getGameId()); // TODO: game code mapping
+        walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
 
@@ -348,7 +346,7 @@ public class WalletService {
         return walletWinDto;
     }
 
-    private BetResultLog newBetResultLog(String traceId, GameSession gameSession, WinData winData, BetHistory betHistory, WalletWinDto walletWinDto, String rawData){
+    private BetResultLog newBetResultLog(String traceId, GameSession gameSession, WinData winData, BetHistory betHistory, WalletWinDto walletWinDto, String rawData) {
         BetResultLog betResultLog = new BetResultLog();
 
         betResultLog.setId(traceId);
