@@ -4,14 +4,12 @@ package com.nextgen.gameaggregator.config;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.cache.interceptor.CacheErrorHandler;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -34,7 +32,7 @@ import java.util.Map;
 @EnableRedisRepositories
 @EnableCaching
 @Component
-public class RedisConfig {
+public class RedisConfig extends CachingConfigurerSupport {
 
     @Value("${spring.redis.database}")
     private Integer REDIS_DATABASE;
@@ -46,6 +44,11 @@ public class RedisConfig {
     private String REDIS_USERNAME;
     @Value("${spring.redis.password}")
     private String REDIS_PASSWORD;
+
+    @Override
+    public CacheErrorHandler errorHandler() {
+        return new CustomCacheErrorHandler();
+    }
 
     @Bean
     public JedisConnectionFactory redisConnectionFactory() {
@@ -102,8 +105,6 @@ public class RedisConfig {
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
                 RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)), cacheNamesConfigurationMap);
     }
-
-
 
 }
 

@@ -10,8 +10,10 @@ import com.nextgen.gameaggregator.repository.GameSessionRepository;
 import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -29,7 +31,10 @@ public class GameSessionService {
     @Autowired
     private AgentRepository agentRepository;
 
-    @Cacheable(value = "GameSessions", key = "#token")
+    @Autowired
+    private RedisConnectionFactory connectionFactory;
+
+    @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
     public GameSession verifyToken(String token) throws AuthenticationException {
         GameSession session = gameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
@@ -39,7 +44,7 @@ public class GameSessionService {
     }
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
-    @Cacheable(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
+    @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
     public GameSession createSession(
             GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency,
             VendorLineCurrency vendorLineCurrency) {
@@ -58,6 +63,7 @@ public class GameSessionService {
         gameSessionRepository.save(gameSession);
 
         return gameSession;
+
     }
 
     public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {
@@ -69,5 +75,9 @@ public class GameSessionService {
         agent.orElseThrow(InvalidPlayerException::new);
 
         return agent.get().getCurrency().getCode();
+    }
+
+    private boolean isRedisAvailable() {
+        return connectionFactory.getConnection().ping() != null;
     }
 }
