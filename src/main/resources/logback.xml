@@ -5,11 +5,11 @@
     <property name="APP_NAME" value="ga-vendor-api-service"/>
     <property name="LOG_FILE" value="../logs/${APP_NAME}"/>
 
-    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %green(%logger{36}) - %msg%n</pattern>
-        </encoder>
-    </appender>
+<!--    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <encoder>-->
+<!--            <pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %green(%logger{36}) - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -29,7 +29,7 @@
     <logger name="com.nextgen.gameaggregator.GameAggregatorVendorApiServiceApplication" level="INFO"/>
 
     <root level="INFO">
-        <appender-ref ref="console"/>
+<!--        <appender-ref ref="console"/>-->
         <appender-ref ref="ASYNC_EXPORT"/>
     </root>
 </configuration>
