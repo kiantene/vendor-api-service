@@ -174,7 +174,7 @@ public class EndRoundAction {
         } else if (endRoundDto.getLuckydraw() != null) {
             winType = WinType.WIN;
         } else if (endRoundDto.getFreegame() != null) {
-            winType = WinType.FREE_SPIN;
+            winType = WinType.WIN;
         } else {
             winType = (amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
         }
