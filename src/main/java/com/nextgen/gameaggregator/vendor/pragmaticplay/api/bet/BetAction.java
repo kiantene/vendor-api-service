@@ -123,7 +123,7 @@ public class BetAction {
             httpService.logError(httpRequestLog, exception);
         }
 
-//        httpService.end(httpRequestLog, responseVo);
+        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 
