@@ -5,15 +5,15 @@ variables:
   STG_POINTING_BRANCH: "staging"
   STG_DOCKER_REGISTRY: local/ga-vendor-api-service
   STG_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
-  STG_SERVER: ubuntu@16.163.185.163
-  STG_CPY_SERVER: ubuntu@16.162.119.61
+  STG_SERVER: ubuntu@stg.gasea168.com
+  STG_CPY_SERVER: ubuntu@stg-copy.gasea168.com
   STG_FOLDER_PATH: /home/ubuntu/game_aggregator/ga-vendor-api-service
   STG_MVN: /home/ubuntu/apache_maven/bin/mvn
 
   QA_POINTING_BRANCH: "qa"
   QA_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
   QA_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
-  QA_SERVER: root@47.254.202.80
+  QA_SERVER: root@qa.gasea168.com
 
 stages:
   - pull-git
