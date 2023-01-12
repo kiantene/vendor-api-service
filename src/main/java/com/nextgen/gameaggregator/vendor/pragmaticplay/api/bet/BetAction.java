@@ -56,6 +56,7 @@ public class BetAction {
             this.doValidation(dto);
 
             // 2. Retrieve and verify session token
+            // -> SELECT * FROM game_sessions WHERE token = '<token>'
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
@@ -64,6 +65,8 @@ public class BetAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
+            // -> SELECT * FROM agent_api_credentials WHERE agent_id = '<agent_id>' AND status = 1
+            // -> INSERT INTO bet_history
             BetEvent betEvent =  walletService.processBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
@@ -143,18 +146,22 @@ public class BetAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 3. Verify vendor line is active
+        // -> SELECT * FROM vendor_lines WHERE id = '<vendor_line_id>' AND status = 1
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 4. Retrieve vendor line credentials and secretKey for hash validation
+        // -> SELECT * FROM vendor_line_credentials WHERE vendor_line_id = '<vendor_line_id>' AND name = 'secretKey' AND status = 1
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 5. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         // 6. Verify agent player is active
+        // -> SELECT * FROM agent_players WHERE id = '<agent_player_id>' AND status = 1
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // 7. Verify vendor game is active
+        // -> SELECT * FROM vendor_games WHERE id = '<vendor_game_id>' AND status = 1
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         //TODO (by Alex), should have child game table for save vendor game code by language, platform
