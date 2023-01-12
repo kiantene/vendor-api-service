@@ -11,8 +11,8 @@ server:
 #    max-threads: 4000
 #    min-spare-threads: 4000
     threads:
-      min-spare: 75  # Default: 10 (Minimum amount of worker threads.)
-      max: 75        # Default: 200 (Maximum amount of worker threads.)
+      min-spare: 60  # Default: 10 (Minimum amount of worker threads.)
+      max: 60        # Default: 200 (Maximum amount of worker threads.)
 
 mavenTimestamp: @timestamp@
 sas:
