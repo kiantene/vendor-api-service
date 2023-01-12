@@ -66,6 +66,7 @@ public class MariaDefaultDataSourceConfig {
         dataSource.setPassword(password);
         dataSource.setMaximumPoolSize(maximumPoolSize);
         dataSource.setMinimumIdle(minimumIdle);
+        dataSource.setAutoCommit(true);
         return dataSource;
     }
 
