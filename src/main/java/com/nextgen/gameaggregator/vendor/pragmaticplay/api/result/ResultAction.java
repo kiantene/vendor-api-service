@@ -80,8 +80,9 @@ public class ResultAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
-//        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
-//            responseVo.setError(ResponseCodes.INTERNAL_SERVER_ERROR_NO_RETRY);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
