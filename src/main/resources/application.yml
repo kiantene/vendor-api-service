@@ -9,7 +9,7 @@ server:
     accept-count: 1000 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
     max-connections: 8192 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
     max-threads: 4000
-    min-spare-threads: 400
+    min-spare-threads: 4000
 #    threads:
 #      min-spare: 100  # Default: 10 (Minimum amount of worker threads.)
 #      max: 4000       # Default: 200 (Maximum amount of worker threads.)
