@@ -44,7 +44,6 @@ public class CashGetAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
-        System.out.println("====================hello check balance =============================");
         // Construct Vo
         ResponseVo<CashGetVo> parentResponseVo = new ResponseVo<>();
         CashGetVo responseVo = new CashGetVo();
@@ -53,30 +52,23 @@ public class CashGetAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            System.out.println(body);
-
             // Convert original request body into dto
             CashGetDto dto = HttpService.convertQueryStringToDto(body, CashGetDto.class);
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-
             // 2. Verify session token
             // Need to validate whether game session expired
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
-
             // 3. Validate vendor player username
             // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
             VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
-
             // 4. Retrieve vendor line operatorToken and secretKey for validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
             String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
-
             // 5. Validate request operatorToken and secretKey
             VendorService.validateOperatorTokenAndSecretKey(dto.getOperatorToken(), dto.getSecretKey(), operatorToken, secretKey);
-
             // 6. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
             // Fill VO required values
@@ -111,7 +103,6 @@ public class CashGetAction {
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
-
             httpService.logError(httpRequestLog, exception);
 
         } finally {

@@ -4,8 +4,10 @@ import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
+import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutAction;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.BetTypes;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.GameCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,17 +24,12 @@ public class VendorService {
         }
     }
 
-    // Overloading with below
     public static void validateVendorGameCode(String vendorGameCodeFromRequest, String vendorGameCodeFromSession) throws GameNotSupportedException {
-        if (!vendorGameCodeFromRequest.equals(vendorGameCodeFromSession)) {
-            throw new GameNotSupportedException();
-        }
-    }
-
-    // Overloading with above
-    public static void validateVendorGameCode(Integer vendorGameCodeFromRequest, String vendorGameCodeFromSession) throws GameNotSupportedException {
-        if (!String.valueOf(vendorGameCodeFromRequest).equals(vendorGameCodeFromSession)) {
-            throw new GameNotSupportedException();
+        // Only proceed to validate if this game session not open via PGS Game Lobby
+        if (!vendorGameCodeFromSession.equals(GameCodes.LOBBY_CODE)) {
+            if (!vendorGameCodeFromRequest.equals(vendorGameCodeFromSession)) {
+                throw new GameNotSupportedException();
+            }
         }
     }
 
@@ -71,61 +68,9 @@ public class VendorService {
         return dto.getIsValidateBet() != null && dto.getIsValidateBet() == true;
     }
 
-    public static String identifyBetType(CashTransferInOutDto dto) {
-        // To determine a bet request, parent bet ID must be equalise to bet ID
-        Boolean isBetRequest = dto.getParentBetId().equals(dto.getBetId());
-        Boolean isRoundEnded = dto.getIsEndRound();
-        // if bet amount is 0 and still on going, means free spin
-        Boolean hasWinAmount = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0;
-        Boolean isResentForValidate = dto.getIsValidateBet() != null && dto.getIsValidateBet() == true;
-
-        /**
-         * Scenario 1
-         */
-        if (isResentForValidate) {
-            return BetTypes.RESENT_FOR_VALIDATION;
-        }
-        if (isBetRequest) {
-            if (isRoundEnded) {
-                if (hasWinAmount) {
-                    // Win Bet Request + Result (Together as one)
-                    return BetTypes.REQUEST_AND_WIN_AND_END_ROUND;
-                } else {
-                    // Lose Bet Request + Result (Together as one)
-                    return BetTypes.REQUEST_AND_LOSE_AND_END_ROUND;
-                }
-            } else {
-                if (hasWinAmount) {
-                    // Win Bet Request
-                    return BetTypes.REQUEST_AND_WIN_AND_ONGOING;
-                } else {
-                    // Lose Bet Request
-                    return BetTypes.REQUEST_AND_LOSE_AND_ONGOING;
-                }
-            }
-        } else { // is not a bet request
-            if (isRoundEnded) {
-                if (hasWinAmount) {
-                    // Freespin Lose
-                    return BetTypes.WIN_AND_END_ROUND;
-                } else {
-                    // Freespin Win
-                    return BetTypes.LOSE_AND_END_ROUND;
-                }
-            } else { // round not ended
-                if (hasWinAmount) {
-                    // Freespin Lose
-                    return BetTypes.FREESPIN_WIN_AND_ONGOING;
-                } else {
-                    // Freespin Win
-                    return BetTypes.FREESPIN_LOSE_AND_ONGOING;
-                }
-            }
-        }
-
-//        return BetTypes.UNIDENTIFIABLE;
+    public static Boolean isFeatureBuy(CashTransferInOutDto dto) {
+        return dto.getIsFeatureBuy() != null && dto.getIsFeatureBuy() == true;
     }
-
 
 
 }

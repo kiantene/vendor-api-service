@@ -2,8 +2,12 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorGame;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.endround.EndRoundService;
@@ -21,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @RestController
@@ -28,6 +33,8 @@ import java.time.Instant;
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
 public class CashTransferInOutAction {
+    @Autowired
+    private VendorPlayerRepository vendorPlayerRepository;
 
     @Autowired
     private HttpService httpService;
@@ -39,6 +46,8 @@ public class CashTransferInOutAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
     @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
@@ -56,6 +65,8 @@ public class CashTransferInOutAction {
         // Construct Vo
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
         Long now = Instant.now().toEpochMilli();
+        BigDecimal balanceAmount = null;
+        String currencyCode = null;
 
         try {
 
@@ -66,30 +77,43 @@ public class CashTransferInOutAction {
 
             // 1. Validate request parameters from vendor
             ValidationUtils.validateRequest(dto);
-            // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
-            // 3. Validate vendor player username
-            VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
-            // 4. Verify VendorGameCode from request body is match with session
-            VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
-            // 5. Verify CurrencyCode from request bod is match with session vendorCurrencyCode
-            VendorService.validateVendorCurrencyCode(dto.getCurrencyCode(), gameSession.getVendorCurrencyCode());
-            // 6. Validate vendor player username
-            // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
-            VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
 
-            // Vendor resent this bet for validation
+            // Vendor resent this bet due to last attempt is failed
             if (VendorService.isResentForValidate(dto)) {
-                // TODO see how to handle this
+
+                // Check is BetRequest Or BetResult, have to process differently
+                Boolean shouldReprocess = (VendorService.isBetRequest(dto)) ? betService.shouldReprocess(dto) : resultService.shouldReprocess(dto);
+
+                if (shouldReprocess) {
+                    // Process the 3 in 1 request
+                    // processRequest(traceId, gameSession, dto, body);
+                }
+
+                // How to get these without GameSession?
+                balanceAmount = BigDecimal.valueOf(0.00);
+                currencyCode = "CNY";
+
             } else {
-                // If this is a BetRequest, process it as a BetRequest
-                if (VendorService.isBetRequest(dto)) { betService.process(traceId, gameSession, dto, body); }
 
-                // Has to process as a result regardless win or lose
-                BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
+                // Only verify session when is not a resent bet
+                // Not to verify session when is a resent bet is due to the game session of the resent bet might already expired
 
-                // If This is an EndRound, process it as an EndRound
-                if (VendorService.isRoundEnded(dto)) { endRoundService.process(betResultEvent); }
+                // 2. Verify session token
+                GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+                // 3. Verify VendorGameCode from request body is match with VendorGameCode from game session
+                VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
+                // 4. Verify VendorCurrencyCode from request body is match with session VendorCurrencyCode
+                VendorService.validateVendorCurrencyCode(dto.getCurrencyCode(), gameSession.getVendorCurrencyCode());
+                // 5. Validate VendorPlayerUsername from request body is match with session VendorPlayerUsername
+                // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
+                VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
+
+                // Process the 3 in 1 request
+                processRequest(traceId, gameSession, dto, body);
+
+                balanceAmount = walletService.getBalance(traceId, gameSession);
+                currencyCode = gameSession.getCurrencyCode();
+
             }
 
             // Only set data of parent response if nothing goes wrong
@@ -97,8 +121,8 @@ public class CashTransferInOutAction {
             parentResponseVo.setData(responseVo);
             //
             responseVo.setUpdatedTime(now);
-            responseVo.setBalanceAmount(walletService.getBalance(traceId, gameSession));
-            responseVo.setCurrencyCode(gameSession.getCurrencyCode());
+            responseVo.setBalanceAmount(balanceAmount);
+            responseVo.setCurrencyCode(currencyCode);
 
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
@@ -143,6 +167,19 @@ public class CashTransferInOutAction {
         }
         //
         return parentResponseVo;
+    }
+
+    public void processRequest(String traceId, GameSession gameSession, CashTransferInOutDto dto, String body) throws InvalidAgentApiCredentialException, InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException, InsufficientBalanceException, InvalidOperatorResponseException {
+
+        // If this is a BetRequest, process it as a BetRequest
+        if (VendorService.isBetRequest(dto)) betService.process(traceId, gameSession, dto, body);
+
+        // Has to process as a BetResult regardless win or lose
+        BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
+
+        // If This is an EndRound, process it as an EndRound
+        if (VendorService.isRoundEnded(dto)) endRoundService.process(betResultEvent);
+
     }
 
 }
