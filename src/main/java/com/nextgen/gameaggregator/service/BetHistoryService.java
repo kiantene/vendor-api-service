@@ -43,7 +43,7 @@ public class BetHistoryService {
         entity.setResultType(WinType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
-        betHistoryRepository.save(entity);
+//        betHistoryRepository.save(entity);
 
         return entity;
     }
