@@ -50,4 +50,32 @@ public class AgentApiCredentialController {
 
 
     }
+
+    @PostMapping(path = "/callbackUrl")
+    public ResponseEntity<Map<String, String>> callbackUrl(@RequestBody ObjectNode json){
+        HashMap<String, String> responseMap = new HashMap<>();
+
+        AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
+        controllerServices.clearAgentApiCredentials();
+
+        if(agentApiCredential !=null){
+            agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
+            agentApiCredentialRepository.save(agentApiCredential);
+            responseMap.put("status", "Success");
+            responseMap.put("id", json.get("id").toString());
+            return new ResponseEntity<>(
+                    responseMap ,
+                    HttpStatus.OK);
+        }
+
+        responseMap.put("status", "fail, Agent credential line not found");
+        responseMap.put("id", json.get("id").toString());
+
+
+
+        return new ResponseEntity<>(
+                responseMap ,
+                HttpStatus.BAD_REQUEST);
+
+    }
 }
