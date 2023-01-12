@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.data.mariadb.config;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,12 +35,40 @@ public class MariaDefaultDataSourceConfig {
     @Autowired
     private HibernateProperties hibernateProperties;
     // 自动注入配置好的数据源
-    @Autowired
-    @Qualifier("dataSourceMariaDefault")
-    private DataSource mariaDataSource;
-    // 获取对应的数据库方言
+//    @Autowired
+//    @Qualifier("dataSourceMariaDefault")
+//    private DataSource mariaDataSource;
+//    // 获取对应的数据库方言
     @Value("${spring.jpa.properties.hibernate.maria-dialect}")
     private String mariaDialect;
+
+    @Value("${spring.datasource.maria-default.jdbc-url}")
+    private String jdbcUrl;
+
+    @Value("${spring.datasource.maria-default.username}")
+    private String username;
+
+    @Value("${spring.datasource.maria-default.password}")
+    private String password;
+
+    @Value("${spring.datasource.hikari.maximum-pool-size}")
+    private Integer maximumPoolSize;
+
+    @Value("${spring.datasource.hikari.minimum-idle}")
+    private Integer minimumIdle;
+
+    @Bean
+    @Value("${spring.datasource.maria-default}")
+    public DataSource mariaDataSource() {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl(jdbcUrl);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        dataSource.setMaximumPoolSize(maximumPoolSize);
+        dataSource.setMinimumIdle(minimumIdle);
+        return dataSource;
+    }
+
 
     @Bean(name = "entityManagerFactoryMariaDefault")
     public LocalContainerEntityManagerFactoryBean entityManagerFactoryMariaDefault(EntityManagerFactoryBuilder builder) {
@@ -50,7 +79,7 @@ public class MariaDefaultDataSourceConfig {
         Map<String, Object> properties = hibernateProperties.determineHibernateProperties(jpaProperties.getProperties(), new HibernateSettings());
         return builder
                 //设置数据源
-                .dataSource(mariaDataSource)
+                .dataSource(mariaDataSource())
                 //设置数据源属性
                 .properties(properties)
                 //设置实体类所在位置.扫描所有带有 @Entity 注解的类
