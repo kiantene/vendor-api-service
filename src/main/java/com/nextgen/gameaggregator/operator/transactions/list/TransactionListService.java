@@ -1,0 +1,137 @@
+package com.nextgen.gameaggregator.operator.transactions.list;
+
+import com.nextgen.gameaggregator.entity.TransactionList;
+import com.nextgen.gameaggregator.repository.TransactionListRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+@Service
+@Slf4j
+public class TransactionListService {
+
+    @Autowired
+    private TransactionListRepository transactionListRepository;
+
+    public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId){
+        List<Sort.Order> orders = this.generateOrder();
+        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getSize(), Sort.by(orders));
+
+        Page<TransactionList> transactionsList =  transactionListRepository.findByAgentIdAnAndCreateTimeBetween(
+                agentId, dto.getFromTime(), dto.getToTime(), pagingSort);
+
+        TransactionsListData transactionsListData = new TransactionsListData();
+        transactionsListData.setHeaders(this.getHeaders());
+
+        transactionsListData.setTransactions(this.generateTransactionList(transactionsList.getContent()));
+        transactionsListData.setCurrentPage(transactionsList.getNumber() + 1);
+        transactionsListData.setTotalItems(transactionsList.getTotalElements());
+        transactionsListData.setTotalPages(transactionsList.getTotalPages());
+
+        return transactionsListData;
+
+    }
+
+    //TODO add order by param
+    private List<Sort.Order> generateOrder() {
+        List<Sort.Order> orders = new ArrayList<Sort.Order>();
+        //region TODO sorting
+//            if (sort[0].contains(",")) {
+//                // will sort more than 2 fields
+//                // sortOrder="field, direction"
+//                for (String sortOrder : sort) {
+//                    String[] _sort = sortOrder.split(",");
+//                    orders.add(new Order(getSortDirection(_sort[1]), _sort[0]));
+//                }
+//            } else {
+//                // sort=[field, direction]
+//                orders.add(new Order(getSortDirection(sort[1]), sort[0]));
+//            }
+        //endregion
+        return orders;
+    }
+
+    //region generate headers
+    private HashMap<String, Integer> getHeaders() {
+        HashMap<String, Integer> hm = (new HashMap<String, Integer>() {{
+            put("transactionId", 0);
+            put("externalRoundId", 1);
+            put("externalTransactionId", 2);
+            put("gameId", 3);
+            put("betAmount", 4);
+            put("winAmount", 5);
+            put("winLoss", 6);
+            put("effectiveTurnover", 7);
+            put("resultType", 8);
+            put("status", 9);
+            put("vendorBetTime", 10);
+            put("vendorSettleTime", 11);
+            put("createTime", 12);
+            put("username", 13);
+            put("categoryCode", 14);
+            put("vendorCode", 15);
+            put("currency", 16);
+            put("gameCode", 17);
+        }});
+
+        return sortByValue(hm);
+    }
+
+    public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm)
+    {
+        // Create a list from elements of HashMap
+        List<Map.Entry<String, Integer> > list =
+                new LinkedList<Map.Entry<String, Integer> >(hm.entrySet());
+
+        // Sort the list
+        Collections.sort(list, new Comparator<Map.Entry<String, Integer> >() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2)
+            {
+                return (o1.getValue()).compareTo(o2.getValue());
+            }
+        });
+
+        // put data from sorted list to hashmap
+        HashMap<String, Integer> temp = new LinkedHashMap<String, Integer>();
+        for (Map.Entry<String, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
+    }
+
+    private List<List<Object>> generateTransactionList(List<TransactionList> transactionLists){
+        List<List<Object>> transactions = new ArrayList<List<Object>>();
+
+        for (final TransactionList transactionList : transactionLists) {
+            ArrayList<Object> transaction = new ArrayList<Object>();
+            transaction.add(transactionList.getTransactionId());
+            transaction.add(transactionList.getExternalRoundId());
+            transaction.add(transactionList.getExternalTransactionId());
+            transaction.add(transactionList.getGameId());
+            transaction.add(transactionList.getBetAmount());
+            transaction.add(transactionList.getWinAmount());
+            transaction.add(transactionList.getWinLoss());
+            transaction.add(transactionList.getEffectiveTurnover());
+            transaction.add(transactionList.getResultType());
+            transaction.add(transactionList.getStatus());
+            transaction.add(transactionList.getVendorBetTime());
+            transaction.add(transactionList.getVendorSettleTime());
+            transaction.add(transactionList.getCreateTime());
+            transaction.add(transactionList.getUsername());
+            transaction.add(transactionList.getCategoryCode());
+            transaction.add(transactionList.getVendorCode());
+            transaction.add(transactionList.getCurrency());
+            transaction.add(transactionList.getGameCode());
+            transactions.add(transaction);
+        }
+
+        return transactions;
+
+    }
+}
