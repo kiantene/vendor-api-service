@@ -3,14 +3,10 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
@@ -21,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,25 +30,29 @@ import java.util.Date;
 @Slf4j
 public class BetAction {
     @Autowired
-    private HttpService httpService;
+    private AgentApiCredentialService agentApiCredentialService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private WalletService walletService;
+    private HttpService httpService;
+    @Autowired
+    private VendorGameService vendorGameService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private WalletService walletService;
 
     @PostMapping(path = EndPoints.BET)
-    public ResponseVo<CommonVo> bet(HttpServletRequest request) {
+    public ResponseVo<CommonVo> bet(HttpServletRequest request, @RequestHeader(value = "wtoken", required = true) String wToken) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
-        // Construct Vo
+        // Construct VO
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
-
-        CommonVo commonVo = new CommonVo();
 
         try {
             // Retrieve request body in original string format
@@ -59,32 +60,65 @@ public class BetAction {
 
             // Convert original request body into dto
             BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(body, BetDto.class);
+            betDto.setWToken(wToken);
 
-            // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(betDto);
-            ValidationUtils.validateLength(betDto.getAccount(), 3, 36, InvalidPlayerException::new);
+            // 1. Validate request parameters from vendor (Non-database related)
+            this.doValidation(betDto);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());
 
-            // Throw exception if received username differs from game session
-            if (!gameSession.getVendorPlayerUsername().equals(betDto.getAccount())) {
-                throw new InvalidPlayerException();
-            }
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, betDto, gameSession);
 
-            // 5. Send bet request to Operator and check if player has enough balance
+            // 4. Send bet request to Operator
+            // 4.1 check if player has enough balance
+            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
+            // Construct VO
+            CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getCurrencyCode());
-
             responseVo.setData(commonVo);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (AuthenticationException authenticationException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+
+        } catch (DisabledGameException disabledGameException) {
+            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -97,5 +131,36 @@ public class BetAction {
         }
 
         return responseVo;
+    }
+
+    private void doValidation(BetDto betDto) throws InvalidRequestException, InvalidPlayerException {
+        // General validation
+        ValidationUtils.validateRequest(betDto);
+        // Validation with custom exception
+        ValidationUtils.validateLength(betDto.getAccount(), 3, 20, InvalidPlayerException::new);
+    }
+
+    private void doVerification(HttpRequestLog request, BetDto betDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+        // 1. Retrieve vendor line credentials and secretKey for verify API Token
+        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+
+        // 2. Validate request Wallet Token
+        ValidationUtils.isEquals(walletToken, betDto.getWToken(), InvalidVendorLineException::new);
+
+        // 3. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), betDto.getAccount(), InvalidPlayerException::new);
+
+        // 4. Verify received game id is the same from game session
+        // comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), betDto.getGameId(), AuthenticationException::new);
+
+        // 5. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // 6. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 7. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 }

@@ -31,5 +31,7 @@ public class EndRoundDto {
     private BigDecimal bonus;
     private BigDecimal luckydraw;
     private BigDecimal jackpot;
+    private String wToken;
 //    private List<BigDecimal> jackpotcontribution;
+
 }
