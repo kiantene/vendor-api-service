@@ -70,10 +70,10 @@ public class BetAction {
             BetEvent betEvent =  walletService.processBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency("CNY");
-            responseVo.setCash(BigDecimal.ZERO);
-//            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-//            responseVo.setCash(betEvent.getLastBalance());
+//            responseVo.setCurrency("CNY");
+//            responseVo.setCash(BigDecimal.ZERO);
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -123,7 +123,7 @@ public class BetAction {
             httpService.logError(httpRequestLog, exception);
         }
 
-        httpService.end(httpRequestLog, responseVo);
+//        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 
