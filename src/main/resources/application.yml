@@ -6,13 +6,13 @@ server:
     basedir: .. # pointing to parent folder, to be configured when deploying to server
     accesslog:
       enabled: true
-    accept-count: 1000 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
-    max-connections: 8192 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
+    accept-count: 2500 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
+    max-connections: 16384 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
 #    max-threads: 4000
 #    min-spare-threads: 4000
     threads:
-      min-spare: 4000  # Default: 10 (Minimum amount of worker threads.)
-      max: 4000       # Default: 200 (Maximum amount of worker threads.)
+      min-spare: 125  # Default: 10 (Minimum amount of worker threads.)
+      max: 125        # Default: 200 (Maximum amount of worker threads.)
 
 mavenTimestamp: @timestamp@
 sas:
