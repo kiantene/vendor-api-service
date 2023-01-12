@@ -6,6 +6,7 @@ variables:
   STG_DOCKER_REGISTRY: local/ga-vendor-api-service
   STG_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
   STG_SERVER: ubuntu@16.163.185.163
+  STG_CPY_SERVER: ubuntu@16.162.119.61
   STG_FOLDER_PATH: /home/ubuntu/game_aggregator/ga-vendor-api-service
   STG_MVN: /home/ubuntu/apache_maven/bin/mvn
 
@@ -53,6 +54,33 @@ stg-aws-deploy:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker service update --force --image $STG_DOCKER_REGISTRY:latest $STG_PORTAINER_NAME"
+
+stg-copy-aws-pull-git:
+  stage: pull-git
+  extends: .stg-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
+    - chmod 400 "$(pwd)/stg-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_CPY_SERVER -p 22 "cd $STG_FOLDER_PATH && git fetch --all && git checkout staging && git reset --hard origin/staging"
+
+stg-copy-aws-build:
+  stage: build
+  needs: ["stg-copy-aws-pull-git"]
+  extends: .stg-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
+    - chmod 400 "$(pwd)/stg-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_CPY_SERVER -p 22 "cd $STG_FOLDER_PATH && $STG_MVN clean package -DskipTests=true && docker build -t $STG_DOCKER_REGISTRY:latest $STG_FOLDER_PATH"
+
+stg-copy-aws-deploy:
+  stage: deploy
+  needs: ["stg-copy-aws-build"]
+  extends: .stg-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
+    - chmod 400 "$(pwd)/stg-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_CPY_SERVER -p 22 "docker service update --force --image $STG_DOCKER_REGISTRY:latest $STG_PORTAINER_NAME"
+
 
 qa-gitlab-build:
   stage: build
