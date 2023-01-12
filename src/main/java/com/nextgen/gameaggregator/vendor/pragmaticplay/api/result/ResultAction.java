@@ -60,9 +60,6 @@ public class ResultAction {
             // 4. Send win result to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
 
-            //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
-
-
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
