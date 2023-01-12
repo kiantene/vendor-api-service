@@ -36,6 +36,7 @@ public class BetDto implements BetData {
     private String platform;
     @NotBlank
     private String eventTime;
+    private String wToken;
 
     @Override
     public String getExternalTransactionId() {

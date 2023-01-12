@@ -36,7 +36,7 @@ public class GameUrlService implements GameUrl {
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
-        String secretKey = credentials.get(Credentials.SECRET_KEY);
+        String secretKey = credentials.get(Credentials.API_TOKEN);
         Optional.ofNullable(secretKey).orElseThrow(InvalidVendorLineException::new);
 
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
@@ -52,6 +52,10 @@ public class GameUrlService implements GameUrl {
                 .retrieve()
                 .bodyToMono(GameUrlVendorResponseVo.class)
                 .block();
+
+        if (responseVo != null) {
+            log.info(responseVo.toString());
+        }
 
         return responseVo.getData();
     }

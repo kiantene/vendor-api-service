@@ -15,6 +15,7 @@ public class WinDataDto implements WinData {
     private String roundid;
     private String gamecode;
     private Long timestamp;
+    private WinType winType;
 
     @Override
     public String getExternalTransactionId() {
@@ -43,6 +44,6 @@ public class WinDataDto implements WinData {
 
     @Override
     public WinType getWinType() {
-        return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        return this.winType;
     }
 }
