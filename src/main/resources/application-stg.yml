@@ -3,7 +3,9 @@ server:
     context-path: /vendor
 spring:
   datasource:
-    maxActive: 50
+    max-active: 50 # Advanced configuration...
+    max-idle: 50
+    min-idle: 50
     hikari:
       maximum-pool-size: 50
       minimum-idle: 50
