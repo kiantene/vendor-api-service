@@ -27,9 +27,9 @@ spring:
     password:
     jedis:
       pool:
-        max-idle: 30
-        max-active: 100
-        min-idle: 10
+        min-idle: 1000
+        max-idle: 1000
+        max-active: 1000
         max-wait: 2000
   kafka:
     properties:
