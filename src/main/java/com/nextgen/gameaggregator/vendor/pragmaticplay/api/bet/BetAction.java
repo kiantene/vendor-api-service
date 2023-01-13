@@ -38,9 +38,6 @@ public class BetAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);

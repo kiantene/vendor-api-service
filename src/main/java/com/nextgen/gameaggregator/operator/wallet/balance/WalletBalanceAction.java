@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -13,10 +15,12 @@ import java.time.Duration;
 @Service
 @Slf4j
 public class WalletBalanceAction {
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletBalanceDto dto) {
+    public WalletBalanceVo call(String callbackUrl, String signature, WalletBalanceDto dto) throws InvalidOperatorResponseException {
         log.info(dto.toString());
 
-        WalletBalanceVo responseVo = WebClient.create(callbackUrl)
+        WalletBalanceVo responseVo = null;
+        try {
+         responseVo = WebClient.create(callbackUrl)
                 .post()
                 .uri(Endpoints.WALLET_BALANCE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -24,18 +28,21 @@ public class WalletBalanceAction {
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                // TODO: proper error handling
-                .onStatus(HttpStatus::isError, response ->
-                        response.bodyToMono(String.class)
-                                .doOnNext(responseBody ->
-                                        log.error("Error Operator API response from server: {}", responseBody)
-                                )
-                                // throw original error
-                                .then(response.createException())
-                )
+                .onStatus(HttpStatus::isError,
+                        response -> {
+                            HttpStatus clientResponsestatus = response.statusCode();
+                            return response.bodyToMono(String.class).map(body ->
+                                    new InvalidOperatorResponseException
+                                            ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+                        })
                 .bodyToMono(WalletBalanceVo.class)
                 .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
                 .block();
+
+        } catch (Exception exception) {
+            //TODO (by Alex), proper throw InvalidOperatorResponseException
+            throw new InvalidOperatorResponseException(exception.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+        }
 
         if (responseVo != null) {
 //            log.info(responseVo.toString());

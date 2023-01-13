@@ -24,6 +24,7 @@ public class AgentApiCredentialController {
     @Autowired
     ControllerServices controllerServices;
 
+    //for QA use to test disable agent credential status only
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
@@ -50,7 +51,7 @@ public class AgentApiCredentialController {
 
 
     }
-
+    //for QA use to update invalid agent api callback url for test failure only
     @PostMapping(path = "/callbackUrl")
     public ResponseEntity<Map<String, String>> callbackUrl(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();

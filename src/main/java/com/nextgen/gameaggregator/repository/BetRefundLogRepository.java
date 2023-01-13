@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface BetRefundLogRepository extends JpaRepository<BetRefundLog, Long> {
 
+    BetRefundLog findByExternalTransactionIdAndRoundIdAndVendorPlayerId(String externalTransactionId, String roundId, Integer VendorLineId);
+
 }

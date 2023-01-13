@@ -30,6 +30,7 @@ public class AgentPlayerController {
     @Autowired
     ControllerServices controllerServices;
 
+    //for QA use to test disable agent player status
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
