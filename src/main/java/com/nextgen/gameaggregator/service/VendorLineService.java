@@ -79,4 +79,11 @@ public class VendorLineService {
                 .filter(v -> v.getStatus().equals(Status.ACTIVE.code))
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
+
+    public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException {
+        VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, Status.ACTIVE.code);
+        Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
+
+        return vendorLine;
+    }
 }
