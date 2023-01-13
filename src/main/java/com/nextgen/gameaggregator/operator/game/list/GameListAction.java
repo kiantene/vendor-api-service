@@ -1,7 +1,10 @@
-package com.nextgen.gameaggregator.operator.transactions.list;
+package com.nextgen.gameaggregator.operator.game.list;
+
 
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
@@ -17,25 +20,26 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping(path = "transactions/")
+@RequestMapping(path = "game/")
 @Slf4j
-public class TransactionsListAction {
+public class GameListAction {
     @Autowired
     private HttpService httpService;
+
     @Autowired
     private ValidationService validationService;
 
     @Autowired
-    private TransactionListService transactionListService;
+    private GameListService gameListService;
 
     @PostMapping(path = "list")
-    public OperatorResponseVo<TransactionsListData> list(HttpServletRequest request) {
+    public OperatorResponseVo<GameListData> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo<TransactionsListData> responseVo = new OperatorResponseVo<>();
+        OperatorResponseVo<GameListData> responseVo = new OperatorResponseVo<>();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            TransactionsListDto dto = HttpService.convertJsonToDto(body, TransactionsListDto.class);
+            GameListDto dto = HttpService.convertJsonToDto(body, GameListDto.class);
 
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setTraceId(dto.getTraceId());
@@ -49,14 +53,21 @@ public class TransactionsListAction {
             //TODO (by Alex), check agent status
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
-            TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getId());
-            responseVo.setData(transactionsListData);
-
+            //TODO (bu Alex), to discuss should validated agent supported vendor
+            GameListData gameListData = gameListService.getGameList(dto);
+            responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
             // thrown when any field encountered type mismatch during conversion from json to dto
             log.error(illegalArgumentException.toString());
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
+            responseVo.setValidation(invalidRequestException.getValidation());
+
+        } catch (RecordNotFoundException recordNotFoundException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
@@ -68,5 +79,7 @@ public class TransactionsListAction {
         }
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
+
     }
+
 }

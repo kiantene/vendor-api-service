@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.operator.transactions.list;
 
-import com.nextgen.gameaggregator.entity.TransactionList;
-import com.nextgen.gameaggregator.repository.TransactionListRepository;
+import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,19 +15,21 @@ import java.util.*;
 public class TransactionListService {
 
     @Autowired
-    private TransactionListRepository transactionListRepository;
+    private BetHistoryRepository betHistoryRepository;
 
     public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId){
+        //TODO (by Alex), to discuss and change fetch by updated time
+
         List<Sort.Order> orders = this.generateOrder();
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getSize(), Sort.by(orders));
 
-        Page<TransactionList> transactionsList =  transactionListRepository.findByAgentIdAnAndCreateTimeBetween(
+        Page<Object> transactionsList =  betHistoryRepository.findByAgentIdAnAndCreateTimeBetween(
                 agentId, dto.getFromTime(), dto.getToTime(), pagingSort);
 
         TransactionsListData transactionsListData = new TransactionsListData();
         transactionsListData.setHeaders(this.getHeaders());
 
-        transactionsListData.setTransactions(this.generateTransactionList(transactionsList.getContent()));
+        transactionsListData.setTransactions(transactionsList.getContent());
         transactionsListData.setCurrentPage(transactionsList.getNumber() + 1);
         transactionsListData.setTotalItems(transactionsList.getTotalElements());
         transactionsListData.setTotalPages(transactionsList.getTotalPages());
@@ -105,33 +106,4 @@ public class TransactionListService {
         return temp;
     }
 
-    private List<List<Object>> generateTransactionList(List<TransactionList> transactionLists){
-        List<List<Object>> transactions = new ArrayList<List<Object>>();
-
-        for (final TransactionList transactionList : transactionLists) {
-            ArrayList<Object> transaction = new ArrayList<Object>();
-            transaction.add(transactionList.getTransactionId());
-            transaction.add(transactionList.getExternalRoundId());
-            transaction.add(transactionList.getExternalTransactionId());
-            transaction.add(transactionList.getGameId());
-            transaction.add(transactionList.getBetAmount());
-            transaction.add(transactionList.getWinAmount());
-            transaction.add(transactionList.getWinLoss());
-            transaction.add(transactionList.getEffectiveTurnover());
-            transaction.add(transactionList.getResultType());
-            transaction.add(transactionList.getStatus());
-            transaction.add(transactionList.getVendorBetTime());
-            transaction.add(transactionList.getVendorSettleTime());
-            transaction.add(transactionList.getCreateTime());
-            transaction.add(transactionList.getUsername());
-            transaction.add(transactionList.getCategoryCode());
-            transaction.add(transactionList.getVendorCode());
-            transaction.add(transactionList.getCurrency());
-            transaction.add(transactionList.getGameCode());
-            transactions.add(transaction);
-        }
-
-        return transactions;
-
-    }
 }
