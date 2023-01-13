@@ -85,11 +85,12 @@ public class CashTransferInOutAction {
                 Boolean shouldReprocess = (VendorService.isBetRequest(dto)) ? betService.shouldReprocess(dto) : resultService.shouldReprocess(dto);
 
                 if (shouldReprocess) {
+                    // TODO - to process without GameSession
                     // Process the 3 in 1 request
                     // processRequest(traceId, gameSession, dto, body);
                 }
 
-                // How to get these without GameSession?
+                // TODO - to get these without GameSession
                 balanceAmount = BigDecimal.valueOf(0.00);
                 currencyCode = "CNY";
 
@@ -100,12 +101,12 @@ public class CashTransferInOutAction {
 
                 // 2. Verify session token
                 GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+                // TODO - pt 3/4/5 to refactor ValidationUtil.validateEqual to throw custom exception class
                 // 3. Verify VendorGameCode from request body is match with VendorGameCode from game session
                 VendorService.validateVendorGameCode(dto.getGameId(), gameSession.getVendorGameCode());
                 // 4. Verify VendorCurrencyCode from request body is match with session VendorCurrencyCode
                 VendorService.validateVendorCurrencyCode(dto.getCurrencyCode(), gameSession.getVendorCurrencyCode());
                 // 5. Validate VendorPlayerUsername from request body is match with session VendorPlayerUsername
-                // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
                 VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
 
                 // Process the 3 in 1 request

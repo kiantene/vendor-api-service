@@ -28,7 +28,8 @@ public class BetService {
     @Autowired
     private BetHistoryService betHistoryService;
 
-    public void process(String traceId, GameSession gameSession, BetData betData, String body) throws
+    public void process(String traceId, GameSession gameSession, BetData betData, String body)
+            throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
             InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
