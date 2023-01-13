@@ -1,15 +1,14 @@
-package com.nextgen.gameaggregator.operator.transactions.list;
+package com.nextgen.gameaggregator.operator.game.list;
 
 import lombok.Data;
 
 import java.util.HashMap;
 import java.util.List;
-
 @Data
-public class TransactionsListData {
+public class GameListData {
     private HashMap<String, Integer> headers;
 
-    private List<Object> transactions;
+    private List<Object> games;
 
     private Integer currentPage;
 

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.transactions.list;
+package com.nextgen.gameaggregator.operator.game.list;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -9,21 +9,18 @@ import javax.validation.constraints.*;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransactionsListDto {
+public class GameListDto {
+
     @NotBlank
     @Size(min = 36, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
     private String traceId;
 
-    @NotNull
-    @Positive
-    @Range(min= 1, max= Long.MAX_VALUE)
-    private Long fromTime;
 
-    @NotNull
-    @Positive
-    @Range(min= 1, max= Long.MAX_VALUE)
-    private Long toTime;
+    @NotBlank
+    @Size(min = 2, max = 20)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
+    private String vendorCode;
 
     @NotNull
     @Positive
@@ -34,4 +31,5 @@ public class TransactionsListDto {
     @Positive
     @Range(min= 1, max= Integer.MAX_VALUE)
     private Integer size;
+
 }
