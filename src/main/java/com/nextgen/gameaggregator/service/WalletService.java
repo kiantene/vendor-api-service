@@ -49,7 +49,7 @@ public class WalletService {
     @Autowired
     private WalletRefundAction walletRefundAction;
 
-    public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException, InvalidAgentApiCredentialException {
+    public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
         VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(username);
         AgentPlayer agentPlayer;
 
@@ -250,15 +250,7 @@ public class WalletService {
         String callbackUrl = agentApiCredentialService.getAgentApiCredential(betHistory.getAgentId()).getCallbackUrl();
         String signature = ""; // TODO: implement signature generation
 
-        WalletRefundDto walletRefundDto = new WalletRefundDto();
-        walletRefundDto.setTraceId(traceId);
-        walletRefundDto.setTransactionId(traceId);
-        walletRefundDto.setUsername(agentPlayer.getUsername());
-        walletRefundDto.setExternalTransactionId(externalTransactionId);
-        walletRefundDto.setReferenceTransactionId(betHistory.getId());
-        walletRefundDto.setGameCode(betHistory.getVendorGameId().toString()); // TODO: update to correct game Id
-        walletRefundDto.setRoundId(betHistory.getRoundId());
-        walletRefundDto.setTimestamp(currentTimestamp);
+        WalletRefundDto walletRefundDto = this.newWalletRefundDto(traceId, gameSession, currentTimestamp, betHistory);
 
         WalletBalanceVo balanceVo = walletRefundAction.call(callbackUrl, signature, walletRefundDto);
 
@@ -372,5 +364,18 @@ public class WalletService {
         betResultLog.setVendorTime(walletWinDto.getTimestamp());
 
         return betResultLog;
+    }
+
+    private WalletRefundDto newWalletRefundDto(String traceId, GameSession gameSession, Long currentTimestamp, BetHistory betHistory) {
+        WalletRefundDto walletRefundDto = new WalletRefundDto();
+        walletRefundDto.setTraceId(traceId);
+        walletRefundDto.setTransactionId(traceId);
+        walletRefundDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletRefundDto.setExternalTransactionId(betHistory.getExternalTransactionId());
+        walletRefundDto.setReferenceTransactionId(betHistory.getId());
+        walletRefundDto.setGameCode(gameSession.getGameCode());
+        walletRefundDto.setRoundId(betHistory.getRoundId());
+        walletRefundDto.setTimestamp(currentTimestamp);
+        return walletRefundDto;
     }
 }

@@ -24,6 +24,7 @@ public class VendorLineController {
     @Autowired
     ControllerServices controllerServices;
 
+    //for QA to test disable vendor line status
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json){
         HashMap<String, String> responseMap = new HashMap<>();
