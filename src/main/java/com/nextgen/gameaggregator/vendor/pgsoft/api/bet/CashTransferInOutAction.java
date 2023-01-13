@@ -87,7 +87,7 @@ public class CashTransferInOutAction {
                 if (shouldReprocess) {
                     // TODO - to process without GameSession
                     // Process the 3 in 1 request
-                    // processRequest(traceId, gameSession, dto, body);
+                    // process(traceId, gameSession, dto, body);
                 }
 
                 // TODO - to get these without GameSession
@@ -110,7 +110,7 @@ public class CashTransferInOutAction {
                 VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
 
                 // Process the 3 in 1 request
-                processRequest(traceId, gameSession, dto, body);
+                process(traceId, gameSession, dto, body);
 
                 balanceAmount = walletService.getBalance(traceId, gameSession);
                 currencyCode = gameSession.getCurrencyCode();
@@ -154,31 +154,46 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            throw new RuntimeException(invalidOperatorResponseException); // TODO: add appropriate response code
+            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            throw new RuntimeException(invalidAgentApiCredentialException); // TODO: add appropriate response code
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
 
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
-        //
+
         return parentResponseVo;
     }
 
-    public void processRequest(String traceId, GameSession gameSession, CashTransferInOutDto dto, String body) throws InvalidAgentApiCredentialException, InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException, InsufficientBalanceException, InvalidOperatorResponseException {
+    /**
+     * Process the request as a BetRequest/BetResult/EndRound
+     * @param traceId
+     * @param gameSession
+     * @param dto
+     * @param body
+     * @throws InvalidAgentApiCredentialException
+     * @throws InvalidRequestException
+     * @throws BetNotFoundException
+     * @throws DuplicateExternalTransactionIdException
+     * @throws InsufficientBalanceException
+     * @throws InvalidOperatorResponseException
+     */
+    public void process(String traceId, GameSession gameSession, CashTransferInOutDto dto, String body) throws InvalidAgentApiCredentialException, InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException, InsufficientBalanceException, InvalidOperatorResponseException {
 
-        // If this is a BetRequest, process it as a BetRequest
+        // If this is a BetRequest, process it as a BetRequest.
         if (VendorService.isBetRequest(dto)) betService.process(traceId, gameSession, dto, body);
 
-        // Has to process as a BetResult regardless win or lose
+        // Every request contains a bet result, so it has to be processed as a BetResult.
         BetResultEvent betResultEvent = resultService.process(traceId, gameSession, body);
 
-        // If This is an EndRound, process it as an EndRound
+        // If this is an EndRound, process it as an EndRound.
         if (VendorService.isRoundEnded(dto)) endRoundService.process(betResultEvent);
 
     }

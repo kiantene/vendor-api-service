@@ -43,7 +43,6 @@ public class BetService {
         } catch (BetNotFoundException betNotFoundException) {
             shouldReprocess = true;
         }
-        //
         return shouldReprocess;
     }
 
