@@ -74,6 +74,7 @@ public class BetHistoryService {
      * @throws BetNotFoundException If no bet record is found
      */
     // TODO: performance tuning, read from cache
+    @Cacheable(value = "BetHistories", key = "{#roundId, #gameId, #vendorPlayerId}", cacheManager = "cacheManager")
     public BetHistory getBetTransactionByRoundId(String roundId, Integer gameId, Long vendorPlayerId) throws BetNotFoundException {
         BetHistory betHistory = betHistoryRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, gameId, vendorPlayerId);
         if (betHistory == null) { // No matching bet record for the given round Id

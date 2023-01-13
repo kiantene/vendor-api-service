@@ -61,8 +61,6 @@ public class EndRoundAction {
             // 4. Retrieve the bet transaction
             BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
-            //TODO (by Alex), should the not found roundId pre-handle in case the insert query for bet request is under queue
-
             // 6. Retrieve the latest wallet balance from Operator
             // TODO: performance tuning, may cache the last balance from Result and use that
             //  last balance to return to vendor, instead of making another call to Operator
