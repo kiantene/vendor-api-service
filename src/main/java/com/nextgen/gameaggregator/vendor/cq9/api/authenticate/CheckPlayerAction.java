@@ -1,7 +1,15 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
@@ -9,10 +17,7 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
@@ -25,14 +30,12 @@ public class CheckPlayerAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
-    public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request) {
+    public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request, @RequestHeader(value = "wtoken") String wToken) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -40,17 +43,25 @@ public class CheckPlayerAction {
         ResponseVo<Boolean> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
         responseVo.setStatus(statusVo);
-
-        Boolean isValid = false;
+        responseVo.setData(false);
 
         try {
-            // TODO (By Poseidon)
-            // Vendor will call this API to verify is player exists in our system
-            // Vendor only send vendor player username
+            // 1. Validate request parameters from vendor (Non-database related)
+            this.doValidation(account);
 
-            isValid = true;
+            // 2. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, account, wToken);
 
-            responseVo.setData(isValid);
+            responseVo.setData(true);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -63,5 +74,21 @@ public class CheckPlayerAction {
         }
 
         return responseVo;
+    }
+
+    private void doValidation(String username) throws InvalidPlayerException{
+        // Validation with custom exception
+        ValidationUtils.validateLength(username, 3, 20, InvalidPlayerException::new);
+    }
+
+    private void doVerification(HttpRequestLog request, String username, String wToken) throws InvalidPlayerException, InvalidVendorLineException, CredentialNotFoundException {
+        // 1. Check is player account exists
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(username);
+
+        // 2. Retrieve vendor line credentials and secretKey for verify API Token
+        String walletToken = vendorLineService.getCredentialValueByName(vendorPlayer.getVendorLineId(), Credentials.WALLET_TOKEN);
+
+        // 3. Validate request Wallet Token
+        ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
     }
 }
