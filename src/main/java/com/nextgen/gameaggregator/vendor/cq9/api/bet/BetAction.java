@@ -92,7 +92,7 @@ public class BetAction {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InvalidPlayerException invalidPlayerException) {
