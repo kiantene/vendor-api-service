@@ -4,9 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
@@ -18,11 +16,13 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -43,9 +43,10 @@ public class BalanceAction {
     private WalletService walletService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request, @RequestHeader(value = "wtoken", required = false) String wToken) {
+    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
+        String wToken = request.getHeader("wtoken");
 
         // Construct Vo
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
@@ -71,22 +72,34 @@ public class BalanceAction {
             // 5. Get vendor line supported currency
             VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId());
 
+            // Construct VO
             commonVo.setBalance(balance);
             commonVo.setCurrency(vendorLine.getVendorCurrencyCode());
-
             responseVo.setData(commonVo);
+
+        } catch (AuthenticationException authenticationException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
+        } catch (InvalidRequestException invalidRequestException) {
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
+
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (InvalidParameterException invalidParameterException) { // any other exception encountered
-            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -101,8 +114,8 @@ public class BalanceAction {
         return responseVo;
     }
 
-    private void doValidation(String username, String wToken) throws InvalidPlayerException, InvalidParameterException {
-        Optional.ofNullable(wToken).orElseThrow(InvalidParameterException::new);
+    private void doValidation(String username, String wToken) throws InvalidPlayerException, InvalidRequestException {
+        Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // Validation with custom exception
         ValidationUtils.validateLength(username, 3, 20, InvalidPlayerException::new);

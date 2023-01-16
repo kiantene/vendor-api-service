@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -35,9 +37,9 @@ public class CheckPlayerAction {
     private VendorPlayerService vendorPlayerService;
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
-    public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request, @RequestHeader(value = "wtoken") String wToken) {
+    public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String wToken = request.getHeader("wtoken");
 
         // Construct Vo
         ResponseVo<Boolean> responseVo = new ResponseVo<>();
@@ -47,7 +49,7 @@ public class CheckPlayerAction {
 
         try {
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(account);
+            this.doValidation(account, wToken);
 
             // 2. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, account, wToken);
@@ -59,6 +61,9 @@ public class CheckPlayerAction {
 
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (InvalidRequestException invalidRequestException) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
@@ -76,7 +81,9 @@ public class CheckPlayerAction {
         return responseVo;
     }
 
-    private void doValidation(String username) throws InvalidPlayerException{
+    private void doValidation(String username, String wToken) throws InvalidPlayerException, InvalidRequestException{
+        Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
+
         // Validation with custom exception
         ValidationUtils.validateLength(username, 3, 20, InvalidPlayerException::new);
     }
