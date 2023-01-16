@@ -48,8 +48,6 @@ public class BetDto implements BetData {
     @NotBlank
     private String eventTime;
 
-    private String wToken;
-
     @Override
     public String getExternalTransactionId() {
         return mtcode;
