@@ -87,7 +87,7 @@ public class JackpotAction {
             httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {

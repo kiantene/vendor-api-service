@@ -82,7 +82,9 @@ public class CheckPlayerAction {
     }
 
     private void doValidation(String username, String wToken) throws InvalidPlayerException, InvalidRequestException{
+        // Validate value from Header and Path Variable
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
+        Optional.ofNullable(username).orElseThrow(InvalidRequestException::new);
 
         // Validation with custom exception
         ValidationUtils.validateLength(username, 3, 20, InvalidPlayerException::new);
