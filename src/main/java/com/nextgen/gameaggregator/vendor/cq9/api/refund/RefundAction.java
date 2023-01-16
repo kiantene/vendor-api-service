@@ -59,7 +59,7 @@ public class RefundAction {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            RefundDto refundDto = HttpService.convertQueryStringToDto(body, RefundDto.class);
+            RefundDto refundDto = HttpService.convertQueryStringToDtoUrlDecode(body, RefundDto.class);
 
             // 1. Validate request parameters from vendor
             this.doValidation(refundDto, wToken);
