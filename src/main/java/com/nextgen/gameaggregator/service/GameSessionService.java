@@ -64,6 +64,11 @@ public class GameSessionService {
 
     }
 
+    @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager")
+    public GameSession createSessionByVendorPlayer(GameSession gameSession){
+        return gameSession;
+    }
+
     public String getPlayerCurrencyCode(Long agentPlayerId) throws InvalidPlayerException {
         // TODO: require optimisation
         Optional<AgentPlayer> agentPlayer = agentPlayerRepository.findById(agentPlayerId);
@@ -79,6 +84,7 @@ public class GameSessionService {
         return connectionFactory.getConnection().ping() != null;
     }
 
+    @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
         GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameOrderByIdDesc(username);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);

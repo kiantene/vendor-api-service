@@ -5,8 +5,10 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,6 +19,9 @@ public class BetRefundEventListener implements EventListener<BetRefundEvent> {
 
     @Autowired
     private BetHistoryRepository betHistoryRepository;
+
+    @Autowired
+    private CachingService cachingService;
 
     @Override
     public void onEvent(BetRefundEvent event) {
@@ -30,6 +35,7 @@ public class BetRefundEventListener implements EventListener<BetRefundEvent> {
             betHistory.setStatus(BetStatus.REFUNDED.code);
 
             betHistoryRepository.save(betHistory);
+            cachingService.updateBetHistoriesCaching(betHistory);
         }
     }
 }

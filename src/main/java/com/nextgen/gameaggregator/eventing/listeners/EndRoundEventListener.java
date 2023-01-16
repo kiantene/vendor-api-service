@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,9 @@ public class EndRoundEventListener implements EventListener<EndRoundEvent> {
 
     @Autowired
     private BetHistoryRepository betHistoryRepository;
+
+    @Autowired
+    private CachingService cachingService;
 
     @Override
     public void onEvent(EndRoundEvent event) {
@@ -41,6 +45,7 @@ public class EndRoundEventListener implements EventListener<EndRoundEvent> {
             }
 
             betHistoryRepository.save(betHistory);
+            cachingService.updateBetHistoriesCaching(betHistory);
         }
     }
 }
