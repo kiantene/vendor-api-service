@@ -67,7 +67,7 @@ public class JackpotAction {
             // 5. Send win result to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
 
-            // Emit event for additional asynchronous processing
+            // Emit event for additional asynchronous processingx
             EventDispatcherSystem.emitAsync(betResultEvent);
 
             responseVo.setTransactionId(traceId);

@@ -48,7 +48,6 @@ public class ResultService {
         } catch (DuplicateExternalTransactionIdException e) {
             shouldReprocess = true;
         }
-        //
         return shouldReprocess;
     }
 

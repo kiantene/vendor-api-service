@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
 import javax.validation.constraints.*;
@@ -15,27 +16,38 @@ import java.util.Date;
 public class BetDto implements BetData {
     @NotBlank
     @Size(min = 1, max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String account;
+
     @NotBlank
     @Size(min = 1, max = 36)
     private String gamehall;
+
     @NotBlank
     @Size(min = 1, max = 36)
     private String gamecode;
+
     @NotBlank
     @Size(min = 1, max = 50)
     private String roundid;
+
     @NotNull
     @Positive
+    @Digits(integer = 12, fraction = 4)
     private BigDecimal amount;
+
     @NotBlank
     @Size(min = 1, max = 70)
     private String mtcode;
+
     @NotBlank
     private String session;
+
     private String platform;
+
     @NotBlank
     private String eventTime;
+
     private String wToken;
 
     @Override

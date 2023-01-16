@@ -71,7 +71,6 @@ public class WalletService {
 
         WalletBalanceVo balanceVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
 
-
         // TODO: to handle balance returned with more than 4 decimals
         // TODO: implement error handling
         return balanceVo.getData().getBalance();
@@ -79,21 +78,20 @@ public class WalletService {
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         Integer agentId = gameSession.getAgentId();
-        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
-        String signature = ""; // TODO: implement signature generation
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String callbackUrl = agentApiCredential.getCallbackUrl();
 
-        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
-        walletBalanceDto.setTraceId(traceId);
-        walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
-        walletBalanceDto.setToken(gameSession.getToken());
+        WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
+        String signature = authenticationService.generateSignature(walletBalanceDto, agentApiCredential.getApiSecret());
 
-        WalletBalanceVo balanceVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
-
-
-        // TODO: to handle balance returned with more than 4 decimals
-        // TODO: implement error handling
-        return balanceVo.getData().getBalance();
+        try {
+            WalletBalanceVo balanceVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
+            // TODO: to handle balance returned with more than 4 decimals
+            // TODO: implement error handling
+            return balanceVo.getData().getBalance();
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            throw invalidOperatorResponseException;
+        }
     }
 
     /**
@@ -377,5 +375,15 @@ public class WalletService {
         walletRefundDto.setRoundId(betHistory.getRoundId());
         walletRefundDto.setTimestamp(currentTimestamp);
         return walletRefundDto;
+    }
+
+    private WalletBalanceDto newWalletBalanceDto(String traceId, GameSession gameSession) {
+        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+        walletBalanceDto.setTraceId(traceId);
+        walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
+        walletBalanceDto.setToken(gameSession.getToken());
+
+        return walletBalanceDto;
     }
 }

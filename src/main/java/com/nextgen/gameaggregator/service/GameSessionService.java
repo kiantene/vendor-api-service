@@ -45,9 +45,7 @@ public class GameSessionService {
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
-    public GameSession createSession(
-            GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency,
-            VendorLineCurrency vendorLineCurrency) {
+    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency, VendorLineCurrency vendorLineCurrency) {
 
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
@@ -79,5 +77,12 @@ public class GameSessionService {
 
     private boolean isRedisAvailable() {
         return connectionFactory.getConnection().ping() != null;
+    }
+
+    public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
+        GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameOrderByIdDesc(username);
+        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
+
+        return session;
     }
 }
