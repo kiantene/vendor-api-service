@@ -29,9 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -55,7 +57,7 @@ public class EndRoundAction {
     private ResultService resultService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseVo<CommonVo> endRound(HttpServletRequest request, @RequestHeader(value = "wtoken", required = true) String wToken) {
+    public ResponseVo<CommonVo> endRound(HttpServletRequest request, @RequestHeader(value = "wtoken", required = false) String wToken) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -70,11 +72,11 @@ public class EndRoundAction {
 
             // Convert original request body into dto
             EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
-            endRoundDto.setWToken(wToken);
-            List<EndRoundDataDto> endRoundDataDtoList = new Gson().fromJson(endRoundDto.getData(), new TypeToken<List<EndRoundDataDto>>() {}.getType());
+            List<EndRoundDataDto> endRoundDataDtoList = new Gson().fromJson(endRoundDto.getData(), new TypeToken<List<EndRoundDataDto>>() {
+            }.getType());
 
             // 1. Validate request parameters from vendor
-            this.doValidation(endRoundDto, endRoundDataDtoList);
+            this.doValidation(endRoundDto, endRoundDataDtoList, wToken);
 
             // 2. Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
@@ -85,7 +87,7 @@ public class EndRoundAction {
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, endRoundDto, gameSession);
+            this.doVerification(endRoundDto, gameSession, wToken);
 
             // 5. Process win data
             WinDataDto winDataDto = new ObjectMapper().convertValue(endRoundDto, WinDataDto.class);
@@ -104,11 +106,11 @@ public class EndRoundAction {
             commonVo.setCurrency(gameSession.getCurrencyCode());
 
             responseVo.setData(commonVo);
-        } catch (InvalidRequestException invalidRequestException) {
-            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
-            if (invalidRequestException.getValidation() != null) {
-                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
-            }
+        } catch (AuthenticationException authenticationException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -117,18 +119,24 @@ public class EndRoundAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
-        } catch (InvalidPlayerException invalidPlayerException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (AuthenticationException authenticationException){
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            if (invalidRequestException.getValidation() != null) {
+                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+            }
+
+        } catch (InvalidVendorLineException invalidVendorLineException) {
+            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -143,15 +151,18 @@ public class EndRoundAction {
         return responseVo;
     }
 
-    private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList, String wToken) throws InvalidRequestException, InvalidPlayerException {
+        Optional.ofNullable(wToken).orElseThrow(InvalidParameterException::new);
+
         // General validation
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(endRoundDataDtoList);
+
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
     }
 
-    private void doVerification(HttpRequestLog request, EndRoundDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
+    private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
 
@@ -162,7 +173,7 @@ public class EndRoundAction {
         String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 4. Validate request Wallet Token
-        ValidationUtils.isEquals(walletToken, dto.getWToken(), InvalidVendorLineException::new);
+        ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
     }
 
     private WinType getWinType(EndRoundDto endRoundDto, BigDecimal amount) {

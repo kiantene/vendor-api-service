@@ -2,12 +2,16 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.*;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -45,30 +49,18 @@ public class JackpotAction {
             JackpotDto dto = HttpService.convertQueryStringToDto(body, JackpotDto.class);
 
             // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            this.doValidation(dto);
 
             // TODO: validate gameId with gameSession
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-            // Throw exception if received username differs from game session
-            if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
-                throw new InvalidPlayerException();
-            }
 
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-
-            // 4. Validate request signature
-            VendorService.verifyHash(body, secretKey);
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
-
-            // Emit event for additional asynchronous processingx
-            EventDispatcherSystem.emitAsync(betResultEvent);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorGameCode());
@@ -98,6 +90,13 @@ public class JackpotAction {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, betNotFoundException);
 
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
@@ -106,4 +105,29 @@ public class JackpotAction {
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
+
+    private void doValidation(JackpotDto dto) throws InvalidRequestException, InvalidPlayerException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+        // Validation with custom exception
+        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
+        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+    }
+
+    private void doVerification(HttpRequestLog request, JackpotDto dto, GameSession gameSession) throws
+            InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // 2. Verify received game id is the same from game session
+        // comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+
+        // 3. Retrieve vendor line credentials and secretKey for hash validation
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+        // 4. Verify request signature is valid
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
+    }
+
 }
