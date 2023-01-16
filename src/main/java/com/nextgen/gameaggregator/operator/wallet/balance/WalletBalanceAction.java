@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Duration;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -44,11 +45,12 @@ public class WalletBalanceAction {
             throw new InvalidOperatorResponseException(exception.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
-        if (responseVo != null) {
-//            log.info(responseVo.toString());
-            // TODO: add exception handling
-        }
+        Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+        log.info(responseVo.toString());
 
+        if(!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)){
+            throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
+        }
         return responseVo;
     }
 }

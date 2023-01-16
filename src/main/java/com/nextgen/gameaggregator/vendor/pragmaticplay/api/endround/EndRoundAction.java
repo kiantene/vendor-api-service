@@ -88,7 +88,9 @@ public class EndRoundAction {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            //Set balance to zero if agent credential is disabled
+            responseVo.setCash(BigDecimal.ZERO);
+            responseVo.setBonus(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
@@ -97,6 +99,11 @@ public class EndRoundAction {
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            //Set balance to zero if agent credential is disabled
+            responseVo.setCash(BigDecimal.ZERO);
+            responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
