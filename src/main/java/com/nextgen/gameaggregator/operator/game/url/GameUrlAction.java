@@ -82,7 +82,8 @@ public class GameUrlAction {
             // 9. Check if Vendor Line currency is supported
             VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
-            gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
+            gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
+            gameSessionService.createSessionByVendorPlayer(gameSession);
             log.info(gameSession.toString());
 
             // 10. Request game url from vendor

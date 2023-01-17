@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,9 @@ public class BetResultEventListener implements EventListener<BetResultEvent> {
 
     @Autowired
     private BetHistoryRepository betHistoryRepository;
+
+    @Autowired
+    private CachingService cachingService;
 
     @Override
     public void onEvent(BetResultEvent event) {
@@ -40,6 +44,7 @@ public class BetResultEventListener implements EventListener<BetResultEvent> {
             // Status is updated during EndRound
 
             betHistoryRepository.save(betHistory);
+            cachingService.updateBetHistoriesCaching(betHistory);
         }
     }
 }
