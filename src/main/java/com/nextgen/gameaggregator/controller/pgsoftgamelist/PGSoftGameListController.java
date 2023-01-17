@@ -41,14 +41,15 @@ public class PGSoftGameListController {
     private GameSessionService gameSessionService;
 
     @PostMapping(path = "gameList")
-    public void getGameList() {
+    public PgGameListResponseVo getGameList() {
         try {
             VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
-            call(formData, lineCredentials);
+            PgGameListResponseVo vo = call(formData, lineCredentials);
 
+            return vo;
         } catch (InvalidVendorLineException e) {
             throw new RuntimeException(e);
         } catch (NoAvailableLineException e) {
@@ -73,7 +74,7 @@ public class PGSoftGameListController {
         return formData;
     }
 
-    public void call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
+    public PgGameListResponseVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
         String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
@@ -92,7 +93,7 @@ public class PGSoftGameListController {
             .bodyToMono(PgGameListResponseVo.class)
             .block();
 
-        System.out.println(response);
+        return response;
     }
 
 }
