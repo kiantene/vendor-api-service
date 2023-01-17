@@ -11,4 +11,7 @@ public class Credentials {
     public static final String PGSOFT_API_DOMAIN = "PgSoftApiDomain";
     // For Data Grab
     public static final String DATA_GRAB_API_DOMAIN = "DataGrabAPIDomain";
+    // For Bet Detail
+    public static final String PUBLIC_DOMAIN = "PgSoftPublicDomain";
+
 }
