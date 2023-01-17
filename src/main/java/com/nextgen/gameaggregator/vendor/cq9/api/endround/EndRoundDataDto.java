@@ -18,9 +18,11 @@ public class EndRoundDataDto {
     @NotBlank
     @Size(min = 1, max = 70)
     private String mtcode;
+
     @NotNull
     @Positive
     private BigDecimal amount;
+
     @NotBlank
     private String eventtime;
 

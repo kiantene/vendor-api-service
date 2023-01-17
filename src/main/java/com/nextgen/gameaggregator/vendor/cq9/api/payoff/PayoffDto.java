@@ -16,7 +16,7 @@ public class PayoffDto {
 
     @NotNull
     @Positive
-    @Digits(integer = 12, fraction = 4)
+//    @Digits(integer = 12, fraction = 4)
     private BigDecimal amount;
 
     @NotBlank
