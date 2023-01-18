@@ -88,6 +88,14 @@ public class RefundAction {
         } catch (RecordNotFoundException recordNotFoundException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
 
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);

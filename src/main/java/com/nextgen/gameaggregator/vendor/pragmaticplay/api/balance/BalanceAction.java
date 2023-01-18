@@ -3,7 +3,10 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -40,31 +43,19 @@ public class BalanceAction {
         String traceId = httpRequestLog.getTraceId();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-
-            // Convert original request body into dto
             BalanceDto dto = HttpService.convertQueryStringToDto(body, BalanceDto.class);
 
-            // 1. Validate request parameters from vendor
-            ValidationUtils.validateRequest(dto);
-            ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-            ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+            // 1. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
             // 2. Verify session token
-            // Need to retrieve line credentials from game session in order to validate hash
-            // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
-            // Throw exception if received username differs from game session
-            if (!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
-                throw new InvalidPlayerException();
-            }
 
-            // 3. Retrieve vendor line credentials and secretKey for hash validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            // 3. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 4. Validate request signature
-            VendorService.verifyHash(body, secretKey);
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -96,6 +87,9 @@ public class BalanceAction {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
+        } catch (InvalidAgentApiCredentialException e) {
+            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
@@ -103,5 +97,26 @@ public class BalanceAction {
 
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
+    }
+
+    private void doValidation(BalanceDto dto) throws InvalidRequestException, InvalidPlayerException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+        // Validation with custom exception
+        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
+        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
+        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
+    }
+
+    private void doVerification(HttpRequestLog request, BalanceDto dto, GameSession gameSession) throws
+            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException {
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+
+        // 3. Verify request signature is valid
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
     }
 }
