@@ -91,7 +91,7 @@ public class RedisConfig extends CachingConfigurerSupport {
                 serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLines", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
                 serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("BetHistories", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofSeconds(10)).
+        cacheNamesConfigurationMap.put("BetHistories", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofSeconds(1000)).
                 serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLineCredentials", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
                 serializeValuesWith(pair));

@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
@@ -43,6 +44,7 @@ public class BetHistoryService {
         entity.setResultType(WinType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
+
         betHistoryRepository.save(entity);
 
         return entity;
@@ -97,5 +99,10 @@ public class BetHistoryService {
             throw new BetNotFoundException("Cannot find external transaction Id: " + externalTransactionId);
         }
         return betHistory;
+    }
+
+    public BetResultLog getBetHistoryByExternalTransaction(String txnId, String roundId, Integer vendorLineId) throws BetResultNotFoundException {
+        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(txnId, roundId, vendorLineId);
+        return resultLog;
     }
 }

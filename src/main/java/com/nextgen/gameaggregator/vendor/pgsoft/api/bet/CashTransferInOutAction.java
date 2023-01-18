@@ -165,6 +165,8 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
 
+        } catch (BetResultNotFoundException e) {
+            throw new RuntimeException(e);
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
@@ -185,7 +187,7 @@ public class CashTransferInOutAction {
      * @throws InsufficientBalanceException
      * @throws InvalidOperatorResponseException
      */
-    public void process(String traceId, GameSession gameSession, CashTransferInOutDto dto, String body) throws InvalidAgentApiCredentialException, InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException, InsufficientBalanceException, InvalidOperatorResponseException {
+    public void process(String traceId, GameSession gameSession, CashTransferInOutDto dto, String body) throws InvalidAgentApiCredentialException, InvalidRequestException, BetNotFoundException, DuplicateExternalTransactionIdException, InsufficientBalanceException, InvalidOperatorResponseException, BetResultNotFoundException {
 
         // If this is a BetRequest, process it as a BetRequest.
         if (VendorService.isBetRequest(dto)) betService.process(traceId, gameSession, dto, body);
