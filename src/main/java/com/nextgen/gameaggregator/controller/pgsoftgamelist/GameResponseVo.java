@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.controller.pgsoftgamelist;
 import lombok.Data;
 
 @Data
-public class PgGameResponse {
+public class GameResponseVo {
     private Integer gameId;
     private String gameName;
     private String gameCode;

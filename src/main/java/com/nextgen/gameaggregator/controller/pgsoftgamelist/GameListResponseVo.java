@@ -5,6 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class PgGameListResponseVo {
-    List<PgGameResponse> data;
+public class GameListResponseVo {
+    private List<GameResponseVo> data;
+    private ErrorResponseVo error;
 }

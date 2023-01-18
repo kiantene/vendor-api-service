@@ -1,12 +1,9 @@
-package com.nextgen.gameaggregator.controller.pgsoftgamelist;
+package com.nextgen.gameaggregator.controller.pgsoftbettransactionlist;
 
+import com.nextgen.gameaggregator.controller.pgsoftgamelist.GameListResponseVo;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
-import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
@@ -28,27 +25,20 @@ import java.util.Optional;
 @RestController
 @RequestMapping(path = "try/")
 @Slf4j
-public class PGSoftGameListController {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private GameUrlService gameUrlService;
+public class PGSoftBetTransactionListController {
+
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private GameSessionService gameSessionService;
 
-    @PostMapping(path = "gameList")
-    public GameListResponseVo getGameList() {
+    @PostMapping(path = "transactionList")
+    public BetHistoryListResponseVo getTransactionList() {
         try {
 
             VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
-            GameListResponseVo vo = call(formData, lineCredentials);
+            BetHistoryListResponseVo vo = call(formData, lineCredentials);
 
             return vo;
 
@@ -57,6 +47,7 @@ public class PGSoftGameListController {
         } catch (NoAvailableLineException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     public MultiValueMap<String, String> formDataBuilder(VendorLine vendorLine, Map<String, String> credentials) throws InvalidVendorLineException {
@@ -70,14 +61,14 @@ public class PGSoftGameListController {
 
         formData.add("operator_token", operatorToken);
         formData.add("secret_key", secretKey);
-        formData.add("currency", vendorLine.getVendorCurrencyCode());
-        formData.add("language", "zh-cn");
-        formData.add("status", "1");
+        formData.add("count", "5000");
+        formData.add("bet_type", "1");
+        formData.add("row_version", "1");
         return formData;
     }
 
-    public GameListResponseVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
-        String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN);
+    public BetHistoryListResponseVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
+        String apiUrl = credentials.get(Credentials.DATA_GRAB_API_DOMAIN);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
         Integer megaBytes = 10;
@@ -86,16 +77,15 @@ public class PGSoftGameListController {
             .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(megaBytes * 1024 * 1024))
             .build()).baseUrl(apiUrl).build();
 
-        GameListResponseVo response = webClient
+        BetHistoryListResponseVo response = webClient
             .post()
-            .uri(Endpoints.GAME_LIST)
+            .uri(Endpoints.GET_BET_HISTORY)
             .contentType(MediaType.APPLICATION_JSON)
             .body(BodyInserters.fromFormData(formData))
             .retrieve()
-            .bodyToMono(GameListResponseVo.class)
+            .bodyToMono(BetHistoryListResponseVo.class)
             .block();
 
         return response;
     }
-
 }
