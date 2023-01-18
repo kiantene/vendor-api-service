@@ -1,12 +1,9 @@
-package com.nextgen.gameaggregator.controller;
+package com.nextgen.gameaggregator.controller.pgsoftgamelist;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
-import com.nextgen.gameaggregator.operator.game.url.GameUrlData;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
-import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
@@ -14,9 +11,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -26,18 +21,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.SequenceInputStream;
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
 
 @RestController
 @RequestMapping(path = "try/")
 @Slf4j
-public class PGSoftController {
+public class PGSoftGameListController {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -50,14 +41,15 @@ public class PGSoftController {
     private GameSessionService gameSessionService;
 
     @PostMapping(path = "gameList")
-    public void getGameList() {
+    public PgGameListResponseVo getGameList() {
         try {
             VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
-            call(formData, lineCredentials);
+            PgGameListResponseVo vo = call(formData, lineCredentials);
 
+            return vo;
         } catch (InvalidVendorLineException e) {
             throw new RuntimeException(e);
         } catch (NoAvailableLineException e) {
@@ -82,7 +74,7 @@ public class PGSoftController {
         return formData;
     }
 
-    public void call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
+    public PgGameListResponseVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
         String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
@@ -101,23 +93,7 @@ public class PGSoftController {
             .bodyToMono(PgGameListResponseVo.class)
             .block();
 
-        System.out.println(response);
-    }
-
-    @PostMapping(path = "getBetDetail")
-    public void getBetDetail() {
-        try {
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
-            Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
-
-            MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
-            call(formData, lineCredentials);
-
-        } catch (InvalidVendorLineException e) {
-            throw new RuntimeException(e);
-        } catch (NoAvailableLineException e) {
-            throw new RuntimeException(e);
-        }
+        return response;
     }
 
 }

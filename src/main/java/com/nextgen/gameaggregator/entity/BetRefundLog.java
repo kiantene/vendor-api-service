@@ -15,10 +15,12 @@ public class BetRefundLog {
     private String betHistoryId;
     private String externalTransactionId;
     private String roundId;
+    private Integer vendorLineId;
     private Integer vendorGameId;
     private Long vendorPlayerId;
     private Long agentPlayerId;
     private Integer agentId;
+    private Integer operatorStatus;
     private Integer currencyId;
     private BigDecimal balance;
     private String rawData;

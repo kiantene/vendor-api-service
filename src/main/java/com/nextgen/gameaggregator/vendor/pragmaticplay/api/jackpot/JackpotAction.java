@@ -36,7 +36,6 @@ public class JackpotAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -116,6 +115,7 @@ public class JackpotAction {
 
     private void doVerification(HttpRequestLog request, JackpotDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
+
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 

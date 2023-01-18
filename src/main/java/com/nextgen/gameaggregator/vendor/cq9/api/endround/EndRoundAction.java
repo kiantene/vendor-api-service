@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -152,7 +151,7 @@ public class EndRoundAction {
     }
 
     private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList, String wToken) throws InvalidRequestException, InvalidPlayerException {
-        Optional.ofNullable(wToken).orElseThrow(InvalidParameterException::new);
+        Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
         ValidationUtils.validateRequest(dto);

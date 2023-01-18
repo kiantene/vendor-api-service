@@ -8,7 +8,4 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResponseVo<T> extends CommonVo {
     private T data = null;
-//    public ResponseVo() {
-//        super();
-//    }
 }

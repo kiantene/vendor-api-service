@@ -1,10 +1,12 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.payoff;
 
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import lombok.Data;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
+@Data
 public class PayoffDto {
     @NotBlank
     @Size(min = 1, max = 36)

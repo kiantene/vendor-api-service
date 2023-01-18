@@ -10,9 +10,12 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.BetTypes;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.GameCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -49,6 +52,19 @@ public class VendorService {
         // https://m.pg-redirect.net/{gameID}/index.html?l={0}&btt=1&ot={2}&ops={3}
         String gameUrl = MessageFormat.format(urlTemplate, gameCode, languageCode, operatorToken, playerGameSessionToken);
         return gameUrl;
+    }
+
+    public static String generateBetDetailUrl(String apiUrl, MultiValueMap<String, String> parameters) {
+        // form query string
+        String queryString = "";
+        List<String> values = new ArrayList<>();
+        for (String key : parameters.keySet()){
+            values.add(key + "=" + parameters.getFirst(key));
+        }
+
+        String betDetailUrl = apiUrl + "?" + String.join("&", values);
+
+        return betDetailUrl;
     }
 
 

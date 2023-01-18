@@ -33,10 +33,16 @@ public class EndRoundEventListener implements EventListener<EndRoundEvent> {
             betHistory.setStatus(BetStatus.SETTLED.code);
 
             // TODO: to review this logic
+            /** This piece of code causing PGSoft bet not working as intended cause if resultType is Lose, winLoss will not be calculated
             if (betHistory.getResultType().equals(WinType.LOSE.code)) {
                 BigDecimal betAmount = betHistory.getBetAmount();
                 betHistory.setWinLoss(betAmount.negate());
             }
+             **/
+            BigDecimal betAmount = betHistory.getBetAmount();
+            BigDecimal winAmount = betHistory.getWinAmount();
+            betHistory.setWinLoss(winAmount.subtract(betAmount));
+
             if (betHistory.getVendorSettleTime() == null) {
                 betHistory.setVendorSettleTime(currentTimestamp);
             }

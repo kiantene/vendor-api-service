@@ -9,4 +9,7 @@ public class Endpoints {
     public static final String RESULT = "Cash/TransferInOut";
     public static final String END_ROUND = "Cash/TransferInOut";
     public static final String GAME_LIST = "Game/v2/Get";
+
+    public static final String BET_DETAIL_STEP_ONE = "Login/v1/LoginProxy";
+    public static final String BET_DETAIL_STEP_TWO = "history/redirect.html";
 }

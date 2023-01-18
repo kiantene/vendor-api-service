@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.controller;
+package com.nextgen.gameaggregator.controller.pgsoftgamelist;
 
 import lombok.Data;
 
