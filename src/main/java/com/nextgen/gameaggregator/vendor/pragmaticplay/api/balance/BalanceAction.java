@@ -3,10 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -35,6 +32,9 @@ public class BalanceAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+
+    @Autowired
+    private AgentPlayerService agentPlayerService;
 
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo balance(HttpServletRequest request) {
@@ -90,6 +90,13 @@ public class BalanceAction {
         } catch (InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
 
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            //TODO to be discuss the response code
+            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
@@ -109,14 +116,21 @@ public class BalanceAction {
     }
 
     private void doVerification(HttpRequestLog request, BalanceDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException {
+            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, DisabledAgentPlayerException,
+            DisabledVendorLineException {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
-        // 2. Retrieve vendor line credentials and secretKey for hash validation
+        // 2. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // 3. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 3. Verify request signature is valid
+        // 4. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
+
+        // 4. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 }

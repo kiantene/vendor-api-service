@@ -188,7 +188,6 @@ public class WalletService {
             betResultLogService.create(betResultLog);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
 
-
             // 2. Check for duplicate transaction Id
             throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
                     ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
