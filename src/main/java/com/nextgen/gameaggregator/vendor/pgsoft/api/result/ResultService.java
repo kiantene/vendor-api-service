@@ -2,13 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.result;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
@@ -33,7 +27,7 @@ public class ResultService {
 
     public BetResultEvent process(String traceId, GameSession gameSession, String body) throws
             InvalidRequestException, BetNotFoundException,
-            InvalidOperatorResponseException, DuplicateExternalTransactionIdException {
+            InvalidOperatorResponseException, DuplicateExternalTransactionIdException, BetResultNotFoundException {
         // Construct result dto
         ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);
         return walletService.processWin(traceId, gameSession, dto, body);

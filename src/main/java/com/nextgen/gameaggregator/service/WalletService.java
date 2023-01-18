@@ -49,6 +49,9 @@ public class WalletService {
     @Autowired
     private WalletRefundAction walletRefundAction;
 
+    @Autowired
+    private CachingService cachingService;
+
     public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
         VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(username);
         AgentPlayer agentPlayer;
@@ -109,7 +112,7 @@ public class WalletService {
      */
     public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
-            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+            InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
@@ -120,14 +123,26 @@ public class WalletService {
 
         BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
 
+        Integer isWalletBetAction = 1;
+
         try {
             betHistoryService.create(betHistory);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-            // 1. Check for duplicate transaction Id
-            throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
-                    ", external_transaction_id:" + betHistory.getExternalTransactionId() +
-                    ", round_id:" + betHistory.getRoundId() +
-                    ", vendor_line_id:" + betHistory.getVendorLineId());
+            isWalletBetAction = 0;
+
+            cachingService.deleteBetHistoriesCaching(betHistory);
+            betHistory = betHistoryService.getBetTransactionByRoundId(betHistory.getRoundId(), betHistory.getVendorGameId(),
+                    betHistory.getVendorPlayerId());
+
+            if(betHistory.getOperatorStatus() != 1){
+                isWalletBetAction = 1;
+            } else {
+                // 1. Check for duplicate transaction Id
+                throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
+                        ", external_transaction_id:" + betHistory.getExternalTransactionId() +
+                        ", round_id:" + betHistory.getRoundId() +
+                        ", vendor_line_id:" + betHistory.getVendorLineId());
+            }
         }
 
         try {
@@ -170,7 +185,7 @@ public class WalletService {
      * @throws DuplicateExternalTransactionIdException If vendor's transaction Id is found
      */
     public BetResultEvent processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws
-            BetNotFoundException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException {
+            BetNotFoundException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException, BetResultNotFoundException {
 
         Integer agentId = gameSession.getAgentId();
         Integer vendorGameId = gameSession.getVendorGameId();
@@ -184,15 +199,25 @@ public class WalletService {
 
         BetResultLog betResultLog = this.newBetResultLog(traceId, gameSession, winData, betHistory, walletWinDto, rawData);
 
+        Integer isBetResultAction = 1;
+
         try {
             betResultLogService.create(betResultLog);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            isBetResultAction = 0;
 
-            // 2. Check for duplicate transaction Id
-            throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
-                    ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
-                    ", round_id:" + betResultLog.getRoundId() +
-                    ", vendor_line_id:" + betResultLog.getVendorLineId());
+            betResultLog = betHistoryService.getBetHistoryByExternalTransaction(betResultLog.getExternalTransactionId(), betResultLog.getRoundId(),
+                    betResultLog.getVendorLineId());
+
+            if(betResultLog.getOperatorStatus() != 1){
+                isBetResultAction = 1;
+            } else {
+                // 2. Check for duplicate transaction Id
+                throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
+                        ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
+                        ", round_id:" + betResultLog.getRoundId() +
+                        ", vendor_line_id:" + betResultLog.getVendorLineId());
+            }
         }
 
         BetResultEvent betResultEvent = null;

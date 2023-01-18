@@ -16,6 +16,8 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
+import static com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS;
+
 @Service
 @Slf4j
 public class WalletBetAction {

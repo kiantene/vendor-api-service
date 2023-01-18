@@ -31,7 +31,7 @@ public class BetService {
     public void process(String traceId, GameSession gameSession, BetData betData, String body)
             throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
-            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+            InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
         walletService.processBet(traceId, gameSession, betData, body);
     }

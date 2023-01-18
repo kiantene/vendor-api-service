@@ -48,6 +48,8 @@ public class WalletWinAction {
         Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
         log.info(responseVo.toString());
 
+//        responseVo.setStatus(ResponseCodes.Status.SC_INVALID_RESPONSE);
+
         if(!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)){
             throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
         }

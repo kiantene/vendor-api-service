@@ -6,6 +6,8 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.BetResultLogRepository;
+import com.nextgen.gameaggregator.service.BetResultLogService;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,19 @@ public class BetResultEventListener implements EventListener<BetResultEvent> {
     @Autowired
     private CachingService cachingService;
 
+    @Autowired
+    private BetResultLogRepository betResultLogRepository;
+
     @Override
     public void onEvent(BetResultEvent event) {
         BetHistory betHistory = event.getBetHistory();
         BetResultLog resultLog = event.getBetResultLog();
+
+        if(resultLog.getOperatorStatus() != 1)
+        {
+            resultLog.setOperatorStatus(1);
+            betResultLogRepository.save(resultLog);
+        }
 
         // TODO: to review the following business logic, in case of data overwritten
         if (BetStatus.UNSETTLED.isValueOf(betHistory.getStatus())) {
