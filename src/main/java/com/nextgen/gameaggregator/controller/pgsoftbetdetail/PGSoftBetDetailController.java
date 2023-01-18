@@ -35,6 +35,7 @@ public class PGSoftBetDetailController {
     @PostMapping(path = "betDetail")
     public String getGameList() {
         try {
+
             VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
@@ -72,7 +73,7 @@ public class PGSoftBetDetailController {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("trace_id", String.valueOf(UUID.randomUUID()));
-        formData.add("t", operatorSession); //operator
+        formData.add("t", operatorSession); //operator session
         formData.add("psid", roundId); // parent bet id
         formData.add("sid", externalBetId); // bet id
         formData.add("lang", "en"); // en or zh
@@ -115,6 +116,5 @@ public class PGSoftBetDetailController {
 
         return betDetailUrl;
     }
-
 
 }
