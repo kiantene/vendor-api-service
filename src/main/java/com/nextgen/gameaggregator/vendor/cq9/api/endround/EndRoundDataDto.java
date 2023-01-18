@@ -5,7 +5,6 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.text.ParseException;
@@ -20,7 +19,6 @@ public class EndRoundDataDto {
     private String mtcode;
 
     @NotNull
-    @Positive
     private BigDecimal amount;
 
     @NotBlank
