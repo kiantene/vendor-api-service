@@ -32,14 +32,12 @@ public class RollInDto implements WinData {
     @Size(min = 1, max = 30)
     private String roundid;
     @NotNull
-    @Positive
     private BigDecimal validbet;
     @NotNull
     @Positive
     private BigDecimal bet;
     @NotNull
     private BigDecimal win;
-    @Positive
     private BigDecimal roomfee;
     @NotNull
     @Positive
