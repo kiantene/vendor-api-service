@@ -36,7 +36,7 @@ public class RollOutDto implements BetData {
 
     @NotNull
     @Positive
-    @Digits(integer = 12, fraction = 4)
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
 
     @NotBlank

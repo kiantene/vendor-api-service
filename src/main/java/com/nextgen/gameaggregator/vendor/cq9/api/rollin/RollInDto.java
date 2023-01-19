@@ -7,7 +7,6 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.text.ParseException;
@@ -32,17 +31,13 @@ public class RollInDto implements WinData {
     @Size(min = 1, max = 30)
     private String roundid;
     @NotNull
-    @Positive
     private BigDecimal validbet;
     @NotNull
-    @Positive
     private BigDecimal bet;
     @NotNull
     private BigDecimal win;
-    @Positive
     private BigDecimal roomfee;
     @NotNull
-    @Positive
     private BigDecimal amount;
     @NotBlank
     @Size(min = 1, max = 70)
