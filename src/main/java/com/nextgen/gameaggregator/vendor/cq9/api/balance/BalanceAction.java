@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.api.authenticate.CheckPlayerPathVariableDto;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
@@ -22,9 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -46,10 +44,12 @@ public class BalanceAction {
     private WalletService walletService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(HttpServletRequest request, @PathVariable("account") @NotBlank @Size(min = 1, max = 36) @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) String account) {
+    public ResponseVo<CommonVo> balance(HttpServletRequest request, @PathVariable("account") String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
         String wToken = request.getHeader("wtoken");
+        BalancePathVariableDto pathVariableDto = new BalancePathVariableDto();
+        pathVariableDto.setAccount(account);
 
         // Construct Vo
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
@@ -60,7 +60,7 @@ public class BalanceAction {
             CommonVo commonVo = new CommonVo();
 
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(account, wToken);
+            this.doValidation(pathVariableDto, wToken);
 
             // 2. Get vendor player details
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(account);
@@ -118,13 +118,10 @@ public class BalanceAction {
         return responseVo;
     }
 
-    private void doValidation(String username, String wToken) throws InvalidPlayerException, InvalidRequestException {
+    private void doValidation(BalancePathVariableDto pathVariableDto, String wToken) throws InvalidPlayerException, InvalidRequestException {
         // Validate value from Header and Path Variable
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
-        Optional.ofNullable(username).orElseThrow(InvalidRequestException::new);
-
-        // Validation with custom exception
-        ValidationUtils.validateLength(username, 3, 20, InvalidPlayerException::new);
+        Optional.ofNullable(pathVariableDto.getAccount()).orElseThrow(InvalidRequestException::new);
     }
 
     private void doVerification(VendorPlayer vendorPlayer, String wToken) throws InvalidVendorLineException, CredentialNotFoundException {
