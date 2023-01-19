@@ -124,6 +124,7 @@ public class BalanceAction {
 
         // Validation with custom exception
         ValidationUtils.validateRequest(pathVariableDto);
+        
     }
 
     private void doVerification(VendorPlayer vendorPlayer, String wToken) throws InvalidVendorLineException, CredentialNotFoundException {
