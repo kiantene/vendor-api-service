@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetRefundLog;
-import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
-import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,5 +26,9 @@ public class BetRefundLogService {
         entity.setCreateTime(System.currentTimeMillis());
 
         return betRefundLogRepository.save(entity);
+    }
+
+    public BetRefundLog findByExternalTransactionIdAndRoundIdAndVendorLineId(String externalTransactionId, String roundId, Integer VendorLineId){
+        return betRefundLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(externalTransactionId, roundId, VendorLineId);
     }
 }

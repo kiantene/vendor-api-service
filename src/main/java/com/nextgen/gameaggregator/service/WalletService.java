@@ -123,26 +123,25 @@ public class WalletService {
 
         BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
 
-        Integer isWalletBetAction = 1;
+
 
         try {
             betHistoryService.create(betHistory);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-            isWalletBetAction = 0;
 
-            cachingService.deleteBetHistoriesCaching(betHistory);
-            betHistory = betHistoryService.getBetTransactionByRoundId(betHistory.getRoundId(), betHistory.getVendorGameId(),
-                    betHistory.getVendorPlayerId());
-
-            if(betHistory.getOperatorStatus() != 1){
-                isWalletBetAction = 1;
-            } else {
-                // 1. Check for duplicate transaction Id
+//            cachingService.deleteBetHistoriesCaching(betHistory);
+//            Integer operatorStatus = betHistoryService.getBetTransactionByRoundId(betHistory.getRoundId(), betHistory.getVendorGameId(),
+//                    betHistory.getVendorPlayerId()).getOperatorStatus();
+//
+//            if(operatorStatus == 1){
+                // 2. Check for duplicate transaction Id
                 throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
                         ", external_transaction_id:" + betHistory.getExternalTransactionId() +
                         ", round_id:" + betHistory.getRoundId() +
                         ", vendor_line_id:" + betHistory.getVendorLineId());
-            }
+           // }
+
+//            betHistory.setOperatorStatus(operatorStatus);
         }
 
         try {
@@ -274,42 +273,54 @@ public class WalletService {
 
         BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
 
+        BetRefundEvent betRefundEvent = null;
+        Boolean requiredCallOperator = true;
         try {
             betRefundLogService.create(betRefundLog);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-            // 2. Check for duplicate transaction Id
-            throw new DuplicateExternalTransactionIdException("Duplicate bet_refund_log " +
-                    ", external_transaction_id:" + betRefundLog.getExternalTransactionId() +
-                    ", round_id:" + betRefundLog.getRoundId() +
-                    ", vendor_line_id:" + betRefundLog.getVendorLineId());
+
+            BetRefundLog currentBetRefundLog = betRefundLogService.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+                   externalTransactionId, betHistory.getRoundId(), gameSession.getVendorLineId());
+
+
+            if(currentBetRefundLog.getOperatorStatus() == 1){
+                betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, BigDecimal.ZERO);
+                requiredCallOperator = false;
+            }else{
+                betRefundLog.setId(currentBetRefundLog.getId());
+                betRefundLog.setOperatorStatus(currentBetRefundLog.getOperatorStatus());
+            }
+
+        }
+        if(requiredCallOperator){
+            // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
+            try {
+                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+                String callbackUrl = agentApiCredentialService.getAgentApiCredential(betHistory.getAgentId()).getCallbackUrl();
+                String signature = authenticationService.generateSignature(walletRefundDto, agentApiCredential.getApiSecret());
+                WalletBalanceVo balanceVo = walletRefundAction.call(callbackUrl, signature, walletRefundDto);
+
+                betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, balanceVo.getData().getBalance());
+
+            } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+                betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, BigDecimal.ZERO);
+                //Update bet_refund_log operator status to agent is disable
+                BetRefundOperatorFailEvent betRefundOperatorFailEvent =
+                        new BetRefundOperatorFailEvent(betRefundLog, -1);
+                EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
+
+            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+                //Update bet_result_log operator status based on exception
+                BetRefundOperatorFailEvent betRefundOperatorFailEvent =
+                        new BetRefundOperatorFailEvent(betRefundLog, invalidOperatorResponseException.getOperatorStatus());
+                EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
+                throw invalidOperatorResponseException;
+            }
+            // Emit event for additional asynchronous processing such as publishing data to a kafka topic
+            EventDispatcherSystem.emitAsync(betRefundEvent);
         }
 
-        BetRefundEvent betRefundEvent = null;
-        // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
-        try {
-            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            String callbackUrl = agentApiCredentialService.getAgentApiCredential(betHistory.getAgentId()).getCallbackUrl();
-            String signature = authenticationService.generateSignature(walletRefundDto, agentApiCredential.getApiSecret());
-            WalletBalanceVo balanceVo = walletRefundAction.call(callbackUrl, signature, walletRefundDto);
 
-            betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, balanceVo.getData().getBalance());
-
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, BigDecimal.ZERO);
-            //Update bet_refund_log operator status to agent is disable
-            BetRefundOperatorFailEvent betRefundOperatorFailEvent =
-                    new BetRefundOperatorFailEvent(betRefundLog, -1);
-            EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //Update bet_result_log operator status based on exception
-            BetRefundOperatorFailEvent betRefundOperatorFailEvent =
-                    new BetRefundOperatorFailEvent(betRefundLog, invalidOperatorResponseException.getOperatorStatus());
-            EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
-            throw invalidOperatorResponseException;
-        }
-        // Emit event for additional asynchronous processing such as publishing data to a kafka topic
-        EventDispatcherSystem.emitAsync(betRefundEvent);
         // TODO: to refactor currency
         return betRefundEvent;
     }
@@ -420,6 +431,7 @@ public class WalletService {
         betRefundLog.setAgentPlayerId(betHistory.getAgentPlayerId());
         betRefundLog.setAgentId(betHistory.getAgentId());
         betRefundLog.setCurrencyId(betHistory.getCurrencyId());
+        //TODO remove the balance column from bet_refund_log table
         betRefundLog.setBalance(BigDecimal.ZERO);
         betRefundLog.setVendorLineId(betHistory.getVendorLineId());
         betRefundLog.setRawData(rawData);

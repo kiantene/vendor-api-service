@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -32,11 +30,11 @@ public class BetEventListener implements EventListener<BetEvent> {
 
         BetHistory betHistory = event.getBetHistory();
 
+        //update operator status if previous was failed
         if(betHistory.getOperatorStatus() != 1)
         {
             betHistory.setOperatorStatus(1);
             betHistoryRepository.save(betHistory);
-//            cachingService.deleteBetHistoriesCaching(betHistory);
             cachingService.updateBetHistoriesCaching(betHistory);
         }
 
