@@ -24,6 +24,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -40,7 +43,7 @@ public class CheckPlayerAction {
     private VendorPlayerService vendorPlayerService;
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
-    public ResponseVo<Boolean> authenticate(@PathVariable CheckPlayerPathVariableDto pathVariableDto, HttpServletRequest request) {
+    public ResponseVo<Boolean> authenticate(HttpServletRequest request, @PathVariable("account") @NotBlank @Size(min = 1, max = 36) @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String wToken = request.getHeader("wtoken");
 
@@ -52,10 +55,10 @@ public class CheckPlayerAction {
 
         try {
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(pathVariableDto.getAccount(), wToken);
+            this.doValidation(account, wToken);
 
             // 2. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, pathVariableDto.getAccount(), wToken);
+            this.doVerification(httpRequestLog, account, wToken);
 
             responseVo.setData(true);
 

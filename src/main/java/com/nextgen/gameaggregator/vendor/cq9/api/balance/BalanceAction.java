@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -43,11 +46,10 @@ public class BalanceAction {
     private WalletService walletService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(@PathVariable BalancePathVariableDto pathVariableDto, HttpServletRequest request) {
+    public ResponseVo<CommonVo> balance(HttpServletRequest request, @PathVariable("account") @NotBlank @Size(min = 1, max = 36) @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
         String wToken = request.getHeader("wtoken");
-        request.getContextPath();
 
         // Construct Vo
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
@@ -58,10 +60,10 @@ public class BalanceAction {
             CommonVo commonVo = new CommonVo();
 
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(pathVariableDto.getAccount(), wToken);
+            this.doValidation(account, wToken);
 
             // 2. Get vendor player details
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(pathVariableDto.getAccount());
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(account);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             // 3. Verify remaining parameters (Verify against database values)
@@ -84,7 +86,8 @@ public class BalanceAction {
         } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
+        } catch (
+                InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // any other exception encountered
