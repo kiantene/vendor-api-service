@@ -14,6 +14,8 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
 
     BetHistory findByExternalTransactionIdAndVendorId(String txnId, Integer vendorId);
 
+    BetHistory findByExternalTransactionIdAndVendorIdAndVendorPlayerId(String txnId, Integer vendorId, Long vendorPlayerId);
+
     BetHistory findByExternalTransactionIdAndRoundIdAndVendorLineId(String externalTransactionId, String roundId, Integer VendorLineId);
 
 
