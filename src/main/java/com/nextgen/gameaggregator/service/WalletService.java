@@ -265,9 +265,10 @@ public class WalletService {
         Integer agentId = gameSession.getAgentId();
         Integer vendorId = gameSession.getVendorId();
         Long currentTimestamp = System.currentTimeMillis();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
 
         // 1. Retrieve the bet transaction
-        BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(externalTransactionId, vendorId);
+        BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionIdPlayerId(externalTransactionId, vendorId, vendorPlayerId);
 
         WalletRefundDto walletRefundDto = this.newWalletRefundDto(traceId, gameSession, currentTimestamp, betHistory);
 
@@ -279,6 +280,9 @@ public class WalletService {
             betRefundLogService.create(betRefundLog);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
 
+            System.err.println(externalTransactionId);
+            System.err.println(betHistory.getRoundId());
+            System.err.println(gameSession.getVendorLineId());
             BetRefundLog currentBetRefundLog = betRefundLogService.findByExternalTransactionIdAndRoundIdAndVendorLineId(
                    externalTransactionId, betHistory.getRoundId(), gameSession.getVendorLineId());
 

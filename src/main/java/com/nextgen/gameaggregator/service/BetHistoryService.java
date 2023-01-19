@@ -101,6 +101,14 @@ public class BetHistoryService {
         return betHistory;
     }
 
+    public BetHistory getBetTransactionByVendorTransactionIdPlayerId(String externalTransactionId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
+        BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorIdAndVendorPlayerId(externalTransactionId, vendorId, vendorPlayerId);
+        if (betHistory == null) { // No matching bet record for the given transaction Id
+            throw new BetNotFoundException("Cannot find external transaction Id: " + externalTransactionId);
+        }
+        return betHistory;
+    }
+
     public BetResultLog getBetHistoryByExternalTransaction(String txnId, String roundId, Integer vendorLineId) throws BetResultNotFoundException {
         BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(txnId, roundId, vendorLineId);
         return resultLog;
