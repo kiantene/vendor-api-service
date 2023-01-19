@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.api.authenticate.CheckPlayerPathVariableDto;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
@@ -122,6 +121,10 @@ public class BalanceAction {
         // Validate value from Header and Path Variable
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
         Optional.ofNullable(pathVariableDto.getAccount()).orElseThrow(InvalidRequestException::new);
+
+        // Validation with custom exception
+        ValidationUtils.validateRequest(pathVariableDto);
+        
     }
 
     private void doVerification(VendorPlayer vendorPlayer, String wToken) throws InvalidVendorLineException, CredentialNotFoundException {
