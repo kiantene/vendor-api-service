@@ -18,7 +18,10 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
@@ -37,7 +40,7 @@ public class CheckPlayerAction {
     private VendorPlayerService vendorPlayerService;
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
-    public ResponseVo<Boolean> authenticate(@PathVariable("account") String account, HttpServletRequest request) {
+    public ResponseVo<Boolean> authenticate(@PathVariable CheckPlayerPathVariableDto pathVariableDto, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String wToken = request.getHeader("wtoken");
 
@@ -49,10 +52,10 @@ public class CheckPlayerAction {
 
         try {
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(account, wToken);
+            this.doValidation(pathVariableDto.getAccount(), wToken);
 
             // 2. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, account, wToken);
+            this.doVerification(httpRequestLog, pathVariableDto.getAccount(), wToken);
 
             responseVo.setData(true);
 
