@@ -16,8 +16,8 @@ import java.nio.file.Path;
 @Configuration
 public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
-    private String connectionString = "couchbases://cb.tlw84roxfioutu9n.cloud.couchbase.com";
-    private String userName = "dev";
+    private String connectionString = "couchbases://cb.ukgjwx67ifwechjn.cloud.couchbase.com";
+    private String userName = "staging";
     private String password = "Asdf1234@";
 
     @Override
@@ -28,7 +28,7 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     protected String getScopeName() {
-        return "raw"; // or a variable etc.;
+        return "aggregator"; // or a variable etc.;
     }
 
 
@@ -44,7 +44,7 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     public String getBucketName() {
-        return "travel-sample";
+        return "aggregator";
     }
 
     @Bean

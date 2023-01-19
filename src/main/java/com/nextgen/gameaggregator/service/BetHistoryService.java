@@ -58,10 +58,10 @@ public class BetHistoryService {
         //betHistoryRepository.save(entity);
 
         //JDBC INSERT
-        this.jdbcCreate(entity);
+//        this.jdbcCreate(entity);
 
         //COUCHBASE INSERT
-//        this.couchbaseCreate(entity);
+        this.couchbaseCreate(entity);
 
         return entity;
     }

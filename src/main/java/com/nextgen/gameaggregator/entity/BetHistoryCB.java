@@ -10,8 +10,8 @@ import javax.persistence.Id;
 import java.math.BigDecimal;
 
 @Document
-@Scope("raw")
-@Collection("bet_history_CB")
+@Scope("aggregator")
+@Collection("bet_history")
 @Data
 @AllArgsConstructor
 public class BetHistoryCB {
