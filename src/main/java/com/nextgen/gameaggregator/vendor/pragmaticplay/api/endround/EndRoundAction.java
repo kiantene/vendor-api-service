@@ -69,7 +69,7 @@ public class EndRoundAction {
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(new EndRoundEvent(betHistory));
 
-            responseVo.setCash(balance);
+            responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
