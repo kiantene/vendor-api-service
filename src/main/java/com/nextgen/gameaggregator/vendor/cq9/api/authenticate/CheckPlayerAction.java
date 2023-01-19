@@ -24,9 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -43,9 +40,11 @@ public class CheckPlayerAction {
     private VendorPlayerService vendorPlayerService;
 
     @GetMapping(path = EndPoints.AUTHENTICATE)
-    public ResponseVo<Boolean> authenticate(HttpServletRequest request, @PathVariable("account") @NotBlank @Size(min = 1, max = 36) @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) String account) {
+    public ResponseVo<Boolean> authenticate(HttpServletRequest request, @PathVariable String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String wToken = request.getHeader("wtoken");
+        CheckPlayerPathVariableDto pathVariableDto = new CheckPlayerPathVariableDto();
+        pathVariableDto.setAccount(account);
 
         // Construct Vo
         ResponseVo<Boolean> responseVo = new ResponseVo<>();
@@ -55,10 +54,10 @@ public class CheckPlayerAction {
 
         try {
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(account, wToken);
+            this.doValidation(pathVariableDto, wToken);
 
             // 2. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, account, wToken);
+            this.doVerification(httpRequestLog, pathVariableDto.getAccount(), wToken);
 
             responseVo.setData(true);
 
@@ -87,13 +86,14 @@ public class CheckPlayerAction {
         return responseVo;
     }
 
-    private void doValidation(String username, String wToken) throws InvalidPlayerException, InvalidRequestException{
+    private void doValidation(CheckPlayerPathVariableDto pathVariableDto, String wToken) throws InvalidPlayerException, InvalidRequestException{
         // Validate value from Header and Path Variable
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
-        Optional.ofNullable(username).orElseThrow(InvalidRequestException::new);
+        Optional.ofNullable(pathVariableDto.getAccount()).orElseThrow(InvalidRequestException::new);
 
         // Validation with custom exception
-        ValidationUtils.validateLength(username, 3, 20, InvalidPlayerException::new);
+        ValidationUtils.validateRequest(pathVariableDto);
+        ValidationUtils.validateLength(pathVariableDto.getAccount(), 3, 20, InvalidPlayerException::new);
     }
 
     private void doVerification(HttpRequestLog request, String username, String wToken) throws InvalidPlayerException, InvalidVendorLineException, CredentialNotFoundException {
