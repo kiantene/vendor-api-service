@@ -77,10 +77,12 @@ public class RefundAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (BetNotFoundException | CredentialNotFoundException betNotFoundException) {
-            // Don't throw error even if Bet is not found
-            responseVo.setTransactionId(traceId); // TODO: need to update to the correct refund Id
-            httpService.logError(httpRequestLog, betNotFoundException);
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);

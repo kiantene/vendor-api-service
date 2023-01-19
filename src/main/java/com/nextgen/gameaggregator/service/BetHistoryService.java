@@ -102,6 +102,7 @@ public class BetHistoryService {
     }
 
     public BetHistory getBetTransactionByVendorTransactionIdPlayerId(String externalTransactionId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
+
         BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorIdAndVendorPlayerId(externalTransactionId, vendorId, vendorPlayerId);
         if (betHistory == null) { // No matching bet record for the given transaction Id
             throw new BetNotFoundException("Cannot find external transaction Id: " + externalTransactionId);
