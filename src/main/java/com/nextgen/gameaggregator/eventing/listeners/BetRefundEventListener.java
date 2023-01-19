@@ -1,14 +1,15 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetRefundLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -21,11 +22,21 @@ public class BetRefundEventListener implements EventListener<BetRefundEvent> {
     private BetHistoryRepository betHistoryRepository;
 
     @Autowired
+    private BetRefundLogRepository betRefundLogRepository;
+
+    @Autowired
     private CachingService cachingService;
 
     @Override
     public void onEvent(BetRefundEvent event) {
         BetHistory betHistory = event.getBetHistory();
+        BetRefundLog betRefundLog = event.getBetRefundLog();
+
+
+        if(betRefundLog.getOperatorStatus() !=1){
+            betRefundLog.setOperatorStatus(1);
+            betRefundLogRepository.save(betRefundLog);
+        }
 
         // TODO: To add refund logic for different statuses
         if ( BetStatus.UNSETTLED.isValueOf(betHistory.getStatus()) ) {
