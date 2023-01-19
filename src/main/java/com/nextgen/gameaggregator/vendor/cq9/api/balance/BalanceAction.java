@@ -43,7 +43,7 @@ public class BalanceAction {
     private WalletService walletService;
 
     @GetMapping(path = EndPoints.BALANCE)
-    public ResponseVo<CommonVo> balance(@PathVariable("account") String account, HttpServletRequest request) {
+    public ResponseVo<CommonVo> balance(@PathVariable BalancePathVariableDto pathVariableDto, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
         String wToken = request.getHeader("wtoken");
@@ -58,10 +58,10 @@ public class BalanceAction {
             CommonVo commonVo = new CommonVo();
 
             // 1. Validate request parameters from vendor (Non-database related)
-            this.doValidation(account, wToken);
+            this.doValidation(pathVariableDto.getAccount(), wToken);
 
             // 2. Get vendor player details
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(account);
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(pathVariableDto.getAccount());
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             // 3. Verify remaining parameters (Verify against database values)
