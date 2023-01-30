@@ -100,7 +100,7 @@ public class BetAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -152,6 +152,7 @@ public class BetAction {
         ValidationUtils.validateLength(betDto.getEventTime(), 1, 35, InvalidFormatException::new);
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
         dateTimeFormatter.parse(betDto.getEventTime());
+        ValidationUtils.isEquals(betDto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
     }
 
     private void doVerification(BetDto betDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {

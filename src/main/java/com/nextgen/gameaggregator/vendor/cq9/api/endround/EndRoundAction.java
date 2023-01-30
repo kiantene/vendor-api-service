@@ -169,6 +169,7 @@ public class EndRoundAction {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
         dateTimeFormatter.parse(dto.getCreateTime());
         dateTimeFormatter.parse(endRoundDataDtoList.get(0).getEventtime());
+        ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
     }
 
     private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {

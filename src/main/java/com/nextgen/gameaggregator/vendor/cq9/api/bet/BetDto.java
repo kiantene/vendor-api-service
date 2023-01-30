@@ -21,6 +21,7 @@ public class BetDto implements BetData {
 
     @NotBlank
     @Size(min = 1, max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String gamehall;
 
     @NotBlank
