@@ -27,8 +27,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -112,16 +113,22 @@ public class EndRoundAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
+        } catch (DateTimeParseException dateTimeParseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+        } catch (InvalidFormatException invalidFormatException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
@@ -134,9 +141,6 @@ public class EndRoundAction {
 
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (ParseException parseException) {
-            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -151,7 +155,7 @@ public class EndRoundAction {
         return responseVo;
     }
 
-    private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList, String wToken) throws InvalidRequestException, InvalidPlayerException, ParseException {
+    private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException, InvalidFormatException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
@@ -160,8 +164,11 @@ public class EndRoundAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
-        new SimpleDateFormat(dto.getCreateTime()).parse(Formats.DATE_TIME_FORMAT);
-        new SimpleDateFormat(endRoundDataDtoList.get(0).getEventtime()).parse(Formats.DATE_TIME_FORMAT);
+        ValidationUtils.validateLength(dto.getCreateTime(), 1, 35, InvalidFormatException::new);
+        ValidationUtils.validateLength(endRoundDataDtoList.get(0).getEventtime(), 1, 35, InvalidFormatException::new);
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
+        dateTimeFormatter.parse(dto.getCreateTime());
+        dateTimeFormatter.parse(endRoundDataDtoList.get(0).getEventtime());
     }
 
     private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {

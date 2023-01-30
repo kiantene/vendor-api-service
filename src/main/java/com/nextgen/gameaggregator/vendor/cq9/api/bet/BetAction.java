@@ -21,8 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -84,7 +85,7 @@ public class BetAction {
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -108,6 +109,9 @@ public class BetAction {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
+        } catch (InvalidFormatException invalidFormatException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
@@ -124,9 +128,6 @@ public class BetAction {
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (ParseException parseException) {
-            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
-
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -140,7 +141,7 @@ public class BetAction {
         return responseVo;
     }
 
-    private void doValidation(BetDto betDto, String wToken) throws InvalidRequestException, InvalidPlayerException, ParseException {
+    private void doValidation(BetDto betDto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException, InvalidFormatException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
@@ -148,7 +149,9 @@ public class BetAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(betDto.getAccount(), 3, 20, InvalidPlayerException::new);
-        new SimpleDateFormat(betDto.getEventTime()).parse(Formats.DATE_TIME_FORMAT);
+        ValidationUtils.validateLength(betDto.getEventTime(), 1, 35, InvalidFormatException::new);
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
+        dateTimeFormatter.parse(betDto.getEventTime());
     }
 
     private void doVerification(BetDto betDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
