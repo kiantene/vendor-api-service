@@ -27,7 +27,7 @@
 		<destination>${logstashHost}:${logstashPort}</destination>
 		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
 			<customFields>
-				{ "app": "${springAppName:-}", "profile": "${springProfile:-}" }
+				{ "app": "${springAppName:-}", "profile": "${springProfile:-}" , "hostName": "${HOSTNAME:-}" }
 			</customFields>
 		</encoder>
 
