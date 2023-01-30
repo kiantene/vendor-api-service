@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -123,6 +124,9 @@ public class BetAction {
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
+        } catch (ParseException parseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -136,7 +140,7 @@ public class BetAction {
         return responseVo;
     }
 
-    private void doValidation(BetDto betDto, String wToken) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(BetDto betDto, String wToken) throws InvalidRequestException, InvalidPlayerException, ParseException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
@@ -144,6 +148,7 @@ public class BetAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(betDto.getAccount(), 3, 20, InvalidPlayerException::new);
+        new SimpleDateFormat(betDto.getEventTime()).parse(Formats.DATE_TIME_FORMAT);
     }
 
     private void doVerification(BetDto betDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
