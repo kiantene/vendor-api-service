@@ -197,52 +197,52 @@ public class WalletService {
         WalletWinDto walletWinDto = this.newWalletWinDto(traceId, gameSession, winData, betHistory);
 
         BetResultLog betResultLog = this.newBetResultLog(traceId, gameSession, winData, betHistory, walletWinDto, rawData);
-
-        Integer isBetResultAction = 1;
+        BetResultEvent betResultEvent = null;
+        Boolean requiredCallOperator = true;
 
         try {
             betResultLogService.create(betResultLog);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-            isBetResultAction = 0;
 
-            betResultLog = betHistoryService.getBetHistoryByExternalTransaction(betResultLog.getExternalTransactionId(), betResultLog.getRoundId(),
-                    betResultLog.getVendorLineId());
+            Integer getOperatorStatus = betHistoryService.getBetHistoryByExternalTransaction(betResultLog.getExternalTransactionId(), betResultLog.getRoundId(),
+                    betResultLog.getVendorLineId()).getOperatorStatus();
 
-            if(betResultLog.getOperatorStatus() != 1){
-                isBetResultAction = 1;
+            if(betResultLog.getOperatorStatus() == 1){
+                betResultEvent = new BetResultEvent(betHistory, betResultLog, BigDecimal.ZERO);
+                requiredCallOperator = false;
             } else {
-                // 2. Check for duplicate transaction Id
-                throw new DuplicateExternalTransactionIdException("Duplicate bet_result_log " +
-                        ", external_transaction_id:" + betResultLog.getExternalTransactionId() +
-                        ", round_id:" + betResultLog.getRoundId() +
-                        ", vendor_line_id:" + betResultLog.getVendorLineId());
+                betResultLog.setOperatorStatus(getOperatorStatus);
             }
         }
 
-        BetResultEvent betResultEvent = null;
-        // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
-        try {
-            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            String callbackUrl = agentApiCredential.getCallbackUrl();
-            String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-            WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
-            betResultEvent = new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
+        //IF the bet ID is duplicated and not error, will return as 0 to vendor
+        if(requiredCallOperator){
+            // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
+            try {
+                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+                String callbackUrl = agentApiCredential.getCallbackUrl();
+                String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
+                WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+                betResultEvent = new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            betResultEvent = new BetResultEvent(betHistory, betResultLog, BigDecimal.ZERO);
-            //Update bet_result_log operator status to agent is disable
-            BetResultOperatorFailEvent betResultOperatorFailEvent =
-                    new BetResultOperatorFailEvent(betResultLog, -1);
-            EventDispatcherSystem.emitAsync(betResultOperatorFailEvent);
+            } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+                betResultEvent = new BetResultEvent(betHistory, betResultLog, BigDecimal.ZERO);
+                //Update bet_result_log operator status to agent is disable
+                BetResultOperatorFailEvent betResultOperatorFailEvent =
+                        new BetResultOperatorFailEvent(betResultLog, -1);
+                EventDispatcherSystem.emitAsync(betResultOperatorFailEvent);
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //Update bet_result_log operator status based on exception
-            BetResultOperatorFailEvent betResultOperatorFailEvent =
-                    new BetResultOperatorFailEvent(betResultLog, invalidOperatorResponseException.getOperatorStatus());
-            EventDispatcherSystem.emitAsync(betResultOperatorFailEvent);
-            throw invalidOperatorResponseException;
+            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+                //Update bet_result_log operator status based on exception
+                BetResultOperatorFailEvent betResultOperatorFailEvent =
+                        new BetResultOperatorFailEvent(betResultLog, invalidOperatorResponseException.getOperatorStatus());
+                EventDispatcherSystem.emitAsync(betResultOperatorFailEvent);
+                throw invalidOperatorResponseException;
+            }
+
+            EventDispatcherSystem.emitAsync(betResultEvent);
         }
-        EventDispatcherSystem.emitAsync(betResultEvent);
+
         return betResultEvent;
 
     }
@@ -297,7 +297,7 @@ public class WalletService {
 
         }
         if(requiredCallOperator){
-            // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
+            // TODO: ok To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
             try {
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 String callbackUrl = agentApiCredentialService.getAgentApiCredential(betHistory.getAgentId()).getCallbackUrl();
