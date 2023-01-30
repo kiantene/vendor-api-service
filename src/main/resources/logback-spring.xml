@@ -5,7 +5,6 @@
 	<!--从SpringBoot配置文件读取项目名，环境，以及logstash地址 -->
 	<springProperty scope="context" name="springAppName" source="spring.application.name" />
 	<springProperty scope="context" name="springProfile" source="spring.profiles.active" />
-	<springProperty scope="context" name="serverAddress" source="${InetAddress.getLocalHost().getHostAddress()}" />
 	<!--这个地址必须写在bootstrap.yml中。否则读取不到 -->
 	<springProperty scope="context" name="logstashHost" source="logstash.host" />
 	<springProperty scope="context" name="logstashPort" source="logstash.port" />
@@ -28,7 +27,7 @@
 		<destination>${logstashHost}:${logstashPort}</destination>
 		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
 			<customFields>
-				{ "app": "${springAppName:-}", "profile": "${springProfile:-}" , "serverAddress": "${serverAddress:-}" }
+				{ "app": "${springAppName:-}", "profile": "${springProfile:-}" , "hostName": "${HOSTNAME:-}" }
 			</customFields>
 		</encoder>
 
