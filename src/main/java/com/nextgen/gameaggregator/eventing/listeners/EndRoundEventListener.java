@@ -60,6 +60,7 @@ public class EndRoundEventListener implements EventListener<EndRoundEvent> {
             cachingService.updateBetHistoriesCaching(betHistory);
 
             Gson gson = new GsonBuilder().create();
+            // TODO - to move topic name into constant
             kafkaTemplate.send("topic_data_aggregate_new", betHistory.getId(), gson.toJson(betHistory));
         }
 
