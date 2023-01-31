@@ -19,6 +19,11 @@ public class OperatorResponseVo<T> implements HttpResponse {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private T data;
 
+    public void setResponseCode(ResponseCodes.Status responseCodesStatus) {
+        this.status = responseCodesStatus;
+        this.message = responseCodesStatus.description;
+    }
+
     @Override
     public boolean hasError() {
         return !this.status.equals(ResponseCodes.Status.SC_OK);

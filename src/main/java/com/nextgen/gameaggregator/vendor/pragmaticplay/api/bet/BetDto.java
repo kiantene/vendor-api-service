@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
+import org.hibernate.validator.constraints.Range;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -37,7 +38,7 @@ public class BetDto implements BetData {
     private String roundId;
 
     // Amount of the bet. Minimum is 0.00.
-    @Positive
+    @Range(min = 0)
     @NotNull
     @Digits(integer = 10, fraction = 2)
     private BigDecimal amount;
