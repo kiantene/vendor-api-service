@@ -90,7 +90,10 @@ public class BetAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+        } catch (DateTimeParseException dateTimeParseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
+        }catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DisabledGameException disabledGameException) {
