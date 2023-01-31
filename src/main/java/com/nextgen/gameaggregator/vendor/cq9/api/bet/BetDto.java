@@ -44,6 +44,7 @@ public class BetDto implements BetData {
     @NotBlank
     private String session;
 
+    @Pattern(regexp = "^(web|mobile)$")
     private String platform;
 
     @NotBlank
