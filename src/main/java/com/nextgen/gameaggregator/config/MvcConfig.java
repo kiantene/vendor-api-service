@@ -31,7 +31,7 @@ public class MvcConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 //	.allowedOrigins("*")
-                .allowedOriginPatterns("*")
+                .allowedOriginPatterns("https://*.gasea168.com")
                 .allowedMethods("*")
                 .allowCredentials(true)
                 .maxAge(3600)
