@@ -46,7 +46,6 @@ public class GameUrlAction {
 
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setTraceId(dto.getTraceId());
-            log.info(dto.toString());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
@@ -93,39 +92,36 @@ public class GameUrlAction {
         } catch (IllegalArgumentException illegalArgumentException) {
             // thrown when any field encountered type mismatch during conversion from json to dto
             log.error(illegalArgumentException.toString());
-            responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
 
         } catch (AuthenticationException authenticationException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
         } catch (InvalidSignatureException invalidSignatureException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_GAME);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_GAME);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
 
         } catch (DuplicateRequestException duplicateRequestException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
 
         } catch (NoAvailableLineException noAvailableLineException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
 
-        } catch (Exception exception) {
-            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+        }
+        catch (Exception exception) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
-
-        } finally {
-            responseVo.setMessage(responseVo.getStatus().description);
         }
-
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }

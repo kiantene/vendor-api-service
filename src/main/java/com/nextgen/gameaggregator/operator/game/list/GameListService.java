@@ -33,7 +33,7 @@ public class GameListService {
         Optional.ofNullable(vendor).orElseThrow(RecordNotFoundException::new);
 
         List<Sort.Order> orders = this.generateOrder();
-        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getSize(), Sort.by(orders));
+        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
         Page<Object> gameList =  vendorGameRepository.findByVendorIdAndStatus(vendor.getId(), Status.ACTIVE.code, pagingSort);
 
