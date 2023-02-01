@@ -38,15 +38,7 @@ public class GameUrlService {
         String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();
         Integer vendorId = vendorGame.getVendorId();
-        String className = "";
-
-        if (vendorId == 1) { // TODO: to get classname from db
-            className = "com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl.GameUrlService";
-        } else if (vendorId == 2) {
-            className = "com.nextgen.gameaggregator.vendor.pgsoft.api.gameurl.GameUrlService";
-        } else if (vendorId == 3) {
-            className = "com.nextgen.gameaggregator.vendor.cq9.api.gameurl.GameUrlService";
-        }
+        String className = "com.nextgen.gameaggregator.vendor."+vendorLine.getVendor().getClassName()+".api.gameurl.GameUrlService";
 
         GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
         MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
