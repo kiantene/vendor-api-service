@@ -52,6 +52,9 @@ eureka:
   client:
     serviceUrl:
       defaultZone: http://eureka:8761/eureka/
+  instance:
+    hostName: ga-vendor-api-service
+    preferIpAddress: false
 #grpc:
 #  server:
 #    port: 9092
