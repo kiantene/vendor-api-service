@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
@@ -104,6 +105,11 @@ public class HttpService {
     public static <T> T convertJsonToDto(String json, Class<T> objectClass) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(json, objectClass);
+    }
+
+    public static <T> T convertJsonToDto(String json, TypeReference<T> valueTypeRef) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(json, valueTypeRef);
     }
 
     public static <T> T convertQueryStringToDto(String queryString, Class<T> objectClass) throws InvalidRequestException {

@@ -5,9 +5,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
@@ -26,14 +24,21 @@ public class EndRoundDto {
     private String gamecode;
     @NotBlank
     @Size(min = 1, max = 30)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roundid;
+    @NotBlank
     private String data;
     @NotBlank
     private String createTime;
+    @Positive
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal freegame;
+    @Positive
     private BigDecimal bonus;
+    @Positive
     private BigDecimal luckydraw;
+    @Positive
     private BigDecimal jackpot;
-//    private List<BigDecimal> jackpotcontribution;
-
+    @Digits(integer = 12, fraction = 10)
+    private BigDecimal jackpotcontribution;
 }
