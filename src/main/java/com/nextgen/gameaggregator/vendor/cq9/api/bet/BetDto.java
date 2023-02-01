@@ -30,6 +30,7 @@ public class BetDto implements BetData {
 
     @NotBlank
     @Size(min = 1, max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roundid;
 
     @NotNull
@@ -39,6 +40,7 @@ public class BetDto implements BetData {
 
     @NotBlank
     @Size(min = 1, max = 70)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String mtcode;
 
     @NotBlank
