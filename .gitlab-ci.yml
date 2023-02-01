@@ -2,8 +2,8 @@ before_script:
   - export JAVA_HOME=/usr/lib/jvm/jdk-18/
 
 variables:
-  DOCKERHUB_URL: docker.io
-  DOCKERHUB_USERNAME: esportsking
+  DOCKERHUB_URL: 634937900606.dkr.ecr.ap-east-1.amazonaws.com
+  DOCKERHUB_USERNAME: AWS
 
   STG_POINTING_BRANCH: staging
   STG_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
@@ -15,7 +15,7 @@ variables:
   STG3_SERVER_2: ubuntu@18.163.186.187
 
   QA_POINTING_BRANCH: qa
-  QA_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
+  QA_DOCKER_REGISTRY: 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service
   QA_DOCKER_TAG: qa
   QA_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
   QA_SERVER: root@47.254.202.80
