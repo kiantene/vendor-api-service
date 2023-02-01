@@ -51,13 +51,23 @@ public class GameSessionService {
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
         gameSession.setVendorGameId(vendorGame.getId());
+        //TODO (by Alex) to change to vendor game code table value
         gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
-
+        //TODO (by Alex) temporary hard code
+        //TODO value from vendor_language_codes table, language_code
+        gameSession.setVendorLanguageCode("zh");
+        //TODO value from languages table, ID
+        gameSession.setLanguageId(1);
+        //TODO value from platforms table, ID
+        gameSession.setPlatformId(2);
+        //TODO value from vendor platform constant
+        gameSession.setVendorPlatformCode("WEB");
+        
         gameSessionRepository.save(gameSession);
 
         return gameSession;
