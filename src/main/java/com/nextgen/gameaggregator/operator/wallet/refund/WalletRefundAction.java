@@ -37,7 +37,7 @@ public class WalletRefundAction {
                                                 ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
                             })
                     .bodyToMono(WalletBalanceVo.class)
-                    .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
+                    .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
                     .block();
         } catch (Exception exception) {
             //TODO (by Alex), proper throw InvalidOperatorResponseException

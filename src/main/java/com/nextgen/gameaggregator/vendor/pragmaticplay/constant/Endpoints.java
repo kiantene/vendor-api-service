@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.constant;
 
 public class Endpoints {
 
+    public static final Integer TIMEOUT = 10000;
+
     public static final String PATH = "api/v1/pragmaticplay/";
     public static final String GAME_URL = "/game/url";
     public static final String AUTHENTICATE = "authenticate";

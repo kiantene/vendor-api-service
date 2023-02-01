@@ -31,13 +31,13 @@ public class WalletBalanceAction {
                 .retrieve()
                 .onStatus(HttpStatus::isError,
                         response -> {
-                            HttpStatus clientResponsestatus = response.statusCode();
+                            HttpStatus clientResponseStatus = response.statusCode();
                             return response.bodyToMono(String.class).map(body ->
                                     new InvalidOperatorResponseException
-                                            ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+                                            ("response status :" + clientResponseStatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
                         })
                 .bodyToMono(WalletBalanceVo.class)
-                .timeout(Duration.ofMillis(10000)) // TODO: timeout constant
+                .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
         } catch (Exception exception) {

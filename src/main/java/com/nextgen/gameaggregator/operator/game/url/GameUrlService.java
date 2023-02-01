@@ -33,7 +33,7 @@ public class GameUrlService {
                                   VendorLine vendorLine)
             throws
             ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            InstantiationException, IllegalAccessException, InvalidVendorLineException {
+            InstantiationException, IllegalAccessException, InvalidVendorLineException , InvalidVendorResponseException{
 
         String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();

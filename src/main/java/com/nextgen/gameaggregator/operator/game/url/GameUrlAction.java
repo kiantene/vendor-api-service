@@ -132,12 +132,14 @@ public class GameUrlAction {
             throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
+        } catch (InvalidVendorResponseException e) {
+            throw new RuntimeException(e);
         }
-        catch (Exception exception) {
-            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-            httpService.logError(httpRequestLog, exception);
-            exception.printStackTrace();
-        }
+//        catch (Exception exception) {
+//            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+//            httpService.logError(httpRequestLog, exception);
+//            exception.printStackTrace();
+//        }
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
