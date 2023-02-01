@@ -38,6 +38,7 @@ public class GameUrlService implements GameUrl {
         formData.add("secureLogin", secureLogin);
         formData.add("symbol", gameSession.getVendorGameCode());
         formData.add("language", gameSession.getVendorLanguageCode());
+        formData.add("technology", "H5");
         formData.add("token", gameSession.getToken());
         formData.add("platform", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
