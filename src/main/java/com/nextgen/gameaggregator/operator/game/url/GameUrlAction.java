@@ -122,8 +122,10 @@ public class GameUrlAction {
             throw new RuntimeException(e);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        } catch (ClassNotFoundException classNotFoundException) {
+            httpService.logError(httpRequestLog, classNotFoundException);
+            //TODO (by Alex), the correct code to response to operator
+            responseVo.setResponseCode(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
         } catch (InvocationTargetException e) {
             throw new RuntimeException(e);
         } catch (NoSuchMethodException e) {
@@ -132,8 +134,9 @@ public class GameUrlAction {
             throw new RuntimeException(e);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
-        } catch (InvalidVendorResponseException e) {
-            throw new RuntimeException(e);
+        } catch (InvalidVendorResponseException invalidVendorResponseException) {
+            httpService.logError(httpRequestLog, invalidVendorResponseException);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
         }
 //        catch (Exception exception) {
 //            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);

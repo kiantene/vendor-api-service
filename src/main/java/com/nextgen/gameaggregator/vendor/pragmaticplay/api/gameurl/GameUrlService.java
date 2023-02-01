@@ -72,11 +72,12 @@ public class GameUrlService implements GameUrl {
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
+
         GameUrlVo responseVo = null;
         try {
             responseVo = new Gson().fromJson(responseString, GameUrlVo.class);
         } catch (JsonSyntaxException jsonSyntaxException) {
-            throw new InvalidVendorResponseException( "Invalid response body :"+responseString);
+            throw new InvalidVendorResponseException( "Invalid vendor response body :"+responseString);
         }
 
         if (responseVo != null) {
