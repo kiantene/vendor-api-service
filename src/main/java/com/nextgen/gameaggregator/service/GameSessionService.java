@@ -60,14 +60,14 @@ public class GameSessionService {
         gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
         //TODO (by Alex) temporary hard code
         //TODO value from vendor_language_codes table, language_code
-        gameSession.setVendorLanguageCode("zh");
+        gameSession.setVendorLanguageCode("en");
         //TODO value from languages table, ID
-        gameSession.setLanguageId(1);
+        gameSession.setLanguageId(3);
         //TODO value from platforms table, ID
-        gameSession.setPlatformId(2);
+        gameSession.setPlatformId(1);
         //TODO value from vendor platform constant
-        gameSession.setVendorPlatformCode("WEB");
-        
+        gameSession.setVendorPlatformCode("MOBILE");
+
         gameSessionRepository.save(gameSession);
 
         return gameSession;

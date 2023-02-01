@@ -31,11 +31,11 @@ public class GameUrlService implements GameUrl {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("secureLogin", secureLogin);
-        formData.add("symbol", gameCode);
-        formData.add("language", gameSession.getLanguage());
+        formData.add("symbol", gameSession.getVendorGameCode());
+        formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("token", gameSession.getToken());
-        // TODO: send platform value, if not supported then send web as default
-        // Possible values for platform – WEB (for desktop devices) or MOBILE (for mobile devices)
+        formData.add("platform", gameSession.getVendorPlatformCode());
+        formData.add("currency", gameSession.getVendorCurrencyCode());
         String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
 

@@ -79,6 +79,7 @@ public class GameUrlAction {
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
 
             // 9. Check if Vendor Line currency is supported
+            System.err.println(vendorLine.getId());
             VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
             gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
