@@ -15,11 +15,12 @@ import java.util.Date;
 public class EndRoundDataDto {
     @NotBlank
     @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotNull
     @Positive
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
 
     @NotBlank

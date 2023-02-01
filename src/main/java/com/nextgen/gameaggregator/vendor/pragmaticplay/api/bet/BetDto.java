@@ -40,7 +40,7 @@ public class BetDto implements BetData {
     // Amount of the bet. Minimum is 0.00.
     @Range(min = 0)
     @NotNull
-    @Digits(integer = 10, fraction = 2)
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
 
     // Unique reference of this transaction.
