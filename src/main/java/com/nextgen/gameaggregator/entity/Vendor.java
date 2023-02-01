@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.entity;
 
-import javax.persistence.*;
 import lombok.Data;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "vendors")
@@ -11,5 +14,6 @@ public class Vendor {
     private Integer id;
     private String code;
     private String name;
+    private String className;
     private Integer status;
 }

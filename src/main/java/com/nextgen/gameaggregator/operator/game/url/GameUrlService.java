@@ -29,7 +29,8 @@ public class GameUrlService {
 
     private static final String USERTYPE = "operator-api-service";
 
-    public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials)
+    public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials,
+                                  VendorLine vendorLine)
             throws
             ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
             InstantiationException, IllegalAccessException, InvalidVendorLineException {

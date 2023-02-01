@@ -81,15 +81,15 @@ public class GameUrlAction {
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
 
             // 9. Check if Vendor Line currency is supported
-            System.err.println(vendorLine.getId());
             VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
             gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
             gameSessionService.createSessionByVendorPlayer(gameSession);
             log.info(gameSession.toString());
 
+
             // 10. Request game url from vendor
-            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials);
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             responseVo.setData(gameUrlData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
