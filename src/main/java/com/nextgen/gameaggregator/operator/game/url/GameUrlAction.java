@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 @RestController
@@ -116,7 +118,20 @@ public class GameUrlAction {
 
         } catch (NoAvailableLineException noAvailableLineException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
-
+        } catch (InvalidVendorLineException e) {
+            throw new RuntimeException(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
         }
         catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
