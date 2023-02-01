@@ -40,7 +40,7 @@ public class BetDto implements BetData {
 
     @NotBlank
     @Size(min = 1, max = 70)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotBlank

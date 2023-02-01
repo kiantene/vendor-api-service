@@ -15,6 +15,7 @@ public class ValidationUtils {
 
     public static final String ALPHANUMERIC_REGEX = "^[a-zA-Z0-9]+$";
     public static final String ALPHANUMERIC_DASH_REGEX = "^[a-zA-Z0-9_-]+$";
+    public static final String ALPHANUMERIC_DASH_COLON_REGEX = "^[a-zA-Z0-9:_-]+$";
     public static final String WEB_OR_H5 = "^web|WEB|h5|H5+$";
 
     public static <T> void validateRequest(T requestObject) throws InvalidRequestException {
