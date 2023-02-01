@@ -2,8 +2,8 @@ before_script:
   - export JAVA_HOME=/usr/lib/jvm/jdk-18/
 
 variables:
+  DOCKERHUB_URL: 634937900606.dkr.ecr.ap-east-1.amazonaws.com
   DOCKERHUB_USERNAME: AWS
-
   STG_POINTING_BRANCH: staging
   STG_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
   STG_DOCKER_TAG: stg
@@ -48,7 +48,7 @@ stg-push-dockerhub:
   extends: .stg-deploy-rule
   script:
     - docker build -t $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG .
-    - docker login --username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
+    - docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
     - docker push $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG
 
 stg-aws-deploy:
@@ -58,7 +58,7 @@ stg-aws-deploy:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 stg2-aws-deploy:
   stage: deploy
@@ -67,7 +67,7 @@ stg2-aws-deploy:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG2_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG2_SERVER -p 22 "docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 stg3-1-aws-deploy:
   stage: deploy
@@ -76,7 +76,7 @@ stg3-1-aws-deploy:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_1 -p 22 "docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 stg3-2-aws-deploy:
   stage: deploy
@@ -85,7 +85,7 @@ stg3-2-aws-deploy:
   script:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_2 -p 22 "docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 # qa ######################################
 qa-gitlab-build:
@@ -103,7 +103,7 @@ qa-push-dockerhub:
   extends: .qa-deploy-rule
   script:
     - docker build -t $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG .
-    - docker login --username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
+    - docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
     - docker push $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG
 
 qa-ali-deploy:
@@ -113,4 +113,4 @@ qa-ali-deploy:
   script:
     - echo "$CD_PRIVATE_KEY" > "$(pwd)/qa-key.pem"
     - chmod 400 "$(pwd)/qa-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG && docker service update --force --image $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG $QA_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker login $DOCKERHUB_URL--username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG && docker service update --force --image $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG $QA_PORTAINER_NAME"
