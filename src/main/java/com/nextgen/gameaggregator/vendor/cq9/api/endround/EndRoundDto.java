@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -39,6 +40,5 @@ public class EndRoundDto {
     private BigDecimal luckydraw;
     @Positive
     private BigDecimal jackpot;
-    @Digits(integer = 12, fraction = 10)
-    private BigDecimal jackpotcontribution;
+    private List<@Positive @Digits(integer = 12, fraction = 10) BigDecimal> jackpotcontribution;
 }
