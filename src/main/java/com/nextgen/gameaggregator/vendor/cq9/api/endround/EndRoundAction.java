@@ -70,7 +70,7 @@ public class EndRoundAction {
 
             // Convert original request body into dto
             EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
-//            List<EndRoundDataDto> endRoundDataDtoList = new Gson().fromJson(endRoundDto.getData(), new TypeToken<List<EndRoundDataDto>>() {}.getType());
+            ValidationUtils.validateRequest(endRoundDto);
             List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<List<EndRoundDataDto>>() {});
 
             // 1. Validate request parameters from vendor
@@ -162,7 +162,6 @@ public class EndRoundAction {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
-        ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(endRoundDataDtoList);
 
         // Validation with custom exception
