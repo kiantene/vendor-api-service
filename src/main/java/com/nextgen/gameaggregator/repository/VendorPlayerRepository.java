@@ -6,6 +6,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface VendorPlayerRepository extends JpaRepository<VendorPlayer, Long> {
-    VendorPlayer findByAgentPlayerIdAndVendorLineId(Long agentPlayerId, Integer vendorLineId);
+    VendorPlayer findByAgentPlayerIdAndVendorLineIdAndCurrencyId(Long agentPlayerId, Integer vendorLineId, Integer currencyId);
     VendorPlayer findByUsername(String username);
 }

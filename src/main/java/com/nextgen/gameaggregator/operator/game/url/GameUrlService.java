@@ -130,11 +130,12 @@ public class GameUrlService {
             agentPlayer = this.createAgentPlayer(agentId, username);
             agentPlayerRepository.save(agentPlayer);
         } else {
-            vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineId(agentPlayer.getId(), vendorLine.getId());
+            vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
+                    vendorLine.getCurrency().getId());
         }
 
         if (vendorPlayer == null) {
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId);
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId, vendorLine.getCurrency().getId());
             vendorPlayerRepository.save(vendorPlayer);
         }
 
@@ -155,7 +156,7 @@ public class GameUrlService {
         return entity;
     }
 
-    public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId) {
+    public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId, Integer currencyId) {
         String vendorPlayerUsername = NameUtils.generateUsername("O", agentPlayerId, vendorLineId.longValue());
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
@@ -163,6 +164,8 @@ public class GameUrlService {
         entity.setVendorId(vendorId);
         entity.setUsername(vendorPlayerUsername);
         entity.setStatus(1);
+        //TODO SET CURRENCY ID
+        entity.setCurrencyId(currencyId);
         entity.prepareSave(0, USERTYPE);
         log.info("Insert new vendor player " + vendorPlayerUsername);
 

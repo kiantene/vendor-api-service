@@ -20,4 +20,5 @@ public class VendorPlayer extends BaseEntity {
     private Integer vendorId;
     private Integer vendorLineId;
     private Integer status;
+    private Integer currencyId;
 }
