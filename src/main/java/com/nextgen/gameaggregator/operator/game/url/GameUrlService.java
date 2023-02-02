@@ -26,6 +26,14 @@ public class GameUrlService {
     private AgentPlayerRepository agentPlayerRepository;
     @Autowired
     private VendorPlayerRepository vendorPlayerRepository;
+    @Autowired
+    private VendorGameCodeRepository vendorGameCodeRepository;
+    @Autowired
+    private PlatformRepository platformRepository;
+    @Autowired
+    private LanguageRepository languageRepository;
+    @Autowired
+    private VendorLanguageCodeRepository vendorLanguageCodeRepository;
 
     private static final String USERTYPE = "operator-api-service";
 
@@ -54,19 +62,56 @@ public class GameUrlService {
     }
 
     public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException {
-        VendorGame entity = vendorGameRepository.findByCode(gameCode);
-        Optional.ofNullable(entity).orElseThrow(GameNotSupportedException::new);
+        VendorGame vendorGameEntity = vendorGameRepository.findByCode(gameCode);
+        Optional.ofNullable(vendorGameEntity).orElseThrow(GameNotSupportedException::new);
 
-        if (entity.getStatus() == 0) {
+        if (vendorGameEntity.getStatus() == 0) {
             throw new GameNotSupportedException();
         }
-        return entity;
+
+        return vendorGameEntity;
+    }
+
+    public VendorGameCode checkGameDetailSupported(Integer gameId, String platformCode, String languageCode) throws GameNotSupportedException {
+
+        Platform platformEntity = platformRepository.findByCode(platformCode);
+        Optional.ofNullable(platformEntity).orElseThrow(GameNotSupportedException::new);
+
+        Languages languagesEntity = languageRepository.findByCode(languageCode);
+        Optional.ofNullable(languagesEntity).orElseThrow(GameNotSupportedException::new);
+
+        VendorGameCode vendorGameCodeEntity = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(
+                gameId, platformEntity.getId(), languagesEntity.getId());
+        Optional.ofNullable(vendorGameCodeEntity).orElseThrow(GameNotSupportedException::new);
+
+        if (vendorGameCodeEntity.getStatus() == 0) {
+            throw new GameNotSupportedException();
+        }
+
+        return vendorGameCodeEntity;
     }
 
     public void checkCurrencySupported(Currency currency, String currencyCode) throws CurrencyNotSupportedException {
         if (!currency.getCode().equalsIgnoreCase(currencyCode)) {
             throw new CurrencyNotSupportedException();
         }
+    }
+
+    public String checkVendorLanguageSupported(Integer vendorId, Integer languageId) throws VendorLanguageNotSupportedException {
+
+        System.out.println("vendorId ++" + vendorId);
+        System.out.println("languageId ++" + languageId);
+
+        VendorLanguageCode vendorLanguageCodeEntity = vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendorId, languageId);
+
+        System.out.println("vendorLanguageCodeEntity ++" + vendorLanguageCodeEntity);
+        Optional.ofNullable(vendorLanguageCodeEntity).orElseThrow(VendorLanguageNotSupportedException::new);
+
+        if (vendorLanguageCodeEntity.getStatus() == 0) {
+            throw new VendorLanguageNotSupportedException();
+        }
+
+        return vendorLanguageCodeEntity.getLanguageCode();
     }
 
     public void checkDuplicateRequest(Integer agentId, String traceId) throws DuplicateRequestException {

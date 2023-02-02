@@ -7,7 +7,7 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "vendor_line_credentials")
+@Table(name = "vendor_language_codes")
 @Data
 public class VendorLanguageCode {
     @Id

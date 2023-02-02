@@ -66,29 +66,35 @@ public class GameUrlAction {
             // 5. Check if game is supported
             VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameCode());
 
+            // 6 Check if game details is supported (platform, language, and status)
+            VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(vendorGame.getId(), dto.getPlatform(), dto.getLanguage());
+
             Integer agentId = apiCredential.getAgent().getId();
             Integer vendorId = vendorGame.getVendorId();
             Currency currency = apiCredential.getAgent().getCurrency();
 
-            // 6. Check if trace Id has been sent before
+            // 7. check if the language is supported by vendor
+            String vendorLanguageCode = gameUrlService.checkVendorLanguageSupported(vendorId, vendorGameCode.getLanguageId());
+
+            // 8. Check if trace Id has been sent before
             gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId());
 
-            // 7. Retrieve vendor line credentials
+            // 9. Retrieve vendor line credentials
             VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
-            // 8. Check if vendor player account exists
+            // 10. Check if vendor player account exists
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
 
-            // 9. Check if Vendor Line currency is supported
+            // 11. Check if Vendor Line currency is supported
             VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
-            gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, currency, vendorLineCurrency);
+            gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, vendorGameCode, currency, vendorLineCurrency, vendorLanguageCode);
             gameSessionService.createSessionByVendorPlayer(gameSession);
             log.info(gameSession.toString());
 
 
-            // 10. Request game url from vendor
+            // 12. Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             responseVo.setData(gameUrlData);
 
@@ -112,6 +118,9 @@ public class GameUrlAction {
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
+
+        } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
 
         } catch (DuplicateRequestException duplicateRequestException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);

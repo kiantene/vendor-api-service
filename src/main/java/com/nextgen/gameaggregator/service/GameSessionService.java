@@ -45,26 +45,23 @@ public class GameSessionService {
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
-    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency, VendorLineCurrency vendorLineCurrency) {
+    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
+                                     Currency currency, VendorLineCurrency vendorLineCurrency, String vendorLanguageCode) {
 
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
         gameSession.setVendorGameId(vendorGame.getId());
-        //TODO (by Alex) to change to vendor game code table value
-        gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+        gameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
         //TODO (by Alex) temporary hard code
-        //TODO value from vendor_language_codes table, language_code
-        gameSession.setVendorLanguageCode("en");
-        //TODO value from languages table, ID
-        gameSession.setLanguageId(3);
-        //TODO value from platforms table, ID
-        gameSession.setPlatformId(1);
+        gameSession.setVendorLanguageCode(vendorLanguageCode);
+        gameSession.setLanguageId(vendorGameCode.getLanguageId());
+        gameSession.setPlatformId(vendorGameCode.getPlatformId());
         //TODO value from vendor platform constant
         gameSession.setVendorPlatformCode("MOBILE");
 
