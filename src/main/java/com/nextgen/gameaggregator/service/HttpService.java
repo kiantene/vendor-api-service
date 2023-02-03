@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
@@ -15,10 +16,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -106,6 +104,11 @@ public class HttpService {
         return mapper.readValue(json, objectClass);
     }
 
+    public static <T> T convertJsonToDto(String json, TypeReference<T> valueTypeRef) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(json, valueTypeRef);
+    }
+
     public static <T> T convertQueryStringToDto(String queryString, Class<T> objectClass) throws InvalidRequestException {
         Map<String, String> queryParameterMap = new HashMap<>();
         String[] fields = queryString.split("&");
@@ -129,7 +132,8 @@ public class HttpService {
     }
 
     public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
-        Map<String, String> queryParameterMap = new HashMap<>();
+//        Map<String, String> queryParameterMap = new HashMap<>();
+        Map<String, Object> queryParameterMap = new HashMap<>();
 
         // TODO: To review on this exception handling
         try {
@@ -142,7 +146,21 @@ public class HttpService {
 
         for (String field : fields) {
             String[] kv = field.split("=");
-            if (kv.length == 2) queryParameterMap.put(kv[0], kv[1]);
+            if (kv.length == 2) {
+                Object currentValue = queryParameterMap.get(kv[0]);
+                if (currentValue == null) {
+                    queryParameterMap.put(kv[0], kv[1]);
+                } else if (currentValue instanceof String) {
+                    String[] values = { (String) currentValue, kv[1] };
+                    queryParameterMap.put(kv[0], values);
+                } else if (currentValue instanceof String[]) {
+                    String[] values = (String[]) currentValue;
+                    Integer newLength = values.length + 1;
+                    String[] newValues = Arrays.copyOf(values, newLength);
+                    newValues[newLength - 1] = kv[1];
+                    queryParameterMap.put(kv[0], newValues);
+                }
+            }
         }
 
         ObjectMapper mapper = new ObjectMapper();
