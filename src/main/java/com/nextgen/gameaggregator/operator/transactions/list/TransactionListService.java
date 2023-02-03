@@ -23,7 +23,7 @@ public class TransactionListService {
         List<Sort.Order> orders = this.generateOrder();
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getSize(), Sort.by(orders));
 
-        Page<Object> transactionsList =  betHistoryRepository.findByAgentIdAnAndCreateTimeBetween(
+        Page<Object> transactionsList =  betHistoryRepository.findByAgentIdAndCreateTimeBetween(
                 agentId, dto.getFromTime(), dto.getToTime(), pagingSort);
 
         TransactionsListData transactionsListData = new TransactionsListData();
