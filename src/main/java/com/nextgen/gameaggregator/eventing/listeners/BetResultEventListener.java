@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
-import com.nextgen.gameaggregator.service.BetResultLogService;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +47,7 @@ public class BetResultEventListener implements EventListener<BetResultEvent> {
 
             betHistory.setWinAmount(finalWinAmount);
             betHistory.setWinLoss(winLoss);
-            betHistory.setEffectiveTurnover(betAmount); // TODO: to confirm logic of effective turnover
+            betHistory.setEffectiveTurnover(resultLog.getEffectiveTurnover()); // TODO: to confirm logic of effective turnover
             betHistory.setResultType(resultLog.getResultType());
             betHistory.setVendorSettleTime(resultLog.getVendorTime());
             betHistory.setResultTime(System.currentTimeMillis());

@@ -402,6 +402,7 @@ public class WalletService {
         betResultLog.setCurrencyId(gameSession.getCurrencyId());
         betResultLog.setOperatorStatus(1);
         betResultLog.setWinAmount(walletWinDto.getAmount());
+        betResultLog.setEffectiveTurnover(winData.getEffectiveTurnover());
         betResultLog.setResultType(winData.getWinType().code);
         //TODO remove the balance column from bet_result_log table
         betResultLog.setBalance(BigDecimal.ZERO);

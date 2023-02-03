@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.constant;
 
 public class EndPoints {
     public static final String PATH = "api/v1/cq9";
-    public static final String GAME_URL = "/gameboy/player/sw/gamelink";
     public static final String AUTHENTICATE = "/player/check/{account}";
     public static final String BALANCE = "/transaction/balance/{account}";
     public static final String BET = "/transaction/game/bet";
@@ -14,4 +13,8 @@ public class EndPoints {
     public static final String ROLLOUT = "/transaction/game/rollout";
     public static final String TAKE_ALL = "/transaction/game/takeall";
     public static final String ROLLIN = "/transaction/game/rollin";
+
+    // API url call to vendor
+    public static final String GAME_URL = "/gameboy/player/sw/gamelink";
+    public static final String ORDER_RECORD = "/gameboy/order/record";
 }

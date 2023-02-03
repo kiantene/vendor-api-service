@@ -86,4 +86,15 @@ public class RollInDto implements WinData {
     public WinType getWinType() {
         return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        BigDecimal effectiveTurnover = BigDecimal.ZERO;
+        if (this.gametype == "fish") {
+            return effectiveTurnover;
+        } else if (this.gametype == "table") {
+            return effectiveTurnover;
+        }
+        return effectiveTurnover;
+    }
 }
