@@ -21,6 +21,7 @@ variables:
   QA_SERVER: root@47.254.202.80
 
 stages:
+  - test
   - build
   - push-img
   - deploy
@@ -32,6 +33,17 @@ stages:
 .qa-deploy-rule:
   rules:
     - if: $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH
+
+testing:
+  stage: test
+  script:
+    - "echo $DOCKERHUB_PWD"
+    - "echo $ACCESS_KEY_ID_2"
+    - aws configure set aws_access_key_id $ACCESS_KEY_ID_2
+    - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY_2
+    - aws configure set region $DEFAULT_REGION_2
+    - "export DOCKERHUB_PW2=$(aws ecr get-login-password --region ap-east-1)"
+    - "echo $DOCKERHUB_PWD2"
 
 # stg ######################################
 stg-gitlab-build:
