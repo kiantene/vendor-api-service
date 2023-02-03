@@ -36,6 +36,8 @@ stages:
 
 generate_pwd:
   stage: generate_pwd
+  rules:
+  - if: $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH || $CI_COMMIT_BRANCH == $STG_POINTING_BRANCH
   script:
     - aws configure set aws_access_key_id $ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY
