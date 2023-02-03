@@ -38,10 +38,10 @@ testing:
   stage: test
   script:
     - echo $DOCKERHUB_PWD
-    - echo $AWS_ACCESS_KEY_ID_2
-    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID_2
-    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY_2
-    - aws configure set region $AWS_DEFAULT_REGION_2
+    - echo $ACCESS_KEY_ID
+    - aws configure set aws_access_key_id $ACCESS_KEY_ID
+    - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY
+    - aws configure set region $DEFAULT_REGION
     - aws ecr get-login-password --region ap-east-1
     - export DOCKERHUB_PW2=$(aws ecr get-login-password --region ap-east-1)
     - echo $DOCKERHUB_PWD2
