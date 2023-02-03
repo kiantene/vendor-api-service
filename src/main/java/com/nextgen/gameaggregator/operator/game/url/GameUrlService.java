@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Optional;
@@ -34,6 +35,8 @@ public class GameUrlService {
     private LanguageRepository languageRepository;
     @Autowired
     private VendorLanguageCodeRepository vendorLanguageCodeRepository;
+    @Autowired
+    private VendorRepository vendorRepository;
 
     private static final String USERTYPE = "operator-api-service";
 
@@ -91,6 +94,25 @@ public class GameUrlService {
         return vendorGameCodeEntity;
     }
 
+    public String getVendorPlatformCode(String className, Integer platformId){
+
+        //default value
+        String vendorPlatformCode = platformId == 1 ? "H5" : "WEB";
+
+        try {
+            String classNamePath = "com.nextgen.gameaggregator.vendor."+className+".constant.Platforms";
+            Class<?> c = Class.forName(classNamePath);
+            Field field = c.getField(vendorPlatformCode);
+            Object value = field.get(null);
+            vendorPlatformCode = value.toString();
+        } catch (ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
+            //use default value if the constant or path is not exists
+        }
+
+
+        return vendorPlatformCode;
+    }
+
     public void checkCurrencySupported(Currency currency, String currencyCode) throws CurrencyNotSupportedException {
         if (!currency.getCode().equalsIgnoreCase(currencyCode)) {
             throw new CurrencyNotSupportedException();
@@ -99,12 +121,7 @@ public class GameUrlService {
 
     public String checkVendorLanguageSupported(Integer vendorId, Integer languageId) throws VendorLanguageNotSupportedException {
 
-        System.out.println("vendorId ++" + vendorId);
-        System.out.println("languageId ++" + languageId);
-
         VendorLanguageCode vendorLanguageCodeEntity = vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendorId, languageId);
-
-        System.out.println("vendorLanguageCodeEntity ++" + vendorLanguageCodeEntity);
         Optional.ofNullable(vendorLanguageCodeEntity).orElseThrow(VendorLanguageNotSupportedException::new);
 
         if (vendorLanguageCodeEntity.getStatus() == 0) {

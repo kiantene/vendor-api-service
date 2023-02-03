@@ -83,13 +83,15 @@ public class GameUrlAction {
             VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
+            String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
+
             // 10. Check if vendor player account exists
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
 
             // 11. Check if Vendor Line currency is supported
             VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
-            gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, vendorGameCode, currency, vendorLineCurrency, vendorLanguageCode);
+            gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, vendorGameCode, currency, vendorLineCurrency, vendorLanguageCode, vendorPlatformCode);
             gameSessionService.createSessionByVendorPlayer(gameSession);
             log.info(gameSession.toString());
 
