@@ -7,13 +7,12 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "vendors")
+@Table(name = "languages")
 @Data
-public class Vendor {
+public class Languages {
     @Id
     private Integer id;
     private String code;
     private String name;
-    private String className;
     private Integer status;
 }

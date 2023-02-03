@@ -26,26 +26,27 @@ public class GameUrlService {
     private AgentPlayerRepository agentPlayerRepository;
     @Autowired
     private VendorPlayerRepository vendorPlayerRepository;
+    @Autowired
+    private VendorGameCodeRepository vendorGameCodeRepository;
+    @Autowired
+    private PlatformRepository platformRepository;
+    @Autowired
+    private LanguageRepository languageRepository;
+    @Autowired
+    private VendorLanguageCodeRepository vendorLanguageCodeRepository;
 
     private static final String USERTYPE = "operator-api-service";
 
-    public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials)
+    public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials,
+                                  VendorLine vendorLine)
             throws
             ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            InstantiationException, IllegalAccessException, InvalidVendorLineException {
+            InstantiationException, IllegalAccessException, InvalidVendorLineException , InvalidVendorResponseException{
 
         String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();
         Integer vendorId = vendorGame.getVendorId();
-        String className = "";
-
-        if (vendorId == 1) { // TODO: to get classname from db
-            className = "com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl.GameUrlService";
-        } else if (vendorId == 2) {
-            className = "com.nextgen.gameaggregator.vendor.pgsoft.api.gameurl.GameUrlService";
-        } else if (vendorId == 3) {
-            className = "com.nextgen.gameaggregator.vendor.cq9.api.gameurl.GameUrlService";
-        }
+        String className = "com.nextgen.gameaggregator.vendor."+vendorLine.getVendor().getClassName()+".api.gameurl.GameUrlService";
 
         GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
         MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
@@ -61,19 +62,56 @@ public class GameUrlService {
     }
 
     public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException {
-        VendorGame entity = vendorGameRepository.findByCode(gameCode);
-        Optional.ofNullable(entity).orElseThrow(GameNotSupportedException::new);
+        VendorGame vendorGameEntity = vendorGameRepository.findByCode(gameCode);
+        Optional.ofNullable(vendorGameEntity).orElseThrow(GameNotSupportedException::new);
 
-        if (entity.getStatus() == 0) {
+        if (vendorGameEntity.getStatus() == 0) {
             throw new GameNotSupportedException();
         }
-        return entity;
+
+        return vendorGameEntity;
+    }
+
+    public VendorGameCode checkGameDetailSupported(Integer gameId, String platformCode, String languageCode) throws GameNotSupportedException {
+
+        Platform platformEntity = platformRepository.findByCode(platformCode);
+        Optional.ofNullable(platformEntity).orElseThrow(GameNotSupportedException::new);
+
+        Languages languagesEntity = languageRepository.findByCode(languageCode);
+        Optional.ofNullable(languagesEntity).orElseThrow(GameNotSupportedException::new);
+
+        VendorGameCode vendorGameCodeEntity = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(
+                gameId, platformEntity.getId(), languagesEntity.getId());
+        Optional.ofNullable(vendorGameCodeEntity).orElseThrow(GameNotSupportedException::new);
+
+        if (vendorGameCodeEntity.getStatus() == 0) {
+            throw new GameNotSupportedException();
+        }
+
+        return vendorGameCodeEntity;
     }
 
     public void checkCurrencySupported(Currency currency, String currencyCode) throws CurrencyNotSupportedException {
         if (!currency.getCode().equalsIgnoreCase(currencyCode)) {
             throw new CurrencyNotSupportedException();
         }
+    }
+
+    public String checkVendorLanguageSupported(Integer vendorId, Integer languageId) throws VendorLanguageNotSupportedException {
+
+        System.out.println("vendorId ++" + vendorId);
+        System.out.println("languageId ++" + languageId);
+
+        VendorLanguageCode vendorLanguageCodeEntity = vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendorId, languageId);
+
+        System.out.println("vendorLanguageCodeEntity ++" + vendorLanguageCodeEntity);
+        Optional.ofNullable(vendorLanguageCodeEntity).orElseThrow(VendorLanguageNotSupportedException::new);
+
+        if (vendorLanguageCodeEntity.getStatus() == 0) {
+            throw new VendorLanguageNotSupportedException();
+        }
+
+        return vendorLanguageCodeEntity.getLanguageCode();
     }
 
     public void checkDuplicateRequest(Integer agentId, String traceId) throws DuplicateRequestException {
@@ -92,11 +130,12 @@ public class GameUrlService {
             agentPlayer = this.createAgentPlayer(agentId, username);
             agentPlayerRepository.save(agentPlayer);
         } else {
-            vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineId(agentPlayer.getId(), vendorLine.getId());
+            vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
+                    vendorLine.getCurrency().getId());
         }
 
         if (vendorPlayer == null) {
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId);
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId, vendorLine.getCurrency().getId());
             vendorPlayerRepository.save(vendorPlayer);
         }
 
@@ -117,7 +156,7 @@ public class GameUrlService {
         return entity;
     }
 
-    public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId) {
+    public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId, Integer currencyId) {
         String vendorPlayerUsername = NameUtils.generateUsername("O", agentPlayerId, vendorLineId.longValue());
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
@@ -125,6 +164,8 @@ public class GameUrlService {
         entity.setVendorId(vendorId);
         entity.setUsername(vendorPlayerUsername);
         entity.setStatus(1);
+        //TODO SET CURRENCY ID
+        entity.setCurrencyId(currencyId);
         entity.prepareSave(0, USERTYPE);
         log.info("Insert new vendor player " + vendorPlayerUsername);
 

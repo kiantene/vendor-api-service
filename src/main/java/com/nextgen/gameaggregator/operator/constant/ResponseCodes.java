@@ -25,7 +25,8 @@ public class ResponseCodes {
         SC_INVALID_CURRENCY (17, "Currency is not supported"),
         SC_UNDER_MAINTENANCE (18, "Game is under maintenance."),
         SC_MISMATCHED_DATA_TYPE (19, "Invalid data type."),
-        SC_INVALID_RESPONSE(20, "Invalid response")
+        SC_INVALID_RESPONSE(20, "Invalid response"),
+        SC_VENDOR_LANGUAGE_NOT_SUPPORTED(21, "Vendor language is not supported.")
         ;
 
         public final Integer code;

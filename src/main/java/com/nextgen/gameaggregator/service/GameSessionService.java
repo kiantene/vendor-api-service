@@ -45,18 +45,25 @@ public class GameSessionService {
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
-    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, Currency currency, VendorLineCurrency vendorLineCurrency) {
+    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
+                                     Currency currency, VendorLineCurrency vendorLineCurrency, String vendorLanguageCode) {
 
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendorId());
         gameSession.setVendorGameId(vendorGame.getId());
-        gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+        gameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
         gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());
         gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
+        //TODO (by Alex) temporary hard code
+        gameSession.setVendorLanguageCode(vendorLanguageCode);
+        gameSession.setLanguageId(vendorGameCode.getLanguageId());
+        gameSession.setPlatformId(vendorGameCode.getPlatformId());
+        //TODO value from vendor platform constant
+        gameSession.setVendorPlatformCode("MOBILE");
 
         gameSessionRepository.save(gameSession);
 

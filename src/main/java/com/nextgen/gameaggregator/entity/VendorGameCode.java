@@ -7,13 +7,16 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "vendors")
+@Table(name = "vendor_game_codes")
 @Data
-public class Vendor {
+public class VendorGameCode {
     @Id
     private Integer id;
-    private String code;
+    private Integer vendorGameId;
     private String name;
-    private String className;
+    private String openGameCode;
+    private String betGameCode;
+    private Integer languageId;
+    private Integer platformId;
     private Integer status;
 }
