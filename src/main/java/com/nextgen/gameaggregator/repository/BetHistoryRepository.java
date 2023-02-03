@@ -34,7 +34,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             countQuery =
                     "SELECT count(*) FROM bet_history WHERE agent_id =:agentId AND create_time BETWEEN :fromTime AND :toTime",
             nativeQuery=true)
-    Page<Object> findByAgentIdAnAndCreateTimeBetween(
+    Page<Object> findByAgentIdAndCreateTimeBetween(
             @Param("agentId") Integer agentId, @Param("fromTime") Long fromTime, @Param("toTime") Long toTime, Pageable pageable);
 
 }
