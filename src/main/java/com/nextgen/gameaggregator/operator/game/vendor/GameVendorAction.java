@@ -1,13 +1,16 @@
-package com.nextgen.gameaggregator.operator.game.list;
+package com.nextgen.gameaggregator.operator.game.vendor;
 
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.custom.IGameVendor;
+import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
+import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -18,11 +21,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = "game/")
 @Slf4j
-public class GameListAction {
+public class GameVendorAction {
     @Autowired
     private HttpService httpService;
 
@@ -30,20 +34,20 @@ public class GameListAction {
     private ValidationService validationService;
 
     @Autowired
-    private GameListService gameListService;
+    private VendorRepository vendorRepository;
 
-    @PostMapping(path = "list")
-    public OperatorResponseVo<GameListData> list(HttpServletRequest request) {
+    @PostMapping(path = "vendors")
+    public OperatorResponseVo< List<IGameVendor>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo<GameListData> responseVo = new OperatorResponseVo<>();
+        OperatorResponseVo< List<IGameVendor> > responseVo = new OperatorResponseVo<>();
         try {
+
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            GameListDto dto = HttpService.convertJsonToDto(body, GameListDto.class);
+            GameVendorDto dto = HttpService.convertJsonToDto(body, GameVendorDto.class);
 
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setTraceId(dto.getTraceId());
-            log.info(dto.toString());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
@@ -53,34 +57,29 @@ public class GameListAction {
             //TODO (by Alex), check agent status
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
-            //TODO (bu Alex), to discuss should validated agent supported vendor
-            GameListData gameListData = gameListService.getGameList(dto);
-            responseVo.setData(gameListData);
+            System.err.println(apiCredential.getAgent().getId());
+
+            List<IGameVendor> vendorList = vendorRepository.findByAgentSupportedVendorAndStatus(apiCredential.getAgent().getId(),Status.ACTIVE.code);
+
+            System.err.println(vendorList);
+          //  GameVendorData GameVendorData =
+
+            responseVo.setData(vendorList);
+
 
         } catch (IllegalArgumentException illegalArgumentException) {
-            // thrown when any field encountered type mismatch during conversion from json to dto
-            log.error(illegalArgumentException.toString());
-            responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
+        } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
-
-        } catch (RecordNotFoundException recordNotFoundException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
-
+        } catch (AuthenticationException e) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
         }
-        catch (Exception exception) {
-            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-            httpService.logError(httpRequestLog, exception);
-            exception.printStackTrace();
 
-        } finally {
-            responseVo.setMessage(responseVo.getStatus().description);
-        }
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
-
     }
-
 }
