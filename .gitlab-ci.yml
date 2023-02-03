@@ -50,6 +50,7 @@ test:
   stage: build
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
+    - echo $DOCKERHUB_PWD
 
 # stg ######################################
 stg-gitlab-build:
