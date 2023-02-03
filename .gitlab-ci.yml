@@ -51,6 +51,7 @@ test:
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo $DOCKERHUB_PWD
+    - docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL
 
 # stg ######################################
 stg-gitlab-build:
