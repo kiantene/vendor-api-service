@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,7 +36,7 @@ public class BetHistoryService {
      * @return BetHistory entity object after a successful save
      */
     @CachePut(value = "BetHistories", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public BetHistory create(BetHistory entity) {
+    public BetHistory create(BetHistory entity) throws DuplicateExternalTransactionIdException {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
         entity.setWinLoss(BigDecimal.ZERO);
@@ -45,7 +46,16 @@ public class BetHistoryService {
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
 
-        betHistoryRepository.save(entity);
+        try {
+            betHistoryRepository.save(entity);
+
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+
+            throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
+                    ", external_transaction_id:" + entity.getExternalTransactionId() +
+                    ", round_id:" + entity.getRoundId() +
+                    ", vendor_line_id:" + entity.getVendorLineId());
+        }
 
         return entity;
     }
