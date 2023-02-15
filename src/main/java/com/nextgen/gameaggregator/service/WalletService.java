@@ -52,33 +52,6 @@ public class WalletService {
     @Autowired
     private CachingService cachingService;
 
-    public BigDecimal getBalance(String traceId, String username) throws InvalidPlayerException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
-        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(username);
-        AgentPlayer agentPlayer;
-
-        try {
-            agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
-        } catch (RecordNotFoundException recordNotFoundException) {
-            throw new InvalidPlayerException();
-        }
-
-        Integer agentId = agentPlayer.getAgentId();
-        String callbackUrl = agentApiCredentialService.getAgentApiCredential(agentId).getCallbackUrl();
-        String signature = ""; // TODO: implement signature generation
-
-        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
-        walletBalanceDto.setTraceId(traceId);
-        walletBalanceDto.setUsername(agentPlayer.getUsername());
-        walletBalanceDto.setCurrency("CNY"); // TODO: to get from game session
-        walletBalanceDto.setToken(""); // TODO: to get from game session
-
-        WalletBalanceVo balanceVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
-
-        // TODO: to handle balance returned with more than 4 decimals
-        // TODO: implement error handling
-        return balanceVo.getData().getBalance();
-    }
-
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
