@@ -148,6 +148,8 @@ qa-push-dockerhub:
 qa-ali-deploy:
   stage: deploy
   needs:
+    - job: generate_pwd
+      artifacts: true
     - job: qa-push-dockerhub
   extends: .qa-deploy-rule
   script:
