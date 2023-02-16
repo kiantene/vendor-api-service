@@ -60,62 +60,67 @@ stg-gitlab-build:
 
 stg-push-dockerhub:
   stage: push-img
-  needs: ["generate_pwd", "stg-gitlab-build"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: stg-gitlab-build
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - docker build -t $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG .
     - docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL
     - docker push $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG
-  dependencies:
-    - generate_pwd
 
 stg-aws-deploy:
   stage: deploy
-  needs: ["generate_pwd", "stg-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: stg-push-dockerhub
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
-  dependencies:
-    - generate_pwd
 
 stg2-aws-deploy:
   stage: deploy
-  needs: ["generate_pwd", "stg-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: stg-push-dockerhub
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG2_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
-  dependencies:
-    - generate_pwd
 
 stg3-1-aws-deploy:
   stage: deploy
-  needs: ["generate_pwd", "stg-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: stg-push-dockerhub
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
-  dependencies:
-    - generate_pwd
 stg3-2-aws-deploy:
   stage: deploy
-  needs: ["generate_pwd", "stg-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: stg-push-dockerhub
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
-  dependencies:
-    - generate_pwd
 
 # qa ######################################
 qa-gitlab-build:
@@ -129,7 +134,10 @@ qa-gitlab-build:
 
 qa-push-dockerhub:
   stage: push-img
-  needs: ["qa-gitlab-build"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: qa-gitlab-build
   extends: .qa-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
@@ -139,7 +147,8 @@ qa-push-dockerhub:
 
 qa-ali-deploy:
   stage: deploy
-  needs: ["qa-push-dockerhub"]
+  needs:
+    - job: qa-push-dockerhub
   extends: .qa-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
