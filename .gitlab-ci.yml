@@ -67,6 +67,8 @@ stg-push-dockerhub:
     - docker build -t $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG .
     - docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL
     - docker push $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG
+  dependencies:
+    - generate_pwd
 
 stg-aws-deploy:
   stage: deploy
@@ -77,6 +79,8 @@ stg-aws-deploy:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+  dependencies:
+    - generate_pwd
 
 stg2-aws-deploy:
   stage: deploy
@@ -87,6 +91,8 @@ stg2-aws-deploy:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG2_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+  dependencies:
+    - generate_pwd
 
 stg3-1-aws-deploy:
   stage: deploy
@@ -97,7 +103,8 @@ stg3-1-aws-deploy:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
-
+  dependencies:
+    - generate_pwd
 stg3-2-aws-deploy:
   stage: deploy
   needs: ["stg-push-dockerhub"]
