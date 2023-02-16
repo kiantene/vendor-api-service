@@ -37,7 +37,7 @@ stages:
 generate_pwd:
   stage: generate_pwd
   rules:
-  - if: $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH || $CI_COMMIT_BRANCH == $STG_POINTING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH || $CI_COMMIT_BRANCH == $STG_POINTING_BRANCH
   script:
     - aws configure set aws_access_key_id $ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY
@@ -60,7 +60,7 @@ stg-gitlab-build:
 
 stg-push-dockerhub:
   stage: push-img
-  needs: ["stg-gitlab-build"]
+  needs: ["generate_pwd", "stg-gitlab-build"]
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
@@ -72,7 +72,7 @@ stg-push-dockerhub:
 
 stg-aws-deploy:
   stage: deploy
-  needs: ["stg-push-dockerhub"]
+  needs: ["generate_pwd", "stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
@@ -84,7 +84,7 @@ stg-aws-deploy:
 
 stg2-aws-deploy:
   stage: deploy
-  needs: ["stg-push-dockerhub"]
+  needs: ["generate_pwd", "stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
@@ -96,7 +96,7 @@ stg2-aws-deploy:
 
 stg3-1-aws-deploy:
   stage: deploy
-  needs: ["stg-push-dockerhub"]
+  needs: ["generate_pwd", "stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
@@ -107,13 +107,15 @@ stg3-1-aws-deploy:
     - generate_pwd
 stg3-2-aws-deploy:
   stage: deploy
-  needs: ["stg-push-dockerhub"]
+  needs: ["generate_pwd", "stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
     - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+  dependencies:
+    - generate_pwd
 
 # qa ######################################
 qa-gitlab-build:
