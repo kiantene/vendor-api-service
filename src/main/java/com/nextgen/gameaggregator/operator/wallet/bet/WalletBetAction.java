@@ -11,6 +11,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -21,7 +22,16 @@ import static com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.
 @Service
 @Slf4j
 public class WalletBetAction {
+
+    @Value("${testing.stub}")
+    private Boolean useStub;
+
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
+
+        // Call stub function instead if config file set to use stub
+        if (useStub) {
+            return this.stub();
+        }
 //        log.info(dto.toString());
         WalletBalanceVo responseVo = null;
         try {
