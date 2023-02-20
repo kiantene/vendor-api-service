@@ -61,7 +61,7 @@ public class BetAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent =  walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
