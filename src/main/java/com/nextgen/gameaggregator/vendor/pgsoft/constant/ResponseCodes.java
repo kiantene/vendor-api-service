@@ -61,7 +61,7 @@ public class ResponseCodes {
         put(PLAYER_OPERATION_IN_PROGRESS, "Player’s operation in progress");
         put(GAME_IS_UNDER_MAINTENANCE, "Game is under maintenance");
         put(GAME_IS_INACTIVE, "Game is inactive");
-        put(GAME_DOES_NOT_EXIST, "Game does not exist");
+        put(GAME_DOES_NOT_EXIST, "Game does not exist or disabled");
         put(VALUE_CANNOT_BE_NULL, "Value cannot be null");
         put(PLAYER_DOES_NOT_EXIST, "Player does not exist");
         put(PLAYER_WALLET_DOES_NOT_EXIST, "Player wallet does not exist");
