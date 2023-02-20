@@ -59,6 +59,8 @@ eureka:
   instance:
     hostName: ga-vendor-api-service
     preferIpAddress: false
+testing:
+  stub: true
 #grpc:
 #  server:
 #    port: 9092
