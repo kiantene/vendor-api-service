@@ -1,20 +1,26 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetHistoryCB;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
+import com.nextgen.gameaggregator.repository.BetHistoryCBRepository;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.math.BigDecimal;
 
 @Service
@@ -27,6 +33,12 @@ public class BetHistoryService {
     @Autowired
     private BetResultLogRepository betResultLogRepository;
 
+    @Autowired
+    private BetHistoryCBRepository betHistoryCBRepository;
+
+    @Autowired
+    private MariaDefaultDataSourceConfig mariaDefaultDataSourceConfig;
+
     /**
      * Creates a database record of the given BetHistory entity object.
      * This function will also populate default values of certain fields.
@@ -35,7 +47,7 @@ public class BetHistoryService {
      * @return BetHistory entity object after a successful save
      */
     @CachePut(value = "BetHistories", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public BetHistory create(BetHistory entity) {
+    public BetHistory create(BetHistory entity) throws DuplicateExternalTransactionIdException {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
         entity.setWinLoss(BigDecimal.ZERO);
@@ -45,7 +57,68 @@ public class BetHistoryService {
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
 
-        betHistoryRepository.save(entity);
+        try {
+            betHistoryRepository.save(entity);
+
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+
+            throw new DuplicateExternalTransactionIdException("Duplicate bet_history " +
+                    ", external_transaction_id:" + entity.getExternalTransactionId() +
+                    ", round_id:" + entity.getRoundId() +
+                    ", vendor_line_id:" + entity.getVendorLineId());
+        }
+        //JPA INSERT
+        //betHistoryRepository.save(entity);
+
+        //JDBC INSERT
+//        this.jdbcCreate(entity);
+
+        //COUCHBASE INSERT
+//        this.couchbaseCreate(entity);
+
+        return entity;
+    }
+
+    public void couchbaseCreate(BetHistory entity) {
+
+        BetHistoryCB betHistoryCB = new BetHistoryCB(entity.getId(), entity.getExternalTransactionId(), entity.getRoundId(),
+                entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(), entity.getVendorLineId(),
+                entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(), entity.getMasterAgentId(),
+                entity.getHouseId(), entity.getGameCategoryId(), entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(),
+                entity.getWinLoss(), entity.getVendorWinLoss(), entity.getEffectiveTurnover(), entity.getRefundAmount(),
+                entity.getResultType(), entity.getRawData(), entity.getStatus(), entity.getGameSessionToken(),
+                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime(),
+                entity.getRefundTime());
+
+        betHistoryCBRepository.save(betHistoryCB);
+    }
+
+    @Transactional
+    public BetHistory jdbcCreate(BetHistory entity) {
+
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(mariaDefaultDataSourceConfig.mariaDataSource());
+
+        // Set default values
+        entity.setWinAmount(BigDecimal.ZERO);
+        entity.setWinLoss(BigDecimal.ZERO);
+        entity.setVendorWinLoss(BigDecimal.ZERO);
+        entity.setEffectiveTurnover(BigDecimal.ZERO);
+        entity.setResultType(WinType.LOSE.code);
+        entity.setStatus(BetStatus.UNSETTLED.code);
+        entity.setCreateTime(System.currentTimeMillis());
+
+        jdbcTemplate.update("INSERT INTO bet_history (id, external_transaction_id, round_id, vendor_game_id, " +
+                "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
+                "game_session_token, master_agent_id, house_id, game_category_id, currency_id, bet_amount, " +
+                "win_amount, win_loss, vendor_win_loss, effective_turnover, result_type, raw_data, status, " +
+                "vendor_bet_time, vendor_settle_time, create_time, result_time) VALUES (?, ?, ?, ?, ?, ?, ?, " +
+                "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
+                entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(),
+                entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
+                entity.getGameSessionToken(), entity.getMasterAgentId(), entity.getHouseId(), entity.getGameCategoryId(),
+                entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(), entity.getVendorWinLoss(),
+                entity.getEffectiveTurnover(), entity.getResultType(), entity.getRawData(), entity.getStatus(),
+                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime());
 
         return entity;
     }
