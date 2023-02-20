@@ -90,11 +90,18 @@ public class RollInDto implements WinData {
     @Override
     public BigDecimal getEffectiveTurnover() {
         BigDecimal effectiveTurnover = BigDecimal.ZERO;
-        if (this.gametype.equalsIgnoreCase("fish")) {
-            return this.bet;
-        } else if (this.gametype.equalsIgnoreCase("table")) {
-            return this.validbet;
+        switch(this.gametype) {
+            case "fish":
+            case "arcade":
+                effectiveTurnover = this.bet;
+                break;
+            case "table":
+            case "live":
+                effectiveTurnover = this.validbet;
+                break;
+            default:
         }
+
         return effectiveTurnover;
     }
 }
