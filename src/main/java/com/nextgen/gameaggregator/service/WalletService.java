@@ -99,6 +99,7 @@ public class WalletService {
         BetOperatorFailEvent betOperatorFailEvent = null;
 
         try {
+//            WalletBalanceVo balanceVo = walletBetAction.stub();
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
 
