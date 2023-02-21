@@ -23,12 +23,13 @@ import static com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.
 @Slf4j
 public class WalletBetAction {
 
-    @Value("${testing.stub:true}")
+    @Value("${testing.stub}")
     private Boolean useStub;
 
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
 
         // Call stub function instead if config file set to use stub
+        log.info("testing.stub value is: " + String.valueOf(useStub) + "==================");
         if (useStub) {
             return this.stub();
         }
