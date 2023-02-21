@@ -29,7 +29,6 @@ public class WalletBetAction {
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
 
         // Call stub function instead if config file set to use stub
-        log.info("testing.stub value is: " + String.valueOf(useStub) + "==================");
         if (useStub) {
             return this.stub();
         }
