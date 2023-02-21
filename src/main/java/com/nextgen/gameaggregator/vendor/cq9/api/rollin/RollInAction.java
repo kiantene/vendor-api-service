@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -76,7 +77,7 @@ public class RollInAction {
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(rollInDto, gameSession, wToken);
+            this.doVerification(rollInDto, gameSession, wToken, betHistory.getBetAmount());
 
             // 5. Process win data
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, rollInDto, body);
@@ -143,9 +144,19 @@ public class RollInAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
+
+        // 5. Validate win amount
+        switch (dto.getGametype()) {
+            case "fish":
+            case "arcade":
+                if (dto.getWin().compareTo(BigDecimal.ZERO) < 0) throw new InvalidRequestException();
+                break;
+            default:
+                break;
+        }
     }
 
-    private void doVerification(RollInDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
+    private void doVerification(RollInDto dto, GameSession gameSession, String wToken, BigDecimal rolloutAmount) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException, InvalidRequestException {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
 
@@ -157,5 +168,21 @@ public class RollInAction {
 
         // 4. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
+
+        // 5. Validate rollin amount
+        switch (dto.getGametype()) {
+            case "fish":
+            case "arcade":
+                if (dto.getAmount().compareTo(rolloutAmount.subtract(dto.getBet()).add(dto.getWin())) != 0)
+                    throw new InvalidRequestException();
+                break;
+            case "table":
+            case "live":
+                if (dto.getAmount().compareTo(rolloutAmount.add(dto.getWin()).subtract(dto.getRake())) != 0)
+                    throw new InvalidRequestException();
+                break;
+            default:
+                break;
+        }
     }
 }

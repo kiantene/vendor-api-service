@@ -45,7 +45,7 @@ public class RollInDto implements WinData {
     @NotBlank
     private String createTime;
     @NotNull
-    private String rake;
+    private BigDecimal rake;
     @NotBlank
     private String gametype;
 
