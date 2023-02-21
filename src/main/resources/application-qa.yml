@@ -59,7 +59,7 @@ eureka:
     hostName: ga-vendor-api-service
     preferIpAddress: false
 testing:
-  stub: true
+  stub: false
 #grpc:
 #  server:
 #    port: 9092
