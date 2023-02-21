@@ -2,29 +2,55 @@ before_script:
   - export JAVA_HOME=/usr/lib/jvm/jdk-18/
 
 variables:
-  DOCKERHUB_URL: 634937900606.dkr.ecr.ap-east-1.amazonaws.com
-  DOCKERHUB_USERNAME: AWS
+  DOCKERHUB_USERNAME: esportsking
+
+  SONAR_PROJECTKEY: game-aggregator
+  SONAR_HOST_URL: http://223.25.67.48:9000
+  SONAR_LOGIN: b614da09216500ab03ce35984a4004934576d4e8
 
   STG_POINTING_BRANCH: staging
   STG_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
   STG_DOCKER_TAG: stg
   STG_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
-  STG_SERVER: ubuntu@16.163.185.163
-  STG2_SERVER: ubuntu@16.163.242.71
-  STG3_SERVER_1: ubuntu@16.163.195.191
-  STG3_SERVER_2: ubuntu@18.163.186.187
+  STG_SERVER: ubuntu@16.163.185.163 # stg.gasea168.com
 
   QA_POINTING_BRANCH: qa
-  QA_DOCKER_REGISTRY: 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service
+  QA_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
   QA_DOCKER_TAG: qa
   QA_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
   QA_SERVER: root@47.254.202.80
 
+  PT_POINTING_BRANCH: pt
+  PT_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
+  PT_DOCKER_TAG: pt
+  PT_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
+  PT1_SERVER: ubuntu@16.163.242.71 # stg2.gasea168.com
+  PT2_SERVER_1: ubuntu@16.163.195.191 # stg3.gasea168.com
+  PT2_SERVER_2: ubuntu@18.163.186.187 # stg3.gasea168.com
+
 stages:
-  - generate_pwd
+  - lint
+  # - test
   - build
   - push-img
   - deploy
+
+# junit-test:
+#   stage: test
+#   image: maven:3.8.6-jdk-18
+#   allow_failure: false
+#   script:
+#     - 'mvn clean verify'
+#   artifacts:
+#     when: always
+#     reports:
+#       junit:
+#         - ./core/target/surefire-reports/TEST-*.xml
+#         - ./core/target/failsafe-reports/TEST-*.xml
+#         - ./proto/target/surefire-reports/TEST-*.xml
+#         - ./proto/target/failsafe-reports/TEST-*.xml
+#         - ./application/target/surefire-reports/TEST-*.xml
+#         - ./application/target/failsafe-reports/TEST-*.xml
 
 .stg-deploy-rule:
   rules:
@@ -34,19 +60,9 @@ stages:
   rules:
     - if: $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH
 
-generate_pwd:
-  stage: generate_pwd
+.pt-deploy-rule:
   rules:
-  - if: $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH || $CI_COMMIT_BRANCH == $STG_POINTING_BRANCH
-  script:
-    - aws configure set aws_access_key_id $ACCESS_KEY_ID
-    - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY
-    - aws configure set region $DEFAULT_REGION
-    - aws ecr get-login-password --region ap-east-1 > ./pwd.txt
-  artifacts:
-    paths:
-      - pwd.txt
-    expire_in: 1 h
+    - if: $CI_COMMIT_BRANCH == $PT_POINTING_BRANCH
 
 # stg ######################################
 stg-gitlab-build:
@@ -57,15 +73,15 @@ stg-gitlab-build:
   artifacts:
     paths:
       - ./target/*.jar
+    expire_in: 2d
 
 stg-push-dockerhub:
   stage: push-img
   needs: ["stg-gitlab-build"]
   extends: .stg-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - docker build -t $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG .
-    - docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL
+    - docker login --username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
     - docker push $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG
 
 stg-aws-deploy:
@@ -73,59 +89,63 @@ stg-aws-deploy:
   needs: ["stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 stg2-aws-deploy:
   stage: deploy
   needs: ["stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG2_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG2_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 stg3-1-aws-deploy:
   stage: deploy
   needs: ["stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 stg3-2-aws-deploy:
   stage: deploy
   needs: ["stg-push-dockerhub"]
   extends: .stg-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/stg-key.pem"
     - chmod 400 "$(pwd)/stg-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/stg-key.pem" $STG3_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG && docker service update --force --image $STG_DOCKER_REGISTRY:$STG_DOCKER_TAG $STG_PORTAINER_NAME"
 
 # qa ######################################
+qa-sonarqube-lint:
+  stage: lint
+  extends: .qa-deploy-rule
+  # allow_failure: false
+  script:
+    - 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -DskipTests=true'
+
 qa-gitlab-build:
   stage: build
+  needs: ["qa-sonarqube-lint"]
   extends: .qa-deploy-rule
   script:
     - "mvn clean deploy -s ./ci_setting.xml -DskipTests=true"
   artifacts:
     paths:
       - ./target/*.jar
+    expire_in: 2d
 
 qa-push-dockerhub:
   stage: push-img
   needs: ["qa-gitlab-build"]
   extends: .qa-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - docker build -t $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG .
-    - docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL
+    - docker login --username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
     - docker push $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG
 
 qa-ali-deploy:
@@ -133,7 +153,53 @@ qa-ali-deploy:
   needs: ["qa-push-dockerhub"]
   extends: .qa-deploy-rule
   script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_PRIVATE_KEY" > "$(pwd)/qa-key.pem"
     - chmod 400 "$(pwd)/qa-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $DOCKERHUB_URL && docker pull $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG && docker service update --force --image $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG $QA_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG && docker service update --force --image $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG $QA_PORTAINER_NAME"
+
+# pt ######################################
+pt-gitlab-build:
+  stage: build
+  extends: .pt-deploy-rule
+  script:
+    - "mvn clean deploy -s ./ci_setting.xml -DskipTests=true"
+  artifacts:
+    paths:
+      - ./target/*.jar
+    expire_in: 2d
+
+pt-push-dockerhub:
+  stage: push-img
+  needs: ["pt-gitlab-build"]
+  extends: .pt-deploy-rule
+  script:
+    - docker build -t $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG .
+    - docker login --username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
+    - docker push $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG
+
+pt1-aws-deploy:
+  stage: deploy
+  needs: ["pt-push-dockerhub"]
+  extends: .pt-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
+    - chmod 400 "$(pwd)/pt-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT1_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
+
+pt2-1-aws-deploy:
+  stage: deploy
+  needs: ["pt-push-dockerhub"]
+  extends: .pt-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
+    - chmod 400 "$(pwd)/pt-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
+
+pt2-2-aws-deploy:
+  stage: deploy
+  needs: ["pt-push-dockerhub"]
+  extends: .pt-deploy-rule
+  script:
+    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
+    - chmod 400 "$(pwd)/pt-key.pem"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"

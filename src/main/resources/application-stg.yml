@@ -3,6 +3,9 @@ server:
     context-path: /vendor
 spring:
   datasource:
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 50
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       jdbc-url: jdbc:mariadb://dev.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
@@ -21,9 +24,9 @@ spring:
     password:
     jedis:
       pool:
-        max-idle: 30
-        max-active: 100
-        min-idle: 10
+        min-idle: 1000
+        max-idle: 1000
+        max-active: 1000
         max-wait: 2000
   kafka:
     properties:
@@ -56,6 +59,8 @@ eureka:
   instance:
     hostName: ga-vendor-api-service
     preferIpAddress: false
+testing:
+  stub: true
 #grpc:
 #  server:
 #    port: 9092

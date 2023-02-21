@@ -1,5 +1,8 @@
 spring:
   datasource:
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 50
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
@@ -50,6 +53,8 @@ logging:
           descriptor:
             sql:
               BasicBinder: TRACE
+testing:
+  stub: true
 #logstash:
 #  address: "127.0.0.1:5000"
 

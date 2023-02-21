@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.service;
 
+import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
@@ -33,6 +34,12 @@ public class VendorService {
             if (!vendorGameCodeFromRequest.equals(vendorGameCodeFromSession)) {
                 throw new GameNotSupportedException();
             }
+        }
+    }
+
+    public static void validateGameStatus(VendorGame game) throws GameNotSupportedException {
+        if (game.getStatus() == 0) {
+            throw new GameNotSupportedException();
         }
     }
 

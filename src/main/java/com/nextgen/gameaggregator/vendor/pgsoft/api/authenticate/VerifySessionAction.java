@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.repository.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
@@ -30,7 +32,11 @@ public class VerifySessionAction {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private AgentApiCredentialService agentApiCredentialService;
 
+    @Autowired
+    private VendorGameRepository vendorGameRepository;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo<VerifySessionVo> authenticate(HttpServletRequest request) {
@@ -50,22 +56,34 @@ public class VerifySessionAction {
             // 2. Verify session token - Need to validate whether game session expired
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            // x. Check credential line inactive
+            agentApiCredentialService.getAgentApiCredential(gameSession.getAgentId());
             // 3. Validate vendor game code
             VendorService.validateVendorGameCode(String.valueOf(dto.getGameId()), gameSession.getVendorGameCode());
+            // x. Validate is game disabled
+            VendorGame game = vendorGameRepository.findByVendorGameCodeAndVendorId(String.valueOf(dto.getGameId()), gameSession.getVendorId());
+            VendorService.validateGameStatus(game);
             // 4. Retrieve vendor line operatorToken and secretKey for validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
             String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
             // 5. Validate request operatorToken and secretKey
             VendorService.validateOperatorTokenAndSecretKey(dto.getOperatorToken(), dto.getSecretKey(), operatorToken, secretKey);
+
+
             // Fill VO required values
             VerifySessionVo responseVo = new VerifySessionVo();
             parentResponseVo.setData(responseVo);
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
+
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
 
         } catch (GameNotSupportedException gameNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);

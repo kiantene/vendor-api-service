@@ -17,6 +17,9 @@ public class HealthCheckController {
     @Value("${mavenTimestamp}")
     private String timestamp;
 
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
+
     @GetMapping(path = "status")
     public String status() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
@@ -25,6 +28,6 @@ public class HealthCheckController {
         zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Singapore"));
         String timezoneTimestamp = zonedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd K:mm:ssa z"));
 
-        return "OK" + " | VENDOR | " + timezoneTimestamp;
+        return "OK" + " | VENDOR | " + profilesActive  + " | " + timezoneTimestamp;
     }
 }
