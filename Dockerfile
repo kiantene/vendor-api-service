@@ -5,4 +5,4 @@ COPY ./game_aggregator-root-certificate.pem game_aggregator-root-certificate.pem
 
 EXPOSE 8082
 
-ENTRYPOINT java -jar /ga_vendor/app.jar
+ENTRYPOINT ["java", "-jar", "/ga_vendor/app.jar"]
