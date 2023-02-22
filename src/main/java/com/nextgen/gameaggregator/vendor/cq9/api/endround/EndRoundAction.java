@@ -163,7 +163,7 @@ public class EndRoundAction {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
-        ValidationUtils.validateRequest(endRoundDataDtoList);
+        ValidationUtils.validateRequest(endRoundDataDtoList.get(0));
 
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
