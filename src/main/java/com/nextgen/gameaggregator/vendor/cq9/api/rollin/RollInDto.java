@@ -45,7 +45,7 @@ public class RollInDto implements WinData {
     @NotBlank
     private String createTime;
     @NotNull
-    private String rake;
+    private BigDecimal rake;
     @NotBlank
     private String gametype;
 
@@ -85,5 +85,23 @@ public class RollInDto implements WinData {
     @Override
     public WinType getWinType() {
         return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        BigDecimal effectiveTurnover = BigDecimal.ZERO;
+        switch(this.gametype) {
+            case "fish":
+            case "arcade":
+                effectiveTurnover = this.bet;
+                break;
+            case "table":
+            case "live":
+                effectiveTurnover = this.validbet;
+                break;
+            default:
+        }
+
+        return effectiveTurnover;
     }
 }

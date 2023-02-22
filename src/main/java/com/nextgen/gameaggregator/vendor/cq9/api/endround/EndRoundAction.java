@@ -93,6 +93,7 @@ public class EndRoundAction {
             winDataDto.setAmount(endRoundDataDtoList.get(0).getAmount());
             winDataDto.setTimestamp(endRoundDataDtoList.get(0).getTimestamp());
             winDataDto.setWinType(this.getWinType(endRoundDto, endRoundDataDtoList.get(0).getAmount()));
+            winDataDto.setEffectiveTurnover(betHistory.getBetAmount());
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
 
             // Emit event for additional asynchronous processing

@@ -16,6 +16,7 @@ public class WinDataDto implements WinData {
     private String gamecode;
     private Long timestamp;
     private WinType winType;
+    private BigDecimal effectiveTurnover;
 
     @Override
     public String getExternalTransactionId() {
@@ -45,5 +46,10 @@ public class WinDataDto implements WinData {
     @Override
     public WinType getWinType() {
         return this.winType;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover(){
+        return this.effectiveTurnover;
     }
 }

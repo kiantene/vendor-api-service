@@ -11,4 +11,5 @@ public interface WinData {
     String getGameId();
     Long getTimestamp();
     WinType getWinType();
+    BigDecimal getEffectiveTurnover();
 }

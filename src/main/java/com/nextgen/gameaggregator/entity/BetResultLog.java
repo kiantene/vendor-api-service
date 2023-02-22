@@ -24,6 +24,7 @@ public class BetResultLog {
     private Integer vendorLineId;
     private Integer currencyId;
     private BigDecimal winAmount;
+    private BigDecimal effectiveTurnover;
     private Integer resultType;
     private BigDecimal balance;
     private String rawData;

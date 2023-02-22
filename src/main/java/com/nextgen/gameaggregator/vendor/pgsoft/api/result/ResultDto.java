@@ -59,6 +59,7 @@ public class ResultDto extends CommonDto implements WinData {
     @Positive
     private Integer betType;
 
+
     @Positive
     @NotNull
     private Long createTime;
@@ -130,5 +131,10 @@ public class ResultDto extends CommonDto implements WinData {
     @Override
     public WinType getWinType() {
         return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return this.betAmount;
     }
 }
