@@ -157,6 +157,7 @@ public class WalletService {
         Boolean requiredCallOperator = true;
 
         try {
+            betResultLog = winData.prepareData(betHistory, betResultLog);
             betResultLogService.create(betResultLog);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
 

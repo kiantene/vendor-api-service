@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.rollin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.Data;
@@ -103,5 +105,10 @@ public class RollInDto implements WinData {
         }
 
         return effectiveTurnover;
+    }
+
+    @Override
+    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog){
+        return betResultLog;
     }
 }

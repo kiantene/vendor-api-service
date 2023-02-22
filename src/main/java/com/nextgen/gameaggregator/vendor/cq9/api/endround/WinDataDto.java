@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.Data;
@@ -51,5 +53,10 @@ public class WinDataDto implements WinData {
     @Override
     public BigDecimal getEffectiveTurnover(){
         return this.effectiveTurnover;
+    }
+
+    @Override
+    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog) {
+        return betResultLog;
     }
 }
