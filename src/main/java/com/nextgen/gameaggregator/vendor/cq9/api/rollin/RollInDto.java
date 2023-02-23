@@ -9,6 +9,7 @@ import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.text.ParseException;
@@ -33,13 +34,17 @@ public class RollInDto implements WinData {
     @Size(min = 1, max = 30)
     private String roundid;
     @NotNull
+    @PositiveOrZero
     private BigDecimal validbet;
     @NotNull
+    @PositiveOrZero
     private BigDecimal bet;
     @NotNull
     private BigDecimal win;
+    @PositiveOrZero
     private BigDecimal roomfee;
     @NotNull
+    @PositiveOrZero
     private BigDecimal amount;
     @NotBlank
     @Size(min = 1, max = 70)
@@ -47,6 +52,7 @@ public class RollInDto implements WinData {
     @NotBlank
     private String createTime;
     @NotNull
+    @PositiveOrZero
     private BigDecimal rake;
     @NotBlank
     private String gametype;

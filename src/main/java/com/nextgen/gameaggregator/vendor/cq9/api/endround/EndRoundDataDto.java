@@ -19,7 +19,7 @@ public class EndRoundDataDto {
     private String mtcode;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
 
