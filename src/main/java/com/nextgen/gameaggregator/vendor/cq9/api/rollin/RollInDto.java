@@ -55,6 +55,7 @@ public class RollInDto implements WinData {
     private BigDecimal amount;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @Size(min = 1, max = 70)
     private String mtcode;
 
