@@ -8,9 +8,9 @@ spring:
       minimum-idle: 50
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
-      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: ga_admin
-      password: Asdf1234-
+      jdbc-url: jdbc:mariadb://dev-2.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      username: svc_vendor_dev
+      password: H2ftnFhNshRJ41
   jpa:
     properties:
       hibernate:
@@ -18,15 +18,15 @@ spring:
         format_sql: false
   redis:
     database: 0
-    host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
+    host: dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com
     port: 6379
-    username: dev
-    password: Asdf1234-
+    username:
+    password:
     jedis:
       pool:
-        max-idle: 30
-        max-active: 100
-        min-idle: 10
+        min-idle: 1000
+        max-idle: 1000
+        max-active: 1000
         max-wait: 2000
   kafka:
     properties:
@@ -38,14 +38,15 @@ spring:
       sasl:
         mechanism: PLAIN
         jaas:
-          config: org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
+          config:
+            org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
             password='J6eK7L9IemczU6LfsFXoHmxq1Gq4mfIBmMK0Y/EOnfIIjFUMBfA5kerKR26KZdye';
       acks: all
       bootstrap:
         servers: pkc-817wq.ap-east-1.aws.confluent.cloud:9092
       session:
         timeout:
-          ms: '45000'
+          ms: "45000"
 logging:
   config: classpath:logback-spring.xml
 logstash:
@@ -59,7 +60,7 @@ logstash:
 #     hostName: ga-vendor-api-service
 #     preferIpAddress: false
 testing:
-  stub: false
+  stub: true
 #grpc:
 #  server:
 #    port: 9092
