@@ -128,9 +128,6 @@ public class EndRoundAction {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidFormatException invalidFormatException) {
-            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
-
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
@@ -159,7 +156,7 @@ public class EndRoundAction {
         return responseVo;
     }
 
-    private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException, InvalidFormatException {
+    private void doValidation(EndRoundDto dto, List<EndRoundDataDto> endRoundDataDtoList, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
@@ -167,12 +164,10 @@ public class EndRoundAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
-        ValidationUtils.validateLength(dto.getCreateTime(), 1, 35, InvalidFormatException::new);
-        ValidationUtils.validateLength(endRoundDataDtoList.get(0).getEventtime(), 1, 35, InvalidFormatException::new);
+        ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         formatter.parse(dto.getCreateTime());
         formatter.parse(endRoundDataDtoList.get(0).getEventtime());
-        ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
     }
 
     private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {

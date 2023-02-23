@@ -5,12 +5,10 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PositiveOrZero;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -20,38 +18,53 @@ public class RollInDto implements WinData {
     @NotBlank
     @Size(min = 1, max = 36)
     private String account;
+
     @NotBlank
     private String eventTime;
+
     @NotBlank
     @Size(min = 1, max = 36)
     private String gamehall;
+
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 36)
     private String gamecode;
+
     @NotBlank
-    @Size(min = 1, max = 30)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 50)
     private String roundid;
+
     @NotNull
     @PositiveOrZero
     private BigDecimal validbet;
+
     @NotNull
     @PositiveOrZero
     private BigDecimal bet;
+
     @NotNull
     private BigDecimal win;
+
     @PositiveOrZero
     private BigDecimal roomfee;
+
     @NotNull
     @PositiveOrZero
     private BigDecimal amount;
+
     @NotBlank
     @Size(min = 1, max = 70)
     private String mtcode;
+
     @NotBlank
     private String createTime;
+
     @NotNull
     @PositiveOrZero
     private BigDecimal rake;
+
     @NotBlank
     private String gametype;
 
