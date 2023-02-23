@@ -7,10 +7,7 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
-import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.constant.*;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
@@ -152,11 +149,14 @@ public class RollInAction {
         ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         formatter.parse(dto.getEventTime());
+        if (!GameType.GameTypeList.contains(dto.getGametype())) {
+            throw new InvalidRequestException();
+        }
 
         // 5. Validate win amount
         switch (dto.getGametype()) {
-            case "fish":
-            case "arcade":
+            case GameType.FISH:
+            case GameType.ARCADE:
                 if (dto.getWin().compareTo(BigDecimal.ZERO) < 0) throw new InvalidRequestException();
                 break;
             default:
@@ -179,13 +179,13 @@ public class RollInAction {
 
         // 5. Validate rollin amount
         switch (dto.getGametype()) {
-            case "fish":
-            case "arcade":
+            case GameType.FISH:
+            case GameType.ARCADE:
                 if (dto.getAmount().compareTo(rolloutAmount.subtract(dto.getBet()).add(dto.getWin())) != 0)
                     throw new InvalidRequestException();
                 break;
-            case "table":
-            case "live":
+            case GameType.TABLE:
+            case GameType.LIVE:
                 if (dto.getAmount().compareTo(rolloutAmount.add(dto.getWin()).subtract(dto.getRake())) != 0)
                     throw new InvalidRequestException();
                 break;
