@@ -93,7 +93,7 @@ public class BetAction {
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
-        }catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DisabledGameException disabledGameException) {

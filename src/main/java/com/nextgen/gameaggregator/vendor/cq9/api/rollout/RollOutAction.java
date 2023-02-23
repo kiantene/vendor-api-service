@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -88,6 +89,9 @@ public class RollOutAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
+        } catch (DateTimeParseException dateTimeParseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
@@ -136,7 +140,7 @@ public class RollOutAction {
         return responseVo;
     }
 
-    private void doValidation(RollOutDto rollOutDto, String wToken) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(RollOutDto rollOutDto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
