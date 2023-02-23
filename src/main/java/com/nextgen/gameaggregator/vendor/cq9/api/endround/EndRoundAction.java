@@ -169,9 +169,9 @@ public class EndRoundAction {
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
         ValidationUtils.validateLength(dto.getCreateTime(), 1, 35, InvalidFormatException::new);
         ValidationUtils.validateLength(endRoundDataDtoList.get(0).getEventtime(), 1, 35, InvalidFormatException::new);
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
-        dateTimeFormatter.parse(dto.getCreateTime());
-        dateTimeFormatter.parse(endRoundDataDtoList.get(0).getEventtime());
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(dto.getCreateTime());
+        formatter.parse(endRoundDataDtoList.get(0).getEventtime());
         ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
     }
 

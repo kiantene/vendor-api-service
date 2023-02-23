@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -50,6 +49,7 @@ public class BetDto implements BetData {
     private String platform;
 
     @NotBlank
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private String eventTime;
 
     @Override
@@ -69,14 +69,7 @@ public class BetDto implements BetData {
 
     @Override
     public Long getTimestamp() {
-        Long timestamp;
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-            Date date = simpleDateFormat.parse(this.getEventTime());
-            timestamp = date.getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        return timestamp;
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.getEpochSecond();
     }
 }

@@ -153,8 +153,8 @@ public class BetAction {
         // Validation with custom exception
         ValidationUtils.validateLength(betDto.getAccount(), 3, 20, InvalidPlayerException::new);
         ValidationUtils.validateLength(betDto.getEventTime(), 1, 35, InvalidFormatException::new);
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
-        dateTimeFormatter.parse(betDto.getEventTime());
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(betDto.getEventTime());
         ValidationUtils.isEquals(betDto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
     }
 

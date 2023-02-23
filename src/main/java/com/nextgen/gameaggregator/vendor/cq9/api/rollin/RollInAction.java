@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
 
@@ -144,6 +145,8 @@ public class RollInAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(dto.getEventTime());
 
         // 5. Validate win amount
         switch (dto.getGametype()) {
