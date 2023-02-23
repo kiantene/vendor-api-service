@@ -51,10 +51,10 @@ logging:
 logstash:
   host: logstash
   port: 5000
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://eureka:8761/eureka/
+# eureka:
+#   client:
+#     serviceUrl:
+#       defaultZone: http://eureka:8761/eureka/
   instance:
     hostName: ga-vendor-api-service
     preferIpAddress: false
