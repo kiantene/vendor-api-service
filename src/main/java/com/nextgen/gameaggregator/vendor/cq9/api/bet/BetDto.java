@@ -18,17 +18,18 @@ public class BetDto implements BetData {
     private String account;
 
     @NotBlank
-    @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 36)
     private String gamehall;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 36)
     private String gamecode;
 
     @NotBlank
-    @Size(min = 1, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 50)
     private String roundid;
 
     @NotNull

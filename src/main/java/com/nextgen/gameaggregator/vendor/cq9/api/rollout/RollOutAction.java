@@ -102,7 +102,7 @@ public class RollOutAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -127,10 +127,6 @@ public class RollOutAction {
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (Exception exception) { // any other exception encountered
-            statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            httpService.logError(httpRequestLog, exception);
-
         } finally {
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
@@ -145,11 +141,12 @@ public class RollOutAction {
 
         // General validation
         ValidationUtils.validateRequest(rollOutDto);
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-        formatter.parse(rollOutDto.getEventTime());
 
         // Validation with custom exception
         ValidationUtils.validateLength(rollOutDto.getAccount(), 3, 20, InvalidPlayerException::new);
+        ValidationUtils.isEquals(rollOutDto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(rollOutDto.getEventTime());
     }
 
     private void doVerification(RollOutDto rollOutDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
