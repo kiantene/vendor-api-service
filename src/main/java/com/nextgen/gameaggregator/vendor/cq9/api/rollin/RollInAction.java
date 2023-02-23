@@ -107,7 +107,7 @@ public class RollInAction {
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -149,6 +149,7 @@ public class RollInAction {
         ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         formatter.parse(dto.getEventTime());
+        formatter.parse(dto.getCreateTime());
         if (!GameType.GameTypeList.contains(dto.getGametype())) {
             throw new InvalidRequestException();
         }
