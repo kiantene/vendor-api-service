@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -49,7 +48,6 @@ public class BetDto implements BetData {
     private String platform;
 
     @NotBlank
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private String eventTime;
 
     @Override

@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -101,6 +102,9 @@ public class RollInAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
+        } catch (DateTimeParseException dateTimeParseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
@@ -137,7 +141,7 @@ public class RollInAction {
         return responseVo;
     }
 
-    private void doValidation(RollInDto dto, String wToken) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(RollInDto dto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
