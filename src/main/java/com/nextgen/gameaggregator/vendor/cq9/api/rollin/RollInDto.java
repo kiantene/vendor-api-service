@@ -17,6 +17,7 @@ import java.time.Instant;
 public class RollInDto implements WinData {
     @NotBlank
     @Size(min = 1, max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String account;
 
     @NotBlank
