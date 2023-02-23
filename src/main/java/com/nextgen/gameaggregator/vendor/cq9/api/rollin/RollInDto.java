@@ -12,9 +12,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -79,15 +77,8 @@ public class RollInDto implements WinData {
 
     @Override
     public Long getTimestamp() {
-        Long timestamp;
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-            Date date = simpleDateFormat.parse(this.eventTime);
-            timestamp = date.getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        return timestamp;
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.getEpochSecond();
     }
 
     @Override

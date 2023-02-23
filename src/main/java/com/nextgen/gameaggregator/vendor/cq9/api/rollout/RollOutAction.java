@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
 
@@ -140,6 +141,8 @@ public class RollOutAction {
 
         // General validation
         ValidationUtils.validateRequest(rollOutDto);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(rollOutDto.getEventTime());
 
         // Validation with custom exception
         ValidationUtils.validateLength(rollOutDto.getAccount(), 3, 20, InvalidPlayerException::new);
