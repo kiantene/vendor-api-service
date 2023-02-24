@@ -127,6 +127,10 @@ public class RollOutAction {
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
+        } catch (Exception exception) { // any other exception encountered
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));

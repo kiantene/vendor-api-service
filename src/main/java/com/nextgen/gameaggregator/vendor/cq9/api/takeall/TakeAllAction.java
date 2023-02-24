@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
 
@@ -67,7 +68,6 @@ public class TakeAllAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(takeAllDto.getSession());
-            BigDecimal walletBalance = walletService.getBalance(traceId, gameSession);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(takeAllDto, gameSession, wToken);
@@ -75,6 +75,7 @@ public class TakeAllAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
+            BigDecimal walletBalance = walletService.getBalance(traceId, gameSession);
             takeAllDto.setAmount(walletBalance);
             BetEvent betEvent = walletService.processBet(traceId, gameSession, takeAllDto, body);
 
@@ -146,6 +147,9 @@ public class TakeAllAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(takeAllDto.getAccount(), 3, 20, InvalidPlayerException::new);
+        ValidationUtils.isEquals(takeAllDto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(takeAllDto.getEventTime());
     }
 
     private void doVerification(TakeAllDto takeAllDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
