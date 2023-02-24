@@ -103,7 +103,7 @@ public class RollInAction {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (GameNotSupportedException gameNotSupportedException) {

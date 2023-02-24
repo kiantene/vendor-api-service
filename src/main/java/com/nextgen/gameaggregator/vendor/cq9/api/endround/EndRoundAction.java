@@ -118,7 +118,7 @@ public class EndRoundAction {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (GameNotSupportedException gameNotSupportedException) {

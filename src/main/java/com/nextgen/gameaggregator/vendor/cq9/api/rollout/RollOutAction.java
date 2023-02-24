@@ -102,7 +102,7 @@ public class RollOutAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
