@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -90,6 +91,9 @@ public class TakeAllAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+
+        } catch (DateTimeParseException dateTimeParseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
