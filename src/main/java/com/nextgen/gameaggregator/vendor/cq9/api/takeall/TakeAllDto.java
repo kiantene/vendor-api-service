@@ -9,9 +9,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,17 +28,21 @@ public class TakeAllDto implements BetData {
 
     @NotBlank
     @Size(min = 1, max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String gamecode;
 
     @NotBlank
     @Size(min = 1, max = 30)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roundid;
 
     @NotBlank
     @Size(min = 1, max = 70)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String mtcode;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String session;
 
     private BigDecimal amount;
@@ -67,14 +69,7 @@ public class TakeAllDto implements BetData {
 
     @Override
     public Long getTimestamp() {
-        Long timestamp;
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-            Date date = simpleDateFormat.parse(this.getEventTime());
-            timestamp = date.getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        return timestamp;
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.getEpochSecond();
     }
 }
