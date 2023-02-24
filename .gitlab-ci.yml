@@ -23,7 +23,7 @@ variables:
   QA_SERVER: root@47.254.202.80
 
   PT_POINTING_BRANCH: pt
-  PT_DOCKER_REGISTRY: esportsking/ga-vendor-api-service
+  PT_DOCKER_REGISTRY: 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service
   PT_DOCKER_TAG: pt
   PT_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
   PT1_SERVER: ubuntu@16.163.242.71 # stg2.gasea168.com
