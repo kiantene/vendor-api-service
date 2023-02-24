@@ -39,20 +39,25 @@ public class RollInDto implements WinData {
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal validbet;
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal bet;
 
     @NotNull
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal win;
 
     @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal roomfee;
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
 
     @NotBlank
