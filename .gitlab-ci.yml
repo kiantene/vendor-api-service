@@ -3,6 +3,8 @@ before_script:
 
 variables:
   DOCKERHUB_USERNAME: esportsking
+  PT_DOCKERHUB_URL: 634937900606.dkr.ecr.ap-east-1.amazonaws.com
+  PT_DOCKERHUB_USERNAME: AWS
 
   SONAR_PROJECTKEY: game-aggregator
   SONAR_HOST_URL: http://223.25.67.48:9000
@@ -30,6 +32,7 @@ variables:
 
 stages:
   - lint
+  - generate_pwd
   # - test
   - build
   - push-img
@@ -131,6 +134,19 @@ qa-ali-deploy:
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG && docker service update --force --image $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG $QA_PORTAINER_NAME"
 
 # pt ######################################
+generate_pwd:
+  stage: generate_pwd
+  extends: .pt-deploy-rule
+  script:
+    - aws configure set aws_access_key_id $ACCESS_KEY_ID
+    - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY
+    - aws configure set region $DEFAULT_REGION
+    - aws ecr get-login-password --region ap-east-1 > ./pwd.txt
+  artifacts:
+    paths:
+      - pwd.txt
+    expire_in: 1 h
+
 pt-gitlab-build:
   stage: build
   extends: .pt-deploy-rule
@@ -143,36 +159,52 @@ pt-gitlab-build:
 
 pt-push-dockerhub:
   stage: push-img
-  needs: ["pt-gitlab-build"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: pt-gitlab-build
   extends: .pt-deploy-rule
   script:
+    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - docker build -t $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG .
-    - docker login --username=$DOCKERHUB_USERNAME --password="$DOCKERHUB_PWD"
+    - docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL
     - docker push $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG
 
 pt1-aws-deploy:
   stage: deploy
-  needs: ["pt-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: pt-push-dockerhub
   extends: .pt-deploy-rule
   script:
+    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
     - chmod 400 "$(pwd)/pt-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT1_SERVER -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT1_SERVER -p 22 "docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
 
 pt2-1-aws-deploy:
   stage: deploy
-  needs: ["pt-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: pt-push-dockerhub
   extends: .pt-deploy-rule
   script:
+    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
     - chmod 400 "$(pwd)/pt-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_1 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_1 -p 22 "docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
 
 pt2-2-aws-deploy:
   stage: deploy
-  needs: ["pt-push-dockerhub"]
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: pt-push-dockerhub
   extends: .pt-deploy-rule
   script:
+    - export DOCKERHUB_PWD=$(cat pwd.txt)
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
     - chmod 400 "$(pwd)/pt-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_2 -p 22 "docker login --username=$DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
+    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_2 -p 22 "docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
