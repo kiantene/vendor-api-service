@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.balance;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
@@ -8,9 +9,12 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BalanceVo implements HttpResponse {
 
-    private Integer Result;
-    private Double MainPoints;
-    private String ErrorText;
+    @JsonProperty("Result")
+    private Integer result;
+    @JsonProperty("MainPoints")
+    private Double mainPoints;
+    @JsonProperty("ErrorText")
+    private String errorText;
 
     @Override
     public boolean hasError() {
