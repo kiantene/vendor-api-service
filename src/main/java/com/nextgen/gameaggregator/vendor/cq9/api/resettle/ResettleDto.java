@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.endround;
+package com.nextgen.gameaggregator.vendor.cq9.api.resettle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
