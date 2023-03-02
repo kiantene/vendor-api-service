@@ -10,16 +10,24 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
 @Service
 @Slf4j
 public class WalletWinAction {
+    @Value("${testing.stub:false}")
+    private Boolean useStub;
 
     public WalletBalanceVo call(String callbackUrl, String signature, WalletWinDto dto) throws InvalidOperatorResponseException {
-        log.info(dto.toString());
+//        log.info(dto.toString());
+        // Call stub function instead if config file set to use stub
+        if (useStub) {
+            return this.stub();
+        }
         WalletBalanceVo responseVo = null;
         try {
             responseVo = WebClient.create(callbackUrl)
@@ -46,7 +54,7 @@ public class WalletWinAction {
         }
 
         Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-        log.info(responseVo.toString());
+//        log.info(responseVo.toString());
 
 //        responseVo.setStatus(ResponseCodes.Status.SC_INVALID_RESPONSE);
 
@@ -55,5 +63,14 @@ public class WalletWinAction {
         }
         return responseVo;
 
+    }
+
+    public WalletBalanceVo stub() throws InvalidOperatorResponseException {
+        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
+        responseData.setBalance(BigDecimal.ONE);
+        WalletBalanceVo balanceVo = new WalletBalanceVo();
+        balanceVo.setData(responseData);
+
+        return balanceVo;
     }
 }
