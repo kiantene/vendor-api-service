@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.service;
 
+import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -14,15 +15,21 @@ import java.util.List;
 
 @Service
 @Slf4j
+@Data
 public class VendorService {
-    @SneakyThrows
-    public static String dateFormat(String pattern) {
 
-        String date = (new SimpleDateFormat(pattern)).format(new Date());
+    private String agentId;
+    private String agentKey;
+    private static String dateFormat = "yyMMd";
+    private static int randomStringLength = 6;
+
+    public static String dateGenerator(String dateFormat) throws Exception{
+
+        String date = (new SimpleDateFormat(dateFormat)).format(new Date());
 
         return date;
     }
-    public static String urlQueryString(MultiValueMap<String, String> params) throws Exception {
+    public static String urlQueryStringGenerator(MultiValueMap<String, String> params) throws Exception {
 
         StringBuilder sb = new StringBuilder();
         for (String key : params.keySet()) {
@@ -39,11 +46,19 @@ public class VendorService {
 
         return URL_Query;
     }
-    public static String md5(String input) throws Exception {
+    public static String md5Generator(String input) throws Exception {
         return DigestUtils.md5Hex(input);
     }
 
-    public static String randomString(int length){
+    public static String randomStringGenerator(int length) {
         return RandomStringUtils.randomAlphanumeric(length);
+    }
+
+    public String gKeyGenerator() throws Exception {
+        return md5Generator(dateGenerator(VendorService.dateFormat)+this.agentId+this.agentKey);
+    }
+
+    public String keyGenerator(MultiValueMap<String, String> params) throws Exception {
+        return randomStringGenerator(VendorService.randomStringLength)+md5Generator(urlQueryStringGenerator(params)+gKeyGenerator())+randomStringGenerator(VendorService.randomStringLength);
     }
 }

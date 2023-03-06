@@ -38,15 +38,16 @@ public class GameUrlService implements GameUrl {
         String agentKey = credentials.get(Credentials.AGENT_KEY);
         Optional.ofNullable(agentKey).orElseThrow(InvalidVendorLineException::new);
 
-        String timeNow = VendorService.dateFormat("yyMMd");
-        String gKey = VendorService.md5(timeNow+agentId+agentKey);
+        VendorService service = new VendorService();
+        service.setAgentId(agentId);
+        service.setAgentKey(agentKey);
+
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("Token", gameSession.getToken());
         formData.add("GameId", gameSession.getVendorGameCode());
         formData.add("Lang", gameSession.getVendorLanguageCode());
         formData.add("AgentId", agentId);
-        String queryString = VendorService.urlQueryString(formData);
-        String key = VendorService.randomString(6)+VendorService.md5(queryString+gKey)+VendorService.randomString(6);
+        String key = service.keyGenerator(formData);
         formData.add("Key", key);
 
         return formData;
