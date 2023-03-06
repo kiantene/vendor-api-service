@@ -8,8 +8,8 @@ public enum ResponseCode {
     ALREADY_ACCEPTED    (1, "Already accepted"),
     NOT_ENOUGH_BALANCE  (2, "Not enough balance"),
     INVALID_PARAMETER   (3, "Invalid parameter"),
-    TOKEN_EXPIRED       (4, "Insufficient balance."),
-    OTHER_ERROR         (5, "Player not found or is logged out.")
+    TOKEN_EXPIRED       (4, "Token expired"),
+    OTHER_ERROR         (5, "Other error")
     ;
 
     public final Integer errorCode;
