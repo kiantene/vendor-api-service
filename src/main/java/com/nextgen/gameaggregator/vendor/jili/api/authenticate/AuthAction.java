@@ -28,6 +28,10 @@ public class AuthAction {
     @Autowired
     private VendorPlayerService vendorPlayerService;
     @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
+    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
@@ -43,13 +47,15 @@ public class AuthAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            AuthDto dto = HttpService.convertQueryStringToDto(body, AuthDto.class);
+            AuthDto dto = HttpService.convertJsonToDto(body, AuthDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+
+            this.doVerification(dto, gameSession);
 
             // 3. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -59,6 +65,10 @@ public class AuthAction {
             authVo.setBalance(balance);
             authVo.setToken(gameSession.getToken());
 
+        } catch (InvalidRequestException invalidRequest) {
+            authVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+        } catch (AuthenticationException invalidSessionToken) {
+            authVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
         } catch (Exception exception) {
             authVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -69,13 +79,25 @@ public class AuthAction {
         return authVo;
     }
 
-    private void doValidation(AuthDto dto) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(AuthDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
-    private void doVerification(HttpRequestLog request, AuthDto dto, GameSession gameSession) throws
-            DisabledGameException, AuthenticationException, DisabledVendorLineException, CredentialNotFoundException,
-            InvalidSignatureException, DisabledAgentPlayerException {
+    private void doVerification(AuthDto dto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+
+        // 1. Verify received token is the same from game session
+        // comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+
+        // 2. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // 5. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 6. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 
