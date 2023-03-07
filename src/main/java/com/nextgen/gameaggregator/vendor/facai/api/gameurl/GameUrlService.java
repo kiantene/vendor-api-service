@@ -74,6 +74,7 @@ public class GameUrlService implements GameUrl {
             //convert mapper data into json string
             ObjectMapper objectMapper = new ObjectMapper();
             String fromJson = objectMapper.writeValueAsString(convertFormMap);
+            log.info("rawJson : " + fromJson);
 
             GameUrlVo responseVo = WebClient.create(apiUrl)
                     .post()
@@ -86,6 +87,7 @@ public class GameUrlService implements GameUrl {
                     .bodyToMono(GameUrlVo.class)
                     .block();
 
+            log.info("responseVo : " + responseVo.toString());
             if (responseVo.getUrl() != null) {
                 log.info(responseVo.toString());
             } else {
@@ -98,7 +100,7 @@ public class GameUrlService implements GameUrl {
             log.info("error convert");
 
             GameUrlVo responseVo = new GameUrlVo();
-
+            
             throw new InvalidVendorResponseException("Invalid Response : " + responseVo.toString());
         }
 
