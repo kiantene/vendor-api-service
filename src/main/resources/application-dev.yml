@@ -54,7 +54,7 @@ logging:
             sql:
               BasicBinder: TRACE
 testing:
-  stub: true
+  stub: false
 #logstash:
 #  address: "127.0.0.1:5000"
 
