@@ -10,8 +10,10 @@ import javax.validation.constraints.Pattern;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthDto {
+
+    private String reqId;
     @NotBlank
-//    @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    //    @Size(min = 1, max = 36)
     private String token;
 }

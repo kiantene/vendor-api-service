@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BalanceVo implements HttpResponse {
@@ -12,7 +14,7 @@ public class BalanceVo implements HttpResponse {
     @JsonProperty("Result")
     private Integer result;
     @JsonProperty("MainPoints")
-    private Double mainPoints;
+    private BigDecimal mainPoints;
     @JsonProperty("ErrorText")
     private String errorText;
 
