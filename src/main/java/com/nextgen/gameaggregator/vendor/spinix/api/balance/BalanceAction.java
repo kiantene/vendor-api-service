@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.spinix.api.balance;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +33,9 @@ public class BalanceAction {
     public BalanceVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
+
+        // Retrieve request body in original string format
+        String body = httpRequestLog.getRequestBody();
 
         // Construct VO
         BalanceVo balanceVo = new BalanceVo();
