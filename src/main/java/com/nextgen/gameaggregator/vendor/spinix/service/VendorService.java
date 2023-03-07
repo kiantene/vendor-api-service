@@ -5,10 +5,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
-import static org.apache.commons.codec.digest.DigestUtils.md5;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-
 public class VendorService {
 
     public String getSignature(Map<String, Object> args, String signatureKey) {

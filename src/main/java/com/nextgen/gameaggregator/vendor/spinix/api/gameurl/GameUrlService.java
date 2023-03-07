@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.gameurl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
@@ -11,7 +9,6 @@ import com.nextgen.gameaggregator.vendor.spinix.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -21,7 +18,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -31,23 +27,32 @@ public class GameUrlService implements GameUrl {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException {
 
+        String agent_id = credentials.get(Credentials.AGENT_ID);
+        Optional.ofNullable(agent_id).orElseThrow(InvalidVendorLineException::new);
+        String wallet_type = credentials.get(Credentials.WALLET_TYPE);
+        Optional.ofNullable(wallet_type).orElseThrow(InvalidVendorLineException::new);
+        String sound = credentials.get(Credentials.SOUND);
+        Optional.ofNullable(sound).orElseThrow(InvalidVendorLineException::new);
+        String signature_key = credentials.get(Credentials.SIGNATURE_KEY);
+        Optional.ofNullable(signature_key).orElseThrow(InvalidVendorLineException::new);
+
         Map<String, Object> arrayMap = new HashMap<>();
-        arrayMap.put("platform_id", credentials.get(Credentials.AGENT_ID));
+        arrayMap.put("platform_id", agent_id);
         arrayMap.put("game_id", gameCode);
         arrayMap.put("user_id", gameSession.getVendorPlayerUsername());
         arrayMap.put("user_token", gameSession.getToken());
         arrayMap.put("currency", gameSession.getCurrencyCode());
-        arrayMap.put("wallet_type", credentials.get(Credentials.WALLET_TYPE));
+        arrayMap.put("wallet_type", wallet_type);
         HashMap<String, String> settings = new HashMap<>();
         settings.put("lang", gameSession.getLanguage());
-        settings.put("sd", credentials.get(Credentials.SOUND));
+        settings.put("sd", sound);
         arrayMap.put("settings", settings);
         String json = new Gson().toJson(arrayMap);
 
         VendorService vendorService = new VendorService();
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("json", json);
-        formData.add("x_gaming_signature", vendorService.getSignature(arrayMap, credentials.get(Credentials.SIGNATURE_KEY)));
+        formData.add("x_gaming_signature", vendorService.getSignature(arrayMap, signature_key));
 
         return formData;
     }
@@ -57,6 +62,8 @@ public class GameUrlService implements GameUrl {
 
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
+        String secretKey = credentials.get(Credentials.SECRET_KEY);
+        Optional.ofNullable(secretKey).orElseThrow(InvalidVendorLineException::new);
 
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info(formData.getFirst("json"));
@@ -68,7 +75,7 @@ public class GameUrlService implements GameUrl {
                 .uri(EndPoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(formData.getFirst("json")))
-                .header("Authorization", credentials.get(Credentials.SECRET_KEY))
+                .header("Authorization", secretKey)
                 .header("X-Gaming-Signature", formData.getFirst("x_gaming_signature"))
                 .retrieve()
                 .onStatus(HttpStatus::isError,
