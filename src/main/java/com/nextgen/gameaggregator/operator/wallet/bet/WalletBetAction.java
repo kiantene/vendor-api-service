@@ -30,7 +30,7 @@ public class WalletBetAction {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return this.stub();
+//            return this.stub();
         }
 //        log.info(dto.toString());
         WalletBalanceVo responseVo = null;

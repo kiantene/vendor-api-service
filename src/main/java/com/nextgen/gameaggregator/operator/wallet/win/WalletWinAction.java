@@ -26,7 +26,7 @@ public class WalletWinAction {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return this.stub();
+//            return this.stub();
         }
         WalletBalanceVo responseVo = null;
         try {
