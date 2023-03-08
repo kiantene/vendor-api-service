@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -16,6 +17,13 @@ public class CachingService {
     public BetHistory updateBetHistoriesCaching(BetHistory betHistory) {
         return betHistory;
     }
+
+    @CachePut(value = "UnsettledBet", key = "{#rawUnsettledBet.roundId, #rawUnsettledBet.vendorGameId, #rawUnsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    public RawUnsettledBet updateUnsettledBetCaching(RawUnsettledBet rawUnsettledBet) {
+        return rawUnsettledBet;
+    }
+
+
 
     @CacheEvict(value = "BetHistories", key = "{#betHistory.roundId, #betHistory.vendorGameId, #betHistory.vendorPlayerId}", cacheManager = "cacheManager")
     public BetHistory deleteBetHistoriesCaching(BetHistory betHistory) {

@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -62,9 +63,11 @@ public class BetAction {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            //UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            //responseVo.setCash(unsettledBetEvent.getLastBalance());
             responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
