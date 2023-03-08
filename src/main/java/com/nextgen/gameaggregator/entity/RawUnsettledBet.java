@@ -10,11 +10,10 @@ import javax.persistence.Id;
 import java.math.BigDecimal;
 
 @Document
-@Scope("aggregator")
-@Collection("bet_history")
+@Scope("raw")
+@Collection("unsettled_bet")
 @Data
-@AllArgsConstructor
-public class BetHistoryCB {
+public class RawUnsettledBet {
     @Id
     private String id;
     private String externalTransactionId;
@@ -37,7 +36,8 @@ public class BetHistoryCB {
     private BigDecimal effectiveTurnover;
     private BigDecimal refundAmount;
     private Integer resultType;
-    private String rawData;
+    private String md5RawSettledResult;
+    private Integer resettleNum;
     private Integer status;
     private String gameSessionToken;
     private Long vendorBetTime;
