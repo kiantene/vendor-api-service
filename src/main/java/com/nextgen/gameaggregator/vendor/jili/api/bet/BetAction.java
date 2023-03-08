@@ -1,10 +1,12 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,9 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -27,42 +26,75 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private WalletService walletService;
     @PostMapping(path = EndPoints.BET)
     public BetVo BetAction (HttpServletRequest request) {
 
-        HttpRequestLog log = httpService.start(request);
-        BetVo vo = new BetVo();
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        BetVo betVo = new BetVo();
+        String traceId = httpRequestLog.getTraceId();
 
 
         try{
+            // Retrieve request body in original string format and convert into dto
+            String body = httpRequestLog.getRequestBody();
+            BetDto dto = HttpService.convertJsonToDto(body, BetDto.class);
 
-            vo.setUsername("test001");
-            vo.setCurrency("CNY");
-            vo.setBalance(BigDecimal.valueOf(100));
-            String hashText = this.md5(vo.getUsername());
-            vo.setToken(hashText);
+            // 1. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
+
+            // 2. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+
+            this.doVerification(dto, gameSession);
+
+            // 3. Retrieve the latest wallet balance from Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+
+            betVo.setUsername(gameSession.getVendorPlayerUsername());
+            betVo.setCurrency(gameSession.getCurrencyCode());
+            betVo.setBalance(balance);
+            betVo.setToken(gameSession.getToken());
 
 
-        }catch(Exception e){
-
+        } catch (InvalidRequestException invalidRequest) {
+            betVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+        } catch (AuthenticationException invalidSessionToken) {
+            betVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+        } catch (Exception exception) {
+            betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, exception);
         }finally{
-            httpService.end(log, vo);
+            httpService.end(httpRequestLog, betVo);
         }
-        return vo;
+        return betVo;
     }
+    private void doValidation(BetDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+    private void doVerification(BetDto dto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
-    private String md5(String input) throws NoSuchAlgorithmException {
+        // 1. Verify received token is the same from game session
+        // comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
 
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        byte[] messageDigest = md.digest(input.getBytes());
-        BigInteger no = new BigInteger(1, messageDigest);
-        String hashtext = no.toString(16);
+        // 2. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        while (hashtext.length() < 32)
-        {
-            hashtext = "0" + hashtext;
-        }
+        // 5. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        return hashtext;
+        // 6. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
     }
 }
