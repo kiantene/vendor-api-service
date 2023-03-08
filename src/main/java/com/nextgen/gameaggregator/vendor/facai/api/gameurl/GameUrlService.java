@@ -29,29 +29,43 @@ public class GameUrlService implements GameUrl {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
+        VendorService vendorService = new VendorService();
+
+        //map request param and convert to json string
+        Map<String, String> loginParam = new HashMap<String, String>();
+        loginParam.put("MemberAccount",gameSession.getVendorPlayerUsername());
+        loginParam.put("GameID",gameCode);
+        loginParam.put("LanguageID",gameSession.getVendorLanguageCode());
+        String jsonParamString = "";
         try {
-            VendorService vendorService = new VendorService();
-
-            //map request param and convert to json string
-            Map<String, String> loginParam = new HashMap<String, String>();
-            loginParam.put("MemberAccount",gameSession.getVendorPlayerUsername());
-            loginParam.put("GameID",gameCode);
-            loginParam.put("LanguageID",gameSession.getVendorLanguageCode());
             ObjectMapper objectMapper = new ObjectMapper();
-            String jsonParam = objectMapper.writeValueAsString(loginParam);
-
-            //encrypt request param
-            String md5Param = vendorService.md5(jsonParam);
-            String encryptParam = vendorService.aesEncrypt(jsonParam, credentials.get(Credentials.AGENT_KEY));
-
-            //setup form data
-            formData.add("AgentCode", credentials.get(Credentials.AGENT_CODE));
-            formData.add("Currency", gameSession.getVendorCurrencyCode());
-            formData.add("Params", encryptParam);
-            formData.add("Sign", md5Param);
+            jsonParamString = objectMapper.writeValueAsString(loginParam);
+            log.info("RAW Param Json : " + jsonParamString);
         } catch (Exception exception) { // any other exception encountered
-            log.info("error encrypt");
+            throw new InvalidVendorLineException("Json Convert Failed");
         }
+
+        //encrypt request param
+        String encryptParam = "";
+        try {
+            encryptParam = vendorService.aesEncrypt(jsonParamString, credentials.get(Credentials.AGENT_KEY));
+        } catch (Exception exception) { // any other exception encountered
+            throw new InvalidVendorLineException("Param Encrypt Failed");
+        }
+
+        //MD5 encrypt
+        String md5Param = "";
+        try {
+            md5Param = vendorService.md5(jsonParamString);
+        } catch (Exception exception) { // any other exception encountered
+            throw new InvalidVendorLineException("MD5 Encrypt Failed");
+        }
+
+        //setup form data
+        formData.add("AgentCode", credentials.get(Credentials.AGENT_CODE));
+        formData.add("Currency", gameSession.getVendorCurrencyCode());
+        formData.add("Params", encryptParam);
+        formData.add("Sign", md5Param);
 
         return formData;
     }
@@ -64,47 +78,40 @@ public class GameUrlService implements GameUrl {
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info(formData.toString());
 
+        //convert from data into mapper data
+        Map<String, String> convertFormMap = new HashMap<String, String>();
+        convertFormMap.put("AgentCode",formData.getFirst("AgentCode"));
+        convertFormMap.put("Currency",formData.getFirst("Currency"));
+        convertFormMap.put("Params",formData.getFirst("Params"));
+        convertFormMap.put("Sign",formData.getFirst("Sign"));
+
+        //convert mapper data into json string
+        String jsonFormString = "";
         try {
-            //convert from data into mapper data
-            Map<String, String> convertFormMap = new HashMap<String, String>();
-            convertFormMap.put("AgentCode",formData.getFirst("AgentCode"));
-            convertFormMap.put("Currency",formData.getFirst("Currency"));
-            convertFormMap.put("Params",formData.getFirst("Params"));
-            convertFormMap.put("Sign",formData.getFirst("Sign"));
-            //convert mapper data into json string
             ObjectMapper objectMapper = new ObjectMapper();
-            String fromJson = objectMapper.writeValueAsString(convertFormMap);
-            log.info("rawJson : " + fromJson);
-
-            GameUrlVo responseVo = WebClient.create(apiUrl)
-                    .post()
-                    .uri(EndPoints.GAME_URL)
-                    .contentType(MediaType.APPLICATION_JSON_UTF8)
-                    .body(BodyInserters.fromObject(fromJson))
-                    //.contentType(MediaType.APPLICATION_JSON)
-                    //.body(BodyInserters.fromValue(formData))
-                    .retrieve()
-                    .bodyToMono(GameUrlVo.class)
-                    .block();
-
-            log.info("responseVo : " + responseVo.toString());
-            if (responseVo.getUrl() != null) {
-                log.info(responseVo.toString());
-            } else {
-                throw new InvalidVendorResponseException("Invalid Response : " + responseVo.toString());
-            }
-
-            return responseVo;
-
+            jsonFormString = objectMapper.writeValueAsString(convertFormMap);
+            log.info("Request Json : " + jsonFormString);
         } catch (Exception exception) { // any other exception encountered
-            log.info("error convert");
+            throw new InvalidVendorLineException("Json Convert Failed");
+        }
 
-            GameUrlVo responseVo = new GameUrlVo();
-            
+        //post request to vendor API with JSON string
+        GameUrlVo responseVo = WebClient.create(apiUrl)
+                .post()
+                .uri(EndPoints.GAME_URL)
+                .contentType(MediaType.APPLICATION_JSON_UTF8)
+                .body(BodyInserters.fromObject(jsonFormString))
+                .retrieve()
+                .bodyToMono(GameUrlVo.class)
+                .block();
+
+        if (responseVo.getUrl() != null) {
+            log.info(responseVo.toString());
+        } else {
             throw new InvalidVendorResponseException("Invalid Response : " + responseVo.toString());
         }
 
-        //return responseVo;
+        return responseVo;
 
     }
 }
