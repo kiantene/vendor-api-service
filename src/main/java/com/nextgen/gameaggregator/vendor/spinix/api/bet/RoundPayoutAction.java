@@ -30,6 +30,7 @@ public class RoundPayoutAction {
 
     @PostMapping(path = EndPoints.ROUND)
     public RoundPayoutVo bet(HttpServletRequest request) {
+
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 

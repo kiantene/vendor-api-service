@@ -1,28 +1,23 @@
 package com.nextgen.gameaggregator.vendor.spinix.constant;
 
+import java.net.http.HttpResponse;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ResponseCodes {
-    public static final String SUCCESS = "0";
-    public static final String GAME_ACTION_ERROR = "1002";
-    public static final String PARAMETER_ERROR = "1003";
-    public static final String TIME_FORMAT_ERROR = "1004";
-    public static final String INSUFFICIENT_BALANCE = "1005";
-    public static final String PLAYER_NOT_FOUND = "1006";
-    public static final String TRANSACTION_RECORD_NOT_FOUND = "1014";
-    public static final String SERVER_ERROR = "1100";
-    public static final String DUPLICATE_EXTERNAL_TRANSACTION_ID = "2009";
+    public static final String UNEXPECTED_INTERNAL_SERVER_ERROR = "E20000";
+    public static final String PARAMETER_INVALID = "E20200";
+    public static final String GAME_NOT_FOUND = "E20600";
+    public static final String USER_NOT_FOUND = "E20700";
+    public static final String USER_TOKEN_NOT_FOUND_OR_INVALID = "E20701";
+    public static final String GAME_NOT_AVAILABLE = "E20601";
 
     public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
-        put(SUCCESS, "Success");
-        put(GAME_ACTION_ERROR, "Game action error.");
-        put(PARAMETER_ERROR, "Parameter error.");
-        put(TIME_FORMAT_ERROR, "Time Format error.");
-        put(INSUFFICIENT_BALANCE, "Insufficient Balance.");
-        put(PLAYER_NOT_FOUND, "Player not found.");
-        put(TRANSACTION_RECORD_NOT_FOUND, "Transaction record not found.");
-        put(SERVER_ERROR, "Server error.");
-        put(DUPLICATE_EXTERNAL_TRANSACTION_ID, "Duplicate MTCode");
+        put(UNEXPECTED_INTERNAL_SERVER_ERROR, "Unexpected internal server error");
+        put(PARAMETER_INVALID, "Parameter invalid");
+        put(GAME_NOT_FOUND, "Game not found");
+        put(USER_NOT_FOUND, "User not found");
+        put(USER_TOKEN_NOT_FOUND_OR_INVALID, "User token not found or invalid");
+        put(GAME_NOT_AVAILABLE, "Game not available");
     }};
 }
