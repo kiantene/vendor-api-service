@@ -69,9 +69,11 @@ public class BetAction {
             // 5. Process win data
             WinDto winDto = new WinDto();
             winDto.setExternalTransactionId(dto.getReqId());
+            winDto.setRoundId(dto.getRoundId());
             winDto.setAmount(dto.getWinloseAmount());
             winDto.setTimestamp(dto.getTimestamp());
             winDto.setWinType(getWinType(dto));
+            winDto.setGameId(dto.getGameId());
             winDto.setEffectiveTurnover(dto.getBetAmount());
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
 
