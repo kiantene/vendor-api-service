@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.repository;
 
+import com.nextgen.gameaggregator.entity.RawResultBet;
 import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
@@ -8,8 +9,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Scope("raw")
-@Collection("unsettled_bet")
-public interface RawUnsettledBetRepository extends CouchbaseRepository<RawUnsettledBet, String> {
+@Collection("result_bet")
+public interface RawResultBetRepository extends CouchbaseRepository<RawResultBet, String> {
 
-    RawUnsettledBet findByRoundIdAndVendorGameIdAndVendorPlayerId(String roundId, Integer vendorGameId, Long vendorPlayerId);
 }

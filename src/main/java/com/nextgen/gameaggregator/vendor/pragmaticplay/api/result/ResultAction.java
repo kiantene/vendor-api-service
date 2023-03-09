@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -58,12 +59,11 @@ public class ResultAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
-
+            ResultBetEvent resultBetEvent = walletService.processResultBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
-            responseVo.setCash(betResultEvent.getLastBalance());
+            responseVo.setCash(resultBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -87,9 +87,12 @@ public class ResultAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
