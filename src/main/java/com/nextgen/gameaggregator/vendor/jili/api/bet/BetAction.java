@@ -61,7 +61,7 @@ public class BetAction {
             this.doVerification(dto, gameSession);
 
             // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+//            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // 4. Process bet data
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
@@ -80,7 +80,7 @@ public class BetAction {
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
             betVo.setCurrency(gameSession.getCurrencyCode());
-            betVo.setBalance(balance);
+            betVo.setBalance(betResultEvent.getLastBalance());
             betVo.setToken(gameSession.getToken());
 
 
