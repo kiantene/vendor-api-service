@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.WinType;
@@ -67,13 +68,13 @@ public class BetAction {
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
             // 5. Process win data
-            WinDto winDto = new WinDto();
+            WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
             winDto.setExternalTransactionId(dto.getReqId());
-            winDto.setRoundId(dto.getRoundId());
+//            winDto.setRoundId(dto.getRoundId());
             winDto.setAmount(dto.getWinloseAmount());
-            winDto.setTimestamp(dto.getTimestamp());
+//            winDto.setTimestamp(dto.getTimestamp());
             winDto.setWinType(getWinType(dto));
-            winDto.setGameId(dto.getGameId());
+//            winDto.setGameId(dto.getGameId());
             winDto.setEffectiveTurnover(dto.getBetAmount());
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
 
