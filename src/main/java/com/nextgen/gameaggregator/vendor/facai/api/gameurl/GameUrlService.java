@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.vendor.facai.constant.GameType;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
@@ -32,10 +33,11 @@ public class GameUrlService implements GameUrl {
         VendorService vendorService = new VendorService();
 
         //map request param and convert to json string
-        Map<String, String> loginParam = new HashMap<String, String>();
+        Map<String, Object> loginParam = new HashMap<String, Object>();
         loginParam.put("MemberAccount",gameSession.getVendorPlayerUsername());
         loginParam.put("GameID",gameCode);
         loginParam.put("LanguageID",gameSession.getVendorLanguageCode());
+        loginParam.put("JackpotStatus",GameType.ENABLE_JACKPOT);
         String jsonParamString = "";
         try {
             ObjectMapper objectMapper = new ObjectMapper();
