@@ -66,7 +66,7 @@ public class AuthAction {
             authVo.setToken(gameSession.getToken());
 
         } catch (InvalidRequestException invalidRequest) {
-            authVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            authVo.setResponseCode(ResponseCode.OTHER_ERROR);
         } catch (AuthenticationException invalidSessionToken) {
             authVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
         } catch (Exception exception) {

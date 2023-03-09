@@ -2,6 +2,11 @@ package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
+import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -58,6 +63,21 @@ public class BetAction {
             // 3. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
+            // 4. Process bet data
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+
+            // 5. Process win data
+            WinDto winDto = new WinDto();
+            winDto.setExternalTransactionId(dto.getReqId());
+            winDto.setAmount(dto.getWinloseAmount());
+            winDto.setTimestamp(dto.getTimestamp());
+            winDto.setWinType(getWinType(dto));
+            winDto.setEffectiveTurnover(dto.getBetAmount());
+            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
+
+            // Emit event for additional asynchronous processing
+            EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+
             betVo.setUsername(gameSession.getVendorPlayerUsername());
             betVo.setCurrency(gameSession.getCurrencyCode());
             betVo.setBalance(balance);
@@ -96,5 +116,9 @@ public class BetAction {
         // 6. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
+    }
+
+    private WinType getWinType(BetDto dto) {
+        return (dto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }
