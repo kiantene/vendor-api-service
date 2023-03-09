@@ -1,16 +1,16 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
+import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Data
-public class BetDto {
+public class BetDto implements BetData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 50)
@@ -21,15 +21,19 @@ public class BetDto {
     private String token;
     @NotBlank
     private String currency;
-    @NotBlank
+    @PositiveOrZero
+    @NotNull
     private Integer game;
-    @NotBlank
+    @Positive
+    @NotNull
     private BigInteger round;
-    @NotBlank
+    @Positive
+    @NotNull
     private BigInteger wagersTime;
-    @NotBlank
+    @Range(min = 0)
+    @NotNull
     private BigDecimal betAmount;
-    @NotBlank
+    @NotNull
     private BigDecimal winloseAmount;
     private boolean isFreeRound;
     private String userId;
@@ -37,4 +41,16 @@ public class BetDto {
     private String platform;
     private Integer statementType;
     private Integer gameCategory;
+
+    @Override
+    public String getExternalTransactionId() { return this.reqId; }
+    @Override
+    public BigDecimal getAmount() { return this.betAmount; }
+    @Override
+    public String getRoundId() { return String.valueOf(this.round); }
+    @Override
+    public String getGameId() { return String.valueOf(this.game); }
+    @Override
+    public Long getTimestamp() { return this.wagersTime.longValueExact(); }
+
 }
