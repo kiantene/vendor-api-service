@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.entity;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
@@ -11,9 +10,9 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
-@Collection("unsettled_bet")
+@Collection("result_bet")
 @Data
-public class RawUnsettledBet {
+public class RawResultBet {
     @Id
     private String id;
     private String internalTransactionId;
