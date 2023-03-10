@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.facai.api.bet;
+package com.nextgen.gameaggregator.vendor.facai.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class BetVo implements HttpResponse {
+public class CommonVo implements HttpResponse {
 
     @JsonProperty("Result")
     private Integer result;
@@ -15,7 +15,6 @@ public class BetVo implements HttpResponse {
     private Double mainPoints;
     @JsonProperty("ErrorText")
     private String errorText;
-
 
     @Override
     public boolean hasError() {
