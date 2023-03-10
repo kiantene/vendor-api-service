@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
@@ -9,6 +10,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WinDto implements WinData {
     private String externalTransactionId;
     private BigDecimal amount;

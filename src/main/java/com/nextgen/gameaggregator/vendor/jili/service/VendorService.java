@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.service;
 
 import lombok.Data;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -12,6 +11,7 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
 
 @Service
 @Slf4j
@@ -21,13 +21,15 @@ public class VendorService {
     private String agentId;
     private String agentKey;
     private static String dateFormat = "yyMMd";
+    private static String timeZone = "America/Anguilla"; // UTC-4
     private static int randomStringLength = 6;
 
-    public static String dateGenerator(String dateFormat) throws Exception{
+    public static String dateGenerator(String dateFormat, String timeZone) throws Exception{
 
-        String date = (new SimpleDateFormat(dateFormat)).format(new Date());
+        SimpleDateFormat sdf = new SimpleDateFormat(dateFormat);
+        sdf.setTimeZone(TimeZone.getTimeZone(timeZone));
 
-        return date;
+        return sdf.format(new Date());
     }
     public static String urlQueryStringGenerator(MultiValueMap<String, String> params) throws Exception {
 
@@ -55,7 +57,7 @@ public class VendorService {
     }
 
     public String gKeyGenerator() throws Exception {
-        return md5Generator(dateGenerator(VendorService.dateFormat)+this.agentId+this.agentKey);
+        return md5Generator(dateGenerator(VendorService.dateFormat, VendorService.timeZone)+this.agentId+this.agentKey);
     }
 
     public String keyGenerator(MultiValueMap<String, String> params) throws Exception {

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto implements BetData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
