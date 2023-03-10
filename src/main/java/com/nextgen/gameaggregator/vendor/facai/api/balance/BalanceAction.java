@@ -3,10 +3,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.balance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -15,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
+import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -40,12 +39,12 @@ public class BalanceAction {
     private GameSessionService gameSessionService;
 
     @PostMapping(path = EndPoints.BALANCE)
-    public BalanceVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
         // Construct VO
-        BalanceVo balanceVo = new BalanceVo();
+        CommonVo commonVo = new CommonVo();
 
         try {
             //Retrieve request body in original string format
@@ -70,36 +69,47 @@ public class BalanceAction {
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            //return balance and success code
-            balanceVo.setResult(ResponseCodes.SUCCESS);
-            balanceVo.setMainPoints(balance);
+            //Verify remaining parameters (Verify against database values)
+            this.doVerification(balanceDto, gameSession);
+
+            //return double balance and success code
+            commonVo.setResult(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            balanceVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
-            balanceVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
+            commonVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
+            commonVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
         } catch (AuthenticationException authenticationException) {
-            balanceVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
-            balanceVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
+            commonVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
+            commonVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            balanceVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
-            balanceVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
+            commonVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
+            commonVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
         } catch (JsonProcessingException jsonProcessingException) {
-            balanceVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            balanceVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
         } catch (Exception exception) {
-            balanceVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            balanceVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
         } finally {
-            httpService.end(httpRequestLog, balanceVo);
+            httpService.end(httpRequestLog, commonVo);
         }
 
-        return balanceVo;
+        return commonVo;
 
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(BalanceDto balanceDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+
+        //Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getMemberAccount(), InvalidPlayerException::new);
+
+
     }
 
 }
