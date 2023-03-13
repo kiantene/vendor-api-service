@@ -180,7 +180,7 @@ public class BetHistoryService {
     }
 
     /**
-     * Retrieve a unsettled bet transaction record based on vendor's round Id, game Id, and player Id
+     * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
      * @param vendorGameId         Game Id within Game Aggregator System

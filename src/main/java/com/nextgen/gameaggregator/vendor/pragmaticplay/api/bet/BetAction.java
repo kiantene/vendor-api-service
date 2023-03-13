@@ -48,6 +48,7 @@ public class BetAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
+            //TODO: refine dto
             BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)

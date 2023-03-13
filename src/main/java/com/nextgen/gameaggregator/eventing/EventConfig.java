@@ -34,6 +34,10 @@ public class EventConfig {
     private ResultBetEventListener resultBetEventListener;
     @Autowired
     private ResultBetOperatorFailEventListener resultBetOperatorFailEventListener;
+    @Autowired
+    private SettledBetEventListener settledBetEventListener;
+    @Autowired
+    private SettledBetOperatorFailEventListener settledBetOperatorFailEventListener;
 
     @Bean("eventListeners")
     public void eventListeners() {
@@ -49,5 +53,7 @@ public class EventConfig {
         EventDispatcherSystem.addListener(UnsettledBetOperatorFailEvent.class, unsettledBetOperatorFailEventListener);
         EventDispatcherSystem.addListener(ResultBetEvent.class, resultBetEventListener);
         EventDispatcherSystem.addListener(ResultBetOperatorFailEvent.class, resultBetOperatorFailEventListener);
+        EventDispatcherSystem.addListener(SettledBetEvent.class, settledBetEventListener);
+        EventDispatcherSystem.addListener(SettledBetOperatorFailEvent.class, settledBetOperatorFailEventListener);
     }
 }
