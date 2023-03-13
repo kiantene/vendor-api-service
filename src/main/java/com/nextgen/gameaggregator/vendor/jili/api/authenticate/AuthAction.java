@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.api.authenticate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -7,7 +8,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,7 +36,6 @@ public class AuthAction {
     @Autowired
     private WalletService walletService;
 
-    @SneakyThrows
     @PostMapping(path = EndPoints.AUTH)
     public AuthVo AuthAction (HttpServletRequest request) {
 
@@ -65,13 +64,22 @@ public class AuthAction {
             authVo.setBalance(balance);
             authVo.setToken(gameSession.getToken());
 
-        } catch (InvalidRequestException invalidRequest) {
+        } catch (DisabledGameException |
+                 DisabledAgentPlayerException |
+                 InvalidAgentApiCredentialException |
+                 InvalidRequestException |
+                 DisabledVendorLineException |
+                 JsonProcessingException |
+                 InvalidOperatorResponseException e) {
             authVo.setResponseCode(ResponseCode.OTHER_ERROR);
+
         } catch (AuthenticationException invalidSessionToken) {
             authVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+
         } catch (Exception exception) {
             authVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, authVo);
         }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
@@ -51,31 +52,25 @@ public class BetAction {
         try{
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BetDto dto = HttpService.convertJsonToDto(body, BetDto.class);
+            BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(dto);
+            this.doValidation(betDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(betDto.getToken());
 
-            this.doVerification(dto, gameSession);
+            this.doVerification(betDto, gameSession);
 
-            // 3. Retrieve the latest wallet balance from Operator
-//            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // 3. Process bet data
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
-            // 4. Process bet data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-
-            // 5. Process win data
-            WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
-            winDto.setExternalTransactionId(dto.getReqId());
-//            winDto.setRoundId(dto.getRoundId());
-            winDto.setAmount(dto.getWinloseAmount());
-//            winDto.setTimestamp(dto.getTimestamp());
-            winDto.setWinType(getWinType(dto));
-//            winDto.setGameId(dto.getGameId());
-            winDto.setEffectiveTurnover(dto.getBetAmount());
+            // 4. Process win data
+            WinDto winDto = new ObjectMapper().convertValue(betDto, WinDto.class);
+            winDto.setExternalTransactionId(betDto.getReqId());
+            winDto.setAmount(betDto.getWinloseAmount());
+            winDto.setWinType(getWinType(betDto));
+            winDto.setEffectiveTurnover(betDto.getBetAmount());
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
 
             // Emit event for additional asynchronous processing
@@ -89,26 +84,43 @@ public class BetAction {
 
         } catch (InvalidRequestException invalidRequest) {
             betVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+
         } catch (AuthenticationException invalidSessionToken) {
             betVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
+
+        } catch (DisabledVendorLineException |
+                  DisabledGameException |
+                  DisabledAgentPlayerException |
+                  BetNotFoundException |
+                  BetResultNotFoundException |
+                  DuplicateExternalTransactionIdException |
+                  InvalidOperatorResponseException |
+                  JsonProcessingException |
+                  InvalidAgentApiCredentialException e) {
+            betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+
         } catch (Exception exception) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
-        }finally{
+
+        } finally{
             httpService.end(httpRequestLog, betVo);
         }
         return betVo;
     }
-    private void doValidation(BetDto dto) throws InvalidRequestException {
+    private void doValidation(BetDto betDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest(dto);
+        ValidationUtils.validateRequest(betDto);
     }
-    private void doVerification(BetDto dto, GameSession gameSession)
+    private void doVerification(BetDto betDto, GameSession gameSession)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -121,7 +133,7 @@ public class BetAction {
 
     }
 
-    private WinType getWinType(BetDto dto) {
-        return (dto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    private WinType getWinType(BetDto betDto) {
+        return (betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }
