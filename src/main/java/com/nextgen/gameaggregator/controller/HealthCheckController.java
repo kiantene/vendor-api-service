@@ -28,6 +28,6 @@ public class HealthCheckController {
         zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Singapore"));
         String timezoneTimestamp = zonedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd K:mm:ssa z"));
 
-        return "OK" + " | VENDOR | " + profilesActive  + " | " + timezoneTimestamp;
+        return "OK" + " | VENDORx | " + profilesActive  + " | " + timezoneTimestamp;
     }
 }
