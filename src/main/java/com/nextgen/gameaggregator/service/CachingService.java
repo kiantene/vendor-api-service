@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.RawResultBet;
+import com.nextgen.gameaggregator.entity.RawSettledBet;
 import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -29,14 +30,20 @@ public class CachingService {
         return rawResultBet;
     }
 
-    @CacheEvict(value = "UnsettledBet", key = "{#rawUnsettledBet.roundId, #rawUnsettledBet.vendorGameId, #rawUnsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
-    public RawUnsettledBet deleteUnsettledBetCaching(RawUnsettledBet rawUnsettledBet) {
-        return rawUnsettledBet;
+    @CacheEvict(value = "UnsettledBet", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public void deleteUnsettledBetCaching(String roundId, Integer vendorGameId, Long vendorPlayerId) {}
+
+    @CacheEvict(value = "ResultBet", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public void deleteResultBetCaching(String roundId, Integer vendorGameId, Long vendorPlayerId) {}
+
+    @CachePut(value = "SettledBet", key = "{#rawSettledBet.roundId, #rawSettledBet.vendorGameId, #rawSettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    public RawSettledBet updateSettledBetCaching(RawSettledBet rawSettledBet) {
+        return rawSettledBet;
     }
 
-    @CachePut(value = "ResultBet", key = "{#rawResultBet.roundId, #rawResultBet.vendorGameId, #rawResultBet.vendorPlayerId}", cacheManager = "cacheManager")
-    public RawResultBet deleteResultBetCaching(RawResultBet rawResultBet) {
-        return rawResultBet;
+    @CacheEvict(value = "SettledBet", key = "{#rawSettledBet.roundId, #rawSettledBet.vendorGameId, #rawSettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    public RawSettledBet deleteSettledBetCaching(RawSettledBet rawSettledBet) {
+        return rawSettledBet;
     }
 
 

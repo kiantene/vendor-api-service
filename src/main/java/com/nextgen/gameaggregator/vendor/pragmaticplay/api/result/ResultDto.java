@@ -91,7 +91,7 @@ public class ResultDto implements WinData {
 
     @Override
     public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog){
-        betResultLog.setEffectiveTurnover(betHistory.getBetAmount());
+        betResultLog.setWinAmount(betHistory.getBetAmount());
         return betResultLog;
     }
 }

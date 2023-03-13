@@ -3,8 +3,10 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawSettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -59,17 +61,10 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+            //BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+            SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
 
-            // 6. Retrieve the latest wallet balance from Operator
-            // TODO: performance tuning, may cache the last balance from Result and use that
-            //  last balance to return to vendor, instead of making another call to Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(new EndRoundEvent(betHistory));
-
-            responseVo.setCash(BigDecimal.ZERO);
+            responseVo.setCash(settledBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
