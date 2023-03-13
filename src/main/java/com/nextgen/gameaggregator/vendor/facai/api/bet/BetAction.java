@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.facai.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
@@ -79,28 +80,19 @@ public class BetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(vendorBetDto, gameSession);
 
+            //check bet type
+            WinType winType = this.getWinType(vendorBetDto);
+
             //Construct BetDto
-            BetDto betDto = new BetDto();
-            betDto.setExternalTransactionId(Long.toString(vendorBetDto.getBankID()));
-            betDto.setRoundId(vendorBetDto.getRecordID());
-            betDto.setAmount(vendorBetDto.getBet());
-            betDto.setGameCode(Integer.toString(vendorBetDto.getGameID()));
-            betDto.setEventTime(vendorBetDto.getCreateDate());
+            BetDto betDto = this.setBetDto(vendorBetDto, winType);
             //Send bet request to Operator
             //check if player has enough balance
             //used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            log.info(betDto.toString());
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
             //Construct WinDataDto
-            WinDataDto winDataDto = new WinDataDto();
-            winDataDto.setExternalTransactionId(Long.toString(vendorBetDto.getBankID()));
-            winDataDto.setRoundid(vendorBetDto.getRecordID());
-            winDataDto.setAmount(vendorBetDto.getWin());
-            winDataDto.setGamecode(Integer.toString(vendorBetDto.getGameID()));
-            winDataDto.setEventTime(vendorBetDto.getGameDate());
-            winDataDto.setWinType(this.getWinType(vendorBetDto));
-            winDataDto.setEffectiveTurnover(vendorBetDto.getBet());
+            WinDataDto winDataDto = this.setWinDataDto(vendorBetDto, winType);
+            //Send settle request to Operator
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
 
             //Emit event for additional asynchronous processing
@@ -111,10 +103,55 @@ public class BetAction {
             commonVo.setResult(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
-        }catch (Exception exception) {
+        } catch (AuthenticationException authenticationException) {
             commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
             commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
-        }finally {
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (BetResultNotFoundException betResultNotFoundException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (InvalidVendorLineException invalidVendorLineException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (DisabledGameException disabledGameException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (InvalidRequestException invalidRequestException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (BetNotFoundException betNotFoundException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (JsonProcessingException jsonProcessingException) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } catch (Exception exception) {
+            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+        } finally {
             httpService.end(httpRequestLog, commonVo);
         }
 
@@ -141,10 +178,57 @@ public class BetAction {
     }
 
     private WinType getWinType(VendorBetDto vendorBetDto) {
-        WinType winType;
+        WinType winType ;
 
-        winType = (vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        if(vendorBetDto.getBet().compareTo(BigDecimal.ZERO) > 0 || vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) {
+            winType = (vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        } else if (vendorBetDto.getJpPrize().compareTo(BigDecimal.ZERO) > 0) {
+            winType = WinType.JACKPOT;
+        } else{
+            winType = (vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        }
 
         return winType;
+    }
+
+    private BetDto setBetDto(VendorBetDto vendorBetDto, WinType winType){
+        BetDto betDto = new BetDto();
+
+        betDto.setExternalTransactionId(Long.toString(vendorBetDto.getBankID()));
+        betDto.setRoundId(vendorBetDto.getRecordID());
+        betDto.setGameCode(Integer.toString(vendorBetDto.getGameID()));
+        betDto.setEventTime(vendorBetDto.getCreateDate());
+
+        //set bet amount according bet type
+        if(winType == WinType.JACKPOT) {
+            betDto.setAmount(BigDecimal.valueOf(0));
+        }else{
+            betDto.setAmount(vendorBetDto.getBet());
+        }
+
+        return betDto;
+    }
+
+    private WinDataDto setWinDataDto(VendorBetDto vendorBetDto, WinType winType){
+
+        WinDataDto winDataDto = new WinDataDto();
+        winDataDto.setExternalTransactionId(Long.toString(vendorBetDto.getBankID()));
+        winDataDto.setRoundid(vendorBetDto.getRecordID());
+        winDataDto.setGamecode(Integer.toString(vendorBetDto.getGameID()));
+        winDataDto.setEventTime(vendorBetDto.getGameDate());
+        winDataDto.setWinType(winType);
+
+        //set win amount according bet type
+        if(winType == WinType.JACKPOT) {
+            winDataDto.setAmount(vendorBetDto.getJpPrize());
+            winDataDto.setEffectiveTurnover(BigDecimal.valueOf(0));
+        }else{
+            winDataDto.setAmount(vendorBetDto.getWin());
+            winDataDto.setEffectiveTurnover(vendorBetDto.getBet());
+        }
+
+
+        return winDataDto;
+
     }
 }
