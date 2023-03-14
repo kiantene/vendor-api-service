@@ -134,6 +134,8 @@ public class BetAction {
     }
 
     private WinType getWinType(BetDto betDto) {
-        return (betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        BigDecimal betAmount = betDto.getBetAmount();
+        BigDecimal winLoseAmount = betDto.getWinloseAmount();
+        return (betAmount.subtract(winLoseAmount).compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }
