@@ -1,9 +1,14 @@
 package com.nextgen.gameaggregator.vendor.facai.constant;
 
-public class ResponseCodes {
-    public static final Integer SUCCESS = 0;
-    public static final Integer PLAYER_NOT_FOUND = 500;
-    public static final Integer UNEXPECTED_ERROR = 999;
-    public static final String PLAYER_NOT_FOUND_MSG = "Account does not exist.";
-    public static final String UNEXPECTED_ERROR_MSG = "Unexpected error.";
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+public enum ResponseCodes {
+    SUCCESS             (0, "Success"),
+    PLAYER_NOT_FOUND   (500, "Account does not exist."),
+    UNEXPECTED_ERROR     (999, "Unexpected error.")
+    ;
+
+    public final Integer code;
+    public final String description;
 }

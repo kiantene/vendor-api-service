@@ -56,6 +56,7 @@ public class BetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
+        BigDecimal balance = BigDecimal.valueOf(0);
         //betVo.setResult(0);
         //betVo.setMainPoints(1000.00);
 
@@ -73,12 +74,18 @@ public class BetAction {
             //map decrypted data(string json) into balanceDto
             VendorBetDto vendorBetDto = HttpService.convertJsonToDto(jsonParam, VendorBetDto.class);
 
+            //Validate request parameters (Non-database calls)
+            this.doValidation(vendorBetDto);
+
             //get gameSession by player name
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorBetDto.memberAccount);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(vendorBetDto, gameSession);
+
+            //Retrieve the latest wallet balance from Operator
+            balance = walletService.getBalance(traceId, gameSession);
 
             //check bet type
             WinType winType = this.getWinType(vendorBetDto);
@@ -100,62 +107,53 @@ public class BetAction {
 
             //set VO data
             //convert bigDecimal balance into double
-            commonVo.setResult(ResponseCodes.SUCCESS);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            //return success if bet exist
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(balance.setScale(2,RoundingMode.DOWN).doubleValue());
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (DisabledVendorLineException disabledVendorLineException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (BetResultNotFoundException betResultNotFoundException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InvalidPlayerException invalidPlayerException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InvalidVendorLineException invalidVendorLineException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (DisabledGameException disabledGameException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InvalidRequestException invalidRequestException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (Exception exception) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
 
         return commonVo;
+    }
+
+    private void doValidation(VendorBetDto vendorBetDto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(vendorBetDto);
     }
 
     private void doVerification(VendorBetDto vendorBetDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
