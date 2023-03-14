@@ -16,5 +16,7 @@ public class EndPoints {
 
     // API url call to vendor
     public static final String GAME_URL = "/gameboy/player/sw/gamelink";
+    public static final String GAME_LIST = "/gameboy/game/list/{gamehall}";
+    public static final String KICK_PLAYER = "/gameboy/player/logout";
     public static final String ORDER_RECORD = "/gameboy/order/record";
 }
