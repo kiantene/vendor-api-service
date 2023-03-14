@@ -68,23 +68,12 @@ public class BetResultLogService {
      * @param vendorGameId         Game Id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return result bet entity object containing all information of a single result Bet
-     * @throws BetNotFoundException If no bet record is found
+     * If no bet record is found, return null (valid scenario)
      */
     @Cacheable(value = "ResultBet", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawResultBet getRawResultBetByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    public RawResultBet getRawResultBetByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId){
 
         String mergeId = roundId+'_'+vendorGameId+'_'+vendorPlayerId;
-        RawResultBet rawResultBet = null;
-
-        try{
-            rawResultBet = rawResultBetRepository.findById(mergeId).orElse(null);
-            if (rawResultBet == null) { // No matching bet record for the given round Id
-                throw new BetNotFoundException("Cannot find round Id: " + roundId);
-            }
-        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
-        }
-
-        return rawResultBet;
+        return rawResultBetRepository.findById(mergeId).orElse(null);
     }
 }
