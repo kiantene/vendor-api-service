@@ -198,7 +198,7 @@ public class WalletService {
      */
     public SettledBetEvent processSettledBet(String traceId, GameSession gameSession, SettledData settledData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
-            BetNotFoundException, MergedBetDataIntegrityException{
+            BetNotFoundException, MergedBetDataIntegrityException {
 
         Integer agentId = gameSession.getAgentId();
         Integer vendorGameId = gameSession.getVendorGameId();

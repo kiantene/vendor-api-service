@@ -37,8 +37,11 @@ public class SettledBetService {
             RawSettledBet unsettledData = new RawSettledBet();
             BeanUtils.copyProperties(unsettledData, rawUnsettledBet);
 
+            //resultData could be null if the bet is lose
             RawSettledBet resultData = new RawSettledBet();
-            BeanUtils.copyProperties(resultData, rawResultBet);
+            if(rawResultBet != null){
+                BeanUtils.copyProperties(resultData, rawResultBet);
+            }
 
             for (Field field : RawSettledBet.class.getDeclaredFields()) {
                 field.setAccessible(true);
