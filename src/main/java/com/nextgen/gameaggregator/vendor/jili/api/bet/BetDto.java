@@ -31,6 +31,7 @@ public class BetDto implements BetData {
     private BigInteger round;
     @Positive
     @NotNull
+    @Range(min=0, max=2147483647)
     private BigInteger wagersTime;
     @Range(min = 0)
     @NotNull
@@ -53,6 +54,11 @@ public class BetDto implements BetData {
     @Override
     public String getGameId() { return String.valueOf(this.game); }
     @Override
-    public Long getTimestamp() { return this.wagersTime.longValueExact(); }
-
+    public Long getTimestamp() {
+        Long timestamp = this.wagersTime.longValueExact();
+        if(String.valueOf(Math.abs(timestamp)).length() > 10){
+            return timestamp;
+        }
+        return timestamp * 1000;
+    }
 }
