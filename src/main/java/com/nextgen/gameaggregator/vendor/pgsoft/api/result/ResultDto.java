@@ -137,7 +137,7 @@ public class ResultDto extends CommonDto implements WinData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return BigDecimal.valueOf(0);
     }
 
     @Override
