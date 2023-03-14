@@ -5,9 +5,11 @@ import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RoundPayoutVo implements HttpResponse {
     private Integer status;
     private RoundPayoutDataVo data;
+    private RoundPayoutErrorVo error;
 
     @Override
     public boolean hasError() {

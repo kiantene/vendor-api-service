@@ -124,6 +124,7 @@ public class BalanceAction {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
+
     private void doVerification(BalanceDto dto, GameSession gameSession)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
