@@ -73,24 +73,19 @@ public class BalanceAction {
             this.doVerification(balanceDto, gameSession);
 
             //return double balance and success code
-            commonVo.setResult(ResponseCodes.SUCCESS);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
-            commonVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (AuthenticationException authenticationException) {
-            commonVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
-            commonVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setResult(ResponseCodes.PLAYER_NOT_FOUND);
-            commonVo.setErrorText(ResponseCodes.PLAYER_NOT_FOUND_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (Exception exception) {
-            commonVo.setResult(ResponseCodes.UNEXPECTED_ERROR);
-            commonVo.setErrorText(ResponseCodes.UNEXPECTED_ERROR_MSG);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
