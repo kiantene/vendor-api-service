@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class WinDataDto implements WinData {
+public class WinDto implements WinData {
     private String externalTransactionId;
     private BigDecimal amount;
     private String roundId;

@@ -35,31 +35,4 @@ public class RoundPayoutDto {
         return null;
     }
 
-    /*
-    @JsonIgnore
-    public String getExternalTransactionId() {
-        return null;
-    }
-
-    @JsonIgnore
-    public BigDecimal getAmount() {
-        return null;
-    }
-
-    @JsonIgnore
-    public Long getTimestamp() {
-        return null;
-    }
-
-    public List<Long> getTimestamps(RoundPayoutDto roundPayoutDto) {
-        List<RoundPayoutTransactionDto> transactionList = roundPayoutDto.transactionList;
-
-        List<Long> timestamps = new ArrayList<>();
-        for (RoundPayoutTransactionDto transaction : transactionList) {
-            timestamps.add(transaction.getTimestamp());
-        }
-
-        return timestamps;
-    }
-     */
 }

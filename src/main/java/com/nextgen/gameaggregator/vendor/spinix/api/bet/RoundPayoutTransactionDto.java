@@ -15,6 +15,7 @@ public class RoundPayoutTransactionDto {
 
     public BigDecimal amount;
     public String timestamp;
+    public String reqId;
     public String info;
     public Boolean isEnd;
     public String type;
