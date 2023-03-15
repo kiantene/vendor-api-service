@@ -82,7 +82,7 @@ public class BetAction {
             betVo.setToken(gameSession.getToken());
 
 
-        } catch (InvalidRequestException invalidRequest) {
+        } catch (InvalidRequestException | JsonProcessingException invalidRequest) {
             betVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
 
         } catch (AuthenticationException invalidSessionToken) {
@@ -98,7 +98,6 @@ public class BetAction {
                   BetResultNotFoundException |
                   DuplicateExternalTransactionIdException |
                   InvalidOperatorResponseException |
-                  JsonProcessingException |
                   InvalidAgentApiCredentialException e) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
 
@@ -134,8 +133,6 @@ public class BetAction {
     }
 
     private WinType getWinType(BetDto betDto) {
-        BigDecimal betAmount = betDto.getBetAmount();
-        BigDecimal winLoseAmount = betDto.getWinloseAmount();
-        return (betAmount.subtract(winLoseAmount).compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        return (betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }

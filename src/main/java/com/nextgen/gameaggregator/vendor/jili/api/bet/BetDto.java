@@ -33,10 +33,12 @@ public class BetDto implements BetData {
     @NotNull
     @Range(min=0, max=2147483647)
     private BigInteger wagersTime;
-    @Range(min = 0)
     @NotNull
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 4)
     private BigDecimal betAmount;
     @NotNull
+    @Digits(integer = 12, fraction = 4)
     private BigDecimal winloseAmount;
     private boolean isFreeRound;
     private String userId;
