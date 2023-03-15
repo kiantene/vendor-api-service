@@ -1,25 +1,16 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.api.balance;
+package com.nextgen.gameaggregator.vendor.spadegaming.service;
 
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.spadegaming.vo.AuthBalanceVo;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AcctInfoVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.nextgen.gameaggregator.vendor.spadegaming.vo.AuthBalanceVo;
+import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 
-@RestController
-@RequestMapping(path = EndPoints.PATH)
-@Slf4j
-public class BalanceAction {
-
-    @PostMapping(path = EndPoints.BALANCE)
-    public AuthBalanceVo balance(HttpServletRequest request) {
+@Service
+public class BalanceService {
+    public AuthBalanceVo balance() {
 
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
         AcctInfoVo acctInfoVo = new AcctInfoVo();

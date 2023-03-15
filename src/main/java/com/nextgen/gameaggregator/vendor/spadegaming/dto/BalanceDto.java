@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.api.balance;
+package com.nextgen.gameaggregator.vendor.spadegaming.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
