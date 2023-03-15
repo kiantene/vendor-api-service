@@ -73,6 +73,7 @@ public class RoundPayoutAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
+            RoundPayoutTransactionDto cancelBet = RoundPayoutDto.findTransaction(list, "cancelBet");
             RoundPayoutTransactionDto betRecord = RoundPayoutDto.findTransaction(list, "bet");
             RoundPayoutTransactionDto winRecord = RoundPayoutDto.findTransaction(list, "win");
 
@@ -85,43 +86,42 @@ public class RoundPayoutAction {
 
             RoundPayoutDataWalletVo roundPayoutDataWalletVo = new RoundPayoutDataWalletVo();
 
-            if(betRecord.getType().equals("bet")) {
+            // Set necessary values to process bet record
+            if(betRecord != null && betRecord.getType().equals("bet")) {
                 BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
                 betDto.setExternalTransactionId(externalTransactionId);
                 betDto.setAmount(betRecord.getAmount().abs());
                 betDto.setTimestamp(betRecord.getTimestamp());
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
-                // Set Balance and Currency
+                // Set Balance
                 roundPayoutDataWalletVo.setBalance(betEvent.getLastBalance());
-
-                // Set RoundPayoutDataWalletVo Object
-                roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             }
 
             // Check if bet record exists before process win record
             BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
+            // Set necessary values to process win record
             if (betHistory.getRoundId() != null) {
-                WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                winDataDto.setExternalTransactionId(externalTransactionId);
-                winDataDto.setAmount(winRecord.getAmount());
-                winDataDto.setTimestamp(winRecord.getTimestamp());
-                winDataDto.setWinType(this.getWinType(winRecord.getAmount()));
-                winDataDto.setEffectiveTurnover(betHistory.getBetAmount());
+                WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
+                winDto.setExternalTransactionId(externalTransactionId);
+                winDto.setAmount(winRecord.getAmount());
+                winDto.setWinType(this.getWinType(winRecord));
+                winDto.setTimestamp(winRecord.getTimestamp());
+                winDto.setEffectiveTurnover(dto.getValidTurnover().abs());
 
-                BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
+                BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
 
                 // Emit event for additional asynchronous processing
                 EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
 
-                // Set Balance and Currency
+                // Set Balance
                 roundPayoutDataWalletVo.setBalance(betResultEvent.getLastBalance());
-
-                // Set RoundPayoutDataWalletVo Object
-                roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             }
+
+            // Set Currency + RoundPayoutDataWalletVo + Status
             roundPayoutDataWalletVo.setCurrency(gameSession.getCurrencyCode());
+            roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
 
         } catch(BetNotFoundException e) {
@@ -174,7 +174,14 @@ public class RoundPayoutAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 
-    private WinType getWinType(BigDecimal amount) {
-        return (amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    private WinType getWinType(RoundPayoutTransactionDto winRecord) {
+        WinType winType;
+        if (winRecord.getInfo().equals("feature_freespin")) {
+            winType = WinType.WIN;
+        } else {
+            winType = (winRecord.getAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+        }
+
+        return winType;
     }
 }

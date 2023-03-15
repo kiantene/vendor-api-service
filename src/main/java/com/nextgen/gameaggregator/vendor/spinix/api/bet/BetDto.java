@@ -2,14 +2,9 @@ package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import javax.validation.constraints.*;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 import lombok.Data;
 
@@ -22,5 +17,4 @@ public class BetDto implements BetData {
     private BigDecimal amount;
     private String gameId;
     private Long timestamp;
-
 }
