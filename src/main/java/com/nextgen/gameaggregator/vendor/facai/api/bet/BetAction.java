@@ -61,11 +61,6 @@ public class BetAction {
         //betVo.setMainPoints(1000.00);
 
         try {
-            //return error respond to trigger vendor cancel bet
-            if(balance == BigDecimal.valueOf(0)) {
-                throw new AuthenticationException();
-            }
-
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
