@@ -61,6 +61,11 @@ public class BetAction {
         //betVo.setMainPoints(1000.00);
 
         try {
+            //return error respond to trigger vendor cancel bet
+            if(balance == BigDecimal.valueOf(0)) {
+                throw new AuthenticationException();
+            }
+
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -111,7 +116,7 @@ public class BetAction {
             commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
