@@ -19,9 +19,9 @@ public class AuthenticateService {
 
         acctInfoVo.setAccId(dto.getAcctId());
         acctInfoVo.setBalance(BigDecimal.ZERO);
-        acctInfoVo.setUserName("TESTPlayer1");
+        acctInfoVo.setUserName(dto.getAcctId());
         acctInfoVo.setCurrency("CNY");
-        acctInfoVo.setSiteId("SITE_USD");
+        acctInfoVo.setSiteId("SITE_CNY");
 
         authBalanceVo.setAcctInfo(acctInfoVo);
         authBalanceVo.setMerchantCode(Credentials.MERCHANT_CODE);
