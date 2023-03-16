@@ -97,4 +97,11 @@ public class GameSessionService {
 
         return session;
     }
+
+    public GameSession getGameSessionByVendorPlayerUsernameAndVendorGameCode(String username, String vendorGameCode) throws AuthenticationException {
+        GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByIdDesc(username, vendorGameCode);
+        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
+
+        return session;
+    }
 }
