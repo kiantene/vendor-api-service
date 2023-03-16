@@ -115,11 +115,15 @@ public class BetAction {
         ValidationUtils.validateRequest(betDto);
     }
     private void doVerification(BetDto betDto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
+
+        // validate vendor gameCode and currency
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), InvalidRequestException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), InvalidRequestException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
