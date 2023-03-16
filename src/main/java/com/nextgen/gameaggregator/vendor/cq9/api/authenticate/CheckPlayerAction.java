@@ -42,7 +42,6 @@ public class CheckPlayerAction {
     @GetMapping(path = EndPoints.AUTHENTICATE)
     public ResponseVo<Boolean> authenticate(HttpServletRequest request, @PathVariable String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        System.err.println("DEBUG CQ9 -" +account);
         String wToken = request.getHeader("wtoken");
         CheckPlayerPathVariableDto pathVariableDto = new CheckPlayerPathVariableDto();
         pathVariableDto.setAccount(account);
@@ -63,15 +62,22 @@ public class CheckPlayerAction {
             responseVo.setData(true);
 
         } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
+
+            System.err.println("DEBUG CQ9 -1");
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
+            System.err.println("DEBUG CQ9 -2");
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidRequestException invalidRequestException) { // any other exception encountered
+
+            System.err.println("DEBUG CQ9 -3");
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
+
+            System.err.println("DEBUG CQ9 -4");
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) { // any other exception encountered
