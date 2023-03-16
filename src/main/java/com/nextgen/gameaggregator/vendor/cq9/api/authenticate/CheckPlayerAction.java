@@ -42,6 +42,7 @@ public class CheckPlayerAction {
     @GetMapping(path = EndPoints.AUTHENTICATE)
     public ResponseVo<Boolean> authenticate(HttpServletRequest request, @PathVariable String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        System.err.println("DEBUG CQ9 -" +account);
         String wToken = request.getHeader("wtoken");
         CheckPlayerPathVariableDto pathVariableDto = new CheckPlayerPathVariableDto();
         pathVariableDto.setAccount(account);
