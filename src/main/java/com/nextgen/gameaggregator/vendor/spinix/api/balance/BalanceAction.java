@@ -73,7 +73,11 @@ public class BalanceAction {
             balanceDataVo.setWallet(balanceDataWalletVo);
             balanceVo.setStatus(HttpStatus.SC_OK);
 
-        } catch (InvalidAgentApiCredentialException e) {
+        } catch (InvalidAgentApiCredentialException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException |
+                 InvalidPlayerException e
+        ) {
             balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
@@ -85,24 +89,22 @@ public class BalanceAction {
             balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
+        } catch (GameNotSupportedException e) {
+            balanceErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
+            balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledGameException e) {
             balanceErrorVo.setCode(ResponseCodes.GAME_NOT_AVAILABLE);
             balanceVo.setStatus(HttpStatus.SC_FORBIDDEN);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e) {
+        } catch (InvalidRequestException |
+                 CurrencyNotSupportedException e
+        ) {
             balanceErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidOperatorResponseException e) {
-            balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
-            balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException e) {
             balanceErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
-            balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledVendorLineException e) {
-            balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } finally {
@@ -126,19 +128,34 @@ public class BalanceAction {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            throws AuthenticationException,
+            InvalidPlayerException,
+            GameNotSupportedException,
+            CurrencyNotSupportedException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException {
 
-        // 1. Verify received token is the same from game session
+        // Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), dto.getUserToken(), AuthenticationException::new);
 
-        // 2. Verify vendor line is active
+        // Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+
+        // Verify received game id is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+
+        // Verify received game id is the same from game session
+        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 5. Verify agent player is active
+        // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 6. Verify vendor game is active
+        // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
