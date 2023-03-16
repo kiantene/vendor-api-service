@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
@@ -70,7 +71,8 @@ public class RoundPayoutAction {
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), vendorPlayer.getVendorId());
 
             // Get game session
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+//            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorPlayer.getUsername(), vendorGame.getVendorGameCode());
 
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
             RoundPayoutTransactionDto cancelBet = RoundPayoutDto.findTransaction(list, "cancelBet");
@@ -113,7 +115,10 @@ public class RoundPayoutAction {
                 BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
 
                 // Emit event for additional asynchronous processing
-                EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+                if(winRecord.getIsEnd() == true) {
+                    Thread.sleep(1000); // Sleep for 1 second
+                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+                }
 
                 // Set Balance
                 roundPayoutDataWalletVo.setBalance(betResultEvent.getLastBalance());
@@ -132,6 +137,32 @@ public class RoundPayoutAction {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
+            throw new RuntimeException(e);
+        } catch (GameNotSupportedException e) {
+            throw new RuntimeException(e);
+        } catch (InsufficientBalanceException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidOperatorResponseException e) {
+            throw new RuntimeException(e);
+        } catch (DisabledVendorLineException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidAgentApiCredentialException e) {
+            throw new RuntimeException(e);
+        } catch (BetResultNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidPlayerException e) {
+            throw new RuntimeException(e);
+        } catch (DisabledAgentPlayerException e) {
+            throw new RuntimeException(e);
+        } catch (DisabledGameException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidRequestException e) {
+            throw new RuntimeException(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         } catch(Exception e) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
