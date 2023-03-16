@@ -29,7 +29,6 @@ public class WalletBetAction {
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
 
         // Call stub function instead if config file set to use stub
-        log.info("===================useStub=================: "+ useStub);
         if (useStub) {
             return this.stub();
         }
@@ -78,19 +77,12 @@ public class WalletBetAction {
         return responseVo;
     }
 
-    public WalletBalanceVo stub() throws InsufficientBalanceException, InvalidOperatorResponseException {
+    public WalletBalanceVo stub() {
         WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
         responseData.setBalance(BigDecimal.ONE);
         WalletBalanceVo balanceVo = new WalletBalanceVo();
         balanceVo.setData(responseData);
 
-        if (responseData.getBalance().compareTo(BigDecimal.ZERO) < 0) {
-            throw new InsufficientBalanceException();
-        } else if (responseData.getBalance().compareTo(BigDecimal.ZERO) == 0) {
-            throw new InvalidOperatorResponseException();
-        }
-
-        log.info("===================Stub has been used=================");
         return balanceVo;
     }
 }

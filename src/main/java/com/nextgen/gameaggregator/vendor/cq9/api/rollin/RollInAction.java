@@ -7,10 +7,7 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
-import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.constant.*;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
@@ -22,7 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -76,7 +76,7 @@ public class RollInAction {
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(rollInDto, gameSession, wToken);
+            this.doVerification(rollInDto, gameSession, wToken, betHistory.getBetAmount());
 
             // 5. Process win data
             BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, rollInDto, body);
@@ -99,12 +99,15 @@ public class RollInAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
+        } catch (DateTimeParseException dateTimeParseException) {
+            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -135,7 +138,7 @@ public class RollInAction {
         return responseVo;
     }
 
-    private void doValidation(RollInDto dto, String wToken) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(RollInDto dto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
@@ -143,9 +146,26 @@ public class RollInAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getAccount(), 3, 20, InvalidPlayerException::new);
+        ValidationUtils.isEquals(dto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(dto.getEventTime());
+        formatter.parse(dto.getCreateTime());
+        if (!GameType.GameTypeList.contains(dto.getGametype())) {
+            throw new InvalidRequestException();
+        }
+
+        // 5. Validate win amount
+        switch (dto.getGametype()) {
+            case GameType.FISH:
+            case GameType.ARCADE:
+                if (dto.getWin().compareTo(BigDecimal.ZERO) < 0) throw new InvalidRequestException();
+                break;
+            default:
+                break;
+        }
     }
 
-    private void doVerification(RollInDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
+    private void doVerification(RollInDto dto, GameSession gameSession, String wToken, BigDecimal rolloutAmount) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException, InvalidRequestException {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
 
@@ -157,5 +177,21 @@ public class RollInAction {
 
         // 4. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
+
+        // 5. Validate rollin amount
+        switch (dto.getGametype()) {
+            case GameType.FISH:
+            case GameType.ARCADE:
+                if (dto.getAmount().compareTo(rolloutAmount.subtract(dto.getBet()).add(dto.getWin())) != 0)
+                    throw new InvalidRequestException();
+                break;
+            case GameType.TABLE:
+            case GameType.LIVE:
+                if (dto.getAmount().compareTo(rolloutAmount.add(dto.getWin()).subtract(dto.getRake())) != 0)
+                    throw new InvalidRequestException();
+                break;
+            default:
+                break;
+        }
     }
 }

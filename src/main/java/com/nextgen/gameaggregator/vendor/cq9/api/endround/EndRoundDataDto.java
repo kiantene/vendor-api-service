@@ -6,9 +6,7 @@ import lombok.Data;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -19,7 +17,7 @@ public class EndRoundDataDto {
     private String mtcode;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
 
@@ -27,14 +25,7 @@ public class EndRoundDataDto {
     private String eventtime;
 
     public Long getTimestamp(){
-        Long timestamp;
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-            Date date = simpleDateFormat.parse(this.eventtime);
-            timestamp = date.getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        return timestamp;
+        Instant instant = Instant.parse(this.getEventtime());
+        return instant.getEpochSecond();
     }
 }

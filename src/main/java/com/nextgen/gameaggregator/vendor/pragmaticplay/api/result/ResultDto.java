@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -81,5 +82,16 @@ public class ResultDto implements WinData {
     @Override
     public WinType getWinType() {
         return WinType.WIN;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover(){
+        return this.amount;
+    }
+
+    @Override
+    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog){
+        betResultLog.setWinAmount(betHistory.getBetAmount());
+        return betResultLog;
     }
 }

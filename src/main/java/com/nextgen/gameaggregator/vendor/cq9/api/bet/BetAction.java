@@ -93,7 +93,7 @@ public class BetAction {
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
-        }catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DisabledGameException disabledGameException) {
@@ -103,7 +103,7 @@ public class BetAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
             httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -111,9 +111,6 @@ public class BetAction {
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (InvalidFormatException invalidFormatException) {
-            statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -144,7 +141,7 @@ public class BetAction {
         return responseVo;
     }
 
-    private void doValidation(BetDto betDto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException, InvalidFormatException {
+    private void doValidation(BetDto betDto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
 
         // General validation
@@ -152,10 +149,9 @@ public class BetAction {
 
         // Validation with custom exception
         ValidationUtils.validateLength(betDto.getAccount(), 3, 20, InvalidPlayerException::new);
-        ValidationUtils.validateLength(betDto.getEventTime(), 1, 35, InvalidFormatException::new);
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
-        dateTimeFormatter.parse(betDto.getEventTime());
         ValidationUtils.isEquals(betDto.getGamehall(), Credentials.GAME_HALL, InvalidRequestException::new);
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+        formatter.parse(betDto.getEventTime());
     }
 
     private void doVerification(BetDto betDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {

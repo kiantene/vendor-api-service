@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -47,6 +48,7 @@ public class BetAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
+            //TODO: refine dto
             BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
@@ -61,11 +63,13 @@ public class BetAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            //BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setCash(betEvent.getLastBalance());
+            responseVo.setCash(unsettledBetEvent.getLastBalance());
+//            responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -78,9 +82,15 @@ public class BetAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+        }
+//        catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+//
+//        }
+        catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);

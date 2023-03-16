@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -79,4 +79,14 @@ public class JackpotDto implements WinData {
     public String getExternalTransactionId() { return this.reference; }
     @Override
     public WinType getWinType() { return WinType.JACKPOT; }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return this.amount;
+    }
+
+    @Override
+    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog) {
+        return betResultLog;
+    }
 }

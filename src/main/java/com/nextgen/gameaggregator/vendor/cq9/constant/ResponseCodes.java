@@ -12,6 +12,7 @@ public class ResponseCodes {
     public static final String PLAYER_NOT_FOUND = "1006";
     public static final String TRANSACTION_RECORD_NOT_FOUND = "1014";
     public static final String SERVER_ERROR = "1100";
+    public static final String DUPLICATE_EXTERNAL_TRANSACTION_ID = "2009";
 
     public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(SUCCESS, "Success");
@@ -22,5 +23,6 @@ public class ResponseCodes {
         put(PLAYER_NOT_FOUND, "Player not found.");
         put(TRANSACTION_RECORD_NOT_FOUND, "Transaction record not found.");
         put(SERVER_ERROR, "Server error.");
+        put(DUPLICATE_EXTERNAL_TRANSACTION_ID, "Duplicate MTCode");
     }};
 }

@@ -7,9 +7,7 @@ import lombok.Data;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -20,17 +18,18 @@ public class BetDto implements BetData {
     private String account;
 
     @NotBlank
-    @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 36)
     private String gamehall;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 36)
     private String gamecode;
 
     @NotBlank
-    @Size(min = 1, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 50)
     private String roundid;
 
     @NotNull
@@ -69,14 +68,7 @@ public class BetDto implements BetData {
 
     @Override
     public Long getTimestamp() {
-        Long timestamp;
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-            Date date = simpleDateFormat.parse(this.getEventTime());
-            timestamp = date.getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        return timestamp;
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.getEpochSecond();
     }
 }

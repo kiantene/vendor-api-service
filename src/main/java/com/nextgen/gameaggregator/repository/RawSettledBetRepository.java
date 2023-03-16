@@ -1,14 +1,15 @@
 package com.nextgen.gameaggregator.repository;
 
-import com.nextgen.gameaggregator.entity.BetHistoryCB;
+import com.nextgen.gameaggregator.entity.RawResultBet;
+import com.nextgen.gameaggregator.entity.RawSettledBet;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Scope;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@Scope("log")
-@Collection("bet_history_CB")
-public interface BetHistoryCBRepository extends CouchbaseRepository<BetHistoryCB, String> {
+@Scope("raw")
+@Collection("settled_bet")
+public interface RawSettledBetRepository extends CouchbaseRepository<RawSettledBet, String> {
 
 }

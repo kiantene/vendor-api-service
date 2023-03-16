@@ -6,7 +6,9 @@ import lombok.AllArgsConstructor;
 public enum WinType {
     LOSE (1, "Lose"),
     WIN (2, "Win"),
-    JACKPOT (3, "Jackpot")
+    JACKPOT (3, "Jackpot"),
+
+    PENDING (99, "Pending")
     ;
 
     public final Integer code;

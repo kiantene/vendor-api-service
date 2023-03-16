@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.data.couchbase.config;
+package com.nextgen.gameaggregator.config;
 
 import com.couchbase.client.java.env.ClusterEnvironment;
 import org.springframework.context.annotation.Bean;
@@ -17,7 +17,7 @@ import java.nio.file.Path;
 public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     private String connectionString = "couchbases://cb.wgphwq3nmxmm02dc.cloud.couchbase.com";
-    private String userName = "staging2";
+    private String userName = "dev";
     private String password = "Asdf1234@";
 
     @Override
@@ -28,7 +28,7 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     protected String getScopeName() {
-        return "aggregator"; // or a variable etc.;
+        return "raw"; // or a variable etc.;
     }
 
 
@@ -44,7 +44,7 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     public String getBucketName() {
-        return "aggregator";
+        return "game_aggregator";
     }
 
     @Bean

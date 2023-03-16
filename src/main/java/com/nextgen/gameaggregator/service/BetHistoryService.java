@@ -2,14 +2,16 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetHistoryCB;
+import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
+import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.repository.BetHistoryCBRepository;
+import com.nextgen.gameaggregator.repository.RawResultBetRepository;
+import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +36,13 @@ public class BetHistoryService {
     private BetResultLogRepository betResultLogRepository;
 
     @Autowired
-    private BetHistoryCBRepository betHistoryCBRepository;
+    private RawUnsettledBetRepository rawUnsettledBetRepository;
 
     @Autowired
     private MariaDefaultDataSourceConfig mariaDefaultDataSourceConfig;
+
+    @Autowired
+    private RawResultBetRepository rawResultBetRepository;
 
     /**
      * Creates a database record of the given BetHistory entity object.
@@ -79,18 +84,34 @@ public class BetHistoryService {
         return entity;
     }
 
-    public void couchbaseCreate(BetHistory entity) {
+    /**
+     * Creates a unsettled bet record of the given RawUnsettledBet entity object.
+     * This function will also populate default values of certain fields.
+     *
+     * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
+     * @return RawUnsettledBet entity object after a successful save
+     */
+    @CachePut(value = "UnsettledBet", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    public RawUnsettledBet createUnsettledBet(RawUnsettledBet entity) throws CouchbaseDataIntegrityException {
+        // Set default values
+        entity.setWinAmount(BigDecimal.ZERO);
+        entity.setWinLoss(BigDecimal.ZERO);
+        entity.setVendorWinLoss(BigDecimal.ZERO);
+        entity.setEffectiveTurnover(BigDecimal.ZERO);
+        entity.setResultType(WinType.LOSE.code);
+        entity.setStatus(BetStatus.UNSETTLED.code);
+        entity.setCreateTime(System.currentTimeMillis());
+        entity.setResettleNum(0);
 
-        BetHistoryCB betHistoryCB = new BetHistoryCB(entity.getId(), entity.getExternalTransactionId(), entity.getRoundId(),
-                entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(), entity.getVendorLineId(),
-                entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(), entity.getMasterAgentId(),
-                entity.getHouseId(), entity.getGameCategoryId(), entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(),
-                entity.getWinLoss(), entity.getVendorWinLoss(), entity.getEffectiveTurnover(), entity.getRefundAmount(),
-                entity.getResultType(), entity.getRawData(), entity.getStatus(), entity.getGameSessionToken(),
-                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime(),
-                entity.getRefundTime());
+        try {
+            rawUnsettledBetRepository.save(entity);
 
-        betHistoryCBRepository.save(betHistoryCB);
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+
+            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
+        }
+
+        return entity;
     }
 
     @Transactional
@@ -156,6 +177,33 @@ public class BetHistoryService {
             throw new BetNotFoundException("Cannot find round Id: " + roundId);
         }
         return betHistory;
+    }
+
+    /**
+     * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
+     *
+     * @param roundId        Vendor's round Id
+     * @param vendorGameId         Game Id within Game Aggregator System
+     * @param vendorPlayerId Id of the record in VendorPlayer
+     * @return unsettled bet entity object containing all information of a single unsettled Bet
+     * @throws BetNotFoundException If no bet record is found
+     */
+    @Cacheable(value = "UnsettledBet", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public RawUnsettledBet getRawUnsettledBetByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+
+        String mergeId = roundId+'_'+vendorGameId+'_'+vendorPlayerId;
+        RawUnsettledBet rawUnsettledBet = null;
+
+        try{
+             rawUnsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+            if (rawUnsettledBet == null) { // No matching bet record for the given round Id
+                throw new BetNotFoundException("Cannot find round Id: " + roundId);
+            }
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
+        }
+
+        return rawUnsettledBet;
     }
 
     /**

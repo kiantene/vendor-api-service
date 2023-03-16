@@ -17,28 +17,39 @@ public class EndRoundDto {
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String account;
+
     @NotBlank
     @Size(min = 1, max = 36)
     private String gamehall;
+
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 36)
     private String gamecode;
+
     @NotBlank
-    @Size(min = 1, max = 30)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 50)
     private String roundid;
+
     @NotBlank
     private String data;
+
     @NotBlank
     private String createTime;
+
     @Positive
     @Digits(integer = 12, fraction = 10)
     private BigDecimal freegame;
+
     @Positive
     private BigDecimal bonus;
+
     @Positive
     private BigDecimal luckydraw;
+
     @Positive
     private BigDecimal jackpot;
+
     private List<@Positive @Digits(integer = 12, fraction = 10) BigDecimal> jackpotcontribution;
 }

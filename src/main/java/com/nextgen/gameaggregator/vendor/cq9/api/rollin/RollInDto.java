@@ -1,51 +1,77 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.rollin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RollInDto implements WinData {
     @NotBlank
     @Size(min = 1, max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String account;
+
     @NotBlank
     private String eventTime;
+
     @NotBlank
     @Size(min = 1, max = 36)
     private String gamehall;
+
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @Size(min = 1, max = 36)
     private String gamecode;
+
     @NotBlank
-    @Size(min = 1, max = 30)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(min = 1, max = 50)
     private String roundid;
+
     @NotNull
+    @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal validbet;
+
     @NotNull
+    @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal bet;
+
     @NotNull
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal win;
+
+    @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal roomfee;
+
     @NotNull
+    @PositiveOrZero
+    @Digits(integer = 12, fraction = 10)
     private BigDecimal amount;
+
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @Size(min = 1, max = 70)
     private String mtcode;
+
     @NotBlank
     private String createTime;
+
     @NotNull
-    private String rake;
+    @PositiveOrZero
+    private BigDecimal rake;
+
     @NotBlank
     private String gametype;
 
@@ -71,19 +97,35 @@ public class RollInDto implements WinData {
 
     @Override
     public Long getTimestamp() {
-        Long timestamp;
-        try {
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-            Date date = simpleDateFormat.parse(this.eventTime);
-            timestamp = date.getTime();
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        return timestamp;
+        Instant instant = Instant.parse(this.getEventTime());
+        return instant.getEpochSecond();
     }
 
     @Override
     public WinType getWinType() {
         return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        BigDecimal effectiveTurnover = BigDecimal.ZERO;
+        switch(this.gametype) {
+            case "fish":
+            case "arcade":
+                effectiveTurnover = this.bet;
+                break;
+            case "table":
+            case "live":
+                effectiveTurnover = this.validbet;
+                break;
+            default:
+        }
+
+        return effectiveTurnover;
+    }
+
+    @Override
+    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog){
+        return betResultLog;
     }
 }
