@@ -13,5 +13,5 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     @Query("SELECT gs FROM game_session gs WHERE vendor_player_username = :username")
     GameSession findTop1ByVendorPlayerUsernameOrderByIdDesc(@Param("username") String vendorPlayerUsername);
     @Query("SELECT gs FROM game_session gs WHERE vendor_player_username = :username AND vendor_game_code = :vendorGameCode")
-    GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByIdDesc(String vendorPlayerUsername, String vendorGameCode);
+    GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByIdDesc(@Param("username") String vendorPlayerUsername, @Param("vendorGameCode") String vendorGameCode);
 }
