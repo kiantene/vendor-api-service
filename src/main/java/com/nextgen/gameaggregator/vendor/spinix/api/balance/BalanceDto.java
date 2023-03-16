@@ -26,6 +26,7 @@ public class BalanceDto {
     public String userId;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     public String userToken;
 
     @NotBlank
