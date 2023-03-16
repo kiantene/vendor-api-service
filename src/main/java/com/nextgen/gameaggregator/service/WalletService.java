@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.conscrypt.OpenSSLCipherRSA;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -57,6 +58,8 @@ public class WalletService {
     private CachingService cachingService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private Environment environment;
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         Integer agentId = gameSession.getAgentId();
@@ -215,6 +218,11 @@ public class WalletService {
 
         settledBetService.createSettledBet(rawSettledBet);
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
+
+        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+        if (stub == false){
+            settledBetService.createSettleBetMariaDB(rawSettledBet);
+        }
 
         try {
             BigDecimal balance = this.getBalance(traceId, gameSession);
@@ -593,6 +601,7 @@ public class WalletService {
         rawResultBet.setResultType(winData.getWinType().code);
         rawResultBet.setMd5RawSettledResult(md5RawData);
         rawResultBet.setResultTime(walletWinDto.getTimestamp());
+        rawResultBet.setVendorSettleTime(walletWinDto.getTimestamp());
         //TODO: refine set data and winData
 
         return rawResultBet;
@@ -612,7 +621,9 @@ public class WalletService {
         rawSettledBet.setAgentId(gameSession.getAgentId());
         rawSettledBet.setVendorLineId(gameSession.getVendorLineId());
         rawSettledBet.setCurrencyId(gameSession.getCurrencyId());
+        //TODO: verify should timestamp be using for both result and vendorSettleTime?
         rawSettledBet.setResultTime(walletSettledDto.getTimestamp());
+        rawSettledBet.setVendorSettleTime(walletSettledDto.getTimestamp());
         //TODO: refine set data and winData
 
         return rawSettledBet;

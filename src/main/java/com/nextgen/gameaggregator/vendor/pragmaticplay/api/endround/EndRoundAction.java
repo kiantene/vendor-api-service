@@ -100,6 +100,9 @@ public class EndRoundAction {
             responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
 
+        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
