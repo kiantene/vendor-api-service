@@ -6,11 +6,12 @@ import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.spadegaming.dto.TransferDto;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.TransferVo;
 
 @Service
 public class TransferService {
-    public TransferVo transfer() {
+    public TransferVo transfer(TransferDto transferDto) {
         TransferVo transferVo = new TransferVo();
 
         transferVo.setTransferId("0ab9bdca06c14811b24653468e609838");

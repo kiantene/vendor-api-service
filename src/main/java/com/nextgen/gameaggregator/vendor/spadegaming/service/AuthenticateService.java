@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AcctInfoVo;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AuthBalanceVo;
+import com.nextgen.gameaggregator.vendor.spadegaming.dto.AuthenticateDto;
 
 import org.springframework.stereotype.Service;
 
@@ -11,22 +12,22 @@ import java.math.BigDecimal;
 
 @Service
 public class AuthenticateService {
-    public AuthBalanceVo authenticate() {
+    public AuthBalanceVo authenticate(AuthenticateDto dto) {
 
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
         AcctInfoVo acctInfoVo = new AcctInfoVo();
 
-        acctInfoVo.setAccId("TESTPLAYER1");
+        acctInfoVo.setAccId(dto.getAcctId());
         acctInfoVo.setBalance(BigDecimal.ZERO);
         acctInfoVo.setUserName("TESTPlayer1");
-        acctInfoVo.setCurrency("USD");
+        acctInfoVo.setCurrency("CNY");
         acctInfoVo.setSiteId("SITE_USD");
 
         authBalanceVo.setAcctInfo(acctInfoVo);
         authBalanceVo.setMerchantCode(Credentials.MERCHANT_CODE);
         authBalanceVo.setMsg(ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.SUCCESS));
         authBalanceVo.setCode(ResponseCode.SUCCESS);
-        authBalanceVo.setSerialNo("20120722224255982841");
+        authBalanceVo.setSerialNo(dto.getSerialNo());
 
         return authBalanceVo;
     }
