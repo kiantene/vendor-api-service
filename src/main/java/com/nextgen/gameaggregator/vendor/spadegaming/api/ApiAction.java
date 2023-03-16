@@ -4,6 +4,9 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Headers;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.spadegaming.dto.AuthenticateDto;
+import com.nextgen.gameaggregator.vendor.spadegaming.dto.BalanceDto;
+import com.nextgen.gameaggregator.vendor.spadegaming.dto.TransferDto;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.AuthenticateService;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.BalanceService;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.TransferService;
@@ -11,6 +14,7 @@ import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,24 +36,29 @@ public class ApiAction {
     }
 
     @PostMapping
-    public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction) {
-        switch (apiAction) {
-            case Headers.HEADER_VALUE_AUTHENTICATE:
-                return authenticateService.authenticate();
+    public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction,
+            @RequestBody(required = false) AuthenticateDto authenticateDto,
+            @RequestBody(required = false) BalanceDto balanceDto,
+            @RequestBody(required = false) TransferDto transferDto) {
 
-            case Headers.HEADER_VALUE_BALANCE:
-                return balanceService.balance();
+            switch (apiAction) {
+                case Headers.HEADER_VALUE_AUTHENTICATE:
+                    return authenticateService.authenticate(authenticateDto);
 
-            case Headers.HEADER_VALUE_TRANSFER:
-                return transferService.transfer();
+                case Headers.HEADER_VALUE_BALANCE:
+                    return balanceService.balance(balanceDto);
 
-            default:
-                ResponseVo responseVo = new ResponseVo();
-                responseVo.setMerchantCode(Credentials.MERCHANT_CODE);
-                responseVo.setMsg(ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INVALID_REQUEST));
-                responseVo.setCode(ResponseCode.INVALID_REQUEST);
-                responseVo.setSerialNo("");
-                return responseVo;
-        }
+                case Headers.HEADER_VALUE_TRANSFER:
+                    return transferService.transfer(transferDto);
+
+                default:
+                    ResponseVo responseVo = new ResponseVo();
+                    responseVo.setMerchantCode(Credentials.MERCHANT_CODE);
+                    responseVo.setMsg(ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INVALID_REQUEST));
+                    responseVo.setCode(ResponseCode.INVALID_REQUEST);
+                    responseVo.setSerialNo("");
+                    return responseVo;
+            }
     }
+
 }
