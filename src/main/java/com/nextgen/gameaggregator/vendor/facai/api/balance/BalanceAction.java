@@ -127,7 +127,7 @@ public class BalanceAction {
         if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
         if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
         if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isTimestamp(dto.getTs())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
     }
 
     private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException {
