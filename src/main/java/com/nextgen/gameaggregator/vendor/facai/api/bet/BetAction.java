@@ -162,7 +162,7 @@ public class BetAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorBetDto.getMemberAccount(), InvalidPlayerException::new);
 
         //Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
+        //comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(vendorBetDto.getGameID()), AuthenticationException::new);
 
         //Verify vendor line is active
