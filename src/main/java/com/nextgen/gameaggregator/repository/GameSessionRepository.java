@@ -13,8 +13,8 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     GameSession findByToken(String token);
 
     @Query(value = "SELECT gs FROM GameSession gs WHERE gs.vendorPlayerUsername = :vendorPlayerUsername ORDER BY gs.id DESC")
-    GameSession findTopByVendorPlayerUsername(@Param("vendorPlayerUsername") String vendorPlayerUsername);
+    GameSession findTop1ByVendorPlayerUsername(@Param("vendorPlayerUsername") String vendorPlayerUsername);
 
     @Query(value = "SELECT gs FROM GameSession gs WHERE gs.vendorPlayerUsername = :vendorPlayerUsername AND gs.vendorGameCode = :vendorGameCode ORDER BY gs.id DESC")
-    GameSession findTopByVendorPlayerUsernameAndVendorGameCode(@Param("vendorPlayerUsername") String vendorPlayerUsername, @Param("vendorGameCode") String vendorGameCode);
+    GameSession findTop1ByVendorPlayerUsernameAndVendorGameCode(@Param("vendorPlayerUsername") String vendorPlayerUsername, @Param("vendorGameCode") String vendorGameCode);
 }
