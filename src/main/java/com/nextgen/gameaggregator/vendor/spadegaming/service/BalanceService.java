@@ -16,7 +16,7 @@ public class BalanceService {
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
         AcctInfoVo acctInfoVo = new AcctInfoVo();
 
-        acctInfoVo.setAccId(balanceDto.getAcctId());
+        acctInfoVo.setAcctId(balanceDto.getAcctId());
         acctInfoVo.setBalance(BigDecimal.ZERO);
         acctInfoVo.setUserName("TESTPlayer1");
         acctInfoVo.setCurrency("USD");

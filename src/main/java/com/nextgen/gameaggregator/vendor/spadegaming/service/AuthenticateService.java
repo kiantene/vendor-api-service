@@ -17,7 +17,7 @@ public class AuthenticateService {
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
         AcctInfoVo acctInfoVo = new AcctInfoVo();
 
-        acctInfoVo.setAccId(dto.getAcctId());
+        acctInfoVo.setAcctId(dto.getAcctId());
         acctInfoVo.setBalance(BigDecimal.ZERO);
         acctInfoVo.setUserName(dto.getAcctId());
         acctInfoVo.setCurrency("CNY");
