@@ -82,7 +82,10 @@ public class BetAction {
             betVo.setToken(gameSession.getToken());
 
 
-        } catch (InvalidRequestException | JsonProcessingException invalidRequest) {
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 GameNotSupportedException |
+                 CurrencyNotSupportedException invalidRequest) {
             betVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
 
         } catch (AuthenticationException invalidSessionToken) {
@@ -115,23 +118,29 @@ public class BetAction {
         ValidationUtils.validateRequest(betDto);
     }
     private void doVerification(BetDto betDto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException {
+            throws
+            AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            GameNotSupportedException,
+            CurrencyNotSupportedException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
 
-        // validate vendor gameCode and currency
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), InvalidRequestException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), InvalidRequestException::new);
+        // Verify vendor gameCode and currency
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 5. Verify agent player is active
+        // 3. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 6. Verify vendor game is active
+        // 4. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
