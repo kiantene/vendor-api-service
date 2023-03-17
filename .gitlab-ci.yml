@@ -27,8 +27,6 @@ variables:
   PT_DOCKER_TAG: pt
   PT_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
   PT1_SERVER: ubuntu@16.163.242.71 # stg2.gasea168.com
-  PT2_SERVER_1: ubuntu@16.163.195.191 # stg3.gasea168.com
-  PT2_SERVER_2: ubuntu@18.163.186.187 # stg3.gasea168.com
 
 stages:
   - lint
@@ -139,7 +137,7 @@ qa-automated-testing:
   needs: ["qa-ali-deploy"]
   extends: .qa-deploy-rule
   script:
-    - nohup $(sleep 60 && curl --location 'http://223.25.67.48:8080/job/GA-vendor-integration-tests/build?token=gameaggregator')
+    - nohup $(sleep 60 && curl --location 'http://223.25.67.48:8080/job/GA-vendor-integration-tests/build?token=gameaggregator') > /dev/null 2>&1 &
 
 # pt ######################################
 generate_pwd:
@@ -191,28 +189,3 @@ pt1-aws-deploy:
     - chmod 400 "$(pwd)/pt-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT1_SERVER -p 22 "docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
 
-pt2-1-aws-deploy:
-  stage: deploy
-  needs:
-    - job: generate_pwd
-      artifacts: true
-    - job: pt-push-dockerhub
-  extends: .pt-deploy-rule
-  script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
-    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
-    - chmod 400 "$(pwd)/pt-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_1 -p 22 "docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
-
-pt2-2-aws-deploy:
-  stage: deploy
-  needs:
-    - job: generate_pwd
-      artifacts: true
-    - job: pt-push-dockerhub
-  extends: .pt-deploy-rule
-  script:
-    - export DOCKERHUB_PWD=$(cat pwd.txt)
-    - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
-    - chmod 400 "$(pwd)/pt-key.pem"
-    - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT2_SERVER_2 -p 22 "docker login --username=$PT_DOCKERHUB_USERNAME --password=$DOCKERHUB_PWD $PT_DOCKERHUB_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"

@@ -33,9 +33,6 @@ public class HealthCheckController {
     @Value("${testing.stub}")
     private String stub;
 
-    @Value("${logstash.host}")
-    private String logstashHost;
-
     @GetMapping(path = "status")
     public String status() {
         // log.info("Health Check OK");
@@ -60,8 +57,6 @@ public class HealthCheckController {
                 "<br><br>" +
                 "Redis Info:<br>" + redisDB +
                 "<br>" + redisHost +
-                "<br><br>" +
-                "Logstash Host:<br>" + logstashHost +
                 "<br><br>" +
                 "Testing Stub:<br>" + stub ;
 
