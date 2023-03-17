@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.gameurl;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
@@ -15,7 +16,8 @@ import java.util.Map;
 public class GameUrlService implements GameUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException {
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+            throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("gameCode", gameCode);
         formData.add("language", gameSession.getLanguage());
@@ -24,7 +26,8 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException {
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+            throws InvalidVendorLineException {
         GameUrlVo responseVo = new GameUrlVo();
 
         // 4. Get Vendor URL Scheme by vendorPlayer's vendor_line_id

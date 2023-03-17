@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jili.api.gameurl;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
@@ -31,7 +32,8 @@ public class GameUrlService implements GameUrl {
 
     @SneakyThrows
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException {
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+            throws InvalidVendorLineException, InvalidFormatException {
         String agentId = credentials.get(Credentials.AGENT_ID);
         Optional.ofNullable(agentId).orElseThrow(InvalidVendorLineException::new);
 
@@ -53,7 +55,8 @@ public class GameUrlService implements GameUrl {
         return formData;
     }
 
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException, InvalidVendorResponseException {
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+            throws InvalidVendorLineException, InvalidVendorResponseException {
 
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);

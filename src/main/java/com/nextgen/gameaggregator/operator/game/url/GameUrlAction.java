@@ -148,7 +148,10 @@ public class GameUrlAction {
         } catch (InvalidVendorResponseException invalidVendorResponseException) {
             httpService.logError(httpRequestLog, invalidVendorResponseException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
+        } catch (InvalidFormatException invalidFormatException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
         }
+
 //        catch (Exception exception) {
 //            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
 //            httpService.logError(httpRequestLog, exception);
