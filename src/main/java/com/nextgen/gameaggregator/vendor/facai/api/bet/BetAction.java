@@ -176,16 +176,17 @@ public class BetAction {
         //ValidationUtils.validateRequest(dto);
         if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
         if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
+        if(dto.getBankID() == null) {throw new InvalidRequestException();}
         if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
         if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
         if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
         if(!vendorService.isValidInteger(dto.getGameType())) {throw new InvalidRequestException();}
         if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
         if(dto.getIsBuyFeature() == null) {throw new InvalidRequestException();}
-        if(dto.getBet() == null  || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 && dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getWin() == null || (dto.getWin().compareTo(BigDecimal.ZERO) < 0 && dto.getWin().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getJpBet() == null || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 && dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getJpPrize() == null || (dto.getJpPrize().compareTo(BigDecimal.ZERO) < 0 && dto.getJpPrize().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getBet() == null  || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 || dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getWin() == null || (dto.getWin().compareTo(BigDecimal.ZERO) < 0 || dto.getWin().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getJpBet() == null || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 || dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getJpPrize() == null || (dto.getJpPrize().compareTo(BigDecimal.ZERO) < 0 || dto.getJpPrize().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
         if(dto.getNetWin()== null || dto.getNetWin().compareTo(new BigDecimal("999999999999")) > 0) {throw new InvalidRequestException();}
         if(!vendorService.isValidString(dto.getRecordID())) {throw new InvalidRequestException();}
         if(!vendorService.isValidStringLength(dto.getRecordID(), 1, 24)) {throw new InvalidRequestException();}
