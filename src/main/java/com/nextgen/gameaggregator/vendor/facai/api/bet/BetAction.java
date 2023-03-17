@@ -183,7 +183,7 @@ public class BetAction {
         if(!vendorService.isValidInteger(dto.getGameType())) {throw new InvalidRequestException();}
         if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
         if(dto.getIsBuyFeature() == null) {throw new InvalidRequestException();}
-        if(dto.getBet() == null  || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 || dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getBet() == null  || (dto.getBet().compareTo(BigDecimal.ZERO) < 0 || dto.getBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
         if(dto.getWin() == null || (dto.getWin().compareTo(BigDecimal.ZERO) < 0 || dto.getWin().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
         if(dto.getJpBet() == null || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 || dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
         if(dto.getJpPrize() == null || (dto.getJpPrize().compareTo(BigDecimal.ZERO) < 0 || dto.getJpPrize().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
