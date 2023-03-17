@@ -120,33 +120,34 @@ public class BetAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             //return success if bet exist
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(balance.setScale(2,RoundingMode.DOWN).doubleValue());
+            //commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            //commonVo.setMainPoints(balance.setScale(2,RoundingMode.DOWN).doubleValue());
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledVendorLineException disabledVendorLineException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (BetResultNotFoundException betResultNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (InvalidDateException invalidDateException) {
             commonVo.setErrorResponseCode(ResponseCodes.DATE_INPUT_MISSING);
         } catch (InvalidVendorLineException invalidVendorLineException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (JsonProcessingException jsonProcessingException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (Exception exception) {
