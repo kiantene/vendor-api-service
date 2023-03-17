@@ -28,7 +28,7 @@ public class VendorBetDto {
     public BigDecimal bet;
     @JsonProperty("Win")
     public BigDecimal win;
-    @JsonProperty("jpBet")
+    @JsonProperty("JPBet")
     public BigDecimal jpBet;
     @JsonProperty("JPPrize")
     public BigDecimal JpPrize;

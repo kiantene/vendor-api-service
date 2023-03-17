@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
@@ -77,6 +78,8 @@ public class CancelBetAction {
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
 
+        } catch (InvalidDecryptionException invalidDecryptionException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
