@@ -139,7 +139,7 @@ qa-automated-testing:
   needs: ["qa-ali-deploy"]
   extends: .qa-deploy-rule
   script:
-    - nohup "sleep 60 && curl --location 'http://223.25.67.48:8080/job/GA-vendor-integration-tests/build?token=gameaggregator'" >/dev/null 2>&1 &
+    - nohup $(sleep 60 && curl --location 'http://223.25.67.48:8080/job/GA-vendor-integration-tests/build?token=gameaggregator')
 
 # pt ######################################
 generate_pwd:
