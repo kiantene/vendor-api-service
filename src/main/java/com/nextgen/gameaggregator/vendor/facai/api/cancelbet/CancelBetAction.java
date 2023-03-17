@@ -2,10 +2,13 @@ package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
@@ -73,12 +76,16 @@ public class CancelBetAction {
             //Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(cancelbetDto.getMemberAccount());
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(Long.toString(cancelbetDto.getBankID()), vendorPlayer.getVendorId());
+            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+
+            //Verify remaining parameters (Verify against database values)
+            this.doVerification(commonDto, cancelbetDto, gameSession);
 
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
 
         } catch (InvalidDecryptionException invalidDecryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
@@ -89,7 +96,11 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (JsonProcessingException jsonProcessingException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (Exception exception) {
+        }catch (CredentialNotFoundException credentialNotFoundException) {
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+        } catch (DisabledGameException disabledGameException) {
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+        }catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);
@@ -118,5 +129,24 @@ public class CancelBetAction {
         if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
         if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
         if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
+    }
+
+    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession) throws  InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException {
+
+        //Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelbetDto.getMemberAccount(), InvalidPlayerException::new);
+
+        //Verify received game id is the same from game session
+        //comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(cancelbetDto.getGameID()), DisabledGameException::new);
+
+        //Verify received currency is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelbetDto.getCurrency(), CurrencyNotSupportedException::new);
+
+        //Verify received agent code is the same from credential
+        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
+
     }
 }
