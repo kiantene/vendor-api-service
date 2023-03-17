@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.gameurl;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
@@ -22,7 +23,8 @@ import java.util.Optional;
 @Slf4j
 public class GameUrlService implements GameUrl {
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException {
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+            throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("account", gameSession.getVendorPlayerUsername());
         formData.add("gamehall", "CQ9");
@@ -35,7 +37,8 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorLineException, InvalidVendorResponseException {
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+            throws InvalidVendorLineException, InvalidVendorResponseException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
         String secretKey = credentials.get(Credentials.API_TOKEN);
