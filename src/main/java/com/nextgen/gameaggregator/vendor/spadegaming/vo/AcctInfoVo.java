@@ -9,5 +9,5 @@ public class AcctInfoVo {
     private String userName;
     private String currency;
     private BigDecimal balance;
-    private String siteId;
+    private Integer siteId;
 }

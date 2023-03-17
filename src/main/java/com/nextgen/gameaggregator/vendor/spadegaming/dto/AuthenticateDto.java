@@ -14,6 +14,16 @@ public class AuthenticateDto {
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String serialNo;
+
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String merchantCode;
+
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String acctId;
 
     @NotBlank
@@ -25,13 +35,8 @@ public class AuthenticateDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String language;
 
-    @NotBlank
-    @Size(max = 50)
+    @Size(max = 10)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String serialNo;
+    private String gameCode;
 
-    @NotBlank
-    @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String merchantCode;
 }

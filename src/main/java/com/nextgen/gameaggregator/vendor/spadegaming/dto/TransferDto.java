@@ -2,16 +2,18 @@ package com.nextgen.gameaggregator.vendor.spadegaming.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.*;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransferDto {
+public class TransferDto implements BetData{
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -69,4 +71,26 @@ public class TransferDto {
 
     @Size(max = 50)
     private String gameFeature;
+
+    @Override
+    public String getExternalTransactionId() {
+        return referenceId;
+    }
+
+    @Override
+    public String getRoundId() {
+        return transferId;
+    }
+
+    @Override
+    public String getGameId() {
+        return gameCode;
+    }
+
+    @Override
+    public Long getTimestamp() {
+        Instant instant = LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant();
+        long epochSecond = instant.getEpochSecond();
+        return epochSecond;
+    }
 }
