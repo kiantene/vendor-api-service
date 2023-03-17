@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.service;
 
-import java.math.BigDecimal;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +48,7 @@ public class TransferService {
 
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
-            transferVo.setTransferId("0ab9bdca06c14811b24653468e609838");
+            transferVo.setTransferId(dto.getTransferId());
             transferVo.setMerchantCode(Credentials.MERCHANT_CODE);
             transferVo.setMerchantTxId("20130813014319279367");
             transferVo.setAcctId(gameSession.getVendorPlayerUsername());

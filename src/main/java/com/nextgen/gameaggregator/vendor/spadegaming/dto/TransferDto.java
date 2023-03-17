@@ -74,7 +74,7 @@ public class TransferDto implements BetData{
 
     @Override
     public String getExternalTransactionId() {
-        return referenceId;
+        return transferId;
     }
 
     @Override
