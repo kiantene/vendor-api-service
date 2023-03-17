@@ -1,31 +1,43 @@
 package com.nextgen.gameaggregator.vendor.facai.service;
 
+import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
+import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.Base64;
+import java.util.Date;
 
 @Service
 @Slf4j
 public class VendorService {
-    public String aesEncrypt(String dataString, String appKey) throws Exception {
-        Base64.Encoder encoder = Base64.getEncoder();
-        SecretKeySpec keySpec = new SecretKeySpec(appKey.getBytes(), "AES");
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, keySpec);
-        return encoder.encodeToString(cipher.doFinal(dataString.getBytes("UTF-8")));
+    public String aesEncrypt(String dataString, String appKey) throws InvalidEncryptionException {
+        try {
+            Base64.Encoder encoder = Base64.getEncoder();
+            SecretKeySpec keySpec = new SecretKeySpec(appKey.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, keySpec);
+            return encoder.encodeToString(cipher.doFinal(dataString.getBytes("UTF-8")));
+        } catch (Exception exception){
+            throw new InvalidEncryptionException();
+        }
     }
 
-    public String aesDecrypt(String dataString, String appKey) throws Exception {
-        Base64.Decoder decoder = Base64.getDecoder();
-        SecretKeySpec keySpec = new SecretKeySpec(appKey.getBytes(), "AES");
-        Cipher cipher = Cipher.getInstance( "AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, keySpec);
-        return new String(cipher.doFinal(decoder.decode(dataString)));
+    public String aesDecrypt(String dataString, String appKey) throws InvalidDecryptionException {
+        try {
+            Base64.Decoder decoder = Base64.getDecoder();
+            SecretKeySpec keySpec = new SecretKeySpec(appKey.getBytes(), "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, keySpec);
+            return new String(cipher.doFinal(decoder.decode(dataString)));
+        } catch (Exception exception){
+            throw new InvalidDecryptionException();
+        }
     }
 
     public static String md5(String input) throws Exception {
@@ -58,9 +70,24 @@ public class VendorService {
 
     }
 
+    public boolean isValidInteger(Integer number) {
+        // check integer not blank, not null, and not a space
+        return number != null && number.toString().trim().length() > 0;
+    }
+
     public boolean isValidTimestamp(long timestamp) {
         try {
             Instant instant = Instant.ofEpochMilli(timestamp);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean isValidDateString(String timestamp, String pattern) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(pattern);
+        try {
+            Date date = dateFormat.parse(timestamp);
             return true;
         } catch (Exception e) {
             return false;
