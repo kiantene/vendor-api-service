@@ -128,6 +128,7 @@ public class BalanceAction {
         if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
         if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
         if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
         if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
         if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
     }
