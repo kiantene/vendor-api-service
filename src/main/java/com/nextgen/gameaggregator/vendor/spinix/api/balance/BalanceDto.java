@@ -30,7 +30,7 @@ public class BalanceDto {
     public String userToken;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String gameId;
 
     @NotBlank
