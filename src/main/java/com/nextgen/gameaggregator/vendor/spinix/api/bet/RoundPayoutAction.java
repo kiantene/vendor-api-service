@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.api.endround.EndRoundDataDto;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
@@ -66,32 +67,24 @@ public class RoundPayoutAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto);
 
-            // Gather require data
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(dto.getUserId());
-            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), vendorPlayer.getVendorId());
-
             // Get game session
-//            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorPlayer.getUsername(), vendorGame.getVendorGameCode());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
 
+            // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
+            this.doVerification(dto, list, gameSession);
+
+            // Search for bet, win and/or cancel bet
             RoundPayoutTransactionDto cancelBet = RoundPayoutDto.findTransaction(list, "cancelBet");
             RoundPayoutTransactionDto betRecord = RoundPayoutDto.findTransaction(list, "bet");
             RoundPayoutTransactionDto winRecord = RoundPayoutDto.findTransaction(list, "win");
-
-            // Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
-
-            // MD5 body request as external transaction id for both bet and win record
-            VendorService vendorService = new VendorService();
-            String externalTransactionId = vendorService.md5(body);
 
             RoundPayoutDataWalletVo roundPayoutDataWalletVo = new RoundPayoutDataWalletVo();
 
             // Set necessary values to process bet record
             if(betRecord != null && betRecord.getType().equals("bet")) {
                 BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
-                betDto.setExternalTransactionId(externalTransactionId);
+                betDto.setExternalTransactionId(betRecord.getId());
                 betDto.setAmount(betRecord.getAmount().abs());
                 betDto.setTimestamp(betRecord.getTimestamp());
                 BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
@@ -101,12 +94,12 @@ public class RoundPayoutAction {
             }
 
             // Check if bet record exists before process win record
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
+            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
             // Set necessary values to process win record
             if (betHistory.getRoundId() != null) {
                 WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
-                winDto.setExternalTransactionId(externalTransactionId);
+                winDto.setExternalTransactionId(winRecord.getId());
                 winDto.setAmount(winRecord.getAmount());
                 winDto.setWinType(this.getWinType(winRecord));
                 winDto.setTimestamp(winRecord.getTimestamp());
@@ -129,18 +122,16 @@ public class RoundPayoutAction {
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
 
-        } catch(BetNotFoundException e) {
-            roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
-            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch(DuplicateExternalTransactionIdException e) {
+        } catch(BetNotFoundException |
+                DuplicateExternalTransactionIdException e
+        ) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
-            throw new RuntimeException(e);
-        } catch (GameNotSupportedException e) {
-            throw new RuntimeException(e);
+            roundPayoutErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
+            httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             throw new RuntimeException(e);
         } catch (InvalidOperatorResponseException e) {
@@ -159,8 +150,12 @@ public class RoundPayoutAction {
             throw new RuntimeException(e);
         } catch (DisabledGameException e) {
             throw new RuntimeException(e);
-        } catch (InvalidRequestException e) {
-            throw new RuntimeException(e);
+        } catch (InvalidRequestException |
+                 CurrencyNotSupportedException e
+        ) {
+            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         } catch(Exception e) {
@@ -185,8 +180,30 @@ public class RoundPayoutAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RoundPayoutDto dto, GameSession gameSession)
-            throws InvalidPlayerException, AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(RoundPayoutDto dto, List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList, GameSession gameSession)
+            throws InvalidPlayerException,
+            InvalidRequestException,
+            AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            CurrencyNotSupportedException {
+
+        // General validation
+//        for (RoundPayoutTransactionDto obj : roundPayoutTransactionDtoList) {
+//            ValidationUtils.validateRequest(obj);
+//            switch(obj.getType()) {
+//                case "bet":
+//                    if(obj.getAmount().compareTo(BigDecimal.ZERO) > 0) throw new InvalidRequestException();
+//                    break;
+//                case "win":
+//                case "cancelBet":
+//                    if(obj.getAmount().compareTo(BigDecimal.ZERO) < 0) throw new InvalidRequestException();
+//                    break;
+//                default:
+//                    break;
+//            }
+//        }
 
         // Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
@@ -194,6 +211,9 @@ public class RoundPayoutAction {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+
+        // Verify received game id is the same from game session
+        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
