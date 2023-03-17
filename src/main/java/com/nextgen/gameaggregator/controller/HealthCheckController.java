@@ -1,9 +1,5 @@
 package com.nextgen.gameaggregator.controller;
 
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,17 +13,32 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping(path = "health/")
 @Slf4j
 public class HealthCheckController {
-    @Autowired
-    private VendorLineService vendorLineService;
     @Value("${mavenTimestamp}")
     private String timestamp;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
+    @Value("${spring.datasource.maria-default.jdbc-url}")
+    private String jdbcUrl;
+
+    @Value("${spring.datasource.maria-default.username}")
+    private String dbUsername;
+
+    @Value("${spring.redis.database}")
+    private String redisDB;
+
+    @Value("${spring.redis.host}")
+    private String redisHost;
+
+    @Value("${testing.stub}")
+    private String stub;
+
+    @Value("${logstash.host}")
+    private String logstashHost;
 
     @GetMapping(path = "status")
     public String status() {
-        log.info("Health Check OK");
+        // log.info("Health Check OK");
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                 .withZone(ZoneId.of("UTC"));
@@ -38,45 +49,22 @@ public class HealthCheckController {
         return "OK" + " | VENDOR | " + profilesActive + " | " + timezoneTimestamp;
     }
 
-    @GetMapping(path = "db")
-    public String db() {
+    @GetMapping(path = "info")
+    public String info() {
+        String output;
 
-        long startTime = 0, endTime = 0, time = 0;
-        try {
-            startTime = System.currentTimeMillis();
+        output = "Profile:<br>" + profilesActive +
+                "<br><br>" +
+                "DB Info:<br>" + jdbcUrl +
+                "<br>" + dbUsername +
+                "<br><br>" +
+                "Redis Info:<br>" + redisDB +
+                "<br>" + redisHost +
+                "<br><br>" +
+                "Logstash Host:<br>" + logstashHost +
+                "<br><br>" +
+                "Testing Stub:<br>" + stub ;
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(2, 2, 2);
-
-            endTime = System.currentTimeMillis();
-            time = endTime - startTime;
-
-            log.info("DB Check Latency: {}", time);
-
-        } catch (Exception exception) {
-            log.info(exception.toString());
-        }
-        return "DB Check Latency: " + String.valueOf(time);
-    }
-
-
-    @GetMapping(path = "redis")
-    public String redis() {
-        long startTime = 0, endTime = 0, time = 0;
-
-        try {
-            startTime = System.currentTimeMillis();
-
-            String secretKey = vendorLineService.getCredentialValueByName(2, "secretKey");
-
-            endTime = System.currentTimeMillis();
-            time = endTime - startTime;
-
-            log.info("Redis Check Latency {}", time);
-
-        } catch (Exception exception) {
-            log.info(exception.toString());
-        }
-
-        return "Redis Check Latency: " + String.valueOf(time);
+        return output;
     }
 }
