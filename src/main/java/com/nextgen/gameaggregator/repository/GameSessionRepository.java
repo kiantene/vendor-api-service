@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.repository;
 
 import com.nextgen.gameaggregator.entity.GameSession;
-import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -12,9 +10,7 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
 
     GameSession findByToken(String token);
 
-    @Query(value = "SELECT gs FROM GameSession gs WHERE gs.vendorPlayerUsername = :vendorPlayerUsername ORDER BY gs.id DESC")
-    GameSession findTop1ByVendorPlayerUsernameOrderByDescId(@Param("vendorPlayerUsername") String vendorPlayerUsername);
+    GameSession findTop1ByVendorPlayerUsernameOrderByIdDesc(String vendorPlayerUsername);
 
-    @Query(value = "SELECT gs FROM GameSession gs WHERE gs.vendorPlayerUsername = :vendorPlayerUsername AND gs.vendorGameCode = :vendorGameCode ORDER BY gs.id DESC")
-    GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByDescId(@Param("vendorPlayerUsername") String vendorPlayerUsername, @Param("vendorGameCode") String vendorGameCode);
+    GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByIdDesc(String vendorPlayerUsername, String vendorGameCode);
 }

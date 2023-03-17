@@ -92,14 +92,15 @@ public class GameSessionService {
 
     @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
-        GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameOrderByDescId(username);
+        GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameOrderByIdDesc(username);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         return session;
     }
 
+    @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsernameAndVendorGameCode(String username, String vendorGameCode) throws AuthenticationException {
-        GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByDescId(username, vendorGameCode);
+        GameSession session = gameSessionRepository.findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByIdDesc(username, vendorGameCode);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         return session;
