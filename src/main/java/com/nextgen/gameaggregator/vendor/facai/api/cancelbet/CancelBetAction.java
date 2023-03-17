@@ -4,12 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
@@ -61,6 +57,9 @@ public class CancelBetAction {
             //Convert original request body into commonDto
             CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
 
+            //Validate request parameters from vendor (Non-database related)
+            this.doValidation(commonDto);
+
             //TODO pending PG update core function to get appKey
             //Decrypt raw respond
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), "Q7RaR8CUbwZ0roD2");
@@ -68,8 +67,8 @@ public class CancelBetAction {
             //map decrypted data(string json) into balanceDto
             CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
 
-            //Validate request parameters (Non-database calls)
-            this.doValidation(cancelbetDto);
+            //Validate request parameters from vendor after decrypt (Non-database related)
+            this.doDecryptValidation(cancelbetDto);
 
             //Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(cancelbetDto.getMemberAccount());
@@ -86,6 +85,8 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+        }catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (JsonProcessingException jsonProcessingException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (Exception exception) {
@@ -98,8 +99,24 @@ public class CancelBetAction {
 
     }
 
-    private void doValidation(CancelBetDto cancelBetDto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
         // General validation
-        ValidationUtils.validateRequest(cancelBetDto);
+        //ValidationUtils.validateRequest(dto);
+        if(!vendorService.isValidString(dto.getAgentCode())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getSign())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
+    }
+
+    private void doDecryptValidation(CancelBetDto dto) throws InvalidRequestException, InvalidPlayerException, CurrencyNotSupportedException {
+        // General validation
+        //ValidationUtils.validateRequest(dto);
+        if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
+        if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
+        if(dto.getBankID() == null) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
+        if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
     }
 }
