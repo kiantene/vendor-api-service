@@ -91,6 +91,8 @@ public class BalanceAction {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
+        } catch (InvalidDecryptionException invalidDecryptionException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CredentialNotFoundException credentialNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
@@ -116,7 +118,6 @@ public class BalanceAction {
         //ValidationUtils.validateRequest(dto);
         if(!vendorService.isValidString(dto.getAgentCode())) {throw new InvalidRequestException();}
         if(!vendorService.isValidString(dto.getSign())) {throw new InvalidRequestException();}
-        //if(!this.isValidString(dto.getParams())) {throw new InvalidRequestException();}
         if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
         if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
     }
@@ -127,7 +128,8 @@ public class BalanceAction {
         if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
         if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
         if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
+        if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
     }
 
     private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException {
