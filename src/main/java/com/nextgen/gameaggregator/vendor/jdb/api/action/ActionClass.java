@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
@@ -21,12 +22,17 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class ActionClass {
-    @Autowired
-    private BetNSettleService betNSettleService;
+
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private HttpService httpService;
+
+    // JDB Action API Service
+    @Autowired
+    private BalanceService balanceService;
+    @Autowired
+    private BetNSettleService betNSettleService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) {
@@ -62,6 +68,9 @@ public class ActionClass {
     private CommonVo actionHandling(ActionDto actionDto, String traceId){
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
+            case "6":
+                vo = balanceService.balance(actionDto, traceId);
+                break;
             case "8":
                 vo = betNSettleService.betNSettle(actionDto, traceId);
                 break;
