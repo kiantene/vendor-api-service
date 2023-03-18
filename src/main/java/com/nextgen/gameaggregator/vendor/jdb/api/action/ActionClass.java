@@ -39,7 +39,7 @@ public class ActionClass {
             String body = httpRequestLog.getRequestBody();
 
             // Convert original request body into dto
-            VendorRequestDto commonDto = HttpService.convertJsonToDto(body, VendorRequestDto.class);
+            VendorRequestDto commonDto = HttpService.convertQueryStringToDto(body, VendorRequestDto.class);
             ValidationUtils.validateRequest(commonDto);
             String params = VendorService.decrypt(commonDto.getX(), "47e0cd2ece0883e2", "b87f2867577b68ce");
             log.info(params);
@@ -48,6 +48,7 @@ public class ActionClass {
 
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
+            log.error(ex.getMessage());
         } finally {
             httpService.end(httpRequestLog, vo);
         }
