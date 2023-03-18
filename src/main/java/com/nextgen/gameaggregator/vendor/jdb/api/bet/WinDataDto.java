@@ -24,6 +24,6 @@ public class WinDataDto implements WinData {
 
     @Override
     public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog) {
-        return null;
+        return betResultLog;
     }
 }
