@@ -31,4 +31,23 @@ public class BetNSettleDto {
     private String lastModifyTime;
     private String sessionNo;
     private BigDecimal mb;
+
+
+    // Slot Only, gType = 0
+    private BigDecimal jackpotWin;
+    private BigDecimal jackpotContribute;
+    @JsonProperty("hasFreegame")
+    private Boolean hasFreeGame;;
+
+
+    // Fish Only, gType = 7
+    private String roomType;
+
+
+    // Slot and Arcade, gType = 0 OR gType = 9
+    private Boolean hasGamble;
+
+
+    // Arcade and Lottery, gType = 9 OR gType = 12
+    private Boolean hasBonusGame;
 }

@@ -6,6 +6,9 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,25 +37,25 @@ public class GameUrlService implements GameUrl {
     @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
         JSONObject json = new JSONObject();
-        json.put("action", 21);
+        json.put("action", Actions.GAME_URL);
         json.put("ts", System.currentTimeMillis());
-        json.put("parent", "zt001cnyuatag");
+        json.put("parent", credentials.get(Credentials.PARENT));
         json.put("uid", gameSession.getVendorPlayerUsername());
         json.put("balance", 0);
-        json.put("gType", "7");
+        json.put("gType", GameCategory.CATEGORY.get(gameSession.getGameCategoryId()));
         json.put("mType", gameSession.getVendorGameCode());
         json.put("windowMode", "2");
 
         GameUrlVo vo = new GameUrlVo();
 
         try {
-            String x = vendorService.encrypt(json.toString(), "47e0cd2ece0883e2", "b87f2867577b68ce");
+            String x = vendorService.encrypt(json.toString(), credentials.get(Credentials.KEY), credentials.get(Credentials.IV));
 
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("dc", "zfs");
+            params.add("dc", credentials.get(Credentials.DC));
             params.add("x", x);
 
-            vo = WebClient.create("http://api.jygrq.com/apiRequest.do")
+            vo = WebClient.create(credentials.get(Credentials.API_SERVER))
                     .post()
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters.fromFormData(params))
