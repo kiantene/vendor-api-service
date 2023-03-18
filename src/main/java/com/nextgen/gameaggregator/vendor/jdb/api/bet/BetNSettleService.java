@@ -5,16 +5,16 @@ import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 @Service
 @Slf4j
@@ -58,14 +58,14 @@ public class BetNSettleService {
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
 
-            vo.setStatus("0000");
             vo.setBalance(betResultEvent.getLastBalance());
-            vo.setErrText("Succeed");
+            vo.setResponseCode(ResponseCode.SUCCESS);
+
+        } catch (InsufficientBalanceException exception) {
+            vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (Exception exception) {
-            vo.setStatus("9999");
-            vo.setBalance(BigDecimal.ZERO);
-            vo.setErrText("Failed");
+            vo.setResponseCode(ResponseCode.FAILED);
         }
 
         return vo;

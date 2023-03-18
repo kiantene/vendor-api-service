@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class HelperClass {
+public class HelperAction {
 
     @Autowired
     private HttpService httpService;

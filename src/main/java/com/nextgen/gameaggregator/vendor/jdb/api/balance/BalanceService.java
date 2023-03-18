@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,14 +51,11 @@ public class BalanceService {
             VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId());
 
             // Construct VO
-            vo.setStatus("0000");
             vo.setBalance(balance);
-            vo.setErrText("Succeed");
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (Exception exception) {
-            vo.setStatus("9999");
-            vo.setBalance(BigDecimal.ZERO);
-            vo.setErrText("Failed");
+            vo.setResponseCode(ResponseCode.FAILED);
         }
 
         return vo;
