@@ -37,10 +37,10 @@ public class GameUrlService implements GameUrl {
         json.put("action", 21);
         json.put("ts", System.currentTimeMillis());
         json.put("parent", "zt001cnyuatag");
-        json.put("uid", "testpl01");
-        json.put("balance", Double.valueOf(2000));
+        json.put("uid", gameSession.getVendorPlayerUsername());
+        json.put("balance", 0);
         json.put("gType", "7");
-        json.put("mType", "7001");
+        json.put("mType", gameSession.getVendorGameCode());
         json.put("windowMode", "2");
 
         GameUrlVo vo = new GameUrlVo();

@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
@@ -15,12 +16,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class ActionClass {
+    @Autowired
+    private BetNSettleService betNSettleService;
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
@@ -45,6 +47,7 @@ public class ActionClass {
             log.info(params);
             ActionDto actionDto = HttpService.convertJsonToDto(params, ActionDto.class);
             actionDto.setParams(params);
+            vo = this.actionHandling(actionDto, traceId);
 
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
@@ -53,10 +56,18 @@ public class ActionClass {
             httpService.end(httpRequestLog, vo);
         }
 
-        vo.setBalance(BigDecimal.valueOf(1000));
-        vo.setStatus("0000");
-        vo.setErrText("Succeed");
+        return vo;
+    }
 
+    private CommonVo actionHandling(ActionDto actionDto, String traceId){
+        CommonVo vo = new CommonVo();
+        switch (actionDto.getAction()) {
+            case "8":
+                vo = betNSettleService.betNSettle(actionDto, traceId);
+                break;
+            default:
+                break;
+        }
         return vo;
     }
 }
