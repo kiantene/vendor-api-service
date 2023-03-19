@@ -124,6 +124,11 @@ public class SettledBetService {
             BetHistory betHistory = new BetHistory();
             BeanUtils.copyProperties(betHistory, entity);
             betHistory.setRawData(entity.getMd5RawSettledResult());
+            //TODO HOUSE AND MASTERAGENT ID MAPPING
+            betHistory.setHouseId(0);
+            betHistory.setMasterAgentId(0);
+            //TODO REMOVING OPERATORSTATUS
+            betHistory.setOperatorStatus(1);
 
             betHistoryRepository.save(betHistory);
 
