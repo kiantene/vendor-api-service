@@ -6,9 +6,12 @@ spring:
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       # ali rds
-      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: ga_admin
-      password: Asdf1234-
+#      jdbc-url: jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+#      username: ga_admin
+#      password: Asdf1234-
+      jdbc-url: jdbc:mariadb://stg.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      username: svc_vendor_dev
+      password: H2ftnFhNshRJ41
   jpa:
     properties:
       hibernate:
