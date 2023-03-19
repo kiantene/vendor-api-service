@@ -21,7 +21,7 @@ spring:
   application:
     name: vendor-api-service
   profiles:
-    active: dev
+    active: qa
   main:
     allow-bean-definition-overriding: true
 springdoc:

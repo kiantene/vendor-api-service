@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.service;
 
+import com.nextgen.gameaggregator.exception.InvalidDateException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @Service
 @Slf4j
@@ -42,6 +45,18 @@ public class VendorService {
             return decryptData;
         } catch (Exception exception) {
             throw new InvalidDecryptionException(exception.getMessage());
+        }
+    }
+
+    public static Long toTimestamp(String dateString) throws InvalidDateException {
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+            Date date = dateFormat.parse(dateString);
+            long unixTimestamp = date.getTime() / 1000L;
+            System.out.println(unixTimestamp);
+            return unixTimestamp;
+        } catch (Exception exception) {
+            throw new InvalidDateException(exception.getMessage());
         }
     }
 }

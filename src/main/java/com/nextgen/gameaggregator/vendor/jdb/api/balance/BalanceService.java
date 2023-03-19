@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
@@ -38,17 +36,13 @@ public class BalanceService {
             this.doValidation(balanceDto);
 
             // 2. Get vendor player details
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(balanceDto.getUid());
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession);
 
             // 4. Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
-            // 5. Get vendor line supported currency
-            VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId());
 
             // Construct VO
             vo.setBalance(balance);
