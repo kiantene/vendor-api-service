@@ -31,6 +31,16 @@ public class GeneralAction {
     @Autowired
     private HttpService httpService;
 
+    // CQ9 Action Services
+    @Autowired
+    private BalanceService balanceService;
+    @Autowired
+    private BetNSettleService betNSettleService;
+    @Autowired
+    private BetService betService;
+    @Autowired
+    private SettleService settleService;
+
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -65,19 +75,15 @@ public class GeneralAction {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
             case Actions.GET_BALANCE:
-                BalanceService balanceService = new BalanceService();
                 vo = balanceService.balance(actionDto, traceId);
                 break;
             case Actions.BET_AND_SETTLE:
-                BetNSettleService betNSettleService = new BetNSettleService();
                 vo = betNSettleService.betNSettle(actionDto, traceId);
                 break;
             case Actions.BET:
-                BetService betService = new BetService();
                 vo = betService.bet(actionDto, traceId);
                 break;
             case Actions.SETTLE:
-                SettleService settleService = new SettleService();
                 vo = settleService.settle(actionDto, traceId);
                 break;
             default:
