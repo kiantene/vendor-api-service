@@ -31,11 +31,6 @@ public class GameUrlService implements GameUrl {
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
-        return null;
-    }
-
-    @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
         JSONObject json = new JSONObject();
         json.put("action", Actions.GAME_URL);
         json.put("ts", System.currentTimeMillis());
@@ -46,19 +41,30 @@ public class GameUrlService implements GameUrl {
         json.put("mType", gameSession.getVendorGameCode());
         json.put("windowMode", "2");
 
-        GameUrlVo vo = new GameUrlVo();
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
         try {
             String x = vendorService.encrypt(json.toString(), credentials.get(Credentials.KEY), credentials.get(Credentials.IV));
 
-            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
             params.add("dc", credentials.get(Credentials.DC));
             params.add("x", x);
 
+        }  catch (Exception exception) {
+            throw new InvalidFormatException(exception.getMessage());
+        }
+
+        return params;
+    }
+
+    @Override
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+        GameUrlVo vo = new GameUrlVo();
+
+        try {
             vo = WebClient.create(credentials.get(Credentials.API_SERVER))
                     .post()
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(BodyInserters.fromFormData(params))
+                    .body(BodyInserters.fromFormData(formData))
                     .retrieve()
                     .onStatus(HttpStatus::isError,
                             response -> {
