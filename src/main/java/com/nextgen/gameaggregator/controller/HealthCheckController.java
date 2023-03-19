@@ -78,7 +78,7 @@ public class HealthCheckController {
         redisTemplate.opsForValue().get("test");
         long endTime = System.currentTimeMillis();
         long latency = endTime - startTime;
-        String output = "Redis latency: " + latency + " milliseconds";
+        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " milliseconds";
 
         return output;
     }
@@ -89,7 +89,7 @@ public class HealthCheckController {
         jdbcTemplate.queryForObject("SELECT 1", Integer.class);
         long endTime = System.currentTimeMillis();
         long latency = endTime - startTime;
-        String output = "Database latency: " + latency + " milliseconds";
+        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " milliseconds";
 
         return output;
     }

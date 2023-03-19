@@ -46,18 +46,20 @@ spring:
         timeout:
           ms: "45000"
 logging:
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-        type:
-          descriptor:
-            sql:
-              BasicBinder: TRACE
+#  level:
+#    org:
+#      hibernate:
+#        SQL: DEBUG
+#        type:
+#          descriptor:
+#            sql:
+#              BasicBinder: TRACE
+  config: classpath:logback-spring.xml
+logstash:
+  host: 8.210.47.56
+  port: 5000
 testing:
   stub: true
-#logstash:
-#  address: "127.0.0.1:5000"
 
 # Micro-services list
 #grpc:
