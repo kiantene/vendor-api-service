@@ -5,7 +5,9 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.balance.BalanceService;
-import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetNSettleService;
+import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
+import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
@@ -28,12 +30,6 @@ public class GeneralAction {
     private GameSessionService gameSessionService;
     @Autowired
     private HttpService httpService;
-
-    // JDB Action API Service
-    @Autowired
-    private BalanceService balanceService;
-    @Autowired
-    private BetNSettleService betNSettleService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) {
@@ -65,18 +61,29 @@ public class GeneralAction {
         return vo;
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId){
+    private CommonVo actionHandling(ActionDto actionDto, String traceId) {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
             case Actions.GET_BALANCE:
+                BalanceService balanceService = new BalanceService();
                 vo = balanceService.balance(actionDto, traceId);
                 break;
             case Actions.BET_AND_SETTLE:
+                BetNSettleService betNSettleService = new BetNSettleService();
                 vo = betNSettleService.betNSettle(actionDto, traceId);
+                break;
+            case Actions.BET:
+                BetService betService = new BetService();
+                vo = betService.bet(actionDto, traceId);
+                break;
+            case Actions.SETTLE:
+                SettleService settleService = new SettleService();
+                vo = settleService.settle(actionDto, traceId);
                 break;
             default:
                 break;
         }
+        
         return vo;
     }
 }

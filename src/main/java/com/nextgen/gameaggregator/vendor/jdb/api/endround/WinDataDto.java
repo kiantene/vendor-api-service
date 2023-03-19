@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.jdb.api.bet;
+package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
