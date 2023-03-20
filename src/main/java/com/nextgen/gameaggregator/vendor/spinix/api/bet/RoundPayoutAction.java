@@ -68,7 +68,10 @@ public class RoundPayoutAction {
             this.doValidation(dto);
 
             // Get game session
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+            // GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+
+            // Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
 
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
@@ -145,10 +148,17 @@ public class RoundPayoutAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  DisabledVendorLineException |
-                 DisabledAgentPlayerException |
-                 AuthenticationException e
+                 DisabledAgentPlayerException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
+            roundPayoutErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
+            httpService.logError(httpRequestLog, e);
+        } catch (GameNotSupportedException e) {
+            roundPayoutErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } catch (DisabledGameException e) {
@@ -186,6 +196,7 @@ public class RoundPayoutAction {
     private void doVerification(RoundPayoutDto dto, List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList, GameSession gameSession)
             throws InvalidPlayerException,
             InvalidRequestException,
+            GameNotSupportedException,
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -210,10 +221,13 @@ public class RoundPayoutAction {
 
         // Verify received username is the same from game session
         // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        if(!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
+            throw new InvalidPlayerException();
+        }
 
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        // ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
