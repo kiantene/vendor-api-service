@@ -105,7 +105,7 @@ public class RoundPayoutAction {
                 BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
                 // Set necessary values to process win record
-                if (betHistory.getRoundId() != null) {
+                if (winRecord != null && betHistory.getRoundId() != null) {
                     WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
                     winDto.setExternalTransactionId(winRecord.getId());
                     winDto.setAmount(winRecord.getAmount());
