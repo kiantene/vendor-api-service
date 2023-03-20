@@ -58,13 +58,11 @@ public class BetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
         BigDecimal balance = BigDecimal.valueOf(0);
+        Integer gameID = 0;
         //betVo.setResult(0);
         //betVo.setMainPoints(1000.00);
 
         try {
-            if(balance.intValue() == 0) {
-                throw new AuthenticationException();
-            }
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -80,6 +78,11 @@ public class BetAction {
 
             //map decrypted data(string json) into balanceDto
             VendorBetDto vendorBetDto = HttpService.convertJsonToDto(jsonParam, VendorBetDto.class);
+
+            gameID = vendorBetDto.getGameID();
+            if(gameID == 22024 || gameID == 22028 || gameID == 22039|| gameID == 22040) {
+                throw new AuthenticationException();
+            }
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(vendorBetDto);
@@ -118,7 +121,18 @@ public class BetAction {
             commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            if(gameID == 22024) {
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            }else if(gameID == 22028){
+                commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            }else if(gameID == 22039){
+                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            }else if(gameID == 22040){
+                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            }else{
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            }
+
             //commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (InvalidDecryptionException invalidDecryptionException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
