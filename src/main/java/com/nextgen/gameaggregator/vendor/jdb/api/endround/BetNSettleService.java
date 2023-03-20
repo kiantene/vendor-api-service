@@ -79,7 +79,7 @@ public class BetNSettleService {
 
     private BetDataDto prepareBetData(BetNSettleDto dto) {
         BetDataDto betDataDto = new BetDataDto();
-        betDataDto.setExternalTransactionId(dto.getGameSeqNo().toString());
+        betDataDto.setExternalTransactionId(dto.getTransferId().toString());
         betDataDto.setAmount(dto.getBet());
         betDataDto.setRoundId(dto.getGameSeqNo().toString());
         betDataDto.setGameId(dto.getMType().toString());
@@ -89,7 +89,7 @@ public class BetNSettleService {
 
     private WinDataDto prepareWinData(BetNSettleDto dto) {
         WinDataDto winDataDto = new WinDataDto();
-        winDataDto.setExternalTransactionId(dto.getGameSeqNo().toString());
+        winDataDto.setExternalTransactionId(dto.getTransferId().toString());
         winDataDto.setAmount(dto.getWin());
         winDataDto.setRoundId(dto.getGameSeqNo().toString());
         winDataDto.setGameId(dto.getMType().toString());
