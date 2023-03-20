@@ -29,6 +29,7 @@ public class CancelBetDto {
     private BigDecimal betAmount;
     @NotNull
     private BigDecimal winloseAmount;
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String userId;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
