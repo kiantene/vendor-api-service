@@ -141,7 +141,10 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getToken(), dto.getUserToken(), AuthenticationException::new);
 
         // Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        if(!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
+            throw new InvalidPlayerException();
+        }
 
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
