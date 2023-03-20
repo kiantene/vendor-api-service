@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -63,6 +64,7 @@ public class GeneralAction {
             vo = this.actionHandling(actionDto, traceId);
 
         } catch (Exception ex) {
+            vo.setResponseCode(ResponseCode.FAILED);
             log.error(ex.getMessage());
         } finally {
             httpService.end(httpRequestLog, vo);
