@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
 import lombok.AccessLevel;
@@ -18,19 +20,20 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CashTransferInOutDto extends CommonDto implements BetData {
+public class CashTransferInOutDto implements UnsettledResultSettledData {
 
-    /**
-     * Authentication Information
-     */
     @Size(min = 1, max = 100)
     @NotBlank
     //* Below are not mandatory
     private String operatorPlayerSession;
 
-    /**
-     * General Bet Information
-     */
+    @Size(min = 1, max = 100)
+    @NotBlank
+    private String operatorToken;
+
+    @Size(min = 1, max = 100)
+    @NotBlank
+    private String secretKey;
 
     //* Below are mandatory
     @NotEmpty
@@ -39,8 +42,7 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     private String playerName;
 
     @NotNull
-    @Range(min = 0)
-    private Integer gameId;
+    private String gameId;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
@@ -119,15 +121,9 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     private BigDecimal bonusBalanceAmount;
     private BigDecimal bonusRatioAmount;
 
-
     @Override
     public String getExternalTransactionId() {
-        return this.betId;
-    }
-
-    @Override
-    public BigDecimal getAmount() {
-        return this.betAmount;
+        return this.transactionId;
     }
 
     @Override
@@ -136,12 +132,42 @@ public class CashTransferInOutDto extends CommonDto implements BetData {
     }
 
     @Override
-    public String getGameId() {
-        return String.valueOf(this.gameId);
+    public BigDecimal getWinLoss() {
+        return (this.winAmount.subtract(this.betAmount));
     }
 
     @Override
-    public Long getTimestamp() {
+    public BigDecimal getVendorWinLoss() {
+        return this.getWinLoss();
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return this.betAmount;
+    }
+
+    @Override
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public WinType getResultType() {
+        return (this.getWinLoss().compareTo(BigDecimal.ZERO) >= 0)?WinType.WIN:WinType.LOSE;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
         return this.createTime;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return this.updatedTime;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return this.updatedTime;
     }
 }

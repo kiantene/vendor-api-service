@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
@@ -67,6 +68,9 @@ public class BetAction {
             //Convert original request body into commonDto
             CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
 
+            //Validate request parameters from vendor (Non-database related)
+            this.doValidation(commonDto);
+
             //TODO pending PG update core function to get appKey
             //Decrypt raw respond
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), "Q7RaR8CUbwZ0roD2");
@@ -74,15 +78,15 @@ public class BetAction {
             //map decrypted data(string json) into balanceDto
             VendorBetDto vendorBetDto = HttpService.convertJsonToDto(jsonParam, VendorBetDto.class);
 
-            //Validate request parameters (Non-database calls)
-            this.doValidation(vendorBetDto);
+            //Validate request parameters from vendor after decrypt (Non-database related)
+            this.doDecryptValidation(vendorBetDto);
 
             //get gameSession by player name
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorBetDto.memberAccount);
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(vendorBetDto, gameSession);
+            this.doVerification(commonDto, vendorBetDto, gameSession, jsonParam);
 
             //Retrieve the latest wallet balance from Operator
             balance = walletService.getBalance(traceId, gameSession);
@@ -112,36 +116,43 @@ public class BetAction {
 
         } catch (AuthenticationException authenticationException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+        } catch (InvalidDecryptionException invalidDecryptionException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             //return success if bet exist
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(balance.setScale(2,RoundingMode.DOWN).doubleValue());
+            //commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            //commonVo.setMainPoints(balance.setScale(2,RoundingMode.DOWN).doubleValue());
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledVendorLineException disabledVendorLineException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (BetResultNotFoundException betResultNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidPlayerException invalidPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+        } catch (InvalidDateException invalidDateException) {
+            commonVo.setErrorResponseCode(ResponseCodes.DATE_INPUT_MISSING);
         } catch (InvalidVendorLineException invalidVendorLineException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledGameException disabledGameException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
@@ -151,19 +162,65 @@ public class BetAction {
         return commonVo;
     }
 
-    private void doValidation(VendorBetDto vendorBetDto) throws InvalidRequestException {
+    private void doValidation(CommonDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
         // General validation
-        ValidationUtils.validateRequest(vendorBetDto);
+        //ValidationUtils.validateRequest(dto);
+        if(!vendorService.isValidString(dto.getAgentCode())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getSign())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
     }
 
-    private void doVerification(VendorBetDto vendorBetDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doDecryptValidation(VendorBetDto dto) throws InvalidRequestException, InvalidPlayerException, InvalidDateException, CurrencyNotSupportedException {
+        // General validation
+        //ValidationUtils.validateRequest(dto);
+        if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
+        if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
+        if(dto.getBankID() == null) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
+        if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidInteger(dto.getGameType())) {throw new InvalidRequestException();}
+        if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
+        if(dto.getIsBuyFeature() == null) {throw new InvalidRequestException();}
+        if(dto.getBet() == null  || (dto.getBet().compareTo(BigDecimal.ZERO) < 0 || dto.getBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getWin() == null || (dto.getWin().compareTo(BigDecimal.ZERO) < 0 || dto.getWin().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getJpBet() == null || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 || dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getJpPrize() == null || (dto.getJpPrize().compareTo(BigDecimal.ZERO) < 0 || dto.getJpPrize().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
+        if(dto.getNetWin()== null || dto.getNetWin().compareTo(new BigDecimal("999999999999")) > 0) {throw new InvalidRequestException();}
+        if(!vendorService.isValidString(dto.getRecordID())) {throw new InvalidRequestException();}
+        if(!vendorService.isValidStringLength(dto.getRecordID(), 1, 24)) {throw new InvalidRequestException();}
+        if(!vendorService.isValidDateString(dto.getGameDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
+        if(!vendorService.isValidDateString(dto.getCreateDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
+
+    }
+
+    private void doVerification(CommonDto commonDto, VendorBetDto vendorBetDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
         //Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorBetDto.getMemberAccount(), InvalidPlayerException::new);
 
         //Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(vendorBetDto.getGameID()), AuthenticationException::new);
+        //comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(vendorBetDto.getGameID()), DisabledGameException::new);
+
+        //Verify received currency is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), vendorBetDto.getCurrency(), CurrencyNotSupportedException::new);
+
+        //Verify received Sign is the same from param value
+        //MD5 encrypt
+        String md5Param = "";
+        try {
+            md5Param = vendorService.md5(jsonParam);
+        } catch (Exception exception) { // any other exception encountered
+            throw new InvalidRequestException();
+        }
+        ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
+
+        //Verify received agent code is the same from credential
+        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
         //Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

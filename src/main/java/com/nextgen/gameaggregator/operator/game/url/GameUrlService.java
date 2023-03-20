@@ -44,7 +44,7 @@ public class GameUrlService {
                                   VendorLine vendorLine)
             throws
             ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-            InstantiationException, IllegalAccessException, InvalidVendorLineException , InvalidVendorResponseException{
+            InstantiationException, IllegalAccessException, InvalidVendorLineException, InvalidVendorResponseException, InvalidFormatException {
 
         String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();
@@ -53,7 +53,7 @@ public class GameUrlService {
 
         GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
         MultiValueMap<String, String> formData = gameUrl.formDataBuilder(gameCode, gameSession, credentials);
-        GameUrlVo gameUrlVo = gameUrl.call(formData, credentials);
+        GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, gameSession);
 
         GameUrlData gameUrlData = new GameUrlData();
         if (gameUrlVo != null) { // TODO: need to check error

@@ -3,10 +3,12 @@ package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.annotation.Nullable;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -16,13 +18,36 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class RoundPayoutDto {
 
+    @NotBlank
+    @Size(min = 3, max = 20)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String userId;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String gameId;
+
+    @NotBlank
+    @Size(min = 3, max =3)
+    @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max =100)
     public String roundId;
+
+    @NotBlank
+    @Pattern(regexp = "[a-zA-Z]+")
     public String gameType;
+
     public List<RoundPayoutTransactionDto> transactionList;
+
+    @Nullable
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     public String userToken;
+
+    @Nullable
     public BigDecimal validTurnover;
 
     public static RoundPayoutTransactionDto findTransaction(List<RoundPayoutTransactionDto> list, String key) {

@@ -1,20 +1,20 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api;
 
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Headers;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.AuthenticateDto;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.BalanceDto;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.TransferDto;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.AuthenticateService;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.BalanceService;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.TransferService;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,43 +22,49 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(EndPoints.PATH)
 public class ApiAction {
-    private final AuthenticateService authenticateService;
-    private final BalanceService balanceService;
-    private final TransferService transferService;
 
     @Autowired
-    public ApiAction(AuthenticateService authenticateService,
-                     BalanceService balanceService,
-                     TransferService transferService) {
-        this.authenticateService = authenticateService;
-        this.balanceService = balanceService;
-        this.transferService = transferService;
-    }
+    private HttpService httpService;
+    
+    @Autowired
+    private AuthenticateService authenticateService;
 
+    @Autowired
+    private BalanceService balanceService;
+
+    @Autowired
+    private TransferService transferService;
+
+    // Handle incoming API requests
     @PostMapping
-    public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction,
-            @RequestBody(required = false) AuthenticateDto authenticateDto,
-            @RequestBody(required = false) BalanceDto balanceDto,
-            @RequestBody(required = false) TransferDto transferDto) {
+    public ResponseVo handleApiCall(@RequestHeader(Headers.HEADER_KEY_API) String apiAction, HttpServletRequest request) {
 
-            switch (apiAction) {
-                case Headers.HEADER_VALUE_AUTHENTICATE:
-                    return authenticateService.authenticate(authenticateDto);
+        // Switch statement to determine which action to take based on the API request header
+        switch (apiAction) {
+            case Headers.HEADER_VALUE_AUTHENTICATE:
+                return authenticateService.authenticate(request);
 
-                case Headers.HEADER_VALUE_BALANCE:
-                    return balanceService.balance(balanceDto);
+            case Headers.HEADER_VALUE_BALANCE:
+                return balanceService.balance(request);
 
-                case Headers.HEADER_VALUE_TRANSFER:
-                    return transferService.transfer(transferDto);
+            case Headers.HEADER_VALUE_TRANSFER:
+                return transferService.transfer(request);
 
-                default:
-                    ResponseVo responseVo = new ResponseVo();
-                    responseVo.setMerchantCode(Credentials.MERCHANT_CODE);
-                    responseVo.setMsg(ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INVALID_REQUEST));
-                    responseVo.setCode(ResponseCode.INVALID_REQUEST);
-                    responseVo.setSerialNo("");
-                    return responseVo;
-            }
+            // If the header does not match any of the expected values, return an error response
+            default:
+                ResponseVo responseVo = new ResponseVo();
+                // Start the HTTP request logging
+                HttpRequestLog httpRequestLog = httpService.start(request);
+                
+                // Get the trace ID from the logging
+                String traceId = httpRequestLog.getTraceId();
+                responseVo.setMerchantCode(Credentials.MERCHANT_CODE);
+                responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+                responseVo.setSerialNo(traceId);
+
+                // End the HTTP request logging and return the ResponseVo object
+                httpService.end(httpRequestLog, responseVo);
+                return responseVo;
+        }
     }
-
 }

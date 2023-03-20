@@ -72,7 +72,10 @@ public class CancelBetAction {
 //            cancelBetVo.setToken(gameSession.getToken());
 
 
-        } catch (InvalidRequestException | JsonProcessingException invalidRequest) {
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 GameNotSupportedException |
+                 CurrencyNotSupportedException invalidRequest) {
             cancelBetVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
 
         } catch (AuthenticationException invalidSessionToken) {
@@ -100,15 +103,21 @@ public class CancelBetAction {
         ValidationUtils.validateRequest(cancelBetDto);
     }
     private void doVerification(CancelBetDto cancelBetDto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException {
+            throws
+            AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            GameNotSupportedException,
+            CurrencyNotSupportedException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), cancelBetDto.getToken(), AuthenticationException::new);
 
-        // validate vendor gameCode and currency
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelBetDto.getGame()), InvalidRequestException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelBetDto.getCurrency(), InvalidRequestException::new);
+        // Verify vendor gameCode and currency
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelBetDto.getGame()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelBetDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
