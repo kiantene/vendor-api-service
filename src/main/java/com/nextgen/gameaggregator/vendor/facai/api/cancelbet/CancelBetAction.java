@@ -79,7 +79,7 @@ public class CancelBetAction {
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, cancelbetDto, gameSession);
+            this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
 
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
@@ -131,7 +131,7 @@ public class CancelBetAction {
         if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
     }
 
-    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession) throws  InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException {
+    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession, String jsonParam) throws  InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException {
 
         //Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelbetDto.getMemberAccount(), InvalidPlayerException::new);
@@ -143,6 +143,16 @@ public class CancelBetAction {
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelbetDto.getCurrency(), CurrencyNotSupportedException::new);
+
+        //Verify received Sign is the same from param value
+        //MD5 encrypt
+        String md5Param = "";
+        try {
+            md5Param = vendorService.md5(jsonParam);
+        } catch (Exception exception) { // any other exception encountered
+            throw new InvalidRequestException();
+        }
+        ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
