@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
@@ -8,8 +9,10 @@ import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SettleDto implements WinData {
     private String action;
     private Long ts;
@@ -17,7 +20,7 @@ public class SettleDto implements WinData {
     private String uid;
     private String currency;
     private BigDecimal amount;
-    private Long refTransferIds;
+    private List<Long> refTransferIds;
     private Long gameRoundSeqNo;
     private Long gameSeqNo;
     @JsonProperty("gType")
