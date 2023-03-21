@@ -37,7 +37,7 @@ public class TransferDto implements BetData{
     @Range(min = 0)
     private BigDecimal amount;
 
-    @NotBlank
+    @NotNull
     @Range(min = 1)
     private Integer type;
 
