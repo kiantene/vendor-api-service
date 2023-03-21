@@ -69,7 +69,7 @@ public class BalanceService {
             acctInfoVo.setBalance(balance);
             acctInfoVo.setUserName(gameSession.getVendorPlayerUsername());
             acctInfoVo.setCurrency(gameSession.getCurrencyCode());
-            acctInfoVo.setSiteId(gameSession.getVendorId());
+            acctInfoVo.setSiteId(gameSession.getAgentId());
             
             // Populate the AuthBalanceVo object with response details
             authBalanceVo.setAcctInfo(acctInfoVo);
