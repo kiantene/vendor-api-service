@@ -123,7 +123,7 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.transactionId;
+        return this.betId;
     }
 
     @Override
