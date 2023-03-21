@@ -53,7 +53,6 @@ public class VendorService {
             SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
             Date date = dateFormat.parse(dateString);
             long unixTimestamp = date.getTime() / 1000L;
-            System.out.println(unixTimestamp);
             return unixTimestamp;
         } catch (Exception exception) {
             throw new InvalidDateException(exception.getMessage());

@@ -10,6 +10,7 @@ public enum ResponseCodes {
     PLAYER_NOT_FOUND        (500, "Account does not exist."),
     REVERT_CANCEL_BET       (799, "Revert Cancel Bet."),
     TRANSACTION_NOT_EXIST   (221, "Transaction ID number not exist."),
+    REQUIRE_CANCEL_REQUEST  (899, "Require to send Cancel request."),
     UNEXPECTED_ERROR        (999, "Unexpected error."),
     CURRENCY_MISSING        (1012, "Currency code is missing."),
     DATE_INPUT_MISSING       (1018, "Date input is missing."),

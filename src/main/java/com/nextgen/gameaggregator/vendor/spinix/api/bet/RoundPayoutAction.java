@@ -68,7 +68,10 @@ public class RoundPayoutAction {
             this.doValidation(dto);
 
             // Get game session
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+            // GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+
+            // Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
 
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
@@ -81,86 +84,96 @@ public class RoundPayoutAction {
 
             RoundPayoutDataWalletVo roundPayoutDataWalletVo = new RoundPayoutDataWalletVo();
 
-            // Set necessary values to process bet record
-            if(betRecord != null && betRecord.getType().equals("bet")) {
-                BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
-                betDto.setExternalTransactionId(betRecord.getId());
-                betDto.setAmount(betRecord.getAmount().abs());
-                betDto.setTimestamp(betRecord.getTimestamp());
-                BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            // Set necessary values to process cancel bet record
+            if(cancelBet != null && cancelBet.getType().equals("cancelBet")) {
+                BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
                 // Set Balance
-                roundPayoutDataWalletVo.setBalance(betEvent.getLastBalance());
-            }
+                roundPayoutDataWalletVo.setBalance(balance);
+            } else {
 
-            // Check if bet record exists before process win record
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                // Set necessary values to process bet record
+                if(betRecord != null && betRecord.getType().equals("bet")) {
+                    BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
+                    betDto.setExternalTransactionId(betRecord.getId());
+                    betDto.setAmount(betRecord.getAmount().abs());
+                    betDto.setTimestamp(betRecord.getTimestamp());
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
-            // Set necessary values to process win record
-            if (betHistory.getRoundId() != null) {
-                WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
-                winDto.setExternalTransactionId(winRecord.getId());
-                winDto.setAmount(winRecord.getAmount());
-                winDto.setWinType(this.getWinType(winRecord));
-                winDto.setTimestamp(winRecord.getTimestamp());
-                winDto.setEffectiveTurnover(dto.getValidTurnover().abs());
-
-                BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-
-                // Emit event for additional asynchronous processing
-                if(winRecord.getIsEnd() == true) {
-                    Thread.sleep(1000); // Sleep for 1 second
-                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+                    // Set Balance
+                    roundPayoutDataWalletVo.setBalance(betEvent.getLastBalance());
                 }
 
-                // Set Balance
-                roundPayoutDataWalletVo.setBalance(betResultEvent.getLastBalance());
+                // Check if bet record exists before process win record
+                BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
+                // Set necessary values to process win record
+                if (winRecord != null && betHistory.getRoundId() != null) {
+                    WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
+                    winDto.setExternalTransactionId(winRecord.getId());
+                    winDto.setAmount(winRecord.getAmount());
+                    winDto.setWinType(this.getWinType(winRecord));
+                    winDto.setTimestamp(winRecord.getTimestamp());
+                    winDto.setEffectiveTurnover(dto.getValidTurnover().abs());
+
+                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
+
+                    // Emit event for additional asynchronous processing
+                    if(winRecord.getIsEnd() == true) {
+                        Thread.sleep(1000); // Sleep for 1 second
+                        EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+                    }
+
+                    // Set Balance
+                    roundPayoutDataWalletVo.setBalance(betResultEvent.getLastBalance());
+                }
+
             }
 
-            // Set Currency + RoundPayoutDataWalletVo + Status
+            // Set Currency + RoundPayoutDataWalletVo + Status + req_id
             roundPayoutDataWalletVo.setCurrency(gameSession.getCurrencyCode());
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
+            roundPayoutVo.setReqId(dto.getReqId());
 
         } catch(BetNotFoundException |
-                DuplicateExternalTransactionIdException e
+                DuplicateExternalTransactionIdException |
+                BetResultNotFoundException |
+                InterruptedException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledVendorLineException |
+                 DisabledAgentPlayerException e
+        ) {
+            roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } catch (AuthenticationException e) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
             httpService.logError(httpRequestLog, e);
-        } catch (InsufficientBalanceException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidOperatorResponseException e) {
-            throw new RuntimeException(e);
-        } catch (DisabledVendorLineException e) {
-            throw new RuntimeException(e);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidAgentApiCredentialException e) {
-            throw new RuntimeException(e);
-        } catch (BetResultNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidPlayerException e) {
-            throw new RuntimeException(e);
-        } catch (DisabledAgentPlayerException e) {
-            throw new RuntimeException(e);
+        } catch (GameNotSupportedException e) {
+            roundPayoutErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledGameException e) {
-            throw new RuntimeException(e);
+            roundPayoutErrorVo.setCode(ResponseCodes.GAME_NOT_AVAILABLE);
+            roundPayoutVo.setStatus(HttpStatus.SC_FORBIDDEN);
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
-                 CurrencyNotSupportedException e
+                 CurrencyNotSupportedException |
+                 JsonProcessingException |
+                 InsufficientBalanceException |
+                 NullPointerException |
+                 IllegalArgumentException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            httpService.logError(httpRequestLog, e);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } catch(Exception e) {
-            roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
-            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } finally {
             if(roundPayoutVo.getStatus() == HttpStatus.SC_OK) {
@@ -183,6 +196,7 @@ public class RoundPayoutAction {
     private void doVerification(RoundPayoutDto dto, List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList, GameSession gameSession)
             throws InvalidPlayerException,
             InvalidRequestException,
+            GameNotSupportedException,
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -190,27 +204,30 @@ public class RoundPayoutAction {
             CurrencyNotSupportedException {
 
         // General validation
-//        for (RoundPayoutTransactionDto obj : roundPayoutTransactionDtoList) {
-//            ValidationUtils.validateRequest(obj);
-//            switch(obj.getType()) {
-//                case "bet":
-//                    if(obj.getAmount().compareTo(BigDecimal.ZERO) > 0) throw new InvalidRequestException();
-//                    break;
-//                case "win":
-//                case "cancelBet":
-//                    if(obj.getAmount().compareTo(BigDecimal.ZERO) < 0) throw new InvalidRequestException();
-//                    break;
-//                default:
-//                    break;
-//            }
-//        }
+        for (RoundPayoutTransactionDto obj : roundPayoutTransactionDtoList) {
+            ValidationUtils.validateRequest(obj);
+            switch(obj.getType()) {
+                case "bet":
+                    if(obj.getAmount().compareTo(BigDecimal.ZERO) > 0) throw new InvalidRequestException();
+                    break;
+                case "win":
+                case "cancelBet":
+                    if(obj.getAmount().compareTo(BigDecimal.ZERO) < 0) throw new InvalidRequestException();
+                    break;
+                default:
+                    throw new InvalidRequestException();
+            }
+        }
 
         // Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        if(!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
+            throw new InvalidPlayerException();
+        }
 
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
