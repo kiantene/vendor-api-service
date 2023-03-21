@@ -66,10 +66,10 @@ public class TransferService {
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     winDataDto.setExternalTransactionId(dto.getTransferId());
+                    winDataDto.setRoundId(dto.getReferenceId());
                     winDataDto.setAmount(dto.getAmount());
-                    winDataDto.setRoundId(dto.getTransferId());
-                    winDataDto.setGameId(dto.getGameCode());
                     winDataDto.setEffectiveTurnover(dto.getAmount());
+                    winDataDto.setGameId(dto.getGameCode());
                     winDataDto.setWinType(getWinType(dto));
                     BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
 

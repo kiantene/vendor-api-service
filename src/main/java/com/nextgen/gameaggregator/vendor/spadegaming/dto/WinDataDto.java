@@ -19,6 +19,7 @@ public class WinDataDto implements WinData {
     private Long timestamp;
     private WinType winType;
     private BigDecimal effectiveTurnover;
+    
     @Override
     public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog) {
         return betResultLog;
