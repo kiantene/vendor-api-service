@@ -17,7 +17,8 @@ public enum ResponseCode {
     DUPLICATED_REQUEST      (111, "Duplicated request"),
     INVALID_FORMAT          (118, "Invalid Format"),
     TOKEN_VALIDATION_FAILED (50104, "Token Validation Failed"),
-    INSUFFICIENT_BALANCE    (50110, "Insufficient Balance")
+    INSUFFICIENT_BALANCE    (50110, "Insufficient Balance"),
+    CURRENCY_INVALID        (50112, "Currency Invalid")
     ;
 
     public final Integer code;
