@@ -125,10 +125,7 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            //return success if bet exist
-            //commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            //commonVo.setMainPoints(balance.setScale(2,RoundingMode.DOWN).doubleValue());
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (CredentialNotFoundException credentialNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledVendorLineException disabledVendorLineException) {
