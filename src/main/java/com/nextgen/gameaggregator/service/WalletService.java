@@ -642,7 +642,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
-        walletBetDto.setAmount(rawSettledBet.getWinLoss());
+        walletBetDto.setAmount(rawSettledBet.getWinLoss().abs());
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(rawSettledBet.getRoundId());
         walletBetDto.setTimestamp(rawSettledBet.getVendorBetTime());
