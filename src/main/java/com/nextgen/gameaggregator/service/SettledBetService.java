@@ -129,6 +129,7 @@ public class SettledBetService {
             betHistory.setMasterAgentId(0);
             //TODO REMOVING OPERATORSTATUS
             betHistory.setOperatorStatus(1);
+            betHistory.setId(entity.getInternalTransactionId());
 
             betHistoryRepository.save(betHistory);
 
