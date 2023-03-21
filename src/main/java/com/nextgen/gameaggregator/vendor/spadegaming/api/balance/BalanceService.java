@@ -1,13 +1,13 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.service;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.BalanceDto;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AcctInfoVo;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AuthBalanceVo;
 
@@ -23,6 +23,15 @@ public class BalanceService {
 
     @Autowired
     private HttpService httpService;
+
+    @Autowired
+    private VendorLineService vendorLineService;
+
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @Autowired
     private GameSessionService gameSessionService;
@@ -47,8 +56,11 @@ public class BalanceService {
         try {
             // Convert the request body to an BalanceDto object
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            // Validate request parameters (Non-database calls)
+            this.doValidation(dto);
             // Verify the user token and get the corresponding game session
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            this.doVerification(dto, gameSession);
             // Get the user's account balance using the game session and trace ID
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
@@ -64,6 +76,18 @@ public class BalanceService {
             authBalanceVo.setMerchantCode(Credentials.MERCHANT_CODE);
             authBalanceVo.setResponseCode(ResponseCode.SUCCESS);
             authBalanceVo.setSerialNo(traceId);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
+        } catch (DisabledGameException disabledGameException) {
+            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
     
         } catch (JsonProcessingException jsonProcessingException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
@@ -87,5 +111,28 @@ public class BalanceService {
          }
 
         return authBalanceVo;
+    }
+
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(BalanceDto dto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+        
+        // Verify received vendor player username is the same from game session
+        // Comparison for game session value will always be using AuthenticationException
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
+
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
     }
 }

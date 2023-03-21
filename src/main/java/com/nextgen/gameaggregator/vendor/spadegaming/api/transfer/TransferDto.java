@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.dto;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -6,8 +6,12 @@ import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import lombok.Data;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+
+import org.hibernate.validator.constraints.Range;
+
 import java.math.BigDecimal;
 import java.time.*;
 
@@ -29,11 +33,12 @@ public class TransferDto implements BetData{
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String currency;
 
-    @NotBlank
-    @Size(min = 1)
+    @NotNull
+    @Range(min = 0)
     private BigDecimal amount;
 
     @NotBlank
+    @Range(min = 1)
     private Integer type;
 
     @NotBlank

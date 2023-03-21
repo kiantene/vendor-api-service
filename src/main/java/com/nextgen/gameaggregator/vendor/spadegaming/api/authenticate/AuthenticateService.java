@@ -1,15 +1,15 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.service;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.authenticate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AcctInfoVo;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AuthBalanceVo;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.AuthenticateDto;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,15 @@ public class AuthenticateService {
 
     @Autowired
     private HttpService httpService;
+
+    @Autowired
+    private VendorLineService vendorLineService;
+
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @Autowired
     private GameSessionService gameSessionService;
@@ -46,8 +55,11 @@ public class AuthenticateService {
         try {
             // Convert the request body to an AuthenticateDto object
             AuthenticateDto dto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
+            // Validate request parameters (Non-database calls)
+            this.doValidation(dto);
             // Verify the user token and get the corresponding game session
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            this.doVerification(dto, gameSession);
             // Get the user's account balance using the game session and trace ID
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
@@ -63,6 +75,18 @@ public class AuthenticateService {
             authBalanceVo.setMerchantCode(Credentials.MERCHANT_CODE);
             authBalanceVo.setResponseCode(ResponseCode.SUCCESS);
             authBalanceVo.setSerialNo(traceId);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
+        } catch (DisabledGameException disabledGameException) {
+            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
         } catch (JsonProcessingException jsonProcessingException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
@@ -86,5 +110,29 @@ public class AuthenticateService {
         }
 
         return authBalanceVo;
+    }
+
+    private void doValidation(AuthenticateDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(AuthenticateDto dto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+
+        // Verify received token is the same from game session
+        // Comparison for game session value will always be using AuthenticationException
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+
     }
 }

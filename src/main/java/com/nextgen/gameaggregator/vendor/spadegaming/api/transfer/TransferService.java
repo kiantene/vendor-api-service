@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.service;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
 
@@ -18,16 +18,23 @@ import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.TransferDto;
-import com.nextgen.gameaggregator.vendor.spadegaming.dto.WinDataDto;
-import com.nextgen.gameaggregator.vendor.spadegaming.vo.TransferVo;
 
 @Service
 public class TransferService {
     @Autowired
     private HttpService httpService;
+
+    @Autowired
+    private VendorLineService vendorLineService;
+
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @Autowired
     private GameSessionService gameSessionService;
@@ -45,7 +52,10 @@ public class TransferService {
     
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
+            this.doValidation(dto);
+
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            this.doVerification(dto, gameSession);
     
             switch(dto.getType()) {
                 case 1:
@@ -71,8 +81,8 @@ public class TransferService {
                     winDataDto.setEffectiveTurnover(dto.getAmount());
                     winDataDto.setGameId(dto.getGameCode());
                     winDataDto.setWinType(getWinType(dto));
-                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
 
+                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
                     transferVo.setBalance(betResultEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -91,6 +101,24 @@ public class TransferService {
             transferVo.setMerchantTxId(gameSession.getToken());
             transferVo.setAcctId(gameSession.getVendorPlayerUsername());
             transferVo.setSerialNo(traceId);
+        
+        } catch (InvalidRequestException invalidRequestException) {
+            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+        
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
+        } catch (DisabledGameException disabledGameException) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+        
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            transferVo.setResponseCode(ResponseCode.CURRENCY_INVALID);
 
         } catch (JsonProcessingException jsonProcessingException) {
             transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
@@ -125,5 +153,38 @@ public class TransferService {
 
     private WinType getWinType(TransferDto dto) {
         return (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    }
+
+    private void doValidation(TransferDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(TransferDto dto, GameSession gameSession)
+            throws
+            AuthenticationException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            GameNotSupportedException,
+            CurrencyNotSupportedException {
+
+        // Verify received vendor player username is the same from game session
+        // Comparison for game session value will always be using AuthenticationException
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
+
+        // Verify vendor gameCode and currency
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
     }
 }

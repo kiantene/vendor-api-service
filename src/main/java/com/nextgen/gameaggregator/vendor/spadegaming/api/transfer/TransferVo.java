@@ -1,8 +1,8 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.vo;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import lombok.Data;
-
 import java.math.BigDecimal;
+import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
 @Data
 public class TransferVo extends ResponseVo {

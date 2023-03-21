@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.api;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.action;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -6,9 +6,9 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Headers;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.spadegaming.service.AuthenticateService;
-import com.nextgen.gameaggregator.vendor.spadegaming.service.BalanceService;
-import com.nextgen.gameaggregator.vendor.spadegaming.service.TransferService;
+import com.nextgen.gameaggregator.vendor.spadegaming.api.authenticate.AuthenticateService;
+import com.nextgen.gameaggregator.vendor.spadegaming.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.spadegaming.api.transfer.TransferService;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
 import javax.servlet.http.HttpServletRequest;

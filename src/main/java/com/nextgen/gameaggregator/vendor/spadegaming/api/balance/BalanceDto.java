@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.dto;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -10,7 +10,16 @@ import javax.validation.constraints.Size;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AuthenticateDto {
+public class BalanceDto {
+    @NotBlank
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String acctId;
+
+    @Size(max = 10)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String gameCode;
+
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -20,23 +29,4 @@ public class AuthenticateDto {
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String merchantCode;
-
-    @NotBlank
-    @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String acctId;
-
-    @NotBlank
-    @Size(max = 80)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String token;
-
-    @Size(max = 10)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String language;
-
-    @Size(max = 10)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String gameCode;
-
 }
