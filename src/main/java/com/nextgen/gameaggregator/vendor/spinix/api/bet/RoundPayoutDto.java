@@ -25,6 +25,7 @@ public class RoundPayoutDto {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max =24)
     public String gameId;
 
     @NotBlank
@@ -39,15 +40,24 @@ public class RoundPayoutDto {
 
     @NotBlank
     @Pattern(regexp = "[a-zA-Z]+")
+    @Size(max =24)
     public String gameType;
 
     public List<RoundPayoutTransactionDto> transactionList;
 
-    @Nullable
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    public String reqId;
+
+    @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max =50)
     public String userToken;
 
-    @Nullable
+    @NotNull
+    @Digits(fraction=2, integer=32)
+    @DecimalMax(value = "100000000000000000000000000000000.00", inclusive = false)
+    @DecimalMin(value = "-100000000000000000000000000000000.00", inclusive = false)
     public BigDecimal validTurnover;
 
     public static RoundPayoutTransactionDto findTransaction(List<RoundPayoutTransactionDto> list, String key) {

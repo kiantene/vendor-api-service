@@ -47,12 +47,11 @@ public class BalanceAction {
         BalanceDataVo balanceDataVo = new BalanceDataVo();
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
-        String reqId = ""; // Prepare when there is error
 
         try {
 
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
-            reqId = dto.getReqId();
+            String reqId = dto.getReqId();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -71,6 +70,7 @@ public class BalanceAction {
 
             // 5. Set BalanceDataWalletVo Object
             balanceDataVo.setWallet(balanceDataWalletVo);
+            balanceVo.setReqId(reqId);
             balanceVo.setStatus(HttpStatus.SC_OK);
 
         } catch (InvalidAgentApiCredentialException |
@@ -111,7 +111,6 @@ public class BalanceAction {
             if(balanceVo.getStatus() == HttpStatus.SC_OK) {
                 balanceVo.setData(balanceDataVo);
             } else {
-                balanceVo.setReqId(reqId);
                 balanceErrorVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(balanceErrorVo.getCode()));
                 balanceVo.setError(balanceErrorVo);
             }
@@ -141,7 +140,10 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getToken(), dto.getUserToken(), AuthenticationException::new);
 
         // Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        if(!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
+            throw new InvalidPlayerException();
+        }
 
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);

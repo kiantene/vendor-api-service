@@ -27,10 +27,12 @@ public class BalanceDto {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(max =50)
     public String userToken;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max =24)
     public String gameId;
 
     @NotBlank

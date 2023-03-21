@@ -48,20 +48,20 @@ public class CancelBetAction {
         try{
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CancelBetDto cancelbetDto = HttpService.convertJsonToDto(body, CancelBetDto.class);
+            CancelBetDto cancelBetDto = HttpService.convertJsonToDto(body, CancelBetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(cancelbetDto);
+            this.doValidation(cancelBetDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(cancelbetDto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(cancelBetDto.getToken());
 
             // 3. get Bet History for checking
             // TODO : (need change to get by betId)
-//            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelbetDto.getRound()), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+//            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelBetDto.getRound()), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
 
-            this.doVerification(cancelbetDto, gameSession);
+            this.doVerification(cancelBetDto, gameSession);
 
             // 4. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
