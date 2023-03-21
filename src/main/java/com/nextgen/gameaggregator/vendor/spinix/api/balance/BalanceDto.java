@@ -18,10 +18,11 @@ import javax.validation.constraints.Size;
 public class BalanceDto {
 
     @NotBlank
+    @Size(max =32)
     public String reqId;
 
     @NotBlank
-    @Size(min = 3, max = 20)
+    @Size(min = 3, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String userId;
 
@@ -36,7 +37,7 @@ public class BalanceDto {
     public String gameId;
 
     @NotBlank
-    @Size(min = 3, max =3)
+    @Size(min = 3, max =24)
     @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
 
