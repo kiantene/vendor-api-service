@@ -19,7 +19,7 @@ import java.util.List;
 public class RoundPayoutDto {
 
     @NotBlank
-    @Size(min = 3, max = 20)
+    @Size(min = 3, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String userId;
 
@@ -29,13 +29,13 @@ public class RoundPayoutDto {
     public String gameId;
 
     @NotBlank
-    @Size(min = 3, max =3)
+    @Size(min = 3, max =24)
     @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(max =100)
+    @Size(max =32)
     public String roundId;
 
     @NotBlank
@@ -47,6 +47,7 @@ public class RoundPayoutDto {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max =32)
     public String reqId;
 
     @NotBlank

@@ -18,6 +18,7 @@ public class RoundPayoutTransactionDto {
 
     @NotBlank
     @Pattern(regexp = "[a-zA-Z]+")
+    @Size(max =24)
     public String type;
 
     @NotNull
