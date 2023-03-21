@@ -14,6 +14,7 @@ import org.hibernate.validator.constraints.Range;
 
 import java.math.BigDecimal;
 import java.time.*;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -72,7 +73,7 @@ public class TransferDto implements BetData{
     private SpecialGameDto specialGame;
 
     @Size(max = 2048)
-    private String refTicketIds;
+    private List<String> refTicketIds;
 
     @Size(max = 50)
     private String gameFeature;
