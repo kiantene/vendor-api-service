@@ -63,9 +63,11 @@ public class CancelBetAction {
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(commonDto);
 
-            //TODO pending PG update core function to get appKey
-            //Decrypt raw respond
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), "Q7RaR8CUbwZ0roD2");
+            //Get vendor line id by agent code from vendor line credential
+            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
+
+            //Decrypt raw respond with key from vendor line credential
+            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
 
             //map decrypted data(string json) into balanceDto
             CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
