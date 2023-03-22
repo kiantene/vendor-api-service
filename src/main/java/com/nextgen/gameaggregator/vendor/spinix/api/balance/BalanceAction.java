@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.spinix.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
@@ -89,7 +90,10 @@ public class BalanceAction {
             balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException |
+                 InvalidVendorLineException |
+                 CredentialNotFoundException e
+        ) {
             balanceErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
             balanceVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
             httpService.logError(httpRequestLog, e);
@@ -106,8 +110,7 @@ public class BalanceAction {
             balanceVo.setStatus(HttpStatus.SC_FORBIDDEN);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
-                 CurrencyNotSupportedException |
-                 InvalidVendorLineException e
+                 CurrencyNotSupportedException e
         ) {
             balanceErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -143,7 +146,8 @@ public class BalanceAction {
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
 
 
         // Verify received username is the same from game session
@@ -152,7 +156,8 @@ public class BalanceAction {
             throw new InvalidPlayerException();
         }
 
-        if(!VendorService.isSameSignature(token, body)) {
+        String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
+        if(!VendorService.isSameSignature(token, body, signatureKey)) {
             throw new InvalidVendorLineException();
         }
 

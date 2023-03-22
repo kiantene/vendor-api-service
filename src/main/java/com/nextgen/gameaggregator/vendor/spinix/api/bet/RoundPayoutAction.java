@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.spinix.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
@@ -160,7 +161,10 @@ public class RoundPayoutAction {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException |
+                 InvalidVendorLineException |
+                 CredentialNotFoundException e
+        ) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
             httpService.logError(httpRequestLog, e);
@@ -177,8 +181,7 @@ public class RoundPayoutAction {
                  JsonProcessingException |
                  InsufficientBalanceException |
                  NullPointerException |
-                 IllegalArgumentException |
-                 InvalidVendorLineException e
+                 IllegalArgumentException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -210,7 +213,8 @@ public class RoundPayoutAction {
             DisabledAgentPlayerException,
             DisabledGameException,
             CurrencyNotSupportedException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
 
         // General validation
         for (RoundPayoutTransactionDto obj : roundPayoutTransactionDtoList) {
@@ -234,7 +238,8 @@ public class RoundPayoutAction {
             throw new InvalidPlayerException();
         }
 
-        if(!VendorService.isSameSignature(token, body)) {
+        String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
+        if(!VendorService.isSameSignature(token, body, signatureKey)) {
             throw new InvalidVendorLineException();
         }
 
