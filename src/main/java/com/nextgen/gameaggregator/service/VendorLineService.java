@@ -55,7 +55,7 @@ public class VendorLineService {
     }
 
     @Cacheable(value = "VendorLineCredentials", key = "{#name, #value}", cacheManager = "cacheManager")
-    public Integer getCredentialValueByNameAndValue(String name, String value) throws CredentialNotFoundException {
+    public Integer getVendorLineIdByNameAndValue(String name, String value) throws CredentialNotFoundException {
         final Integer ACTIVE = Status.ACTIVE.code;
         VendorLineCredential credential = vendorLineCredentialRepository.findByNameAndValueAndStatus(name, value, ACTIVE);
         Optional.ofNullable(credential).orElseThrow(CredentialNotFoundException::new);
