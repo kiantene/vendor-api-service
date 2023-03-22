@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.cq9.constant.Platforms;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,7 +30,7 @@ public class GameUrlService implements GameUrl {
         formData.add("account", gameSession.getVendorPlayerUsername());
         formData.add("gamehall", "CQ9");
         formData.add("gamecode", gameCode);
-        formData.add("gameplat", "WEB");
+        formData.add("gameplat", Platforms.WEB.code);
         formData.add("lang", gameSession.getLanguage());
         formData.add("session", gameSession.getToken());
 
