@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
@@ -11,12 +12,12 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.api.endround.EndRoundDataDto;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -53,6 +55,7 @@ public class RoundPayoutAction {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
+        String header = httpRequestLog.getHeaders();
         String body = httpRequestLog.getRequestBody();
         RoundPayoutVo roundPayoutVo = new RoundPayoutVo();
         RoundPayoutDataVo roundPayoutDataVo = new RoundPayoutDataVo();
@@ -75,7 +78,11 @@ public class RoundPayoutAction {
 
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
-            this.doVerification(dto, list, gameSession);
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> headerObj = mapper.readValue(header, Map.class);
+            Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
+            String sign = headerObj.get("x-gaming-signature");
+            this.doVerification(dto, list, gameSession, sign, bodyObj);
 
             // Search for bet, win and/or cancel bet
             RoundPayoutTransactionDto cancelBet = RoundPayoutDto.findTransaction(list, "cancelBet");
@@ -170,7 +177,8 @@ public class RoundPayoutAction {
                  JsonProcessingException |
                  InsufficientBalanceException |
                  NullPointerException |
-                 IllegalArgumentException e
+                 IllegalArgumentException |
+                 InvalidVendorLineException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -193,7 +201,7 @@ public class RoundPayoutAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RoundPayoutDto dto, List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList, GameSession gameSession)
+    private void doVerification(RoundPayoutDto dto, List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList, GameSession gameSession, String token, Map<String, Object> body)
             throws InvalidPlayerException,
             InvalidRequestException,
             GameNotSupportedException,
@@ -201,7 +209,8 @@ public class RoundPayoutAction {
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException,
+            InvalidVendorLineException {
 
         // General validation
         for (RoundPayoutTransactionDto obj : roundPayoutTransactionDtoList) {
@@ -225,12 +234,12 @@ public class RoundPayoutAction {
             throw new InvalidPlayerException();
         }
 
-        // Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+        if(!VendorService.isSameSignature(token, body)) {
+            throw new InvalidVendorLineException();
+        }
 
         // Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -252,4 +261,5 @@ public class RoundPayoutAction {
 
         return winType;
     }
+
 }

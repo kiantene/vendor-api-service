@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -8,6 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -46,6 +49,7 @@ public class BalanceAction {
         BalanceErrorVo balanceErrorVo = new BalanceErrorVo();
         BalanceDataVo balanceDataVo = new BalanceDataVo();
         String traceId = httpRequestLog.getTraceId();
+        String header = httpRequestLog.getHeaders();
         String body = httpRequestLog.getRequestBody();
 
         try {
@@ -58,7 +62,11 @@ public class BalanceAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
-            this.doVerification(dto, gameSession);
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, String> headerObj = mapper.readValue(header, Map.class);
+            Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
+            String sign = headerObj.get("x-gaming-signature");
+            this.doVerification(dto, gameSession, sign, bodyObj);
 
             // 3. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -98,7 +106,8 @@ public class BalanceAction {
             balanceVo.setStatus(HttpStatus.SC_FORBIDDEN);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
-                 CurrencyNotSupportedException e
+                 CurrencyNotSupportedException |
+                 InvalidVendorLineException e
         ) {
             balanceErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -126,18 +135,16 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String token, Map<String, Object> body)
             throws AuthenticationException,
             InvalidPlayerException,
             GameNotSupportedException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            DisabledGameException {
+            DisabledGameException,
+            InvalidVendorLineException {
 
-        // Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getUserToken(), AuthenticationException::new);
 
         // Verify received username is the same from game session
         // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
@@ -145,11 +152,15 @@ public class BalanceAction {
             throw new InvalidPlayerException();
         }
 
+        if(!VendorService.isSameSignature(token, body)) {
+            throw new InvalidVendorLineException();
+        }
+
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
         // Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
