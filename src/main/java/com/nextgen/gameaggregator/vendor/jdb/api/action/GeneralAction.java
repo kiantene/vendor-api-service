@@ -1,11 +1,16 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
+import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
@@ -40,6 +45,10 @@ public class GeneralAction {
     @Autowired
     private BetService betService;
     @Autowired
+    private CancelBetService cancelBetService;
+    @Autowired
+    private CancelBetNSettleService cancelBetNSettleService;
+    @Autowired
     private SettleService settleService;
 
     @PostMapping(path = EndPoints.ACTION)
@@ -58,11 +67,16 @@ public class GeneralAction {
             VendorRequestDto commonDto = HttpService.convertQueryStringToDto(body, VendorRequestDto.class);
             ValidationUtils.validateRequest(commonDto);
             String params = VendorService.decrypt(commonDto.getX(), "47e0cd2ece0883e2", "b87f2867577b68ce");
-            log.info(params);
             ActionDto actionDto = HttpService.convertJsonToDto(params, ActionDto.class);
             actionDto.setParams(params);
             vo = this.actionHandling(actionDto, traceId);
 
+        } catch (InvalidDecryptionException ex) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidRequestException ex) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (JsonProcessingException ex) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (Exception ex) {
             vo.setResponseCode(ResponseCode.FAILED);
             log.error(ex.getMessage());
@@ -73,9 +87,17 @@ public class GeneralAction {
         return vo;
     }
 
+    private void doValidation(ActionDto dto) throws InvalidRequestException{
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
     private CommonVo actionHandling(ActionDto actionDto, String traceId) {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
+            case Actions.CANCEL_BET_AND_SETTLE:
+                vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId);
+                break;
             case Actions.GET_BALANCE:
                 vo = balanceService.balance(actionDto, traceId);
                 break;
@@ -88,10 +110,14 @@ public class GeneralAction {
             case Actions.SETTLE:
                 vo = settleService.settle(actionDto, traceId);
                 break;
+            case Actions.CANCEL_BET:
+                vo = cancelBetService.cancelBet(actionDto, traceId);
+                break;
             default:
+                vo.setResponseCode(ResponseCode.INVALID_ACTION);
                 break;
         }
-        
+
         return vo;
     }
 }
