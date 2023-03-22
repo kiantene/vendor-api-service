@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.ZoneId;
@@ -59,6 +62,34 @@ public class HealthCheckController {
                 "<br>" + redisHost +
                 "<br><br>" +
                 "Testing Stub:<br>" + stub ;
+
+        return output;
+    }
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @GetMapping(path = "redis")
+    public String testRedisLatency() {
+        long startTime = System.currentTimeMillis();
+        redisTemplate.opsForValue().get("test");
+        long endTime = System.currentTimeMillis();
+        long latency = endTime - startTime;
+        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " milliseconds";
+
+        return output;
+    }
+
+    @GetMapping(path = "db")
+    public String testDbLatency() {
+        long startTime = System.currentTimeMillis();
+        jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+        long endTime = System.currentTimeMillis();
+        long latency = endTime - startTime;
+        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " milliseconds";
 
         return output;
     }
