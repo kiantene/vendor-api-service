@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -55,7 +57,9 @@ public class BalanceService {
         return vo;
     }
 
-    private void doValidation(BalanceDto dto) {
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) {
