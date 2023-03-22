@@ -76,7 +76,7 @@ public class BalanceAction {
 
             // Construct VO
             commonVo.setBalance(balance);
-            commonVo.setCurrency(vendorLine.getVendorCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
