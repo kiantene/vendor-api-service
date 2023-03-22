@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.vo;
 
-import lombok.Data;
 import java.math.BigDecimal;
+
+import lombok.Data;
 
 @Data
 public class AcctInfoVo {

@@ -1,16 +1,18 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.gameurl;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import java.net.URI;
+import java.util.Map;
 
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URI;
-import java.util.Map;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
+import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 
 public class GameUrlService implements GameUrl {
 

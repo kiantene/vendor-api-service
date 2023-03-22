@@ -14,13 +14,14 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.*;
+
 
 @Service
 public class TransferService {
@@ -58,21 +59,21 @@ public class TransferService {
             this.doVerification(dto, gameSession);
     
             switch(dto.getType()) {
-                case 1:
+                case Actions.PLACE_BET:
                     // Place bet action
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     transferVo.setBalance(betEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
-                case 2:
-                    // Cancel bet action
-                    BigDecimal balance = walletService.getBalance(traceId, gameSession);
-                    transferVo.setBalance(balance);
+                case Actions.CANCEL_BET:
+                    // Cancel bet and refund action
+                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getReferenceId(), gameSession, body);
+                    transferVo.setBalance(betRefundEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
-                case 4:
+                case Actions.PAYOUT:
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     winDataDto.setExternalTransactionId(dto.getTransferId());
@@ -89,7 +90,9 @@ public class TransferService {
 
                     // Emit event for additional asynchronous processing
                     EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-
+                    break;
+                case Actions.BONUS:
+                    transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
                 default:
                     transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -102,7 +105,10 @@ public class TransferService {
             transferVo.setAcctId(gameSession.getVendorPlayerUsername());
             transferVo.setSerialNo(traceId);
         
-        } catch (InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException| 
+            GameNotSupportedException|
+            InvalidAgentApiCredentialException|
+            InvalidOperatorResponseException invalidException ) {
             transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
         
         } catch (DisabledVendorLineException disabledVendorLineException) {
@@ -113,9 +119,6 @@ public class TransferService {
 
         } catch (DisabledGameException disabledGameException) {
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-        
-        } catch (GameNotSupportedException gameNotSupportedException) {
-            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             transferVo.setResponseCode(ResponseCode.CURRENCY_INVALID);
@@ -126,17 +129,11 @@ public class TransferService {
         } catch (AuthenticationException authenticationException) {
             transferVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-
         } catch (InsufficientBalanceException insufficientBalanceException) {
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            transferVo.setResponseCode(ResponseCode.DUPLICATED_REQUEST);
+            transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
 
         } catch (BetNotFoundException betNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
@@ -144,7 +141,10 @@ public class TransferService {
         } catch (BetResultNotFoundException betResultNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
 
-        } finally {
+        } catch (RecordNotFoundException recordNotFoundException) {
+            transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
+
+        }finally {
             httpService.end(httpRequestLog, transferVo);
         }
     

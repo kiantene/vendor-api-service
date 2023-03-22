@@ -13,6 +13,7 @@ public enum ResponseCode {
     MISSING_PARAMETER       (105, "Missing Parameter"),
     INVALID_PARAMETER       (106, "Invalid Parameters"),
     DUPLICATED_SERIAL_NO    (107, "Duplicated Serial NO"),
+    RELATED_ID_NOT_FOUND    (109, "Related id not found"),
     RECORD_ID_NOT_FOUND     (110, "Record ID Not Found"),
     DUPLICATED_REQUEST      (111, "Duplicated request"),
     INVALID_FORMAT          (118, "Invalid Format"),
