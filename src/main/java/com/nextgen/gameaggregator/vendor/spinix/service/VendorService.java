@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spinix.service;
 
+import com.nextgen.gameaggregator.vendor.spinix.constant.Credentials;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -73,4 +74,12 @@ public class VendorService {
         }
     }
 
+    public static Boolean isSameSignature(String token, Map<String, Object> body) {
+        VendorService vendorService = new VendorService();
+        String sign = vendorService.getSignature(body, Credentials.SIGNATURE_KEY);
+        if(token == sign) {
+            return true;
+        }
+        return false;
+    }
 }
