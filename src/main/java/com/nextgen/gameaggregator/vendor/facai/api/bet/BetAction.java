@@ -113,7 +113,7 @@ public class BetAction {
             commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidDecryptionException invalidDecryptionException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
@@ -191,13 +191,6 @@ public class BetAction {
     }
 
     private void doVerification(CommonDto commonDto, VendorBetDto vendorBetDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
-
-        //Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorBetDto.getMemberAccount(), InvalidPlayerException::new);
-
-        //Verify received game id is the same from game session
-        //comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(vendorBetDto.getGameID()), DisabledGameException::new);
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
