@@ -70,8 +70,8 @@ public class BalanceAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(balanceDto);
 
-            //Get vendor player details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getMemberAccount());
+            //get gameSession by player name and vendor game id
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
