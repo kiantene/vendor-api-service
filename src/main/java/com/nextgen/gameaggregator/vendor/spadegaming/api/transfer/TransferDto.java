@@ -1,9 +1,10 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
-import lombok.Data;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -12,9 +13,11 @@ import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.Range;
 
-import java.math.BigDecimal;
-import java.time.*;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -63,11 +66,9 @@ public class TransferDto implements BetData{
     private String serialNo;
 
     @Size(max = 20)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String ticketId;
 
     @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String referenceId;
 
     private SpecialGameDto specialGame;

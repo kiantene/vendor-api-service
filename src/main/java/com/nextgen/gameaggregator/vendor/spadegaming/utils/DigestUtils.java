@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.utils;
 
-import org.apache.commons.codec.binary.Hex;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+import org.apache.commons.codec.binary.Hex;
 
 public abstract class DigestUtils {
     public static String digest(byte[] input) {
