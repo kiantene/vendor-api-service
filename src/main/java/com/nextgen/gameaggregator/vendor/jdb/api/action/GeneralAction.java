@@ -67,6 +67,7 @@ public class GeneralAction {
             VendorRequestDto commonDto = HttpService.convertQueryStringToDto(body, VendorRequestDto.class);
             ValidationUtils.validateRequest(commonDto);
             String params = VendorService.decrypt(commonDto.getX(), "47e0cd2ece0883e2", "b87f2867577b68ce");
+            log.info(params);
             ActionDto actionDto = HttpService.convertJsonToDto(params, ActionDto.class);
             actionDto.setParams(params);
             vo = this.actionHandling(actionDto, traceId);
