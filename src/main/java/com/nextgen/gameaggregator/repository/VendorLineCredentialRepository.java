@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VendorLineCredentialRepository extends JpaRepository<VendorLineCredential, Integer> {
     VendorLineCredential findByVendorLineIdAndNameAndStatus(Integer vendorLineId, String name, Integer status);
+
+    VendorLineCredential findByNameAndValueAndStatus(String name, String value, Integer status);
 }
