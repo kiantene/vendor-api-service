@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -81,9 +80,8 @@ public class BetAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(vendorBetDto);
 
-            //get gameSession by player name
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorBetDto.memberAccount);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            //get gameSession by player name and vendor game id
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorBetDto.getMemberAccount(), Integer.toString(vendorBetDto.getGameID()));
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, vendorBetDto, gameSession, jsonParam);
