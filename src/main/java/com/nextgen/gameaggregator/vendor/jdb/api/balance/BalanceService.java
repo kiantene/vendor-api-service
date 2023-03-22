@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
@@ -50,6 +51,18 @@ public class BalanceService {
             vo.setBalance(balance);
             vo.setResponseCode(ResponseCode.SUCCESS);
 
+        } catch (AuthenticationException exception) {
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+        } catch (InvalidAgentApiCredentialException exception) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (InvalidOperatorResponseException exception) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (InvalidPlayerException exception) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (InvalidRequestException exception) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (JsonProcessingException exception) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -62,6 +75,11 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) {
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException {
+        // 1. Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
+
+        // 2. Verify received game id is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), InvalidRequestException::new);
     }
 }
