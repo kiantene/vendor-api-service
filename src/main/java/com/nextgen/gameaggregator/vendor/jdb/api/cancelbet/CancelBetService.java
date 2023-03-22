@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.service.BetHistoryService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -20,6 +18,8 @@ public class CancelBetService {
     private BetHistoryService betHistoryService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
 
@@ -35,7 +35,8 @@ public class CancelBetService {
             this.doValidation(cancelBetDto);
 
             // 2. Gather require data
-            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getTransferId(), 3);
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(cancelBetDto.getUid());
+            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getTransferId(), vendorPlayer.getVendorId());
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
