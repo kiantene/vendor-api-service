@@ -24,10 +24,12 @@ public class CancelBetDto {
     @Positive
     @NotNull
     private BigInteger round;
-    @Range(min = 0)
     @NotNull
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 4)
     private BigDecimal betAmount;
     @NotNull
+    @Digits(integer = 12, fraction = 4)
     private BigDecimal winloseAmount;
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String userId;
