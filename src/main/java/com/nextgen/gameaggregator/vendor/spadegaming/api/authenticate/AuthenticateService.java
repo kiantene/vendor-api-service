@@ -105,7 +105,7 @@ public class AuthenticateService {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
 
         } catch (AuthenticationException authenticationException) {
-            authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
+            authBalanceVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -144,7 +144,10 @@ public class AuthenticateService {
         ValidationUtils.isEquals(Credentials.MERCHANT_CODE, dto.getMerchantCode(), UnableToFindCredentialsException::new);
 
         // Verify received token is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+        
+        // Verify received acct id is the same from vendor player username
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), InvalidPlayerException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
