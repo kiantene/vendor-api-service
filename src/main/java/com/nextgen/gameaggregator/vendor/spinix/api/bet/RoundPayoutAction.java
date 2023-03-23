@@ -205,8 +205,12 @@ public class RoundPayoutAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RoundPayoutDto dto, List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList, GameSession gameSession, String token, Map<String, Object> body)
-            throws InvalidPlayerException,
+    private void doVerification(RoundPayoutDto dto,
+                                List<RoundPayoutTransactionDto> roundPayoutTransactionDtoList,
+                                GameSession gameSession,
+                                String token,
+                                Map<String, Object> body
+    ) throws InvalidPlayerException,
             InvalidRequestException,
             GameNotSupportedException,
             AuthenticationException,
