@@ -69,8 +69,7 @@ public class GameUrlService implements GameUrl {
         Optional.ofNullable(secretKey).orElseThrow(InvalidVendorLineException::new);
 
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
-        log.info(formData.getFirst("json"));
-        log.info(formData.getFirst("x_gaming_signature"));
+        log.info("Spinix Game Url Service: " + formData.getFirst("json"));
 
         // TODO: need to add error handling
         GameUrlVendorResponseVo responseVo = WebClient.create(apiUrl)
