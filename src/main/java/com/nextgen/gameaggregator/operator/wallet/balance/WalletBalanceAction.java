@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.balance;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -30,8 +32,8 @@ public class WalletBalanceAction {
         }
 
         WalletBalanceVo responseVo = null;
-        try {
-         responseVo = WebClient.create(callbackUrl)
+
+        String responseString = WebClient.create(callbackUrl)
                 .post()
                 .uri(Endpoints.WALLET_BALANCE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -46,19 +48,23 @@ public class WalletBalanceAction {
                                     new InvalidOperatorResponseException
                                             ("response status :" + clientResponseStatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
                         })
-                .bodyToMono(WalletBalanceVo.class)
+                .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
+        try {
+            responseVo = new Gson().fromJson(responseString, WalletBalanceVo.class);
+            // throw exception if response is null
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 
-        } catch (Exception exception) {
-            //TODO (by Alex), proper throw InvalidOperatorResponseException
-            throw new InvalidOperatorResponseException(exception.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+        } catch (JsonSyntaxException jsonSyntaxException) {
+            log.error("Operator URL :" + callbackUrl);
+            log.error("Invalid Operator Response :" + responseString);
+            new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
-        Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-//        log.info(responseVo.toString());
-
-        if(!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)){
+        if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+            log.error("Operator URL " + callbackUrl);
+            log.error("Invalid Operator Response :" + responseString);
             throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
         }
         return responseVo;
