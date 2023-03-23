@@ -14,6 +14,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.api.bet.WinDto;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,24 +63,33 @@ public class SessionBetAction {
 
             this.doVerification(sessionBetDto, gameSession);
 
-            // 3. Process bet data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
+            if (sessionBetDto.getType() == Formats.SESSION_BET_TYPE_BET) {
+                // Process bet data
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
 
-            // 4. Process win data
-            WinDto winDto = new ObjectMapper().convertValue(sessionBetDto, WinDto.class);
-            winDto.setExternalTransactionId(sessionBetDto.getReqId());
-            winDto.setAmount(sessionBetDto.getWinloseAmount());
-            winDto.setWinType(getWinType(sessionBetDto));
-            winDto.setEffectiveTurnover(sessionBetDto.getBetAmount());
-            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
+                sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
+                sessionBetVo.setCurrency(gameSession.getCurrencyCode());
+                sessionBetVo.setBalance(betEvent.getLastBalance());
+                sessionBetVo.setToken(gameSession.getToken());
+            } else if (sessionBetDto.getType() == Formats.SESSION_BET_TYPE_SETTLE) {
+                // Process win data
+                WinDto winDto = new ObjectMapper().convertValue(sessionBetDto, WinDto.class);
+                winDto.setExternalTransactionId(sessionBetDto.getReqId());
+                winDto.setAmount(sessionBetDto.getWinloseAmount());
+                winDto.setWinType(getWinType(sessionBetDto));
+                winDto.setEffectiveTurnover(sessionBetDto.getTurnover());
+                BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
 
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+                // Emit event for additional asynchronous processing
+                EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
 
-            sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
-            sessionBetVo.setCurrency(gameSession.getCurrencyCode());
-            sessionBetVo.setBalance(betResultEvent.getLastBalance());
-            sessionBetVo.setToken(gameSession.getToken());
+                sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
+                sessionBetVo.setCurrency(gameSession.getCurrencyCode());
+                sessionBetVo.setBalance(betResultEvent.getLastBalance());
+                sessionBetVo.setToken(gameSession.getToken());
+            } else {
+                throw new InvalidRequestException();
+            }
 
         } catch(InvalidRequestException |
                JsonProcessingException |

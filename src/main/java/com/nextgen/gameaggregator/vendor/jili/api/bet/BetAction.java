@@ -41,6 +41,8 @@ public class BetAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private BetHistoryService betHistoryService;
     @PostMapping(path = EndPoints.BET)
     public BetVo BetAction (HttpServletRequest request) {
 
