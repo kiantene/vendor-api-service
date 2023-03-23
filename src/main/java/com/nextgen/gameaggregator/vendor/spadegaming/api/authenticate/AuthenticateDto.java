@@ -35,9 +35,4 @@ public class AuthenticateDto {
     @Size(max = 10)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String language;
-
-    @Size(max = 10)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String gameCode;
-
 }

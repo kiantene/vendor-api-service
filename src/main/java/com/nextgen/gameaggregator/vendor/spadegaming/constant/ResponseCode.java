@@ -17,6 +17,8 @@ public enum ResponseCode {
     RECORD_ID_NOT_FOUND     (110, "Record ID Not Found"),
     DUPLICATED_REQUEST      (111, "Duplicated request"),
     INVALID_FORMAT          (118, "Invalid Format"),
+    MERCHANT_NOT_FOUND      (10113, "Merchant Not Found"),
+    ACCT_NOT_FOUND          (50100, "Acct Not Found"),
     TOKEN_VALIDATION_FAILED (50104, "Token Validation Failed"),
     INSUFFICIENT_BALANCE    (50110, "Insufficient Balance"),
     CURRENCY_INVALID        (50112, "Currency Invalid")

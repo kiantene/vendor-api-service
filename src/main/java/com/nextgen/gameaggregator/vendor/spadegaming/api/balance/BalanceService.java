@@ -14,9 +14,11 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -61,12 +63,12 @@ public class BalanceService {
         // Create new AuthBalanceVo and AcctInfoVo objects
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
         AcctInfoVo acctInfoVo = new AcctInfoVo();
-        authBalanceVo.setMerchantCode(Credentials.MERCHANT_CODE);
-        authBalanceVo.setSerialNo(traceId);
 
         try {
             // Convert the request body to an BalanceDto object
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            authBalanceVo.setMerchantCode(dto.getMerchantCode());
+            authBalanceVo.setSerialNo(traceId);
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Verify the user token and get the corresponding game session
@@ -84,7 +86,7 @@ public class BalanceService {
             
             // Populate the AuthBalanceVo object with response details
             authBalanceVo.setAcctInfo(acctInfoVo);
-            authBalanceVo.setMerchantCode(Credentials.MERCHANT_CODE);
+            authBalanceVo.setMerchantCode(dto.getMerchantCode());
             authBalanceVo.setResponseCode(ResponseCode.SUCCESS);
             authBalanceVo.setSerialNo(traceId);
 
@@ -104,7 +106,7 @@ public class BalanceService {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
 
         } catch (AuthenticationException authenticationException) {
-            authBalanceVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
+            authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -115,6 +117,12 @@ public class BalanceService {
         } catch (IllegalArgumentException illegalArgumentException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             
+        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
+            authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+            
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+
         } finally {
             // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, authBalanceVo);
@@ -130,11 +138,17 @@ public class BalanceService {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
+            DisabledGameException, UnableToFindCredentialsException, GameNotSupportedException{
+
+        // Verify received merchant code is same from Credentials merchant code 
+        ValidationUtils.isEquals(Credentials.MERCHANT_CODE, dto.getMerchantCode(), UnableToFindCredentialsException::new);
         
         // Verify received vendor player username is the same from game session
-        // Comparison for game session value will always be using AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
+        
+        // Verify received game code is the same from vendor game code
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameCode(), GameNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
