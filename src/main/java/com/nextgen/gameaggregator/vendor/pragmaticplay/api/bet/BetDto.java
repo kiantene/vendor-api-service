@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -11,7 +13,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetData {
+public class BetDto implements UnsettledResultSettledData {
 
     // Hash code of the request
     @NotBlank
@@ -72,5 +74,60 @@ public class BetDto implements BetData {
     private String token;
 
     @Override
-    public String getExternalTransactionId() { return this.reference; }
+    public String getExternalTransactionId() { return reference; }
+
+    @Override
+    public String getBetId() {
+        return roundId;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return amount;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getVendorWinLoss() {
+        return getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return getBetAmount();
+    }
+
+    @Override
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public WinType getResultType() {
+        return WinType.LOSE;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return timestamp;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return timestamp;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return timestamp;
+    }
 }

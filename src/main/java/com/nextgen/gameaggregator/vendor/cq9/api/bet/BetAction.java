@@ -74,10 +74,7 @@ public class BetAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession, wToken);
 
-            // 4. Send bet request to Operator
-            // 4.1 check if player has enough balance
-            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            //BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            // 4. Process unsettle data
             UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
 
             // Construct VO

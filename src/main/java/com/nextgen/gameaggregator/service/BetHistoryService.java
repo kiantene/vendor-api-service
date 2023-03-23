@@ -94,12 +94,6 @@ public class BetHistoryService {
     @CachePut(value = "UnsettledBet", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public RawUnsettledBet createUnsettledBet(RawUnsettledBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
-        entity.setWinAmount(BigDecimal.ZERO);
-        entity.setWinLoss(BigDecimal.ZERO);
-        entity.setVendorWinLoss(BigDecimal.ZERO);
-        entity.setEffectiveTurnover(BigDecimal.ZERO);
-        entity.setResultType(WinType.LOSE.code);
-        entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
         entity.setResettleNum(0);
 

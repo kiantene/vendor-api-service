@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.RawSettledBet;
 import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.SettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
@@ -16,7 +17,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EndRoundDto implements SettledData {
+public class EndRoundDto implements UnsettledResultSettledData {
 
     // Hash code of the request
     @NotBlank
@@ -60,17 +61,27 @@ public class EndRoundDto implements SettledData {
     }
 
     @Override
-    public BigDecimal getAmount() {
+    public String getBetId() {
+        return roundId;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
         return null;
     }
 
     @Override
-    public Long getTimestamp() {
+    public BigDecimal getWinAmount() {
         return null;
     }
 
     @Override
-    public WinType getWinType() {
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getVendorWinLoss() {
         return null;
     }
 
@@ -80,7 +91,28 @@ public class EndRoundDto implements SettledData {
     }
 
     @Override
-    public RawSettledBet prepareData(RawUnsettledBet rawUnsettledBet, RawResultBet rawResultBet, RawSettledBet rawSettledBet) {
+    public BigDecimal getRefundAmount() {
         return null;
     }
+
+    @Override
+    public WinType getResultType() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return null;
+    }
+
 }

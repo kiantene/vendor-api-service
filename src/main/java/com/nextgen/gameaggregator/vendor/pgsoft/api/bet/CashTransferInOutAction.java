@@ -55,6 +55,7 @@ public class CashTransferInOutAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
+            // 4. Process full bet data
             SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
@@ -145,8 +146,6 @@ public class CashTransferInOutAction {
         // 5. Retrieve vendor line credentials and operatorToken to verify with raw request from vendor
         String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
-
-        //TODO CHECK HASH COMBINATION
     }
 
 }

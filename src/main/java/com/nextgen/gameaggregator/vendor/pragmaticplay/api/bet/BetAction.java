@@ -48,7 +48,6 @@ public class BetAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            //TODO: refine dto
             BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
@@ -60,16 +59,12 @@ public class BetAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 4. Send bet request to Operator
-            // 4.1 check if player has enough balance
-            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            //BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            // 4. Process unsettled bet process
             UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(unsettledBetEvent.getLastBalance());
-//            responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -83,11 +78,6 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         }
-//        catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
-//
-//        }
         catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
