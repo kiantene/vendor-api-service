@@ -17,10 +17,31 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
+import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.RecordNotFoundException;
+import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorGameService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.*;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Actions;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 
 
 @Service
@@ -48,11 +69,11 @@ public class TransferService {
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getTraceId();
         TransferVo transferVo = new TransferVo();
-        transferVo.setMerchantCode(Credentials.MERCHANT_CODE);
-        transferVo.setSerialNo(traceId);
     
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
+            transferVo.setMerchantCode(dto.getMerchantCode());
+            transferVo.setSerialNo(traceId);
             this.doValidation(dto);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
@@ -100,7 +121,7 @@ public class TransferService {
             }
     
             transferVo.setTransferId(dto.getTransferId());
-            transferVo.setMerchantCode(Credentials.MERCHANT_CODE);
+            transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setMerchantTxId(gameSession.getToken());
             transferVo.setAcctId(gameSession.getVendorPlayerUsername());
             transferVo.setSerialNo(traceId);
@@ -127,7 +148,7 @@ public class TransferService {
             transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
 
         } catch (AuthenticationException authenticationException) {
-            transferVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
+            transferVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
@@ -143,6 +164,9 @@ public class TransferService {
 
         } catch (RecordNotFoundException recordNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
+
+        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
+            transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
 
         }finally {
             httpService.end(httpRequestLog, transferVo);
@@ -162,15 +186,18 @@ public class TransferService {
 
     private void doVerification(TransferDto dto, GameSession gameSession)
             throws
+            UnableToFindCredentialsException,
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
             GameNotSupportedException,
             CurrencyNotSupportedException {
+        
+        // Verify received merchant code is same from Credentials merchant code 
+        ValidationUtils.isEquals(Credentials.MERCHANT_CODE, dto.getMerchantCode(), UnableToFindCredentialsException::new);
 
         // Verify received vendor player username is the same from game session
-        // Comparison for game session value will always be using AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
 
         // Verify vendor gameCode and currency

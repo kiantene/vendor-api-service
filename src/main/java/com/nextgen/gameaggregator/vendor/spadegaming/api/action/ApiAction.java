@@ -1,16 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.action;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Headers;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.spadegaming.api.authenticate.AuthenticateService;
-import com.nextgen.gameaggregator.vendor.spadegaming.api.balance.BalanceService;
-import com.nextgen.gameaggregator.vendor.spadegaming.api.transfer.TransferService;
-import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +7,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.vendor.spadegaming.api.authenticate.AuthenticateService;
+import com.nextgen.gameaggregator.vendor.spadegaming.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.spadegaming.api.transfer.TransferService;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Headers;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.spadegaming.vo.ResponseVo;
 
 @RestController
 @RequestMapping(EndPoints.PATH)
@@ -58,7 +57,6 @@ public class ApiAction {
                 
                 // Get the trace ID from the logging
                 String traceId = httpRequestLog.getTraceId();
-                responseVo.setMerchantCode(Credentials.MERCHANT_CODE);
                 responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
                 responseVo.setSerialNo(traceId);
 
