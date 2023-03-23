@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -56,7 +57,7 @@ public class RoundPayoutAction {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
-        String header = httpRequestLog.getHeaders();
+        String sign = request.getHeader("x-gaming-signature");
         String body = httpRequestLog.getRequestBody();
         RoundPayoutVo roundPayoutVo = new RoundPayoutVo();
         RoundPayoutDataVo roundPayoutDataVo = new RoundPayoutDataVo();
@@ -69,7 +70,7 @@ public class RoundPayoutAction {
             ValidationUtils.validateRequest(dto);
 
             // Validate request parameters from vendor (Non-database related)
-            this.doValidation(dto);
+            this.doValidation(dto, sign);
 
             // Get game session
             // GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
@@ -80,9 +81,7 @@ public class RoundPayoutAction {
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> headerObj = mapper.readValue(header, Map.class);
             Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-            String sign = headerObj.get("x-gaming-signature");
             this.doVerification(dto, list, gameSession, sign, bodyObj);
 
             // Search for bet, win and/or cancel bet
@@ -199,7 +198,9 @@ public class RoundPayoutAction {
         return roundPayoutVo;
     }
 
-    private void doValidation(RoundPayoutDto dto) throws InvalidRequestException {
+    private void doValidation(RoundPayoutDto dto, String token) throws InvalidRequestException {
+        Optional.ofNullable(token).orElseThrow(InvalidRequestException::new);
+
         // General validation
         ValidationUtils.validateRequest(dto);
     }
