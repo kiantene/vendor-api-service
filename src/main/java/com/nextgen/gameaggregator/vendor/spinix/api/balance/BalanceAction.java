@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -50,7 +51,7 @@ public class BalanceAction {
         BalanceErrorVo balanceErrorVo = new BalanceErrorVo();
         BalanceDataVo balanceDataVo = new BalanceDataVo();
         String traceId = httpRequestLog.getTraceId();
-        String header = httpRequestLog.getHeaders();
+        String sign = request.getHeader("x-gaming-signature");
         String body = httpRequestLog.getRequestBody();
 
         try {
@@ -59,14 +60,12 @@ public class BalanceAction {
             String reqId = dto.getReqId();
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(dto);
+            this.doValidation(dto, sign);
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, String> headerObj = mapper.readValue(header, Map.class);
             Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-            String sign = headerObj.get("x-gaming-signature");
             this.doVerification(dto, gameSession, sign, bodyObj);
 
             // 3. Retrieve the latest wallet balance from Operator
@@ -133,7 +132,9 @@ public class BalanceAction {
 
     }
 
-    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+    private void doValidation(BalanceDto dto, String token) throws InvalidRequestException {
+        Optional.ofNullable(token).orElseThrow(InvalidRequestException::new);
+
         // General validation
         ValidationUtils.validateRequest(dto);
     }
