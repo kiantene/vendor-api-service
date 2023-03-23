@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
@@ -18,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
