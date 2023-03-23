@@ -61,7 +61,6 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            //BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
             SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
 
             responseVo.setCash(settledBetEvent.getLastBalance());
