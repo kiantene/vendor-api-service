@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.operator.constant;
 
 public class Endpoints {
 
-    public static final Integer TIMEOUT = 2000;
+    public static final Integer TIMEOUT = 10000;
     public static final String HEADER_API_KEY = "X-API-Key";
     public static final String HEADER_SIGNATURE = "X-Signature";
     public static final String GAME_URL = "/game/url";
