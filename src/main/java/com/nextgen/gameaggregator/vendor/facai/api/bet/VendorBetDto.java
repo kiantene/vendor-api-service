@@ -36,8 +36,8 @@ public class VendorBetDto {
     @JsonProperty("Currency")
     public String currency;
 
-    @PositiveOrZero(message = ResponseCodes.GAME_NOT_FOUND)
-    @NotNull(message = ResponseCodes.GAME_NOT_FOUND)
+    @PositiveOrZero(message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @NotNull(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("GameID")
     public Integer gameID;
 

@@ -20,8 +20,8 @@ public class BalanceDto {
     @Size(min = 3, max = 3, message = ResponseCodes.CURRENCY_MISSING)
     public String Currency;
 
-    @PositiveOrZero(message = ResponseCodes.GAME_NOT_FOUND)
-    @NotNull(message = ResponseCodes.GAME_NOT_FOUND)
+    @PositiveOrZero(message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @NotNull(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     public Integer GameID;
 
     @NotNull(message = ResponseCodes.PARAM_CONTAIN_ERROR)

@@ -23,8 +23,6 @@ public class ResponseCodes {
         put(INSUFFICIENT_BALANCE, "Your points balance not enough.");
         put(GAME_NOT_FOUND, "Game does not exist.");
         put(PLAYER_NOT_FOUND, "Account does not exist.");
-        put(INSUFFICIENT_BALANCE, "Insufficient Balance.");
-        put(PLAYER_NOT_FOUND, "Player not found.");
         put(REVERT_CANCEL_BET, "Revert Cancel Bet.");
         put(TRANSACTION_NOT_EXIST, "Transaction ID number not exist.");
         put(REQUIRE_CANCEL_REQUEST, "Require to send Cancel request.");
