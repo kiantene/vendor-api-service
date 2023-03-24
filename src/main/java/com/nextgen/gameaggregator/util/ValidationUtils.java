@@ -28,7 +28,11 @@ public class ValidationUtils {
             violations.forEach(v -> {
                 String fieldName = v.getPropertyPath().toString();
                 if (!validation.containsKey(fieldName)) {
-                    validation.put(fieldName, v.getMessage());
+                    if (v.getMessage().equals(v.getMessageTemplate())) {
+                        validation.put(fieldName, v.getMessage());
+                    } else {
+                        validation.put(fieldName, null);
+                    }
                 }
             });
 
