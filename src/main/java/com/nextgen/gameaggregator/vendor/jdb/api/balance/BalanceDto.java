@@ -4,17 +4,15 @@ import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonPrope
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.*;
 
 @Data
 public class BalanceDto {
 
     private Integer action;
 
-    @NotBlank
-    @Size(min = 12, max = 12)
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
     private Long ts;
 
     @NotBlank
