@@ -1,15 +1,23 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.dto;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
-import lombok.Data;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.time.*;
+
+import org.hibernate.validator.constraints.Range;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -29,11 +37,11 @@ public class TransferDto implements BetData{
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String currency;
 
-    @NotBlank
-    @Size(min = 1)
+    @NotNull
+    @Range(min = 0)
     private BigDecimal amount;
 
-    @NotBlank
+    @NotNull
     private Integer type;
 
     @NotBlank
@@ -57,17 +65,17 @@ public class TransferDto implements BetData{
     private String serialNo;
 
     @Size(max = 20)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String ticketId;
 
     @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String referenceId;
 
     private SpecialGameDto specialGame;
 
     @Size(max = 2048)
-    private String refTicketIds;
+    private List<String> refTicketIds;
 
     @Size(max = 50)
     private String gameFeature;

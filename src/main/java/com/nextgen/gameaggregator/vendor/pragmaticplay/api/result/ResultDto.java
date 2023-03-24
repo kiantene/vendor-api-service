@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -13,7 +14,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResultDto implements WinData {
+public class ResultDto implements UnsettledResultSettledData {
 
     // Hash code of the request
     @NotBlank
@@ -80,18 +81,58 @@ public class ResultDto implements WinData {
     }
 
     @Override
-    public WinType getWinType() {
-        return WinType.WIN;
+    public String getBetId() {
+        return roundId;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return amount;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getVendorWinLoss() {
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover(){
-        return this.amount;
+        return null;
     }
 
     @Override
-    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog){
-        betResultLog.setWinAmount(betHistory.getBetAmount());
-        return betResultLog;
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.valueOf(0);
     }
+
+    @Override
+    public WinType getResultType() {
+        return WinType.WIN;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return timestamp;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return timestamp;
+    }
+
 }

@@ -1,6 +1,12 @@
 package com.nextgen.gameaggregator.vendor.cq9.constant;
 
-public class Platforms {
-    public static final String WEB = "web";
-    public static final String H5 = "mobile";
+import lombok.AllArgsConstructor;
+
+@AllArgsConstructor
+public enum Platforms {
+    WEB("web"),
+    H5("mobile")
+    ;
+
+    public final String code;
 }

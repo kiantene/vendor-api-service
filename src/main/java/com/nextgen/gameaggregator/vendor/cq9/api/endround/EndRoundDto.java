@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +14,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EndRoundDto {
+public class EndRoundDto implements UnsettledResultSettledData {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -52,4 +54,122 @@ public class EndRoundDto {
     private BigDecimal jackpot;
 
     private List<@Positive @Digits(integer = 12, fraction = 10) BigDecimal> jackpotcontribution;
+
+    private String betId;
+    private String externalTransactionId;
+    private BigDecimal winAmount;
+    private Long resultTime;
+    private Long vendorSettleTime;
+    private WinType resultType;
+    private BigDecimal winLoss;
+    private BigDecimal vendorWinLoss;
+    private BigDecimal effectiveTurnover;
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.externalTransactionId;
+    }
+
+    public void setExternalTransactionId(String externalTransactionId) {
+        this.externalTransactionId = externalTransactionId;
+    }
+
+    @Override
+    public String getBetId() {
+        return this.betId;
+    }
+
+    public void setBetId(String betId){
+        this.betId = betId;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.roundid;
+    }
+
+    @Override
+    public String getGameId() {
+        return this.gamecode;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return this.winAmount;
+    }
+
+    public void setWinAmount(BigDecimal winAmount) {
+        this.winAmount = winAmount;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return this.winLoss;
+    }
+
+    public void setWinLoss(BigDecimal winLoss) {
+        this.winLoss = winLoss;
+    }
+
+    @Override
+    public BigDecimal getVendorWinLoss() {
+        return this.vendorWinLoss;
+    }
+
+    public void setVendorWinLoss(BigDecimal vendorWinLoss) {
+        this.vendorWinLoss = vendorWinLoss;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return this.effectiveTurnover;
+    }
+
+    public void setEffectiveTurnover(BigDecimal effectiveTurnover) {
+        this.effectiveTurnover = effectiveTurnover;
+    }
+
+    @Override
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public WinType getResultType() {
+        return this.resultType;
+    }
+
+    public void setResultType(WinType resultType) {
+        this.resultType = resultType;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return this.resultTime;
+    }
+
+    public void setResultTime(Long resultTime) {
+        this.resultTime = resultTime;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return this.vendorSettleTime;
+    }
+
+    public void setVendorSettleTime(Long vendorSettleTime) {
+        this.vendorSettleTime = vendorSettleTime;
+    }
+
+
 }

@@ -73,4 +73,12 @@ public class VendorService {
         }
     }
 
+    public static Boolean isSameSignature(String token, Map<String, Object> body, String signatureKey) {
+        VendorService vendorService = new VendorService();
+        String sign = vendorService.getSignature(body, signatureKey);
+        if(token.equals(sign)) {
+            return true;
+        }
+        return false;
+    }
 }

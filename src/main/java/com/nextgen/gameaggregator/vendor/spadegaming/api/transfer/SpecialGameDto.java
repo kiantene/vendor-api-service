@@ -1,8 +1,10 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.dto;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
+
+import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
-import javax.validation.constraints.Size;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

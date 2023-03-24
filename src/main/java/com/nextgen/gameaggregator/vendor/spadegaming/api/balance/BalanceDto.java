@@ -1,12 +1,13 @@
-package com.nextgen.gameaggregator.vendor.spadegaming.dto;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import lombok.Data;
+package com.nextgen.gameaggregator.vendor.spadegaming.api.balance;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

@@ -4,11 +4,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
 @Data
 public class BetDto implements BetData {
     private String action;
+
+    @NotBlank
+    @Size(min = 12, max = 12)
     private Long ts;
     private Long transferId;
     private String uid;

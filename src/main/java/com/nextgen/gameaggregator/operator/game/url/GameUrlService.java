@@ -138,7 +138,7 @@ public class GameUrlService {
         }
     }
 
-    public GameSession checkPlayer(Integer agentId, String username, VendorLine vendorLine) {
+    public GameSession checkPlayer(Integer agentId, String username, VendorLine vendorLine, Integer currencyId) {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agentId, username);
         VendorPlayer vendorPlayer = null;
         Integer vendorId = vendorLine.getVendor().getId();
@@ -148,11 +148,11 @@ public class GameUrlService {
             agentPlayerRepository.save(agentPlayer);
         } else {
             vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
-                    vendorLine.getCurrency().getId());
+                    currencyId);
         }
 
         if (vendorPlayer == null) {
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId, vendorLine.getCurrency().getId());
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorId, currencyId);
             vendorPlayerRepository.save(vendorPlayer);
         }
 

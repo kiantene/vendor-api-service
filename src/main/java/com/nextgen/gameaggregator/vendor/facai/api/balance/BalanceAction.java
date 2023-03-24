@@ -60,18 +60,20 @@ public class BalanceAction {
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(commonDto);
 
-            //TODO pending PG update core function to get appKey
-            //Decrypt raw respond
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), "Q7RaR8CUbwZ0roD2");
-            log.info("json: " + jsonParam);
+            //Get vendor line id by agent code from vendor line credential
+            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
+
+            //Decrypt raw respond with key from vendor line credential
+            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
+
             //map decrypted data(string json) into balanceDto
             BalanceDto balanceDto = HttpService.convertJsonToDto(jsonParam, BalanceDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(balanceDto);
 
-            //Get vendor player details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getMemberAccount());
+            //get gameSession by player name and vendor game id
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -134,13 +136,6 @@ public class BalanceAction {
     }
 
     private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException {
-
-        //Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getMemberAccount(), InvalidPlayerException::new);
-
-        //Verify received game id is the same from game session
-        //comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(balanceDto.getGameID()), DisabledGameException::new);
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);

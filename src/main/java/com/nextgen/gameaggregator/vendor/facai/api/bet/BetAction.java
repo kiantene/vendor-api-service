@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -71,9 +70,11 @@ public class BetAction {
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(commonDto);
 
-            //TODO pending PG update core function to get appKey
-            //Decrypt raw respond
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), "Q7RaR8CUbwZ0roD2");
+            //Get vendor line id by agent code from vendor line credential
+            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
+
+            //Decrypt raw respond with key from vendor line credential
+            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
 
             //map decrypted data(string json) into balanceDto
             VendorBetDto vendorBetDto = HttpService.convertJsonToDto(jsonParam, VendorBetDto.class);
@@ -81,9 +82,8 @@ public class BetAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(vendorBetDto);
 
-            //get gameSession by player name
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(vendorBetDto.memberAccount);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            //get gameSession by player name and vendor game id
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorBetDto.getMemberAccount(), Integer.toString(vendorBetDto.getGameID()));
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, vendorBetDto, gameSession, jsonParam);
@@ -115,7 +115,7 @@ public class BetAction {
             commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidDecryptionException invalidDecryptionException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
@@ -193,13 +193,6 @@ public class BetAction {
     }
 
     private void doVerification(CommonDto commonDto, VendorBetDto vendorBetDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
-
-        //Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorBetDto.getMemberAccount(), InvalidPlayerException::new);
-
-        //Verify received game id is the same from game session
-        //comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(vendorBetDto.getGameID()), DisabledGameException::new);
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);

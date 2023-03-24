@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -73,14 +74,12 @@ public class BetAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession, wToken);
 
-            // 4. Send bet request to Operator
-            // 4.1 check if player has enough balance
-            // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            // 4. Process unsettle data
+            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setBalance(unsettledBetEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getCurrencyCode());
             responseVo.setData(commonVo);
 
@@ -101,10 +100,6 @@ public class BetAction {
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
