@@ -40,6 +40,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Actions;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Channel;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 
@@ -192,7 +193,8 @@ public class TransferService {
             DisabledAgentPlayerException,
             DisabledGameException,
             GameNotSupportedException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException,
+            InvalidRequestException {
         
         // Verify received merchant code is same from Credentials merchant code 
         ValidationUtils.isEquals(Credentials.MERCHANT_CODE, dto.getMerchantCode(), UnableToFindCredentialsException::new);
@@ -213,5 +215,8 @@ public class TransferService {
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
+        // Verify channel
+        if (!Channel.list.contains(dto.getChannel())) throw new InvalidRequestException();
+        
     }
 }

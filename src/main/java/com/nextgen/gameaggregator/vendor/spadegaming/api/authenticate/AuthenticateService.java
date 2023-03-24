@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.authenticate;
 
 import java.math.BigDecimal;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -15,6 +17,7 @@ import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
@@ -92,13 +95,9 @@ public class AuthenticateService {
         } catch (InvalidRequestException invalidRequestException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (DisabledGameException disabledGameException) {
+        } catch (DisabledVendorLineException | 
+                DisabledAgentPlayerException | 
+                DisabledGameException serviceException) {
             authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
         } catch (JsonProcessingException jsonProcessingException) {
@@ -122,6 +121,9 @@ public class AuthenticateService {
         } catch (InvalidPlayerException invalidPlayerException) {
             authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
 
+        } catch (InvalidFormatException invalidFormatException) {
+            authBalanceVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
+
         } finally {
            // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, authBalanceVo);
@@ -131,7 +133,12 @@ public class AuthenticateService {
         return authBalanceVo;
     }
 
-    private void doValidation(AuthenticateDto dto) throws InvalidRequestException {
+    private void doValidation(AuthenticateDto dto) throws InvalidRequestException, InvalidFormatException{
+        // Validate token
+        ValidationUtils.validateLength(dto.getToken(), 1, 80, InvalidFormatException::new);
+        Matcher m = Pattern.compile(ValidationUtils.ALPHANUMERIC_DASH_REGEX).matcher(dto.getToken());
+        if(!m.matches()) throw new InvalidFormatException();
+
         // General validation
         ValidationUtils.validateRequest(dto);
     }
