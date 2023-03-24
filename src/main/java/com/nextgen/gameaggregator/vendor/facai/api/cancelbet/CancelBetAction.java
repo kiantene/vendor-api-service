@@ -91,7 +91,11 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.TRANSACTION_NOT_EXIST));
+            if(invalidRequestException.getValidation() != null) {
+                commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.TRANSACTION_NOT_EXIST));
+            }else{
+                commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            }
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         }catch (CurrencyNotSupportedException currencyNotSupportedException) {
