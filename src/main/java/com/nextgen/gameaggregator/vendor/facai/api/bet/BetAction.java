@@ -56,9 +56,6 @@ public class BetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-        BigDecimal balance = BigDecimal.valueOf(0);
-        //betVo.setResult(0);
-        //betVo.setMainPoints(1000.00);
 
         try {
             //Retrieve request body in original string format
@@ -87,9 +84,6 @@ public class BetAction {
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, vendorBetDto, gameSession, jsonParam);
-
-            //Retrieve the latest wallet balance from Operator
-            balance = walletService.getBalance(traceId, gameSession);
 
             //check bet type
             WinType winType = this.getWinType(vendorBetDto);
@@ -121,9 +115,9 @@ public class BetAction {
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (CredentialNotFoundException credentialNotFoundException) {
@@ -131,9 +125,9 @@ public class BetAction {
         } catch (DisabledVendorLineException disabledVendorLineException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (BetResultNotFoundException betResultNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (InvalidDateException invalidDateException) {
@@ -145,9 +139,10 @@ public class BetAction {
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            //return error message according param
+            commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (JsonProcessingException jsonProcessingException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (Exception exception) {
@@ -161,32 +156,13 @@ public class BetAction {
 
     private void doValidation(CommonDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
         // General validation
-        //ValidationUtils.validateRequest(dto);
-        if(!vendorService.isValidString(dto.getAgentCode())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getSign())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doDecryptValidation(VendorBetDto dto) throws InvalidRequestException, InvalidPlayerException, InvalidDateException, CurrencyNotSupportedException {
         // General validation
-        //ValidationUtils.validateRequest(dto);
-        if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
-        if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
-        if(dto.getBankID() == null) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidInteger(dto.getGameType())) {throw new InvalidRequestException();}
-        if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
-        if(dto.getIsBuyFeature() == null) {throw new InvalidRequestException();}
-        if(dto.getBet() == null  || (dto.getBet().compareTo(BigDecimal.ZERO) < 0 || dto.getBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getWin() == null || (dto.getWin().compareTo(BigDecimal.ZERO) < 0 || dto.getWin().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getJpBet() == null || (dto.getJpBet().compareTo(BigDecimal.ZERO) < 0 || dto.getJpBet().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getJpPrize() == null || (dto.getJpPrize().compareTo(BigDecimal.ZERO) < 0 || dto.getJpPrize().compareTo(new BigDecimal("999999999999")) > 0)) {throw new InvalidRequestException();}
-        if(dto.getNetWin()== null || dto.getNetWin().compareTo(new BigDecimal("999999999999")) > 0) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getRecordID())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidStringLength(dto.getRecordID(), 1, 24)) {throw new InvalidRequestException();}
+        ValidationUtils.validateRequest(dto);
+        //date format validation
         if(!vendorService.isValidDateString(dto.getGameDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
         if(!vendorService.isValidDateString(dto.getCreateDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
 
@@ -271,7 +247,6 @@ public class BetAction {
             winDataDto.setAmount(vendorBetDto.getWin());
             winDataDto.setEffectiveTurnover(vendorBetDto.getBet());
         }
-
 
         return winDataDto;
 
