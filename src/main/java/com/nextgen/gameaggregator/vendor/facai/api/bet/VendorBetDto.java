@@ -14,9 +14,9 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class VendorBetDto {
 
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 24)
+    @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @Size(min = 1, max = 24, message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("RecordID")
     public String recordID;
 
