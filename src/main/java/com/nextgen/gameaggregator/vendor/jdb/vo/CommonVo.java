@@ -11,8 +11,10 @@ import java.math.BigDecimal;
 public class CommonVo implements HttpResponse {
     @JsonProperty("status")
     private String status;
+
     @JsonProperty("balance")
     private BigDecimal balance = BigDecimal.ZERO;
+
     @JsonProperty("err_text")
     private String errText;
 
