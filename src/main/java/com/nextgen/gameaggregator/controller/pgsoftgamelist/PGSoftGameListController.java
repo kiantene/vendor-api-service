@@ -70,7 +70,7 @@ public class PGSoftGameListController {
 
         formData.add("operator_token", operatorToken);
         formData.add("secret_key", secretKey);
-        formData.add("currency", vendorLine.getVendorCurrencyCode());
+      //  formData.add("currency", vendorLine.getVendorCurrencyCode());
         formData.add("language", "zh-cn");
         formData.add("status", "1");
         return formData;

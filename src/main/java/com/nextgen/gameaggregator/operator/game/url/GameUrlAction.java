@@ -86,7 +86,7 @@ public class GameUrlAction {
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
 
             // 10. Check if vendor player account exists
-            GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine);
+            GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine, currency.getId());
 
             // 11. Check if Vendor Line currency is supported
             VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());

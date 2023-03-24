@@ -14,10 +14,10 @@ public class VendorLine {
     private String name;
     @ManyToOne
     private Vendor vendor;
-    private Boolean isMultiCurrency;
-    @ManyToOne
-    private Currency currency;
-    private String vendorCurrencyCode;
+//    private Boolean isMultiCurrency;
+//    @ManyToOne
+//    private Currency currency;
+//    private String vendorCurrencyCode;
     private Integer houseId;
     private Integer status;
     @OneToMany(mappedBy = "vendorLineId", fetch = FetchType.EAGER)
