@@ -86,7 +86,8 @@ public class BalanceAction {
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (InvalidRequestException invalidRequestException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            //return error message according param
+            commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -117,22 +118,12 @@ public class BalanceAction {
 
     private void doValidation(CommonDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
         // General validation
-        //ValidationUtils.validateRequest(dto);
-        if(!vendorService.isValidString(dto.getAgentCode())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getSign())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doDecryptValidation(BalanceDto dto) throws InvalidRequestException, InvalidPlayerException, CurrencyNotSupportedException {
         // General validation
-        //ValidationUtils.validateRequest(dto);
-        if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
-        if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
-        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
-        if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException {
@@ -151,11 +142,9 @@ public class BalanceAction {
         }
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
-
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
-
 
     }
 

@@ -51,8 +51,7 @@ public class CancelBetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-        //commonVo.setResult(0);
-        //commonVo.setMainPoints(1000.00);
+
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -91,7 +90,8 @@ public class CancelBetAction {
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            //return error message according param
+            commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.TRANSACTION_NOT_EXIST));
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         }catch (CurrencyNotSupportedException currencyNotSupportedException) {
@@ -114,23 +114,12 @@ public class CancelBetAction {
 
     private void doValidation(CommonDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
         // General validation
-        //ValidationUtils.validateRequest(dto);
-        if(!vendorService.isValidString(dto.getAgentCode())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getSign())) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doDecryptValidation(CancelBetDto dto) throws InvalidRequestException, InvalidPlayerException, CurrencyNotSupportedException {
         // General validation
-        //ValidationUtils.validateRequest(dto);
-        if(!vendorService.isValidString(dto.getMemberAccount())) {throw new InvalidPlayerException();}
-        if(!vendorService.isValidStringLength(dto.getMemberAccount(), 2, 30)) {throw new InvalidPlayerException();}
-        if(dto.getBankID() == null) {throw new InvalidRequestException();}
-        if(!vendorService.isValidString(dto.getCurrency())) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidStringLength(dto.getCurrency(), 3, 3)) {throw new CurrencyNotSupportedException();}
-        if(!vendorService.isValidInteger(dto.getGameID())) {throw new InvalidRequestException();}
-        if(dto.getTs() == null || !vendorService.isValidTimestamp(dto.getTs())) {throw new InvalidRequestException();}
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession, String jsonParam) throws  InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException {
