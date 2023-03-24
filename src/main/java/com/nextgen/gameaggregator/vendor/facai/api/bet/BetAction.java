@@ -140,7 +140,11 @@ public class BetAction {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
+            if(invalidRequestException.getValidation() != null) {
+                commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
+            }else{
+                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            }
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (JsonProcessingException jsonProcessingException) {
