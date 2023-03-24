@@ -42,7 +42,6 @@ public class TransferDto implements BetData{
     private BigDecimal amount;
 
     @NotNull
-    @Range(min = 1)
     private Integer type;
 
     @NotBlank
@@ -66,9 +65,11 @@ public class TransferDto implements BetData{
     private String serialNo;
 
     @Size(max = 20)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String ticketId;
 
     @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String referenceId;
 
     private SpecialGameDto specialGame;

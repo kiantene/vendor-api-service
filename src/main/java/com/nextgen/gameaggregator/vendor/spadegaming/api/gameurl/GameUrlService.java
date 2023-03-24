@@ -23,6 +23,7 @@ public class GameUrlService implements GameUrl {
         formData.add("acctId", gameSession.getVendorPlayerUsername());
         formData.add("token", gameSession.getToken());
         formData.add("game", gameCode);
+        formData.add("language", gameSession.getVendorLanguageCode());
         return formData;
     }
 
