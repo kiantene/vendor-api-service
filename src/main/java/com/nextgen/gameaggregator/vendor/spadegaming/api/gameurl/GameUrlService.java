@@ -28,7 +28,8 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) 
+    throws InvalidVendorLineException, InvalidVendorResponseException {
         // Retrieve the game domain from the credentials map.
         String gameDomain = credentials.getOrDefault(Credentials.GAME_DOMAIN, "");
         if (gameDomain.isBlank()) {
