@@ -56,14 +56,14 @@ public class WalletWinAction {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 
         } catch (JsonSyntaxException jsonSyntaxException) {
-            log.error("Operator URL :" + callbackUrl);
-            log.error("Invalid Operator Response :" + responseString);
+            Gson gson = new Gson();
+            log.error("Operator " +Endpoints.WALLET_WIN + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
             new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
         if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-            log.error("Operator URL " + callbackUrl);
-            log.error("Invalid Operator Response :" + responseString);
+            Gson gson = new Gson();
+            log.error("Operator " +Endpoints.WALLET_WIN + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
             throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
         }
         return responseVo;
