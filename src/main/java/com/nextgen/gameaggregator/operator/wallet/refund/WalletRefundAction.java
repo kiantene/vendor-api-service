@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.refund;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -18,36 +20,41 @@ import java.util.Optional;
 @Slf4j
 public class WalletRefundAction {
     public WalletBalanceVo call(String callbackUrl, String signature, WalletRefundDto dto) throws InvalidOperatorResponseException {
-        log.info(dto.toString());
+
         WalletBalanceVo responseVo = null;
+        String responseString = WebClient.create(callbackUrl)
+                .post()
+                .uri(Endpoints.WALLET_REFUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .header(Endpoints.HEADER_SIGNATURE, signature)
+                .body(BodyInserters.fromValue(dto))
+                .retrieve()
+                .onStatus(HttpStatus::isError,
+                        response -> {
+                            HttpStatus clientResponsestatus = response.statusCode();
+                            return response.bodyToMono(String.class).map(body ->
+                                    new InvalidOperatorResponseException
+                                            ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+                        })
+                .bodyToMono(String.class)
+                .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
+                .block();
+
         try {
-            responseVo = WebClient.create(callbackUrl)
-                    .post()
-                    .uri(Endpoints.WALLET_REFUND)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .header(Endpoints.HEADER_SIGNATURE, signature)
-                    .body(BodyInserters.fromValue(dto))
-                    .retrieve()
-                    .onStatus(HttpStatus::isError,
-                            response -> {
-                                HttpStatus clientResponsestatus = response.statusCode();
-                                return response.bodyToMono(String.class).map(body ->
-                                        new InvalidOperatorResponseException
-                                                ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-                            })
-                    .bodyToMono(WalletBalanceVo.class)
-                    .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
-                    .block();
-        } catch (Exception exception) {
-            //TODO (by Alex), proper throw InvalidOperatorResponseException
-            throw new InvalidOperatorResponseException(exception.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            responseVo = new Gson().fromJson(responseString, WalletBalanceVo.class);
+            // throw exception if response is null
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+
+        } catch (JsonSyntaxException jsonSyntaxException) {
+            Gson gson = new Gson();
+            log.error("Operator " +Endpoints.WALLET_REFUND + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
+            new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
-        Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-        log.info(responseVo.toString());
-
         if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+            Gson gson = new Gson();
+            log.error("Operator " +Endpoints.WALLET_REFUND + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
             throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
         }
         return responseVo;
