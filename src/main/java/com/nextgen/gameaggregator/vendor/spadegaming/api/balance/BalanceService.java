@@ -148,7 +148,7 @@ public class BalanceService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
         
         // Verify received game code is the same from vendor game code
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameCode(), GameNotSupportedException::new);
+        if(dto.getGameCode() != null) ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameCode(), GameNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
