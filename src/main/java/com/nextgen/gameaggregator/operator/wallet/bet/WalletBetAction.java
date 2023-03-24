@@ -61,8 +61,8 @@ public class WalletBetAction {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 
         } catch (JsonSyntaxException jsonSyntaxException) {
-            log.error("Operator URL :" + callbackUrl);
-            log.error("Invalid Operator Response :" + responseString);
+            Gson gson = new Gson();
+            log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
             new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
@@ -72,19 +72,19 @@ public class WalletBetAction {
                 //TODO to be discuss whether should system pre handle negative if
                 boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
                 if (isNegativeBalance){
-                    log.error("Operator URL :" + callbackUrl);
-                    log.error("Insufficient Operator Response :" + responseString);
+                    Gson gson = new Gson();
+                    log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
                     throw new InsufficientBalanceException(responseVo.toString());
                 }
             }
             case SC_INSUFFICIENT_FUNDS -> {
-                log.error("Operator URL :" + callbackUrl);
-                log.error("Insufficient Operator Response :" + responseString);
+                Gson gson = new Gson();
+                log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
                 throw new InsufficientBalanceException(responseVo.toString());
             }
             default -> {
-                log.error("Operator URL :" + callbackUrl);
-                log.error("Invalid Operator Response :" + responseString);
+                Gson gson = new Gson();
+                log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             }
         }
