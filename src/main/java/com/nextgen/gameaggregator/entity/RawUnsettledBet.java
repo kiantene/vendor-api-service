@@ -18,6 +18,7 @@ public class RawUnsettledBet {
     private String id;
     private String internalTransactionId;
     private String externalTransactionId;
+    private String vendorBetId;
     private String roundId;
     private Integer vendorGameId;
     private Long vendorPlayerId;
@@ -36,7 +37,10 @@ public class RawUnsettledBet {
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
     private BigDecimal refundAmount;
+    private BigDecimal jackpotAmount;
     private Integer resultType;
+    private Integer isCancelled;
+    private Integer isFreespin;
     private String md5RawSettledResult;
     private Integer resettleNum;
     private Integer status;

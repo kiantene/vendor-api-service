@@ -2,12 +2,8 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -192,14 +188,14 @@ public class EndRoundAction {
         Instant instant = Instant.parse(endRoundDataDtoList.get(0).getEventtime());
         Long resultTime = instant.toEpochMilli();
 
-        dto.setBetId(endRoundDataDtoList.get(0).getMtcode());
-        dto.setExternalTransactionId(dto.getBetId());
+        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
+        dto.setExternalTransactionId(dto.getVendorBetId());
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
         dto.setResultTime(resultTime);
         dto.setVendorSettleTime(dto.getResultTime());
         dto.setEffectiveTurnover(rawUnsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(rawUnsettledBet.getBetAmount()));
         dto.setVendorWinLoss(dto.getWinLoss());
-        dto.setResultType(this.getWinType(dto, dto.getWinLoss()));
+        dto.setResultType(this.getWinType(dto, dto.getWinAmount()));
     }
 }

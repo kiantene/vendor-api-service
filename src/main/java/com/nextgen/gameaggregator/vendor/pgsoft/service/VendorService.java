@@ -5,9 +5,7 @@ import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
-import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutAction;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.BetTypes;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.GameCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -76,7 +74,7 @@ public class VendorService {
 
 
     public static Boolean isBetRequest(CashTransferInOutDto dto) {
-        return dto.getParentBetId().equals(dto.getBetId());
+        return dto.getParentBetId().equals(dto.getVendorBetId());
     }
 
     public static Boolean isRoundEnded(CashTransferInOutDto dto) {

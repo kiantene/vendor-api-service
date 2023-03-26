@@ -127,6 +127,11 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
     }
 
     @Override
+    public String getVendorBetId() {
+        return this.betId;
+    }
+
+    @Override
     public String getRoundId() {
         return this.parentBetId;
     }
@@ -169,5 +174,20 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
     @Override
     public Long getVendorSettleTime() {
         return this.updatedTime;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
     }
 }

@@ -14,6 +14,7 @@ public class BetHistory {
     @Id
     private String id;
     private String externalTransactionId;
+    private String vendorBetId;
     private String roundId;
     private Integer vendorGameId;
     private Long vendorPlayerId;
@@ -32,8 +33,12 @@ public class BetHistory {
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
     private BigDecimal refundAmount;
+    private BigDecimal jackpotAmount;
     private Integer resultType;
+    private Integer isCancelled;
+    private Integer isFreespin;
     private String rawData;
+    private Integer resettleNum;
     private Integer status;
     private String gameSessionToken;
     private Long vendorBetTime;
