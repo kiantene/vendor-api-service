@@ -77,7 +77,7 @@ public class BetDto implements UnsettledResultSettledData {
     public String getExternalTransactionId() { return reference; }
 
     @Override
-    public String getBetId() {
+    public String getVendorBetId() {
         return roundId;
     }
 
@@ -130,4 +130,21 @@ public class BetDto implements UnsettledResultSettledData {
     public Long getVendorSettleTime() {
         return timestamp;
     }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+
 }

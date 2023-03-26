@@ -61,8 +61,8 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public String getBetId() {
-        return roundId;
+    public String getVendorBetId() {
+        return null;
     }
 
     @Override
@@ -114,5 +114,21 @@ public class EndRoundDto implements UnsettledResultSettledData {
     public Long getVendorSettleTime() {
         return null;
     }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
 
 }
