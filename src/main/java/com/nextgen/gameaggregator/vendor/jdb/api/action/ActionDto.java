@@ -5,12 +5,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.checkerframework.checker.index.qual.Positive;
 
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ActionDto {
-    @NotBlank
+    @NotNull
     @Positive
     @JsonProperty("action")
     private Integer action;
