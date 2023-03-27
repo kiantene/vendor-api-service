@@ -17,6 +17,12 @@ spring:
       hibernate:
         maria-dialect: org.hibernate.dialect.MariaDB103Dialect
         format_sql: false
+  couchbase:
+    connectionString: couchbases://cb.mjm2txymbqasuope.cloud.couchbase.com
+    userName: pt
+    password: Asdf1234@
+    bucketName: pt_game_aggregator
+    scopeName: raw
   redis:
     database: 0
     host: dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com
