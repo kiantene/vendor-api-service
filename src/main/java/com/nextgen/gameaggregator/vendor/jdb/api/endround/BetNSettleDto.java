@@ -47,9 +47,11 @@ public class BetNSettleDto {
     private String currency;
 
     @NotNull
+    @Negative
     private BigDecimal bet;
 
     @NotNull
+    @Positive
     private BigDecimal win;
 
     @NotNull
@@ -70,7 +72,6 @@ public class BetNSettleDto {
     @NotNull
     private String lastModifyTime;
 
-    @NotNull
     private String sessionNo;
 
     @NotNull
@@ -87,6 +88,7 @@ public class BetNSettleDto {
 
 
     // Fish Only, gType = 7
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roomType;
 
 
