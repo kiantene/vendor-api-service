@@ -75,11 +75,11 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public String getBetId() {
+    public String getVendorBetId() {
         return this.betId;
     }
 
-    public void setBetId(String betId){
+    public void setVendorBetId(String betId){
         this.betId = betId;
     }
 
@@ -144,13 +144,13 @@ public class EndRoundDto implements UnsettledResultSettledData {
         return this.resultType;
     }
 
-    public void setResultType(WinType resultType) {
-        this.resultType = resultType;
-    }
-
     @Override
     public Long getVendorBetTime() {
         return null;
+    }
+
+    public void setResultType(WinType resultType) {
+        this.resultType = resultType;
     }
 
     @Override
@@ -165,6 +165,21 @@ public class EndRoundDto implements UnsettledResultSettledData {
     @Override
     public Long getVendorSettleTime() {
         return this.vendorSettleTime;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
     }
 
     public void setVendorSettleTime(Long vendorSettleTime) {

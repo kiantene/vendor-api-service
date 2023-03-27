@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 
 public interface UnsettledResultSettledData {
     String getExternalTransactionId();
-    String getBetId();
+    String getVendorBetId();
     String getRoundId();
     String getGameId();
     BigDecimal getBetAmount();
@@ -18,4 +18,7 @@ public interface UnsettledResultSettledData {
     Long getVendorBetTime();
     Long getResultTime();
     Long getVendorSettleTime();
+    BigDecimal getJackpotAmount();
+    Integer getIsCancelled();
+    Integer getIsFreespin();
 }

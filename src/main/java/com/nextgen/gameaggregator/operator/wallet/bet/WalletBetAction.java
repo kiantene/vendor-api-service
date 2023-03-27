@@ -35,7 +35,6 @@ public class WalletBetAction {
 //        log.info(dto.toString());
         WalletBalanceVo responseVo = null;
 
-
         String responseString = WebClient.create(callbackUrl)
                 .post()
                 .uri(Endpoints.WALLET_BET)
@@ -69,6 +68,7 @@ public class WalletBetAction {
         switch (responseVo.getStatus()) {
             case SC_OK -> {
                 BigDecimal balance = responseVo.getData().getBalance();
+
                 //TODO to be discuss whether should system pre handle negative if
                 boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
                 if (isNegativeBalance){
