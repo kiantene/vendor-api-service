@@ -1,14 +1,18 @@
 package com.nextgen.gameaggregator.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.couchbase.core.CouchbaseTemplate;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,6 +25,7 @@ public class HealthCheckController {
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
+
     @Value("${spring.datasource.maria-default.jdbc-url}")
     private String jdbcUrl;
 
@@ -36,12 +41,26 @@ public class HealthCheckController {
     @Value("${testing.stub}")
     private String stub;
 
+    @Value("${spring.couchbase.connectionString}")
+    private String cbConnection;
+
+    @Value("${spring.couchbase.userName}")
+    private String cbUserName;
+
+    @Value("${spring.couchbase.password}")
+    private String cbPassword;
+
+    @Value("${spring.couchbase.bucketName}")
+    private String cbBucketName;
+
+    @Value("${spring.couchbase.scopeName}")
+    private String cbScopeName;
+
     @GetMapping(path = "status")
     public String status() {
         // log.info("Health Check OK");
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.of("UTC"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
         ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, formatter);
         zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Singapore"));
         String timezoneTimestamp = zonedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd K:mm:ssa z"));
@@ -53,15 +72,7 @@ public class HealthCheckController {
     public String info() {
         String output;
 
-        output = "Profile:<br>" + profilesActive +
-                "<br><br>" +
-                "DB Info:<br>" + jdbcUrl +
-                "<br>" + dbUsername +
-                "<br><br>" +
-                "Redis Info:<br>" + redisDB +
-                "<br>" + redisHost +
-                "<br><br>" +
-                "Testing Stub:<br>" + stub ;
+        output = "Profile:<br>" + profilesActive + "<br><br>" + "DB Info:<br>" + jdbcUrl + "<br>" + dbUsername + "<br><br>" + "Redis Info:<br>" + redisDB + "<br>" + redisHost + "<br><br>" + "Testing Stub:<br>" + stub;
 
         return output;
     }
@@ -72,24 +83,48 @@ public class HealthCheckController {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private CouchbaseTemplate couchbaseTemplate;
+
     @GetMapping(path = "redis")
     public String testRedisLatency() {
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
+
         redisTemplate.opsForValue().get("test");
-        long endTime = System.currentTimeMillis();
+
+        long endTime = System.nanoTime();
         long latency = endTime - startTime;
-        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " milliseconds";
+        long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
+        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
 
         return output;
     }
 
     @GetMapping(path = "db")
     public String testDbLatency() {
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
+
         jdbcTemplate.queryForObject("SELECT 1", Integer.class);
-        long endTime = System.currentTimeMillis();
+
+        long endTime = System.nanoTime();
         long latency = endTime - startTime;
-        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " milliseconds";
+        long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
+        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
+
+        return output;
+    }
+
+    @GetMapping(path = "couchbase")
+    public String testCouchbaseLatency() {
+        long startTime = System.nanoTime();
+
+        Object test = couchbaseTemplate.getCollection("result_bet");
+
+        long endTime = System.nanoTime();
+        long latency = endTime - startTime;
+
+        long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
+        String output = "Couchbase latencyxxx: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
 
         return output;
     }

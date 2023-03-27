@@ -1,36 +1,46 @@
 package com.nextgen.gameaggregator.config;
 
-import com.couchbase.client.java.env.ClusterEnvironment;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.convert.CustomConversions;
-import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
-import org.springframework.util.ResourceUtils;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.convert.CustomConversions;
+import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
+import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
+import org.springframework.util.ResourceUtils;
+
+import com.couchbase.client.java.env.ClusterEnvironment;
 @Configuration
+@EnableCouchbaseRepositories
 public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
-    private String connectionString = "couchbases://cb.wgphwq3nmxmm02dc.cloud.couchbase.com";
-    private String userName = "dev";
-    private String password = "Asdf1234@";
+    @Value("${spring.couchbase.connectionString}")
+    private String connectionString;
+    @Value("${spring.couchbase.userName}")
+    private String userName;
+    @Value("${spring.couchbase.password}")
+    private String password;
+    @Value("${spring.couchbase.bucketName}")
+    private String bucketName;
+    @Value("${spring.couchbase.scopeName}")
+    private String scopeName;
+
+    private String couchbaseCertName = "game_aggregator-root-certificate.pem";
 
     @Override
     public String getConnectionString() {
         return this.connectionString;
-
     }
 
     @Override
     protected String getScopeName() {
-        return "raw"; // or a variable etc.;
+        return this.scopeName; // or a variable etc.;
     }
-
 
     @Override
     public String getUserName() {
@@ -44,7 +54,7 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     public String getBucketName() {
-        return "game_aggregator";
+        return this.bucketName;
     }
 
     @Bean
@@ -54,14 +64,13 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Override
     protected void configureEnvironment(final ClusterEnvironment.Builder builder) {
-
         File file = null;
         try {
-            File filed= new File("");
+            File filed = new File("");
             System.out.println(filed.getAbsolutePath());
-            file = ResourceUtils.getFile(filed.getAbsolutePath()+"/game_aggregator-root-certificate.pem");
+            file = ResourceUtils.getFile(filed.getAbsolutePath() + "/" + this.couchbaseCertName);
 
-            //  file = ResourceUtils.getFile("game_aggregator-root-certificate.pem");
+            // file = ResourceUtils.getFile("game_aggregator-root-certificate.pem");
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -71,7 +80,6 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
             throw new RuntimeException(e);
         }
         Path path = file.toPath();
-        builder.securityConfig().enableTls(true).trustCertificate( path);
+        builder.securityConfig().enableTls(true).trustCertificate(path);
     }
-
 }
