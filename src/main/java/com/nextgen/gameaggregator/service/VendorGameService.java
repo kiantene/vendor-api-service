@@ -33,4 +33,15 @@ public class VendorGameService {
         }
         return vendorGame;
     }
+
+    public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException {
+        VendorGame vendorGameEntity = vendorGameRepository.findByCode(gameCode);
+        Optional.ofNullable(vendorGameEntity).orElseThrow(GameNotSupportedException::new);
+
+        if (vendorGameEntity.getStatus() == 0) {
+            throw new GameNotSupportedException();
+        }
+
+        return vendorGameEntity;
+    }
 }

@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.controller.pgsoftbettransactionlist;
 
-import com.nextgen.gameaggregator.controller.pgsoftgamelist.GameListResponseVo;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
@@ -34,7 +33,7 @@ public class PGSoftBetTransactionListController {
     public BetHistoryListResponseVo getTransactionList() {
         try {
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(4, 2, 2, 1);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);

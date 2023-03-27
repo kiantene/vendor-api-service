@@ -1,15 +1,13 @@
 package com.nextgen.gameaggregator.operator.game.list;
 
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.RecordNotFoundException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = "game/")
@@ -25,9 +25,13 @@ import javax.servlet.http.HttpServletRequest;
 public class GameListAction {
     @Autowired
     private HttpService httpService;
-
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorLineService vendorLineService;
+
+    @Autowired
+    private VendorService vendorService;
 
     @Autowired
     private GameListService gameListService;
@@ -43,15 +47,23 @@ public class GameListAction {
 
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setTraceId(dto.getTraceId());
-            log.info(dto.toString());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
 
             // 2. Check if api key is valid
             String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
-            //TODO (by Alex), check agent status
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+
+            // 3. Validate vendor code and vendor supported wallet type
+            Vendor vendor = vendorService.verifyVendorByCodeAndWalletType
+                    (dto.getVendorCode(), apiCredential.getAgent().getWalletType());
+
+            Integer agentId = apiCredential.getAgent().getId();
+            Integer vendorId = vendor.getId();
+            Currency currency = apiCredential.getAgent().getCurrency();
+
+            List<AgentVendorLine> vendorLines = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
 
             //TODO (bu Alex), to discuss should validated agent supported vendor
             GameListData gameListData = gameListService.getGameList(dto);
@@ -66,18 +78,32 @@ public class GameListAction {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
 
+        } catch (JsonProcessingException jsonProcessingException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
+
         } catch (RecordNotFoundException recordNotFoundException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
+        } catch (DisabledVendorException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidVendorLineException e) {
+            throw new RuntimeException(e);
+        } catch (NoAvailableLineException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidVendorException e) {
+            throw new RuntimeException(e);
         }
-        catch (Exception exception) {
-            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-            httpService.logError(httpRequestLog, exception);
-            exception.printStackTrace();
-
-        } finally {
-            responseVo.setMessage(responseVo.getStatus().description);
-        }
+//        catch (Exception exception) {
+//            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+//            httpService.logError(httpRequestLog, exception);
+//            exception.printStackTrace();
+//
+//        } finally {
+//            responseVo.setMessage(responseVo.getStatus().description);
+//        }
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
 

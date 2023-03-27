@@ -44,7 +44,7 @@ public class PGSoftGameListController {
     public GameListResponseVo getGameList() {
         try {
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(4, 2, 2, 1);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);

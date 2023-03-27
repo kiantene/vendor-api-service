@@ -1,8 +1,10 @@
-package com.nextgen.gameaggregator.operator.game.list;
+package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.Vendor;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
+import com.nextgen.gameaggregator.operator.game.list.GameListData;
+import com.nextgen.gameaggregator.operator.game.list.GameListDto;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
 import com.nextgen.gameaggregator.repository.VendorRepository;
 import lombok.extern.slf4j.Slf4j;

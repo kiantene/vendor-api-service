@@ -1,7 +1,11 @@
 package com.nextgen.gameaggregator.entity;
 
-import javax.persistence.*;
 import lombok.Data;
+
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "agents")
@@ -12,6 +16,8 @@ public class Agent {
     private Integer sasEntityId;
     private Integer masterAgentId;
     private Integer houseId;
+
+    private Integer walletType;
 
     @ManyToOne
     private Currency currency;
