@@ -144,33 +144,34 @@
 		</dependency>
 
 		<!-- Support for Apple M1 chip -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-resolver-dns-native-macos</artifactId>
 			<version>${netty.version}</version>
 			<classifier>osx-aarch_64</classifier>
-		</dependency>
+		</dependency> -->
 
 		<!--need remove when go live -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 		</dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <!--grpc -->
-		<!--		<dependency>-->
-		<!--			<groupId>com.nextgen.game-aggregator</groupId>-->
-		<!--			<artifactId>game-aggregator-vendor-operator-grpc-proto</artifactId>-->
-		<!--			<version>0.0.1-SNAPSHOT</version>-->
-		<!--		</dependency>-->
-		<!--		<dependency>-->
-		<!--			<groupId>net.devh</groupId>-->
-		<!--			<artifactId>grpc-client-spring-boot-starter</artifactId>-->
-		<!--			<version>2.13.1.RELEASE</version>-->
-		<!--		</dependency>-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency> -->
+
+		<!--grpc -->
+		<!-- <dependency>
+			<groupId>com.nextgen.game-aggregator</groupId>
+			<artifactId>game-aggregator-vendor-operator-grpc-proto</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.devh</groupId>
+			<artifactId>grpc-client-spring-boot-starter</artifactId>
+			<version>2.13.1.RELEASE</version>
+		</dependency> -->
 	</dependencies>
 
 	<build>
