@@ -68,7 +68,7 @@ public class CancelBetAction {
             //Decrypt raw respond with key from vendor line credential
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
 
-            //map decrypted data(string json) into balanceDto
+            //map decrypted data(string json) into cancelBetDto
             CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
@@ -86,6 +86,8 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
 
         } catch (InvalidDecryptionException invalidDecryptionException) {
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+        } catch (InvalidEncryptionException invalidEncryptionException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
@@ -121,7 +123,7 @@ public class CancelBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession, String jsonParam) throws  InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException {
+    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession, String jsonParam) throws InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException, InvalidEncryptionException {
 
         //Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelbetDto.getMemberAccount(), InvalidPlayerException::new);
@@ -136,12 +138,7 @@ public class CancelBetAction {
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
-        String md5Param = "";
-        try {
-            md5Param = vendorService.md5(jsonParam);
-        } catch (Exception exception) { // any other exception encountered
-            throw new InvalidRequestException();
-        }
+        String md5Param = vendorService.md5(jsonParam);
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
