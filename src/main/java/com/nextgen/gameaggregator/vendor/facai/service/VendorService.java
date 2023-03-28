@@ -40,8 +40,12 @@ public class VendorService {
         }
     }
 
-    public static String md5(String input) throws Exception {
-        return DigestUtils.md5Hex(input);
+    public static String md5(String input) throws InvalidEncryptionException {
+        try {
+            return DigestUtils.md5Hex(input);
+        } catch (Exception exception){
+            throw new InvalidEncryptionException();
+        }
     }
 
     public boolean isValidString(String str) {

@@ -17,7 +17,7 @@ public class BalanceDto {
 
     @NotBlank(message = ResponseCodes.CURRENCY_MISSING)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.CURRENCY_MISSING)
-    @Size(min = 3, max = 3, message = ResponseCodes.CURRENCY_MISSING)
+    @Size(min = 3, max = 4, message = ResponseCodes.CURRENCY_MISSING)
     public String Currency;
 
     @PositiveOrZero(message = ResponseCodes.PARAM_CONTAIN_ERROR)

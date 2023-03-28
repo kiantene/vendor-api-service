@@ -100,6 +100,8 @@ public class BalanceAction {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidDecryptionException invalidDecryptionException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+        } catch (InvalidEncryptionException invalidEncryptionException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CredentialNotFoundException credentialNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
@@ -130,7 +132,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException {
+    private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidEncryptionException {
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
@@ -138,12 +140,7 @@ public class BalanceAction {
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
-        String md5Param = "";
-        try {
-            md5Param = vendorService.md5(jsonParam);
-        } catch (Exception exception) { // any other exception encountered
-            throw new InvalidRequestException();
-        }
+        String md5Param = vendorService.md5(jsonParam);
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential

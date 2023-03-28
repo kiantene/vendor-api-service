@@ -16,7 +16,7 @@ public class CancelBetDto {
 
     @NotBlank(message = ResponseCodes.TRANSACTION_NOT_EXIST)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.TRANSACTION_NOT_EXIST)
-    @Size(min = 3, max = 3, message = ResponseCodes.TRANSACTION_NOT_EXIST)
+    @Size(min = 3, max = 4, message = ResponseCodes.TRANSACTION_NOT_EXIST)
     public String Currency;
 
     @NotBlank(message = ResponseCodes.TRANSACTION_NOT_EXIST)
