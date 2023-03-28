@@ -106,8 +106,15 @@ public class TransferService {
                     winDataDto.setGameCode(dto.getGameCode());
                     winDataDto.setResultType(getWinType(dto));
 
-                    SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, winDataDto, body);
-                    transferVo.setBalance(betResultEvent.getLastBalance());
+                    if (dto.getSpecialGame() == null) {
+                        SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, winDataDto, body);
+                        transferVo.setBalance(betResultEvent.getLastBalance());
+                    } else {
+                        winDataDto.setBetAmount(BigDecimal.ZERO);
+                        SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body);
+                        transferVo.setBalance(betResultEvent.getLastBalance());
+                    }
+
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;

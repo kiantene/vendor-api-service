@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import javax.validation.constraints.NotBlank;
@@ -84,7 +87,7 @@ public class WinDataDto implements UnsettledResultSettledData {
     private Long resultTime;
     private Long vendorSettleTime;
     private WinType resultType;
-    private BigDecimal winLoss;
+    private BigDecimal betAmount;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
 
@@ -118,7 +121,11 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        return betAmount;
+    }
+
+    public void setBetAmount(BigDecimal betAmount) {
+        this.betAmount = betAmount;
     }
 
     @Override
@@ -132,11 +139,11 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.winLoss;
+        return this.amount;
     }
 
-    public void setWinLoss(BigDecimal winLoss) {
-        this.winLoss = winLoss;
+    public void setWinLoss(BigDecimal amount) {
+        this.amount = amount;
     }
 
     @Override
@@ -169,7 +176,7 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return getTimestamp();
     }
 
     public void setResultType(WinType resultType) {
@@ -209,5 +216,9 @@ public class WinDataDto implements UnsettledResultSettledData {
         this.vendorSettleTime = vendorSettleTime;
     }
 
-
+    public Long getTimestamp() {
+        Instant instant = LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant();
+        long epochSecond = instant.getEpochSecond();
+        return epochSecond;
+    }
 }
