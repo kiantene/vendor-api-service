@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,8 +31,8 @@ public class VendorLineService {
     @Autowired
     private VendorLineCurrencyRepository vendorLineCurrencyRepository;
 
-    public VendorLine getVendorLineByAgent(Integer agentId, Integer vendorId, Integer currencyId) throws NoAvailableLineException, InvalidVendorLineException {
-        AgentVendorLine agentVendorLine = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyId(agentId, vendorId, currencyId);
+    public VendorLine getVendorLineByAgentAndGameCategory(Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId) throws NoAvailableLineException, InvalidVendorLineException {
+        AgentVendorLine agentVendorLine = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id(agentId, vendorId, currencyId, gameCategoryId);
         Optional.ofNullable(agentVendorLine).orElseThrow(InvalidVendorLineException::new);
 
         VendorLine vendorLine = agentVendorLine.getVendorLine();
@@ -40,6 +41,15 @@ public class VendorLineService {
             throw new NoAvailableLineException();
         }
         return vendorLine;
+    }
+
+    public List<AgentVendorLine> getVendorLineByAgent(Integer agentId, Integer vendorId, Integer currencyId) throws NoAvailableLineException, InvalidVendorLineException {
+        final Integer ACTIVE = Status.ACTIVE.code;
+
+        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndStatus(agentId, vendorId, currencyId, ACTIVE);
+        Optional.ofNullable(agentVendorLines).orElseThrow(InvalidVendorLineException::new);
+
+        return agentVendorLines;
     }
 
     @Cacheable(value = "VendorLineCredentials", key = "{#vendorLineId, #name}", cacheManager = "cacheManager")

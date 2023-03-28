@@ -51,10 +51,10 @@ public class GameSessionService {
 
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
-        gameSession.setVendorId(vendorGame.getVendorId());
+        gameSession.setVendorId(vendorGame.getVendor().getId());
         gameSession.setVendorGameId(vendorGame.getId());
         gameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
-        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
+        gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());

@@ -6,10 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +32,9 @@ public class GameUrlAction {
     private VendorLineService vendorLineService;
     @Autowired
     private GameSessionService gameSessionService;
+
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
@@ -64,13 +64,14 @@ public class GameUrlAction {
             gameUrlService.checkCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
 
             // 5. Check if game is supported
-            VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameCode());
+            VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());
 
             // 6 Check if game details is supported (platform, language, and status)
             VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(vendorGame.getId(), dto.getPlatform(), dto.getLanguage());
 
             Integer agentId = apiCredential.getAgent().getId();
-            Integer vendorId = vendorGame.getVendorId();
+            Integer vendorId = vendorGame.getVendor().getId();
+            Integer gameCategoryId = vendorGame.getGameCategory().getId();
             Currency currency = apiCredential.getAgent().getCurrency();
 
             // 7. check if the language is supported by vendor
@@ -80,7 +81,7 @@ public class GameUrlAction {
             gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId());
 
             // 9. Retrieve vendor line credentials
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(agentId, vendorId, currency.getId(), gameCategoryId);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());

@@ -48,7 +48,7 @@ public class GameUrlService {
 
         String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();
-        Integer vendorId = vendorGame.getVendorId();
+        Integer vendorId = vendorGame.getVendor().getId();
         String className = "com.nextgen.gameaggregator.vendor."+vendorLine.getVendor().getClassName()+".api.gameurl.GameUrlService";
 
         GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();

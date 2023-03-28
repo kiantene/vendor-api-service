@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -36,7 +35,7 @@ public class PGSoftBetDetailController {
     public String getGameList() {
         try {
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(4, 2, 2, 1);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             String parentBetId = "1615259183702659072";

@@ -1,24 +1,19 @@
 package com.nextgen.gameaggregator.entity;
 
+
 import lombok.Data;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "vendors")
+@Table(name = "game_categories")
 @Data
-public class Vendor {
+public class GameCategory {
     @Id
     private Integer id;
     private String code;
     private String name;
-    private String className;
-    @Column(name = "is_support_seamless")
-    private Integer isSupportSeamless;
-    @Column(name = "is_support_transfer")
-    private Integer isSupportTransfer;
     private Integer status;
 }
