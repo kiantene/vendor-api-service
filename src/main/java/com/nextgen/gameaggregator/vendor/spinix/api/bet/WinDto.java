@@ -3,9 +3,10 @@ package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetResultLog;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.wallet.settled.SettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.Data;
 
@@ -14,53 +15,89 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class WinDto implements WinData {
-    private String externalTransactionId;
-    private BigDecimal amount;
+public class WinDto implements UnsettledResultSettledData {
+    private String reqId;
     private String roundId;
+    private String id;
+    private BigDecimal amount;
+    private WinType winType;
+    private BigDecimal validTurnover;
     private String gameId;
     private Long timestamp;
-    private WinType winType;
-    private BigDecimal effectiveTurnover;
 
     @Override
     public String getExternalTransactionId() {
-        return this.externalTransactionId;
+        return this.reqId;
     }
 
     @Override
-    public BigDecimal getAmount() {
+    public String getVendorBetId() {
+        return this.id;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
         return this.amount;
     }
 
     @Override
-    public String getRoundId() {
-        return this.roundId;
+    public BigDecimal getWinAmount() {
+        return BigDecimal.ZERO;
     }
 
     @Override
-    public String getGameId() {
-        return this.gameId;
+    public BigDecimal getWinLoss() {
+        return getBetAmount().negate();
     }
 
     @Override
-    public Long getTimestamp() {
-        return this.timestamp;
+    public BigDecimal getVendorWinLoss() {
+        return getBetAmount().negate();
     }
 
     @Override
-    public WinType getWinType() {
+    public BigDecimal getEffectiveTurnover() {
+        return this.validTurnover;
+    }
+
+    @Override
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public WinType getResultType() {
         return this.winType;
     }
 
     @Override
-    public BigDecimal getEffectiveTurnover(){
-        return this.effectiveTurnover;
+    public Long getVendorBetTime() {
+        return this.timestamp;
     }
 
     @Override
-    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog) {
-        return betResultLog;
+    public Long getResultTime() {
+        return this.timestamp;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return this.timestamp;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
     }
 }
 
