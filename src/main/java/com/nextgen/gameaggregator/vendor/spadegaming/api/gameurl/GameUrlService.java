@@ -40,7 +40,7 @@ public class GameUrlService implements GameUrl {
         URI uri = UriComponentsBuilder.newInstance()
             .scheme("https")
             .host(gameDomain)
-            .path(Credentials.MERCHANT_CODE + "/")
+            .path(credentials.getOrDefault(Credentials.MERCHANT_CODE, "") + "/")
             .path(credentials.getOrDefault(Credentials.API_INTERFACE, "") + "/")
             .queryParams(formData)
             .build()

@@ -20,6 +20,7 @@ import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
@@ -78,7 +79,8 @@ public class TransferService {
             this.doValidation(dto);
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
-            this.doVerification(dto, gameSession);
+            String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            this.doVerification(dto, gameSession, merchantCode);
     
             switch(dto.getType()) {
                 case Actions.PLACE_BET:
@@ -169,6 +171,9 @@ public class TransferService {
         } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
             transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
 
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+
         }finally {
             httpService.end(httpRequestLog, transferVo);
         }
@@ -185,7 +190,7 @@ public class TransferService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(TransferDto dto, GameSession gameSession)
+    private void doVerification(TransferDto dto, GameSession gameSession, String merchantCode)
             throws
             UnableToFindCredentialsException,
             AuthenticationException,
@@ -197,7 +202,7 @@ public class TransferService {
             InvalidRequestException {
         
         // Verify received merchant code is same from Credentials merchant code 
-        ValidationUtils.isEquals(Credentials.MERCHANT_CODE, dto.getMerchantCode(), UnableToFindCredentialsException::new);
+        ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);

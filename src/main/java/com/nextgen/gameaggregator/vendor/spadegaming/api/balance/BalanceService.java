@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
@@ -73,7 +74,8 @@ public class BalanceService {
             this.doValidation(dto);
             // Verify the user token and get the corresponding game session
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
-            this.doVerification(dto, gameSession);
+            String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
@@ -113,6 +115,9 @@ public class BalanceService {
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+        
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
 
         } catch (IllegalArgumentException illegalArgumentException) {
             authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
@@ -137,18 +142,18 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String merchantCode)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
             DisabledGameException, UnableToFindCredentialsException, GameNotSupportedException{
 
         // Verify received merchant code is same from Credentials merchant code 
-        ValidationUtils.isEquals(Credentials.MERCHANT_CODE, dto.getMerchantCode(), UnableToFindCredentialsException::new);
+        ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
         
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
         
         // Verify received game code is the same from vendor game code
-        if(dto.getGameCode() != null) ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameCode(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameCode() != null ? dto.getGameCode() : gameSession.getVendorGameCode(), GameNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
