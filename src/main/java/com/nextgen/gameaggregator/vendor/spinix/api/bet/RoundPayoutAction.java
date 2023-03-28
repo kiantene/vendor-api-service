@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -119,7 +120,9 @@ public class RoundPayoutAction {
                 winDto.setWinType(this.getWinType(winRecord));
                 winDto.setTimestamp(winRecord.getTimestamp());
 
-                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDto, body);
+                UUID uuid = UUID.randomUUID();
+                String newTraceId = uuid.toString();
+                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(newTraceId, gameSession, winDto, body);
 
                 // Set Balance
                 roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
