@@ -288,7 +288,7 @@ public class WalletService {
         RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(roundId, vendorGameId, vendorPlayerId);
 
         // 2. Generate rawSettledBet
-        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, gameSession, unsettledResultSettledData, rawData);
+        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(rawUnsettledBet.getInternalTransactionId(), gameSession, unsettledResultSettledData, rawData);
 
         // 3. Combine rawUnsettledBet and rawSettledBet into final rawSettledBet data
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, null, rawSettledBet);
@@ -813,7 +813,7 @@ public class WalletService {
         BigDecimal winLoss = unsettledResultSettledData.getWinAmount().subtract(rawUnsettledBet.getBetAmount());
 
         rawResultBet.setId(unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
-        rawResultBet.setInternalTransactionId(traceId);
+        rawResultBet.setInternalTransactionId(rawUnsettledBet.getInternalTransactionId());
         rawResultBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawResultBet.setRoundId(unsettledResultSettledData.getRoundId());
         rawResultBet.setVendorGameId(gameSession.getVendorGameId());
@@ -850,7 +850,8 @@ public class WalletService {
             BeanUtils.copyProperties(rawSettledBet, unsettledResultSettledData);
 
             rawSettledBet.setId(unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
-            rawSettledBet.setInternalTransactionId(traceId);
+            //will get from unsettled bet or result bet for the internalTransactionId
+            //rawSettledBet.setInternalTransactionId(traceId);
             rawSettledBet.setVendorGameId(gameSession.getVendorGameId());
             rawSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
             rawSettledBet.setAgentPlayerId(gameSession.getAgentPlayerId());
@@ -877,8 +878,7 @@ public class WalletService {
 
         rawSettledBet.setId(unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
         rawSettledBet.setInternalTransactionId(traceId);
-        //TODO USE EXTERNALTRANSACTIONID AS BET ID FIRST, WILL ADD BETID LATER
-        rawSettledBet.setExternalTransactionId(unsettledResultSettledData.getVendorBetId());
+        rawSettledBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawSettledBet.setRoundId(unsettledResultSettledData.getRoundId());
         rawSettledBet.setVendorGameId(gameSession.getVendorGameId());
         rawSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
