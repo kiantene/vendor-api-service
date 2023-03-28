@@ -37,27 +37,27 @@ public class WinDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.amount;
-    }
-
-    @Override
-    public BigDecimal getWinAmount() {
         return BigDecimal.ZERO;
     }
 
     @Override
+    public BigDecimal getWinAmount() {
+        return this.amount;
+    }
+
+    @Override
     public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
+        return this.amount;
     }
 
     @Override
     public BigDecimal getVendorWinLoss() {
-        return getBetAmount().negate();
+        return this.amount;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.validTurnover;
+        return BigDecimal.ZERO;
     }
 
     @Override
