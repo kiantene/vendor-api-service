@@ -12,4 +12,6 @@ import org.springframework.stereotype.Repository;
 public interface RawUnsettledBetRepository extends CouchbaseRepository<RawUnsettledBet, String> {
 
     void deleteById(String Id);
+
+    RawUnsettledBet findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId);
 }

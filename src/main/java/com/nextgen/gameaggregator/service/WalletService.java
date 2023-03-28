@@ -210,17 +210,18 @@ public class WalletService {
             BetNotFoundException, MergedBetDataIntegrityException {
 
         Integer agentId = gameSession.getAgentId();
-        Integer vendorGameId = gameSession.getVendorGameId();
+        Integer vendorLineId = gameSession.getVendorLineId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
+        String vendorBetId = unsettledResultSettledData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
         BigDecimal transferAmount = (unsettledResultSettledData.getWinLoss() == null)?BigDecimal.valueOf(0):unsettledResultSettledData.getWinLoss();
 
         // 1. Retrieve unsettled bet from couchbase
-        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(roundId, vendorGameId, vendorPlayerId);
+        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Retrieve result bet from couchbase
-        RawResultBet rawResultBet = betResultLogService.getRawResultBetByRoundId(roundId, vendorGameId, vendorPlayerId);
+        RawResultBet rawResultBet = betResultLogService.getRawResultBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 3. Generate settled bet with end round bet data
         RawSettledBet rawSettledBet = this.newSettledBet(traceId, gameSession, unsettledResultSettledData);
@@ -279,13 +280,14 @@ public class WalletService {
             BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
         Integer agentId = gameSession.getAgentId();
-        Integer vendorGameId = gameSession.getVendorGameId();
+        Integer vendorLineId = gameSession.getVendorLineId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
+        String vendorBetId = unsettledResultSettledData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
 
         // 1. Retrieve the rawUnsettledBet bet data
-        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(roundId, vendorGameId, vendorPlayerId);
+        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Generate rawSettledBet
         RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(rawUnsettledBet.getInternalTransactionId(), gameSession, unsettledResultSettledData, rawData);
@@ -477,13 +479,14 @@ public class WalletService {
             BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, InvalidAgentApiCredentialException {
 
         Integer agentId = gameSession.getAgentId();
-        Integer vendorGameId = gameSession.getVendorGameId();
+        Integer vendorLineId = gameSession.getVendorLineId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
+        String vendorBetId = unsettledResultSettledData.getVendorBetId();
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
 
         // 1. Retrieve the bet transaction
-        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(roundId, vendorGameId, vendorPlayerId);
+        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Generate wallet result dto
         WalletWinDto walletWinDto = this.newWalletResultDto(traceId, gameSession, unsettledResultSettledData, rawUnsettledBet.getId(), null);
@@ -670,7 +673,7 @@ public class WalletService {
         RawUnsettledBet rawUnsettledBet = new RawUnsettledBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
 
-        rawUnsettledBet.setId(walletBetDto.getRoundId()+'_'+gameSession.getVendorGameId()+'_'+gameSession.getVendorPlayerId());
+        rawUnsettledBet.setId(unsettledResultSettledData.getVendorBetId()+'_'+walletBetDto.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
         rawUnsettledBet.setInternalTransactionId(walletBetDto.getTraceId());
         rawUnsettledBet.setExternalTransactionId(walletBetDto.getExternalTransactionId());
         rawUnsettledBet.setRoundId(walletBetDto.getRoundId());
@@ -812,7 +815,7 @@ public class WalletService {
         String md5RawData = DigestUtils.md5Hex(rawData);
         BigDecimal winLoss = unsettledResultSettledData.getWinAmount().subtract(rawUnsettledBet.getBetAmount());
 
-        rawResultBet.setId(unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
+        rawResultBet.setId(unsettledResultSettledData.getVendorBetId()+'_'+unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
         rawResultBet.setInternalTransactionId(rawUnsettledBet.getInternalTransactionId());
         rawResultBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawResultBet.setRoundId(unsettledResultSettledData.getRoundId());
@@ -849,7 +852,7 @@ public class WalletService {
             RawSettledBet rawSettledBet = new RawSettledBet();
             BeanUtils.copyProperties(rawSettledBet, unsettledResultSettledData);
 
-            rawSettledBet.setId(unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
+            rawSettledBet.setId(unsettledResultSettledData.getVendorBetId()+'_'+unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
             //will get from unsettled bet or result bet for the internalTransactionId
             //rawSettledBet.setInternalTransactionId(traceId);
             rawSettledBet.setVendorGameId(gameSession.getVendorGameId());
@@ -876,7 +879,7 @@ public class WalletService {
         RawSettledBet rawSettledBet = new RawSettledBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
 
-        rawSettledBet.setId(unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
+        rawSettledBet.setId(unsettledResultSettledData.getVendorBetId()+'_'+unsettledResultSettledData.getRoundId()+'_'+gameSession.getVendorLineId()+'_'+gameSession.getVendorPlayerId());
         rawSettledBet.setInternalTransactionId(traceId);
         rawSettledBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawSettledBet.setRoundId(unsettledResultSettledData.getRoundId());

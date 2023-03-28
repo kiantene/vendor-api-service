@@ -91,7 +91,7 @@ public class BetHistoryService {
      * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
      * @return RawUnsettledBet entity object after a successful save
      */
-    @CachePut(value = "UnsettledBet", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public RawUnsettledBet createUnsettledBet(RawUnsettledBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
         entity.setCreateTime(System.currentTimeMillis());
@@ -177,19 +177,45 @@ public class BetHistoryService {
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorGameId         Game Id within Game Aggregator System
+     * @param vendorLineId         vendor line id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
      */
-    @Cacheable(value = "UnsettledBet", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawUnsettledBet getRawUnsettledBetByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public RawUnsettledBet getRawUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        String mergeId = roundId+'_'+vendorGameId+'_'+vendorPlayerId;
+        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
         RawUnsettledBet rawUnsettledBet = null;
 
         try{
              rawUnsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+            if (rawUnsettledBet == null) { // No matching bet record for the given round Id
+                throw new BetNotFoundException("Cannot find round Id: " + roundId);
+            }
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
+        }
+
+        return rawUnsettledBet;
+    }
+
+    /**
+     * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
+     *
+     * @param roundId        Vendor's round Id
+     * @param vendorGameId         vendor game id within Game Aggregator System
+     * @param vendorPlayerId Id of the record in VendorPlayer
+     * @return unsettled bet entity object containing all information of a single unsettled Bet
+     * @throws BetNotFoundException If no bet record is found
+     */
+    @Cacheable(value = "UnsettledBetWithGameId", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public RawUnsettledBet getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+
+        RawUnsettledBet rawUnsettledBet = null;
+
+        try{
+            rawUnsettledBet = rawUnsettledBetRepository.findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
             if (rawUnsettledBet == null) { // No matching bet record for the given round Id
                 throw new BetNotFoundException("Cannot find round Id: " + roundId);
             }
