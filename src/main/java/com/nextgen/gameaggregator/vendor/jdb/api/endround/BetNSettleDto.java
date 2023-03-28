@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class BetNSettleDto {
     private String action;
 
-    @NotBlank
+    @NotNull
     @Digits(integer = 13, fraction = 0)
     private Long ts;
 
@@ -28,7 +28,6 @@ public class BetNSettleDto {
     private String uid;
 
     @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @JsonProperty("gType")
     private Integer gType;
 
@@ -36,14 +35,13 @@ public class BetNSettleDto {
     @JsonProperty("mType")
     private Integer mType;
 
-    @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @NotBlank
     private String reportDate;
 
-    @NotNull
+    @NotBlank
     private String gameDate;
 
-    @NotNull
+    @NotBlank
     private String currency;
 
     @NotNull
@@ -60,16 +58,16 @@ public class BetNSettleDto {
     @NotNull
     private BigDecimal denom;
 
-    @NotNull
+    @NotBlank
     private String ipAddress;
 
-    @NotNull
+    @NotBlank
     private String clientType;
 
     @NotNull
     private Integer systemTakeWin;
 
-    @NotNull
+    @NotBlank
     private String lastModifyTime;
 
     private String sessionNo;

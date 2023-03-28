@@ -1,16 +1,19 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,9 +64,26 @@ public class BetNSettleService {
             vo.setBalance(betResultEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
 
+        } catch (AuthenticationException exception) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (BetNotFoundException exception) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (BetResultNotFoundException exception) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DuplicateExternalTransactionIdException exception) {
+            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
         } catch (InsufficientBalanceException exception) {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
-
+        } catch (InvalidAgentApiCredentialException exception) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (InvalidDateException exception) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidOperatorResponseException exception) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (InvalidRequestException exception) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (JsonProcessingException exception) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -71,23 +91,25 @@ public class BetNSettleService {
         return vo;
     }
 
-    private void doValidation(BetNSettleDto dto) {
+    private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(BetNSettleDto dto, GameSession gameSession) {
     }
 
-    private BetDataDto prepareBetData(BetNSettleDto dto) {
+    private BetDataDto prepareBetData(BetNSettleDto dto) throws InvalidDateException {
         BetDataDto betDataDto = new BetDataDto();
         betDataDto.setExternalTransactionId(dto.getTransferId().toString());
         betDataDto.setAmount(dto.getBet());
         betDataDto.setRoundId(dto.getGameSeqNo().toString());
         betDataDto.setGameId(dto.getMType().toString());
-        betDataDto.setTimestamp(dto.getTs());
+        betDataDto.setTimestamp(VendorService.toTimestamp(dto.getGameDate()));
         return betDataDto;
     }
 
-    private WinDataDto prepareWinData(BetNSettleDto dto) {
+    private WinDataDto prepareWinData(BetNSettleDto dto) throws InvalidDateException {
         WinDataDto winDataDto = new WinDataDto();
         winDataDto.setExternalTransactionId(dto.getTransferId().toString());
         winDataDto.setAmount(dto.getWin());
