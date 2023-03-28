@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -12,7 +13,7 @@ import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetData {
+public class BetDto implements UnsettledResultSettledData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 50)
@@ -48,16 +49,50 @@ public class BetDto implements BetData {
     private Integer gameCategory;
 
     @Override
-    public String getExternalTransactionId() { return this.reqId; }
+    public String getExternalTransactionId() { return String.valueOf(this.round); }
     @Override
-    public BigDecimal getAmount() { return this.betAmount; }
+    public String getVendorBetId(){ return String.valueOf(this.round); }
     @Override
     public String getRoundId() { return String.valueOf(this.round); }
     @Override
     public String getGameId() { return String.valueOf(this.game); }
     @Override
-    public Long getTimestamp() {
-        Long timestamp = this.wagersTime.longValueExact();
+    public BigDecimal getBetAmount() { return this.betAmount; }
+    @Override
+    public BigDecimal getWinAmount() { return this.winloseAmount; }
+    @Override
+    public BigDecimal getWinLoss() { return getWinloseAmount().subtract(getBetAmount()); }
+    @Override
+    public BigDecimal getVendorWinLoss() { return this.getWinLoss(); }
+    @Override
+    public BigDecimal getEffectiveTurnover() { return this.betAmount; }
+    @Override
+    public BigDecimal getRefundAmount() { return BigDecimal.ZERO;}
+    @Override
+    public WinType getResultType() {
+        return (getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    }
+    @Override
+    public Long getVendorBetTime() {
+        return getTimestamp();
+    }
+    @Override
+    public Long getResultTime() {
+        return getTimestamp();
+    }
+    @Override
+    public Long getVendorSettleTime() {
+        return getTimestamp();
+    }
+    @Override
+    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
+    @Override
+    public Integer getIsCancelled() { return 0;}
+    @Override
+    public Integer getIsFreespin() { return 0;}
+
+    private Long getTimestamp() {
+        long timestamp = this.getWagersTime().longValueExact();
         if(String.valueOf(Math.abs(timestamp)).length() > 10){
             return timestamp;
         }
