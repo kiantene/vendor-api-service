@@ -53,7 +53,7 @@ public class VendorService {
     }
 
     public String gKeyGenerator() {
-        return md5Generator(dateGenerator(Formats.DATE_FORMAT, Formats.TIME_ZONE)+this.agentId+this.agentKey);
+        return md5Generator(dateGenerator(Formats.DATE_FORMAT, Formats.TIME_ZONE)+this.getAgentId()+this.getAgentKey());
     }
 
     public String keyGenerator(MultiValueMap<String, String> params) {

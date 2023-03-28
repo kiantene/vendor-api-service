@@ -65,8 +65,8 @@ public class GameUrlService implements GameUrl {
                 .encode()
                 .toUri();
 
-//        log.info("Calling " + apiUrl + EndPoints.GAME_URL);
-//        log.info(formData.toString());
+        log.info("Calling " + apiUrl + EndPoints.GAME_URL);
+        log.info(formData.toString());
 
         OkHttpClient client = new OkHttpClient();
 
