@@ -1,18 +1,14 @@
 package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.jili.api.bet.WinDto;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
@@ -63,33 +59,21 @@ public class SessionBetAction {
 
             this.doVerification(sessionBetDto, gameSession);
 
-            if (sessionBetDto.getType() == Formats.SESSION_BET_TYPE_BET) {
-                // Process bet data
-                BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
-
-                sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
-                sessionBetVo.setCurrency(gameSession.getCurrencyCode());
-                sessionBetVo.setBalance(betEvent.getLastBalance());
-                sessionBetVo.setToken(gameSession.getToken());
-            } else if (sessionBetDto.getType() == Formats.SESSION_BET_TYPE_SETTLE) {
-                // Process win data
-                WinDto winDto = new ObjectMapper().convertValue(sessionBetDto, WinDto.class);
-                winDto.setExternalTransactionId(sessionBetDto.getReqId());
-                winDto.setAmount(sessionBetDto.getWinloseAmount());
-                winDto.setWinType(getWinType(sessionBetDto));
-                winDto.setEffectiveTurnover(sessionBetDto.getTurnover());
-                BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-
-                // Emit event for additional asynchronous processing
-                EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-
-                sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
-                sessionBetVo.setCurrency(gameSession.getCurrencyCode());
-                sessionBetVo.setBalance(betResultEvent.getLastBalance());
-                sessionBetVo.setToken(gameSession.getToken());
-            } else {
-                throw new InvalidRequestException();
+            switch (sessionBetDto.getType()) {
+                case Formats.SESSION_BET_TYPE_BET -> {
+                    UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, sessionBetDto, body);
+                    sessionBetVo.setBalance(unsettledBetEvent.getLastBalance());
+                }
+                case Formats.SESSION_BET_TYPE_SETTLE -> {
+                    SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, sessionBetDto);
+                    sessionBetVo.setBalance(settledBetEvent.getLastBalance());
+                }
+                default -> throw new InvalidRequestException();
             }
+
+            sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
+            sessionBetVo.setCurrency(gameSession.getCurrencyCode());
+            sessionBetVo.setToken(gameSession.getToken());
 
         } catch(InvalidRequestException |
                JsonProcessingException |
@@ -107,8 +91,6 @@ public class SessionBetAction {
                  DisabledGameException |
                  DisabledAgentPlayerException |
                  BetNotFoundException |
-                 BetResultNotFoundException |
-                 DuplicateExternalTransactionIdException |
                  InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException e) {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
