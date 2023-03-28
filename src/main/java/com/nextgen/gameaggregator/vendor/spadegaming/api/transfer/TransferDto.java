@@ -14,14 +14,15 @@ import javax.validation.constraints.Size;
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
+import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransferDto implements BetData{
+public class TransferDto implements UnsettledResultSettledData{
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -86,6 +87,11 @@ public class TransferDto implements BetData{
     }
 
     @Override
+    public String getVendorBetId() {
+        return transferId;
+    }
+
+    @Override
     public String getRoundId() {
         return transferId;
     }
@@ -96,6 +102,70 @@ public class TransferDto implements BetData{
     }
 
     @Override
+    public BigDecimal getBetAmount() {
+        return amount;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getVendorWinLoss() {
+        return getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return getBetAmount();
+    }
+
+    @Override
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public WinType getResultType() {
+        return WinType.LOSE;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return getTimestamp();
+    }
+
+    @Override
+    public Long getResultTime() {
+        return getTimestamp();
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return getTimestamp();
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
     public Long getTimestamp() {
         Instant instant = LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant();
         long epochSecond = instant.getEpochSecond();

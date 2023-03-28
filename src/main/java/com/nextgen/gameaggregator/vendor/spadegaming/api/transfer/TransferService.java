@@ -12,14 +12,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
+import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
@@ -31,6 +29,7 @@ import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
@@ -85,7 +84,7 @@ public class TransferService {
             switch(dto.getType()) {
                 case Actions.PLACE_BET:
                     // Place bet action
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+                    UnsettledBetEvent betEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
                     transferVo.setBalance(betEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -101,19 +100,16 @@ public class TransferService {
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     winDataDto.setExternalTransactionId(dto.getTransferId());
-                    winDataDto.setRoundId(dto.getReferenceId());
-                    winDataDto.setAmount(dto.getAmount());
+                    winDataDto.setReferenceId(dto.getReferenceId());
+                    winDataDto.setWinAmount(dto.getAmount());
                     winDataDto.setEffectiveTurnover(dto.getAmount());
-                    winDataDto.setGameId(dto.getGameCode());
-                    winDataDto.setWinType(getWinType(dto));
+                    winDataDto.setGameCode(dto.getGameCode());
+                    winDataDto.setResultType(getWinType(dto));
 
-                    BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
+                    SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, winDataDto, body);
                     transferVo.setBalance(betResultEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
-
-                    // Emit event for additional asynchronous processing
-                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
                     break;
                 case Actions.BONUS:
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -162,8 +158,8 @@ public class TransferService {
         } catch (BetNotFoundException betNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
 
-        } catch (BetResultNotFoundException betResultNotFoundException) {
-            transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
+        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
         } catch (RecordNotFoundException recordNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
@@ -173,6 +169,9 @@ public class TransferService {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
         }finally {
             httpService.end(httpRequestLog, transferVo);
