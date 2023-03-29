@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class WalletRefundAction {
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
     public WalletBalanceVo call(String callbackUrl, String signature, WalletRefundDto dto) throws InvalidOperatorResponseException {
 
         WalletBalanceVo responseVo = null;
@@ -53,11 +57,11 @@ public class WalletRefundAction {
                     (!responseVo.getData().getUsername().equals(dto.getUsername()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
-                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString);
+                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString);
+            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString, profilesActive);
             new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
