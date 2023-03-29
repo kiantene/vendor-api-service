@@ -61,6 +61,8 @@ logstash:
   port: 5000
 testing:
   stub: true
+image:
+  gameurl: https://develops-bo-s3.s3.ap-east-1.amazonaws.com
 #grpc:
 #  server:
 #    port: 9092
