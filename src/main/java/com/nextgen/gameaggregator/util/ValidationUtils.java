@@ -17,6 +17,8 @@ import java.util.function.Supplier;
 @Slf4j
 public class ValidationUtils {
 
+
+
     public static final String ALPHANUMERIC_REGEX = "^[a-zA-Z0-9]+$";
     public static final String ALPHANUMERIC_DASH_REGEX = "^[a-zA-Z0-9_-]+$";
     public static final String ALPHANUMERIC_DASH_COLON_REGEX = "^[a-zA-Z0-9:_-]+$";
@@ -87,7 +89,7 @@ public class ValidationUtils {
         }
     }
 
-    public static void operatorResponseLogging(Boolean isSuccess, String endpoint, String callbackUrl, Object dto, String responseString) {
+    public static void operatorResponseLogging(Boolean isSuccess, String endpoint, String callbackUrl, Object dto, String responseString, String profilesActive) {
         Gson gson = new Gson();
 
         HashMap<String, Object> logInfo = new HashMap<>();
@@ -98,9 +100,9 @@ public class ValidationUtils {
             logInfo.put("Operator Service Error ", endpoint);
             log.error(gson.toJson(logInfo));
         } else {
-            if ((System.getProperty("spring.profiles.active") == "dev") ||
-                    (System.getProperty("spring.profiles.active") == "qa") ||
-                    (System.getProperty("spring.profiles.active") == "stg")) {
+            if ((profilesActive.equals("dev")) ||
+                    (profilesActive.equals("qa")) ||
+                    (profilesActive.equals("stg")) ){
                 logInfo.put("Operator Service Success ", endpoint);
                 log.info(gson.toJson(logInfo));
             }

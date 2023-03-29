@@ -27,6 +27,9 @@ public class WalletBetAction {
     @Value("${testing.stub:false}")
     private Boolean useStub;
 
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
+
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
 
         // Call stub function instead if config file set to use stub
@@ -69,28 +72,28 @@ public class WalletBetAction {
                             (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                         throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
                     } else {
-                        ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BET, callbackUrl, dto, responseString);
+                        ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
                     }
                     BigDecimal balance = responseVo.getData().getBalance();
                     //TODO to be discuss whether should system pre handle negative if
                     boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
                     if (isNegativeBalance) {
-                        ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString);
+                        ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
                         throw new InsufficientBalanceException(responseVo.toString());
                     }
                 }
                 case SC_INSUFFICIENT_FUNDS -> {
-                    ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString);
+                    ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
                     throw new InsufficientBalanceException(responseVo.toString());
                 }
                 default -> {
-                    ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString);
+                    ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
                     throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
                 }
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString);
+            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
