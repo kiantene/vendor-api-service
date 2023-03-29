@@ -1,14 +1,17 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.Vendor;
+import com.nextgen.gameaggregator.entity.AgentVendorLine;
+import com.nextgen.gameaggregator.entity.Languages;
 import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.operator.game.list.GameListData;
 import com.nextgen.gameaggregator.operator.game.list.GameListDto;
+import com.nextgen.gameaggregator.repository.LanguageRepository;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
-import com.nextgen.gameaggregator.repository.VendorRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -23,21 +26,30 @@ public class GameListService {
 
     @Autowired
     private VendorGameRepository vendorGameRepository;
-
     @Autowired
-    private VendorRepository vendorRepository;
+    private LanguageRepository languageRepository;
 
-    public GameListData getGameList(GameListDto dto) throws RecordNotFoundException {
+    @Value("${image.gameurl}")
+    private String imageUrl;
+
+
+
+    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Integer vendorId, Integer currencyId) throws RecordNotFoundException, InvalidLanguageException {
         GameListData gameListData = new GameListData();
 
-        Vendor vendor = vendorRepository.findByCode(dto.getVendorCode());
+        Languages languages = languageRepository.findByCode(dto.getDisplayLanguage());
+        Optional.ofNullable(languages).orElseThrow(InvalidLanguageException::new);
 
-        Optional.ofNullable(vendor).orElseThrow(RecordNotFoundException::new);
+        List<Integer> gameCategoryIds = new ArrayList<>();
+        for (AgentVendorLine agentVendorLine : agentVendorLines) {
+            gameCategoryIds.add(agentVendorLine.getGameCategory().getId());
+        }
 
         List<Sort.Order> orders = this.generateOrder();
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
-        Page<Object> gameList =  vendorGameRepository.findByVendorIdAndStatus(vendor.getId(), Status.ACTIVE.code, pagingSort);
+        Page<Object> gameList = vendorGameRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
+                (vendorId, Status.ACTIVE.code, gameCategoryIds, currencyId, languages.getId(), imageUrl, pagingSort);
 
         gameListData.setHeaders(this.getHeaders());
         gameListData.setGames(gameList.getContent());
@@ -51,7 +63,11 @@ public class GameListService {
         HashMap<String, Integer> hm = (new HashMap<String, Integer>() {{
             put("gameCode", 0);
             put("gameName", 1);
-            put("categoryCode", 1);
+            put("categoryCode", 2);
+            put("imageSquare", 3);
+            put("imageLandscape", 4);
+            put("languageCode", 5);
+            put("platformCode", 6);
         }});
 
         return sortByValue(hm);
@@ -76,17 +92,15 @@ public class GameListService {
         return orders;
     }
 
-    public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm)
-    {
+    public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm) {
         // Create a list from elements of HashMap
-        List<Map.Entry<String, Integer> > list =
-                new LinkedList<Map.Entry<String, Integer> >(hm.entrySet());
+        List<Map.Entry<String, Integer>> list =
+                new LinkedList<Map.Entry<String, Integer>>(hm.entrySet());
 
         // Sort the list
-        Collections.sort(list, new Comparator<Map.Entry<String, Integer> >() {
+        Collections.sort(list, new Comparator<Map.Entry<String, Integer>>() {
             public int compare(Map.Entry<String, Integer> o1,
-                               Map.Entry<String, Integer> o2)
-            {
+                               Map.Entry<String, Integer> o2) {
                 return (o1.getValue()).compareTo(o2.getValue());
             }
         });

@@ -9,9 +9,9 @@ spring:
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       # aws rds
-      jdbc-url: jdbc:mariadb://dev-2.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
-      username: svc_vendor_dev
-      password: H2ftnFhNshRJ41
+      jdbc-url: jdbc:mariadb://stg.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      username: user_dev
+      password: Newfuture!23
   jpa:
     properties:
       hibernate:
@@ -24,16 +24,16 @@ spring:
     bucketName: stg_game_aggregator
     scopeName: raw
   redis:
-    database: 0
-    host: dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com
+    database: 1
+    host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
     port: 6379
-    username:
-    password:
+    username: dev
+    password: Asdf1234-
     jedis:
       pool:
-        min-idle: 1000
-        max-idle: 1000
-        max-active: 1000
+        max-idle: 30
+        max-active: 100
+        min-idle: 10
         max-wait: 2000
   kafka:
     properties:
@@ -61,6 +61,8 @@ logstash:
   port: 5000
 testing:
   stub: false
+image:
+  gameurl: https://develops-bo-s3.s3.ap-east-1.amazonaws.com
 #grpc:
 #  server:
 #    port: 9092

@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path = "game/")
@@ -63,10 +62,11 @@ public class GameListAction {
             Integer vendorId = vendor.getId();
             Currency currency = apiCredential.getAgent().getCurrency();
 
-            List<AgentVendorLine> vendorLines = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
+            // 4. validate agent supported vendor line
 
-            //TODO (bu Alex), to discuss should validated agent supported vendor
-            GameListData gameListData = gameListService.getGameList(dto);
+            List<AgentVendorLine> agentVendorLines = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
+
+            GameListData gameListData = gameListService.getGameList(dto, agentVendorLines, vendorId, currency.getId());
             responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
@@ -84,26 +84,36 @@ public class GameListAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
+        } catch (InvalidVendorException invalidVendorException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
+        } catch (DisabledVendorException disabledVendorException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
+        } catch (NoAvailableLineException noAvailableLineException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
+        } catch (InvalidVendorLineException invalidVendorLineException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
+        }
+        catch (InvalidLanguageException invalidLanguageException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
+
         } catch (RecordNotFoundException recordNotFoundException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
-        } catch (DisabledVendorException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidVendorLineException e) {
-            throw new RuntimeException(e);
-        } catch (NoAvailableLineException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidVendorException e) {
-            throw new RuntimeException(e);
         }
 //        catch (Exception exception) {
 //            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
 //            httpService.logError(httpRequestLog, exception);
 //            exception.printStackTrace();
 //
-//        } finally {
-//            responseVo.setMessage(responseVo.getStatus().description);
 //        }
+        finally {
+            responseVo.setMessage(responseVo.getStatus().description);
+
+        }
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
 

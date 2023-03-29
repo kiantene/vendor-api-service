@@ -49,6 +49,11 @@ public class VendorLineService {
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndStatus(agentId, vendorId, currencyId, ACTIVE);
         Optional.ofNullable(agentVendorLines).orElseThrow(InvalidVendorLineException::new);
 
+        //TODO (bu Alex), to discuss should validated agent supported vendor
+//        if(agentVendorLines.isEmpty()){
+//            throw new NoAvailableLineException();
+//        }
+
         return agentVendorLines;
     }
 
