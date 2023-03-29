@@ -102,11 +102,11 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public String getVendorBetId() {
-        return this.transferId;
+        return this.referenceId;
     }
 
-    public void setVendorBetId(String transferId){
-        this.transferId = transferId;
+    public void setVendorBetId(String referenceId){
+        this.referenceId = referenceId;
     }
 
     @Override
