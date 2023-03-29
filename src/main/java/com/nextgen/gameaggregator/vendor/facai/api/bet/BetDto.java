@@ -148,7 +148,11 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public WinType getResultType() {
-        return (this.getWinLoss().compareTo(BigDecimal.ZERO) >= 0)?WinType.WIN:WinType.LOSE;
+        if (this.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0) {
+            return WinType.JACKPOT;
+        } else {
+            return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
+        }
     }
 
     @Override
