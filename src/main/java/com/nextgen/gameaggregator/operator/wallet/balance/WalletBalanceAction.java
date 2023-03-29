@@ -5,6 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -52,21 +53,27 @@ public class WalletBalanceAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
         try {
+
             responseVo = new Gson().fromJson(responseString, WalletBalanceVo.class);
             // throw exception if response is null
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+            ValidationUtils.validateResponse(responseVo);
 
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            Gson gson = new Gson();
-            log.error("Operator " +Endpoints.WALLET_BALANCE + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
-            new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+
+            if ((!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ||
+                    (!responseVo.getData().getUsername().equals(dto.getUsername())) ||
+                    (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
+                throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
+            }else{
+                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString);
+            }
+
+        } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
+            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString);
+            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
-        if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-            Gson gson = new Gson();
-            log.error("Operator " +Endpoints.WALLET_BALANCE + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
-            throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
-        }
+
         return responseVo;
     }
 
