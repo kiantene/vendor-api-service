@@ -25,6 +25,9 @@ public class WalletBalanceAction {
     @Value("${testing.stub:false}")
     private Boolean useStub;
 
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
+
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBalanceDto dto) throws InvalidOperatorResponseException {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
@@ -53,7 +56,6 @@ public class WalletBalanceAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
         try {
-
             responseVo = new Gson().fromJson(responseString, WalletBalanceVo.class);
             // throw exception if response is null
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
@@ -65,11 +67,11 @@ public class WalletBalanceAction {
                     (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             }else{
-                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString);
+                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString);
+            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BALANCE, callbackUrl, dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 

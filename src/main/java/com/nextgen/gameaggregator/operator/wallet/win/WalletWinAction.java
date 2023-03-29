@@ -25,6 +25,9 @@ public class WalletWinAction {
     @Value("${testing.stub:false}")
     private Boolean useStub;
 
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
+
     public WalletBalanceVo call(String callbackUrl, String signature, WalletWinDto dto) throws InvalidOperatorResponseException {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
@@ -63,11 +66,11 @@ public class WalletWinAction {
                     (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
-                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_WIN, callbackUrl, dto, responseString);
+                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_WIN, callbackUrl, dto, responseString);
+            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
