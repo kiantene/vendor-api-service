@@ -7,7 +7,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -24,7 +23,7 @@ public class WalletBalanceVo extends ResponseVo {
         @NotBlank
         private String username;
         @NotNull
-        @Digits(integer = 8, fraction = 4)
+       // @Digits(integer = 8, fraction = 4)
         private BigDecimal balance;
         @NotBlank
         @Size(min = 3, max = 6)
