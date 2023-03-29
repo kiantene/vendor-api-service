@@ -2,10 +2,11 @@ package com.nextgen.gameaggregator.controller;
 
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.AgentPlayer;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.GameSessionRepository;
 import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,9 @@ public class AgentPlayerController {
 
     @Autowired
     VendorPlayerRepository vendorPlayerRepository;
+
+    @Autowired
+    GameSessionRepository gameSessionRepository;
 
     @Autowired
     ControllerServices controllerServices;
@@ -66,5 +70,23 @@ public class AgentPlayerController {
                 HttpStatus.BAD_REQUEST);
 
 
+    }
+    @PostMapping(path = "/gameSession")
+    public ResponseEntity<Detailvo> gameSession(@RequestBody ObjectNode json){
+
+        Detailvo detailvo = new Detailvo();
+        detailvo.setGameSession(gameSessionRepository.findByToken(json.get("token").asText()));
+
+        return new ResponseEntity<>(
+                detailvo ,
+                HttpStatus.OK);
+
+
+    }
+
+    @Data
+    static class Detailvo{
+
+        public GameSession gameSession;
     }
 }
