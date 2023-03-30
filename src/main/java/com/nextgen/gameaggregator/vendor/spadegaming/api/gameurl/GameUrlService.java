@@ -24,6 +24,8 @@ public class GameUrlService implements GameUrl {
         formData.add("token", gameSession.getToken());
         formData.add("game", gameCode);
         formData.add("language", gameSession.getVendorLanguageCode());
+        if (gameSession.getPlatformId() != 2) formData.add("mobile", "true");
+    
         return formData;
     }
 

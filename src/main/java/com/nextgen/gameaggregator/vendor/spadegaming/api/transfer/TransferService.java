@@ -110,6 +110,7 @@ public class TransferService {
                         SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, winDataDto, body);
                         transferVo.setBalance(betResultEvent.getLastBalance());
                     } else {
+                        // Free spin so bet amount is zero
                         winDataDto.setBetAmount(BigDecimal.ZERO);
                         SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body);
                         transferVo.setBalance(betResultEvent.getLastBalance());
