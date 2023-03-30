@@ -76,8 +76,14 @@ public class TransferService {
             transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setSerialNo(traceId);
             this.doValidation(dto);
+            GameSession gameSession = null;
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            if (dto.getType() == Actions.CANCEL_BET) {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode());
+            }else{
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            }
+
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
     
