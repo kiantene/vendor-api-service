@@ -35,4 +35,8 @@ public class AuthenticateDto {
     @Size(max = 10)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String language;
+
+    public String getAcctId() {
+        return this.acctId.toLowerCase();
+    }
 }

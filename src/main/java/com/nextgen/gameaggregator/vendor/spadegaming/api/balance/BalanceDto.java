@@ -30,4 +30,8 @@ public class BalanceDto {
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String merchantCode;
+
+    public String getAcctId() {
+        return this.acctId.toLowerCase();
+    }
 }
