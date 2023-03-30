@@ -174,14 +174,13 @@ public class GameUrlService {
     }
 
     public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId, Integer currencyId) {
-        String vendorPlayerUsername = NameUtils.generateUsername("O", agentPlayerId, vendorLineId.longValue());
+        String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId);
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
         entity.setVendorLineId(vendorLineId);
         entity.setVendorId(vendorId);
         entity.setUsername(vendorPlayerUsername);
-        entity.setStatus(1);
-        //TODO SET CURRENCY ID
+        entity.setStatus(1); // TODO: to use constant/enum
         entity.setCurrencyId(currencyId);
         entity.prepareSave(0, USERTYPE);
         log.info("Insert new vendor player " + vendorPlayerUsername);
