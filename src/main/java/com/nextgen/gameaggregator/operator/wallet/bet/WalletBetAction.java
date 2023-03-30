@@ -87,7 +87,6 @@ public class WalletBetAction {
                     throw new InsufficientBalanceException(responseVo.toString());
                 }
                 default -> {
-                    ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
                     throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
                 }
             }
