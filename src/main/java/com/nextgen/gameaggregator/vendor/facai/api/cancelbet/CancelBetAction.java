@@ -44,7 +44,7 @@ public class CancelBetAction {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = EndPoints.CANCEL_SLOT_BET)
+    @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo cancelbet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
