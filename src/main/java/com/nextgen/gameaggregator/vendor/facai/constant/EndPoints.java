@@ -6,9 +6,9 @@ public class EndPoints {
 
     public static final String BALANCE = "/balance";
 
-    public static final String SLOT_BET = "/bet";
+    public static final String BET = "/bet";
 
-    public static final String CANCEL_SLOT_BET = "/cancelbet";
+    public static final String CANCEL_BET = "/cancelbet";
 
     // API url call to vendor
     public static final String GAME_URL = "/Login";
