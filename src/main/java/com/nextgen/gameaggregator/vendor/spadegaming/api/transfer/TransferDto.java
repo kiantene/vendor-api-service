@@ -81,6 +81,10 @@ public class TransferDto implements UnsettledResultSettledData{
     @Size(max = 50)
     private String gameFeature;
 
+    public String getAcctId() {
+        return this.acctId.toLowerCase();
+    }
+
     @Override
     public String getExternalTransactionId() {
         return transferId;

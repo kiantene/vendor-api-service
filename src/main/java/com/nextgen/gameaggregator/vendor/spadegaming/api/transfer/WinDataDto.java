@@ -84,12 +84,14 @@ public class WinDataDto implements UnsettledResultSettledData {
     private String gameFeature;
     
     private String betId;
-    private Long resultTime;
-    private Long vendorSettleTime;
     private WinType resultType;
     private BigDecimal betAmount;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
+
+    public String getAcctId() {
+        return this.acctId.toLowerCase();
+    }
 
     @Override
     public String getExternalTransactionId() {
@@ -102,11 +104,11 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public String getVendorBetId() {
-        return this.transferId;
+        return this.referenceId;
     }
 
-    public void setVendorBetId(String transferId){
-        this.transferId = transferId;
+    public void setVendorBetId(String referenceId){
+        this.referenceId = referenceId;
     }
 
     @Override
@@ -179,22 +181,18 @@ public class WinDataDto implements UnsettledResultSettledData {
         return getTimestamp();
     }
 
-    public void setResultType(WinType resultType) {
-        this.resultType = resultType;
-    }
-
     @Override
     public Long getResultTime() {
-        return this.resultTime;
-    }
-
-    public void setResultTime(Long resultTime) {
-        this.resultTime = resultTime;
+        return getTimestamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return this.vendorSettleTime;
+        return getTimestamp();
+    }
+
+    public void setResultType(WinType resultType) {
+        this.resultType = resultType;
     }
 
     @Override
@@ -210,10 +208,6 @@ public class WinDataDto implements UnsettledResultSettledData {
     @Override
     public Integer getIsFreespin() {
         return 0;
-    }
-
-    public void setVendorSettleTime(Long vendorSettleTime) {
-        this.vendorSettleTime = vendorSettleTime;
     }
 
     public Long getTimestamp() {

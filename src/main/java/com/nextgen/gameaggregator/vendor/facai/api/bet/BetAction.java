@@ -44,7 +44,7 @@ public class BetAction {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = EndPoints.SLOT_BET)
+    @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();

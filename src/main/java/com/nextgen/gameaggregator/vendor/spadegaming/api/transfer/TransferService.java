@@ -76,8 +76,14 @@ public class TransferService {
             transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setSerialNo(traceId);
             this.doValidation(dto);
+            GameSession gameSession = null;
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            if (dto.getType() == Actions.CANCEL_BET) {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode());
+            }else{
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            }
+
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
     
@@ -91,7 +97,7 @@ public class TransferService {
                     break;
                 case Actions.CANCEL_BET:
                     // Cancel bet and refund action
-                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getReferenceId(), gameSession, body);
+                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getTransferId(), gameSession, body);
                     transferVo.setBalance(betRefundEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -110,6 +116,7 @@ public class TransferService {
                         SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, winDataDto, body);
                         transferVo.setBalance(betResultEvent.getLastBalance());
                     } else {
+                        // Free spin so bet amount is zero
                         winDataDto.setBetAmount(BigDecimal.ZERO);
                         SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body);
                         transferVo.setBalance(betResultEvent.getLastBalance());
