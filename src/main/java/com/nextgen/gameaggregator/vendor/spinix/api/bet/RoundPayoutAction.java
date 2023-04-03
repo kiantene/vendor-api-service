@@ -68,11 +68,14 @@ public class RoundPayoutAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto, sign);
 
-            // Get game session
-            // GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
-
-            // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
+            GameSession gameSession;
+            if(dto.getUserToken() == null) {
+                // Get game session
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+            } else {
+                // Verify session token
+                gameSession = gameSessionService.verifyToken(dto.getUserToken());
+            }
 
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
