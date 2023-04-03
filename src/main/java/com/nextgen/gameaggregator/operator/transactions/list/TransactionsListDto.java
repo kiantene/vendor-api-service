@@ -32,6 +32,6 @@ public class TransactionsListDto {
 
     @NotNull
     @Positive
-    @Range(min= 1, max= Integer.MAX_VALUE)
-    private Integer size;
+    @Range(min= 1, max= 500)
+    private Integer pageSize = 500;
 }
