@@ -341,15 +341,29 @@ public class GameExcelValidatorService {
 
     public GameDataEntity verifySquareImage(GameDataEntity gameDataEntity, HashMap<String, Language> vendorLanguages,
                                              HashMap<Integer, HashMap<String, String>> columnTypes,
-                                             Integer columnNum, Integer rowNum, String squareImage) throws InvalidFormatException {
+                                             Integer columnNum, Integer rowNum, String squareImage,
+                                            Vendor vendor, GameCategory gameCategory) throws InvalidFormatException {
         if (columnTypes.get(columnNum).get("id").equals("ALL")) {
+
             //set default square image
-            gameDataEntity.getVendorGame().setImageSquare(squareImage.trim());
+            if(!squareImage.trim().equals("")){
+                //dont append image folder path if empty
+                gameDataEntity.getVendorGame().setImageSquare("/game/"+vendor.getCode()+ "/"+ squareImage.trim());
+            }else{
+                gameDataEntity.getVendorGame().setImageSquare(squareImage.trim());
+            }
+
         } else if (vendorLanguages.get(columnTypes.get(columnNum).get("id")) != null) {
             VendorGameCode vendorGameCode =
                     this.getDataEntityVendorGameCode(columnTypes.get(columnNum).get("id"), gameDataEntity);
             //set square image base on language
-            vendorGameCode.setImageSquare(squareImage.trim());
+            if(!squareImage.trim().equals("")){
+                //dont append image folder path if empty
+                vendorGameCode.setImageSquare("/game/"+vendor.getCode()+ "/"+ squareImage.trim());
+            }else{
+                gameDataEntity.getVendorGame().setImageSquare(squareImage.trim());
+            }
+
             vendorGameCode.setLanguageId(Integer.parseInt(columnTypes.get(columnNum).get("id")));
             gameDataEntity.getVendorGameCodes().put(columnTypes.get(columnNum).get("id"), vendorGameCode);
 

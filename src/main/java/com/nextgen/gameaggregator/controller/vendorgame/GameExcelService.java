@@ -94,7 +94,7 @@ public class GameExcelService {
                                 columnNum, rowNum, currentCell.getStringCellValue());
                     } else if (columnTypes.get(columnNum).get("dataType").equals(HeaderName.SQUARE_IMAGE_NAME.name)) {
                         gameDataEntity = gameExcelValidatorService.verifySquareImage(gameDataEntity, vendorLanguages, columnTypes,
-                                columnNum, rowNum, currentCell.getStringCellValue());
+                                columnNum, rowNum, currentCell.getStringCellValue(), vendor, gameCategory);
                     } else if (columnTypes.get(columnNum).get("dataType").equals(HeaderName.SUPPORT_PLATFORM.name)) {
                         gameDataEntity = gameExcelValidatorService.verifyPlatform(gameDataEntity, platforms, columnTypes,
                                 columnNum, rowNum, currentCell.getStringCellValue());
@@ -130,9 +130,6 @@ public class GameExcelService {
     }
 
     private Boolean saveGameData(GameDataEntity gameDataEntity, Vendor vendor, GameCategory gameCategory) {
-        System.err.println("!!!!!!!!!!!!!!!!!!");
-       System.err.println(gameDataEntity.getVendorGameCurrencies());
-        System.err.println("!!!!!!!!!!!!!!!!!!");
         gameDataEntity.getVendorGame().setCode(vendor.getCode() + "_" + gameDataEntity.getVendorGame().getVendorGameCode());
         gameDataEntity.getVendorGame().setVendor(vendor);
         gameDataEntity.getVendorGame().setGameCategory(gameCategory);
