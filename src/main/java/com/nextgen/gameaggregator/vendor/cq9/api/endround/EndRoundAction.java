@@ -95,7 +95,7 @@ public class EndRoundAction {
             // Construct VO data
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(settledBetEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {

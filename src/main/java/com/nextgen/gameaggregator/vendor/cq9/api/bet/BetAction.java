@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -80,7 +79,7 @@ public class BetAction {
             // Construct VO
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(unsettledBetEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {

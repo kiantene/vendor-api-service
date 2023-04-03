@@ -64,7 +64,7 @@ public class AuthenticateAction {
 //            eventDispatcher.emit(getClass(), body);
 
             responseVo.setUserId(gameSession.getVendorPlayerUsername());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setToken(gameSession.getToken());

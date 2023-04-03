@@ -87,7 +87,7 @@ public class RollInAction {
             // Construct VO data
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betResultEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             responseVo.setData(commonVo);
         } catch (AuthenticationException authenticationException) {
