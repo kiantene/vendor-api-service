@@ -106,6 +106,10 @@ public class RoundPayoutAction {
 
                 // Set Balance
                 roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
+
+                // Set new trace id for possible win transaction record
+                UUID uuid = UUID.randomUUID();
+                traceId = uuid.toString();
             }
 
             // Set necessary values to process win record
@@ -120,9 +124,7 @@ public class RoundPayoutAction {
                 winDto.setWinType(this.getWinType(winRecord));
                 winDto.setTimestamp(winRecord.getTimestamp());
 
-                UUID uuid = UUID.randomUUID();
-                String newTraceId = uuid.toString();
-                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(newTraceId, gameSession, winDto, body);
+                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDto, body);
 
                 // Set Balance
                 roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
