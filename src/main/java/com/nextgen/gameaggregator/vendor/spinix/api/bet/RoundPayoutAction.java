@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -140,7 +139,7 @@ public class RoundPayoutAction {
             }
 
             // Set Currency + RoundPayoutDataWalletVo + Status + req_id
-            roundPayoutDataWalletVo.setCurrency(gameSession.getCurrencyCode());
+            roundPayoutDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
             roundPayoutVo.setReqId(dto.getReqId());

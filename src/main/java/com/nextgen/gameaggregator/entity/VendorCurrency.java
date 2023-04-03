@@ -8,16 +8,16 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "vendor_language_codes")
+@Table(name = "vendor_currencies")
 @Data
-public class VendorLanguageCode {
+public class VendorCurrency {
+
     @Id
     private Integer id;
     private Integer vendorId;
-//    private Integer languageId;
-    private String languageCode;
+    private String vendorCurrencyCode;
     private Integer status;
 
     @ManyToOne
-    private Language language;
+    private Currency currency;
 }

@@ -31,6 +31,7 @@
 		<commons-codec.version>1.15</commons-codec.version>
 		<netty.version>4.1.86.Final</netty.version>
 		<mariadb.version>3.0.8</mariadb.version>
+		<poi.version>4.1.2</poi.version>
 		<maven.compiler.source>18</maven.compiler.source>
 		<maven.compiler.target>18</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -149,6 +150,17 @@
 			<artifactId>netty-resolver-dns-native-macos</artifactId>
 			<version>${netty.version}</version>
 			<classifier>osx-aarch_64</classifier>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
 		</dependency>
 
 		<!--need remove when go live -->
