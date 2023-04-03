@@ -80,11 +80,11 @@ public class GameUrlService {
         Platform platformEntity = platformRepository.findByCode(platformCode);
         Optional.ofNullable(platformEntity).orElseThrow(GameNotSupportedException::new);
 
-        Languages languagesEntity = languageRepository.findByCode(languageCode);
-        Optional.ofNullable(languagesEntity).orElseThrow(GameNotSupportedException::new);
+        Language languageEntity = languageRepository.findByCode(languageCode);
+        Optional.ofNullable(languageEntity).orElseThrow(GameNotSupportedException::new);
 
         VendorGameCode vendorGameCodeEntity = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(
-                gameId, platformEntity.getId(), languagesEntity.getId());
+                gameId, platformEntity.getId(), languageEntity.getId());
         Optional.ofNullable(vendorGameCodeEntity).orElseThrow(GameNotSupportedException::new);
 
         if (vendorGameCodeEntity.getStatus() == 0) {
