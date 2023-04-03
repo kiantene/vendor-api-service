@@ -372,13 +372,6 @@ public class GameExcelValidatorService {
                     columnTypes.get(columnNum).get("code").toLowerCase(), platform);
         }
 
-//            if (columnTypes.get(columnNum).get("code").equalsIgnoreCase("web")) {
-//
-//        } else if (columnTypes.get(columnNum).get("code").equalsIgnoreCase("H5") && (supportedPlatform.equalsIgnoreCase("yes"))) {
-//            //gameDataEntity.setSupportH5(true);
-//            gameDataEntity.getPlatformSupported().put(
-//                    columnTypes.get(columnNum).get("code").toLowerCase(), platforms.get(columnTypes.get(columnNum).get("code").toLowerCase()));
-//        }
         return gameDataEntity;
     }
 
@@ -412,6 +405,7 @@ public class GameExcelValidatorService {
         } else if ((vendorCurrencies.get(columnTypes.get(columnNum).get("id")) == null) && (supportedCurrency.equalsIgnoreCase("yes"))) {
             throw new InvalidFormatException("Vendor Not Supported with currency: " + columnTypes.get(columnNum).get("headerCode"));
         } else if (vendorCurrencies.get(columnTypes.get(columnNum).get("id")) != null) {
+
             VendorGameCurrency vendorGameCurrency =
                     this.getDataEntityVendorGameCurrency(columnTypes.get(columnNum).get("id"), gameDataEntity);
             //set vendor Game Code base on language
@@ -419,6 +413,7 @@ public class GameExcelValidatorService {
             Currency currency = new Currency();
             currency.setId(Integer.parseInt(columnTypes.get(columnNum).get("id")));
             vendorGameCurrency.setCurrency(currency);
+            gameDataEntity.getVendorGameCurrencies().put(columnTypes.get(columnNum).get("id"), vendorGameCurrency);
         }
         return gameDataEntity;
     }

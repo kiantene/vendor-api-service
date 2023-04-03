@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.Currency;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.VendorGameCodeRepository;
+import com.nextgen.gameaggregator.repository.VendorGameCurrencyRepository;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -33,6 +34,9 @@ public class GameExcelService {
 
     @Autowired
     VendorGameCodeRepository vendorGameCodeRepository;
+
+    @Autowired
+    VendorGameCurrencyRepository vendorGameCurrencyRepository;
 
     private static final String USERTYPE = "vendor-api-service";
 
@@ -126,6 +130,9 @@ public class GameExcelService {
     }
 
     private Boolean saveGameData(GameDataEntity gameDataEntity, Vendor vendor, GameCategory gameCategory) {
+        System.err.println("!!!!!!!!!!!!!!!!!!");
+       System.err.println(gameDataEntity.getVendorGameCurrencies());
+        System.err.println("!!!!!!!!!!!!!!!!!!");
         gameDataEntity.getVendorGame().setCode(vendor.getCode() + "_" + gameDataEntity.getVendorGame().getVendorGameCode());
         gameDataEntity.getVendorGame().setVendor(vendor);
         gameDataEntity.getVendorGame().setGameCategory(gameCategory);
@@ -145,6 +152,11 @@ public class GameExcelService {
                 gameDataEntity.getDefaultOpenGameCode(), gameDataEntity.getDefaultBetGameCode());
 
         vendorGameCodeRepository.saveAll(VendorGameCodes);
+
+        List<VendorGameCurrency> VendorGameCurrencies = this.generateVendorGameCurrencyList(
+                gameDataEntity.getVendorGameCurrencies(), vendorGame);
+
+        vendorGameCurrencyRepository.saveAll(VendorGameCurrencies);
         return true;
     }
 
@@ -175,7 +187,7 @@ public class GameExcelService {
                 vendorGameCode.setLanguageId(vendorGameCodeLang.getLanguageId());
                 vendorGameCode.setPlatformId(platform.getId());
                 //default status as false if platform is disable
-                vendorGameCode.setStatus( platform.getStatus().equals(0) ? 0: vendorGameCodeLang.getStatus());
+                vendorGameCode.setStatus(platform.getStatus().equals(0) ? 0 : vendorGameCodeLang.getStatus());
 
 
                 VendorGameCode vendorGameCodeExist = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(
@@ -196,4 +208,27 @@ public class GameExcelService {
     }
 
 
+    private List<VendorGameCurrency> generateVendorGameCurrencyList(
+            HashMap<String, VendorGameCurrency> VendorGameCurrencyMap, VendorGame vendorGame) {
+        List<VendorGameCurrency> VendorGameCurrencies = new ArrayList<>();
+
+        for (Map.Entry<String, VendorGameCurrency> vendorGameCurrencyValue : VendorGameCurrencyMap.entrySet()) {
+            VendorGameCurrency vendorGameCurrency = vendorGameCurrencyValue.getValue();
+
+            vendorGameCurrency.setVendorGame(vendorGame);
+
+            VendorGameCurrency vendorGameCurrencyExist = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(
+                    vendorGame.getId(), vendorGameCurrency.getCurrency().getId());
+
+            if (vendorGameCurrencyExist != null) {
+                vendorGameCurrency.setId(vendorGameCurrencyExist.getId());
+            }
+
+            vendorGameCurrency.prepareSave(0, USERTYPE);
+            VendorGameCurrencies.add(vendorGameCurrency);
+        }
+
+        return VendorGameCurrencies;
+
+    }
 }
