@@ -13,6 +13,8 @@ import java.util.List;
 public interface VendorRepository extends JpaRepository<Vendor, Integer> {
     Vendor findByCode(String code);
 
+    Vendor findVendorById(Integer id);
+
     @Query(value=" SELECT " +
             " vendors.code, vendors.name  FROM vendors WHERE vendors.id IN " +
             "(SELECT vendor_id FROM agent_vendor_lines WHERE agent_vendor_lines.status =:status AND agent_vendor_lines.agent_id =:agentId GROUP BY agent_vendor_lines.vendor_id) " +

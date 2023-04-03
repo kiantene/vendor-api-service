@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.AgentVendorLine;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.entity.VendorLineCredential;
-import com.nextgen.gameaggregator.entity.VendorLineCurrency;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
@@ -31,8 +28,8 @@ public class VendorLineService {
     @Autowired
     private VendorLineCurrencyRepository vendorLineCurrencyRepository;
 
-    public VendorLine getVendorLineByAgentAndGameCategory(Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId) throws NoAvailableLineException, InvalidVendorLineException {
-        AgentVendorLine agentVendorLine = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id(agentId, vendorId, currencyId, gameCategoryId);
+    public VendorLine getVendorLineByAgentAndGameCategory(Agent agent, Vendor vendor, Integer currencyId, Integer gameCategoryId) throws NoAvailableLineException, InvalidVendorLineException, InvalidVendorException {
+        AgentVendorLine agentVendorLine = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id(agent.getId(), vendor.getId(), currencyId, gameCategoryId);
         Optional.ofNullable(agentVendorLine).orElseThrow(InvalidVendorLineException::new);
 
         VendorLine vendorLine = agentVendorLine.getVendorLine();
@@ -40,6 +37,15 @@ public class VendorLineService {
         if (vendorLine == null || agentVendorLine.getStatus().equals(INACTIVE) || vendorLine.getStatus().equals(INACTIVE)) {
             throw new NoAvailableLineException();
         }
+
+        //check is vendor supported transfer
+        if (agent.getWalletType().equals(2) && (!vendor.getIsSupportTransfer().equals(1))) {
+            throw new InvalidVendorException();
+        //check is vendor supported seamless
+        } else if (agent.getWalletType().equals(1) && (!vendor.getIsSupportSeamless().equals(1))) {
+            throw new InvalidVendorException();
+        }
+
         return vendorLine;
     }
 
