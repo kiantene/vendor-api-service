@@ -31,7 +31,7 @@ public class GameUrlService implements GameUrl {
         formData.add("gamehall", "CQ9");
         formData.add("gamecode", gameCode);
         formData.add("gameplat", Platforms.WEB.code);
-        formData.add("lang", gameSession.getLanguage());
+        formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("session", gameSession.getToken());
 
         return formData;
