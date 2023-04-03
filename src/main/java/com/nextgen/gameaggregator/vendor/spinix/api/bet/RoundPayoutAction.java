@@ -78,8 +78,7 @@ public class RoundPayoutAction {
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-
-
+            
             this.doVerification(dto, list, gameSession, sign, bodyObj);
 
             // Search for bet, win and/or cancel bet
@@ -98,7 +97,7 @@ public class RoundPayoutAction {
                 betDto.setAmount(betRecord.getAmount().abs());
                 betDto.setValidTurnover(dto.getValidTurnover());
                 betDto.setGameId(dto.getGameId());
-                betDto.setWinType(this.getWinType(winRecord));
+                betDto.setWinType(this.getWinType(betRecord));
                 betDto.setTimestamp(betRecord.getTimestamp());
 
                 SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
