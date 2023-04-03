@@ -21,7 +21,7 @@ public class TransactionListService {
         //TODO (by Alex), to discuss and change fetch by updated time
 
         List<Sort.Order> orders = this.generateOrder();
-        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getSize(), Sort.by(orders));
+        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
         Page<Object> transactionsList =  betHistoryRepository.findByAgentIdAndCreateTimeBetween(
                 agentId, dto.getFromTime(), dto.getToTime(), pagingSort);
