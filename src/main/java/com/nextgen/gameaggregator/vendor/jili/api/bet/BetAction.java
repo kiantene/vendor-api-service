@@ -63,7 +63,7 @@ public class BetAction {
             SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
-            betVo.setCurrency(gameSession.getCurrencyCode());
+            betVo.setCurrency(gameSession.getVendorCurrencyCode());
             betVo.setBalance(settledBetEvent.getLastBalance());
             betVo.setToken(gameSession.getToken());
 

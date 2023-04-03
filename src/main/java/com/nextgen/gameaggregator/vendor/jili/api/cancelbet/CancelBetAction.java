@@ -67,7 +67,7 @@ public class CancelBetAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
-            cancelBetVo.setCurrency(gameSession.getCurrencyCode());
+            cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             cancelBetVo.setBalance(balance);
 //            cancelBetVo.setToken(gameSession.getToken());
 
