@@ -68,11 +68,14 @@ public class RoundPayout2Action {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto, sign);
 
-            // Get game session
-            // GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
-
-            // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
+            GameSession gameSession;
+            if(dto.getUserToken() == null) {
+                // Get game session
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+            } else {
+                // Verify session token
+                gameSession = gameSessionService.verifyToken(dto.getUserToken());
+            }
 
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
@@ -97,7 +100,7 @@ public class RoundPayout2Action {
                 betDto.setAmount(betRecord.getAmount().abs());
                 betDto.setValidTurnover(dto.getValidTurnover());
                 betDto.setGameId(dto.getGameId());
-                betDto.setWinType(this.getWinType(betRecord));
+                betDto.setWinType(this.getWinType(winRecord));
                 betDto.setTimestamp(betRecord.getTimestamp());
 
                 SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
@@ -202,7 +205,7 @@ public class RoundPayout2Action {
     }
 
     private void doValidation(RoundPayoutDto dto, String token) throws InvalidRequestException {
-        Optional.ofNullable(token).orElseThrow(InvalidRequestException::new);
+        // Optional.ofNullable(token).orElseThrow(InvalidRequestException::new);
 
         // General validation
         ValidationUtils.validateRequest(dto);
