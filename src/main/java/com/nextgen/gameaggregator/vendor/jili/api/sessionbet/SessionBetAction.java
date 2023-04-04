@@ -72,7 +72,7 @@ public class SessionBetAction {
             }
 
             sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
-            sessionBetVo.setCurrency(gameSession.getCurrencyCode());
+            sessionBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             sessionBetVo.setToken(gameSession.getToken());
 
         } catch(InvalidRequestException |

@@ -27,9 +27,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping(path = EndPoints.GAME_LOBBY)
 @Slf4j
-public class RoundPayoutAction {
+public class RoundPayout2Action {
 
     @Autowired
     private HttpService httpService;
@@ -71,7 +71,6 @@ public class RoundPayoutAction {
             GameSession gameSession;
             if(dto.getUserToken() == null) {
                 // Get game session
-                // TODO: vendor has no intention to send user_token with value for fish game's win transaction record. Use user token from last game session first
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
             } else {
                 // Verify session token
@@ -82,7 +81,7 @@ public class RoundPayoutAction {
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-            
+
             this.doVerification(dto, list, gameSession, sign, bodyObj);
 
             // Search for bet, win and/or cancel bet
@@ -101,7 +100,7 @@ public class RoundPayoutAction {
                 betDto.setAmount(betRecord.getAmount().abs());
                 betDto.setValidTurnover(dto.getValidTurnover());
                 betDto.setGameId(dto.getGameId());
-                betDto.setWinType(this.getWinType(betRecord));
+                betDto.setWinType(this.getWinType(winRecord));
                 betDto.setTimestamp(betRecord.getTimestamp());
 
                 SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);

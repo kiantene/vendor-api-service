@@ -5,13 +5,16 @@ import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -98,4 +101,16 @@ public class VendorService {
         }
     }
 
+    public static String generateGameUrl(String apiUrl, MultiValueMap<String, String> parameters) {
+        // form query string
+        String queryString = "";
+        List<String> values = new ArrayList<>();
+        for (String key : parameters.keySet()){
+            values.add(key + "=" + parameters.getFirst(key));
+        }
+
+        String loginUrl = apiUrl + "?" + String.join("&", values);
+
+        return loginUrl;
+    }
 }

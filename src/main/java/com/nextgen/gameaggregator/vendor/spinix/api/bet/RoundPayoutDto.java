@@ -50,7 +50,7 @@ public class RoundPayoutDto {
     @Size(max =32)
     public String reqId;
 
-    @NotBlank
+    @Nullable
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max =50)
     public String userToken;

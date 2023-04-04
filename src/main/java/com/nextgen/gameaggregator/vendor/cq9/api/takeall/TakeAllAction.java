@@ -83,7 +83,7 @@ public class TakeAllAction {
             // Construct VO
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {

@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -63,7 +62,7 @@ public class ResultAction {
             ResultBetEvent resultBetEvent = walletService.processResultBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(gameSession.getCurrencyCode()); // TODO: vendor currency map
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode()); // TODO: vendor currency map
             responseVo.setCash(resultBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 

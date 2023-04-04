@@ -74,7 +74,7 @@ public class BalanceAction {
 
             // 4. Set Balance and Currency
             balanceDataWalletVo.setBalance(balance);
-            balanceDataWalletVo.setCurrency(gameSession.getCurrencyCode());
+            balanceDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             // 5. Set BalanceDataWalletVo Object
             balanceDataVo.setWallet(balanceDataWalletVo);
