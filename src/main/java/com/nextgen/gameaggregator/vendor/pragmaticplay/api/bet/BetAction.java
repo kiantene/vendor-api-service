@@ -41,9 +41,7 @@ public class BetAction {
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
 
-        System.err.println("AAAAAAAA");
         HttpRequestLog httpRequestLog = httpService.start(request);
-        System.err.println("BBBBBB");
         BetVo responseVo = new BetVo();
         String traceId = httpRequestLog.getTraceId();
 

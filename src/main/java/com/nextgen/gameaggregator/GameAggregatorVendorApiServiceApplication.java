@@ -20,8 +20,8 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 		"com.nextgen.sas",
 		"com.nextgen.sas.core",
 		"com.nextgen.gameaggregator",
-		"com.nextgen.gameaggregator.vendor"
-}, nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+		"com.nextgen.gameaggregator.vendor",
+},nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class GameAggregatorVendorApiServiceApplication {
 
 	public static void main(String[] args) {
