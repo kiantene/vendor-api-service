@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.controller.vendorgame;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.controller.ControllerServices;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
@@ -11,23 +9,22 @@ import org.apache.poi.ss.usermodel.Row;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path = "vendorGame/")
-public class VendorGameController {
+public class GameImportController {
 
     @Autowired
     VendorGameRepository vendorGameRepository;
-
-    @Autowired
-    ControllerServices controllerServices;
 
     @Autowired
     GameExcelService gameExcelService;
@@ -38,29 +35,6 @@ public class VendorGameController {
     VendorService vendorService;
     @Autowired
     GameCategoryService gameCategoryService;
-
-    //for QA to test disable vendor game status
-    @PostMapping(path = "status")
-    public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json) {
-        HashMap<String, String> responseMap = new HashMap<>();
-
-        VendorGame vendorGame = vendorGameRepository.findByVendorGameCode(json.get("vendorGameCode").asText());
-        controllerServices.clearVendorGames();
-        if (vendorGame != null) {
-            vendorGame.setStatus(Integer.parseInt(json.get("status").toString()));
-            vendorGameRepository.save(vendorGame);
-            responseMap.put("status", "Success");
-            responseMap.put("id", json.get("vendorGameCode").asText());
-            return new ResponseEntity<>(responseMap, HttpStatus.OK);
-        }
-
-        responseMap.put("status", "fail, vendor game not found");
-        responseMap.put("id", json.get("vendorGameCode").asText());
-
-        return new ResponseEntity<>(responseMap, HttpStatus.BAD_REQUEST);
-
-
-    }
 
     @PostMapping(value = "upload", consumes = {"multipart/form-data"})
     public ResponseEntity<ImportResponse> uploadFile(@RequestParam(value = "file") MultipartFile file) {
@@ -83,9 +57,9 @@ public class VendorGameController {
             gameCategoryService.checkVendorSupportGameCategory(vendor, gameCategory);
 
             //5. get vendor supported language
-            HashMap<String, Language>  vendorLanguages = vendorService.findVendorSupportedLanguage(vendor.getId());
+            HashMap<String, Language> vendorLanguages = vendorService.findVendorSupportedLanguage(vendor.getId());
             //6. get vendor supported currencies
-            HashMap<String, Currency>  vendorCurrencies = vendorService.findVendorSupportedCurrency(vendor.getId());
+            HashMap<String, Currency> vendorCurrencies = vendorService.findVendorSupportedCurrency(vendor.getId());
 
             HashMap<String, Platform> platforms = gameExcelValidatorService.getSystemSupportedPlatform();
 
