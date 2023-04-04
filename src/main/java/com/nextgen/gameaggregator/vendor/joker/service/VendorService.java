@@ -9,7 +9,6 @@ import org.springframework.util.MultiValueMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
-import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -102,12 +101,7 @@ public class VendorService {
         }
     }
 
-    public static String generateGameUrl(String urlTemplate, String gameCode, String languageCode, String operatorToken, String playerGameSessionToken) {
-        String gameUrl = MessageFormat.format(urlTemplate, gameCode, languageCode, operatorToken, playerGameSessionToken);
-        return gameUrl;
-    }
-
-    public static String generateBetDetailUrl(String apiUrl, MultiValueMap<String, String> parameters) {
+    public static String generateGameUrl(String apiUrl, MultiValueMap<String, String> parameters) {
         // form query string
         String queryString = "";
         List<String> values = new ArrayList<>();
@@ -115,8 +109,8 @@ public class VendorService {
             values.add(key + "=" + parameters.getFirst(key));
         }
 
-        String betDetailUrl = apiUrl + "?" + String.join("&", values);
+        String loginUrl = apiUrl + "?" + String.join("&", values);
 
-        return betDetailUrl;
+        return loginUrl;
     }
 }
