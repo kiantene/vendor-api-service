@@ -71,7 +71,6 @@ public class GameUrlService implements GameUrl {
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info("Spinix GameUrlService: " + formData.getFirst("json").toString());
 
-        // TODO: need to add error handling
         GameUrlVendorResponseVo responseVo = WebClient.create(apiUrl)
                 .post()
                 .uri(EndPoints.GAME_URL)
