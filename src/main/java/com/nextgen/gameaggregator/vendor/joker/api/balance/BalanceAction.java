@@ -53,8 +53,8 @@ public class BalanceAction {
             //Validate request parameters from vendor (Non-database related)
             //this.doValidation(balanceDto);
 
-            //get gameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername());
+            //get gameSession by player name in lowercase (vendor return in uppercase)
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername().toLowerCase());
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
