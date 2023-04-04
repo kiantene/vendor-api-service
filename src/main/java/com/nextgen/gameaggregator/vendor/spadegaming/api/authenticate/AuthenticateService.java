@@ -85,7 +85,7 @@ public class AuthenticateService {
             acctInfoVo.setAcctId(gameSession.getVendorPlayerUsername());
             acctInfoVo.setBalance(balance);
             acctInfoVo.setUserName(gameSession.getVendorPlayerUsername());
-            acctInfoVo.setCurrency(gameSession.getCurrencyCode());
+            acctInfoVo.setCurrency(gameSession.getVendorCurrencyCode());
             acctInfoVo.setSiteId(gameSession.getAgentId());
 
             // Populate the AuthBalanceVo object with response details

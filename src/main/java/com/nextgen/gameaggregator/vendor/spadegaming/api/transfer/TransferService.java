@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
@@ -76,13 +75,11 @@ public class TransferService {
             transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setSerialNo(traceId);
             this.doValidation(dto);
-            GameSession gameSession = null;
 
-            if (dto.getType() == Actions.CANCEL_BET) {
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode());
-            }else{
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
-            }
+            // User acctId and gameCode to get gameSession if gameCode is not null
+            GameSession gameSession = dto.getGameCode() != null
+            ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
+            : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
 
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
@@ -112,15 +109,13 @@ public class TransferService {
                     winDataDto.setGameCode(dto.getGameCode());
                     winDataDto.setResultType(getWinType(dto));
 
-                    if (dto.getSpecialGame() == null) {
-                        SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, winDataDto, body);
-                        transferVo.setBalance(betResultEvent.getLastBalance());
-                    } else {
-                        // Free spin so bet amount is zero
-                        winDataDto.setBetAmount(BigDecimal.ZERO);
-                        SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body);
-                        transferVo.setBalance(betResultEvent.getLastBalance());
-                    }
+                    // Bet amount is zero when free spin
+                    if (dto.getSpecialGame() == null) winDataDto.setBetAmount(BigDecimal.ZERO);
+                    transferVo.setBalance(
+                        dto.getSpecialGame() == null
+                            ? walletService.processResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
+                            : walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
+                    );
 
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
