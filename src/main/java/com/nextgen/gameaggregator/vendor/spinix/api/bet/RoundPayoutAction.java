@@ -255,8 +255,9 @@ public class RoundPayoutAction {
             throw new InvalidVendorLineException();
         }
 
-        // Verify received game id is the same from game session
+        // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
