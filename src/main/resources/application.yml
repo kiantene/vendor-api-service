@@ -24,11 +24,11 @@ spring:
     active: dev
   main:
     allow-bean-definition-overriding: true
-#  servlet:
-#    multipart:
-#      max-file-size: 1000MB
-#      max-request-size: 1000MB
-#      resolve-lazily: true
+  servlet:
+    multipart:
+      max-file-size: 1000MB
+      max-request-size: 1000MB
+      resolve-lazily: true
 #  mvc:
 #    hiddenmethod:
 #      filter:

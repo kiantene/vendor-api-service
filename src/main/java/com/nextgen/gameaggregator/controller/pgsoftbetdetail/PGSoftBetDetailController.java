@@ -1,9 +1,14 @@
 package com.nextgen.gameaggregator.controller.pgsoftbetdetail;
 
+import com.nextgen.gameaggregator.entity.Agent;
+import com.nextgen.gameaggregator.entity.Vendor;
 import com.nextgen.gameaggregator.entity.VendorLine;
+import com.nextgen.gameaggregator.exception.InvalidVendorException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.exception.VendorApiException;
+import com.nextgen.gameaggregator.repository.AgentRepository;
+import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
@@ -31,11 +36,20 @@ public class PGSoftBetDetailController {
     @Autowired
     private VendorLineService vendorLineService;
 
+    @Autowired
+    private AgentRepository agentRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
     @PostMapping(path = "betDetail")
     public String getGameList() {
         try {
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(4, 2, 2, 1);
+            Agent agent = agentRepository.findAgentById(4);
+            Vendor vendor = vendorRepository.findVendorById(2);
+
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(agent, vendor, 2, 1);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             String parentBetId = "1615259183702659072";
@@ -53,6 +67,8 @@ public class PGSoftBetDetailController {
             throw new RuntimeException(vendorApiException);
 
         } catch (NoAvailableLineException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidVendorException e) {
             throw new RuntimeException(e);
         }
     }

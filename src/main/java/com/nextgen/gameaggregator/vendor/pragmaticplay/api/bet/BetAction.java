@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -41,6 +40,7 @@ public class BetAction {
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
+
         HttpRequestLog httpRequestLog = httpService.start(request);
         BetVo responseVo = new BetVo();
         String traceId = httpRequestLog.getTraceId();

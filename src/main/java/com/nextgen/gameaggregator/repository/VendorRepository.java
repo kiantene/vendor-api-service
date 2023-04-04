@@ -13,11 +13,24 @@ import java.util.List;
 public interface VendorRepository extends JpaRepository<Vendor, Integer> {
     Vendor findByCode(String code);
 
+    Vendor findVendorById(Integer id);
+
     @Query(value=" SELECT " +
-            " vendors.code, vendors.name  FROM vendors WHERE vendors.id IN " +
-            "(SELECT vendor_id FROM agent_vendor_lines WHERE agent_vendor_lines.status =:status AND agent_vendor_lines.agent_id =:agentId GROUP BY agent_vendor_lines.vendor_id) " +
-            "ORDER BY vendors.code", nativeQuery=true)
-    List<IGameVendor> findByAgentSupportedVendorAndStatus (@Param("agentId") int agentId, @Param("status") int status);
+            "v.code , GROUP_CONCAT(DISTINCT gc.code SEPARATOR ',') AS categoryCode, " +
+            "IFNULL(vlc.name , v.name) AS name " +
+            "FROM agent_vendor_lines avl " +
+            "INNER JOIN game_categories gc ON avl.game_category_id = gc.id " +
+            "INNER JOIN vendors v ON avl.vendor_id = v.id " +
+            "LEFT JOIN vendor_language_codes vlc ON vlc.vendor_id = avl.vendor_id " +
+            "AND vlc.language_id = :languageId "+
+            "WHERE avl.status =:status AND avl.agent_id =:agentId " +
+            "AND avl.currency_id = :currencyId " +
+            "GROUP BY avl.vendor_id ", nativeQuery=true)
+    List<IGameVendor> findByAgentSupportedVendorAndStatus (
+            @Param("agentId") int agentId,
+            @Param("currencyId") Integer currencyId,
+            @Param("languageId") Integer languageId,
+            @Param("status") int status);
 
 
 }

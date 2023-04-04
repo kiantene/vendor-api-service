@@ -54,7 +54,11 @@ public class GameListAction {
             String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
-            // 3. Validate vendor code and vendor supported wallet type
+            // 3. Validate the signature
+            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
+
+            // 4. Validate vendor code and vendor supported wallet type
             Vendor vendor = vendorService.verifyVendorByCodeAndWalletType
                     (dto.getVendorCode(), apiCredential.getAgent().getWalletType());
 
@@ -62,7 +66,7 @@ public class GameListAction {
             Integer vendorId = vendor.getId();
             Currency currency = apiCredential.getAgent().getCurrency();
 
-            // 4. validate agent supported vendor line
+            // 5. validate agent supported vendor line
 
             List<AgentVendorLine> agentVendorLines = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
 
@@ -103,13 +107,16 @@ public class GameListAction {
         } catch (RecordNotFoundException recordNotFoundException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
+        } catch (InvalidSignatureException e) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+
         }
-//        catch (Exception exception) {
-//            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-//            httpService.logError(httpRequestLog, exception);
-//            exception.printStackTrace();
-//
-//        }
+        catch (Exception exception) {
+            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+            exception.printStackTrace();
+
+        }
         finally {
             responseVo.setMessage(responseVo.getStatus().description);
 

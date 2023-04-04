@@ -4,15 +4,17 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.custom.IGameVendor;
-import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,9 @@ public class GameVendorAction {
     @Autowired
     private VendorRepository vendorRepository;
 
+    @Autowired
+    private VendorService vendorService;
+
     @PostMapping(path = "vendors")
     public OperatorResponseVo< List<IGameVendor>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -54,29 +59,50 @@ public class GameVendorAction {
 
             // 2. Check if api key is valid
             String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
-            //TODO (by Alex), check agent status
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
-            System.err.println(apiCredential.getAgent().getId());
+            // 3. Validate the signature
+            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            List<IGameVendor> vendorList = vendorRepository.findByAgentSupportedVendorAndStatus(apiCredential.getAgent().getId(),Status.ACTIVE.code);
+            List<IGameVendor> vendorList = vendorService.findAgentSupportedVendorList(dto, apiCredential.getAgent());
 
             System.err.println(vendorList);
-          //  GameVendorData GameVendorData =
 
             responseVo.setData(vendorList);
 
 
         } catch (IllegalArgumentException illegalArgumentException) {
+            log.error(illegalArgumentException.toString());
+            responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
             httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
+
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
+
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
+
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+
+        } catch (InvalidLanguageException invalidLanguageException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
+
+        }
+        catch (Exception exception) {
+            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+            exception.printStackTrace();
+
+        }
+        finally {
+            responseVo.setMessage(responseVo.getStatus().description);
+
         }
 
         httpService.end(httpRequestLog, responseVo);

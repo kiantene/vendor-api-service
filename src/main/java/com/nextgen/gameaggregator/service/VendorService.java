@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.custom.IGameVendor;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.DisabledVendorException;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.InvalidVendorException;
+import com.nextgen.gameaggregator.operator.game.vendor.GameVendorDto;
+import com.nextgen.gameaggregator.repository.LanguageRepository;
 import com.nextgen.gameaggregator.repository.VendorCurrencyRepository;
 import com.nextgen.gameaggregator.repository.VendorLanguageCodeRepository;
 import com.nextgen.gameaggregator.repository.VendorRepository;
@@ -27,6 +30,9 @@ public class VendorService {
 
     @Autowired
     private VendorCurrencyRepository vendorCurrencyRepository;
+
+    @Autowired
+    private LanguageRepository languageRepository;
 
 
     public Vendor verifyVendorByCodeAndWalletType(String code, Integer walletType) throws InvalidVendorException, DisabledVendorException {
@@ -76,6 +82,15 @@ public class VendorService {
             vendorCurrencies.put(vendorCurrency.getCurrency().getId().toString(), vendorCurrency.getCurrency());
         }
         return vendorCurrencies;
+    }
+
+    public List<IGameVendor> findAgentSupportedVendorList(GameVendorDto dto, Agent agent) throws InvalidLanguageException {
+        Language language = languageRepository.findByCode(dto.getDisplayLanguage());
+        Optional.ofNullable(language).orElseThrow(InvalidLanguageException::new);
+
+
+        return vendorRepository.findByAgentSupportedVendorAndStatus(
+                agent.getId(),agent.getCurrency().getId(), language.getId(), Status.ACTIVE.code);
     }
 
 }
