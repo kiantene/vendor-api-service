@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping(path = EndPoints.GAME_LOBBY)
 @Slf4j
 public class RoundPayout2Action {
 
@@ -184,8 +184,8 @@ public class RoundPayout2Action {
                  NullPointerException |
                  IllegalArgumentException e
         ) {
-            roundPayoutErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
-            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);

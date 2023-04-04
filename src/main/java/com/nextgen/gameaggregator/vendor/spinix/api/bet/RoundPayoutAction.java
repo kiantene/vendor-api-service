@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(path = EndPoints.GAME_LOBBY)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class RoundPayoutAction {
 
