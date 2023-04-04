@@ -27,7 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping(path = EndPoints.GAME_LOBBY)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class RoundPayoutAction {
 
@@ -71,6 +71,7 @@ public class RoundPayoutAction {
             GameSession gameSession;
             if(dto.getUserToken() == null) {
                 // Get game session
+                // TODO: vendor has no intention to send user_token with value for fish game's win transaction record. Use user token from last game session first
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
             } else {
                 // Verify session token
