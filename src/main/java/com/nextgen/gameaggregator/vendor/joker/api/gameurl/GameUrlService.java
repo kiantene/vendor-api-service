@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import java.text.MessageFormat;
 import java.util.Map;
 
 @Service
@@ -32,21 +31,13 @@ public class GameUrlService implements GameUrl {
             throws InvalidVendorLineException {
         GameUrlVo responseVo = new GameUrlVo();
 
-        // 4. Get Vendor URL Scheme by vendorPlayer's vendor_line_id
+        //Get Vendor game URL
         String urlScheme = credentials.get(Credentials.GAME_URL);
-        // 5. Lookup Game Code
-        String gameCode = formData.get("gameCode").get(0);
-        String language = formData.get("language").get(0);
-        // 6. Generate game session token to embed into urlScheme and save into game session table
-        String token = formData.get("token").get(0);
-        // 7. Retrieve Operator Token as it is required to form the Game URL
-        String operatorToken = credentials.get(Credentials.APP_ID);
-        // 8. Construct the Game URL
-        //String gameUrl = VendorService.generateGameUrl(urlScheme, gameCode, language, operatorToken, token);
-        String gameUrl = VendorService.generateBetDetailUrl(urlScheme, formData);
+        //Construct the Game URL
+        String gameUrl = VendorService.generateGameUrl(urlScheme, formData);
 
-        // 9. Save this player's game session
-        // Set the game URL and return to Operator
+        //Save this player's game session
+        //Set the game URL and return to Operator
         responseVo.setGameUrl(gameUrl);
 
         return responseVo;
