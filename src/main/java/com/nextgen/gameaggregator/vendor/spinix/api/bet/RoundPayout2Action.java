@@ -184,8 +184,8 @@ public class RoundPayout2Action {
                  NullPointerException |
                  IllegalArgumentException e
         ) {
-            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
-            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            roundPayoutErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
@@ -205,7 +205,7 @@ public class RoundPayout2Action {
     }
 
     private void doValidation(RoundPayoutDto dto, String token) throws InvalidRequestException {
-        // Optional.ofNullable(token).orElseThrow(InvalidRequestException::new);
+        Optional.ofNullable(token).orElseThrow(InvalidRequestException::new);
 
         // General validation
         ValidationUtils.validateRequest(dto);
