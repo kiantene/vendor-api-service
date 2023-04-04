@@ -35,6 +35,6 @@ public class GameUrlDto {
     private String platform;
 
     @NotBlank
-    @Size(min = 3, max = 3)
+    @Size(min = 3, max = 10)
     private String currency;
 }
