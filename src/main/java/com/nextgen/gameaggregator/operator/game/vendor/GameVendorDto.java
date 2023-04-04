@@ -16,4 +16,7 @@ public class GameVendorDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
     private String traceId;
 
+    @NotBlank
+    @Size(min = 2, max = 20)
+    private String displayLanguage = "en";
 }
