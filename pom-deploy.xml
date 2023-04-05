@@ -23,7 +23,7 @@
 		<hibernate-validator.version>6.0.13.Final</hibernate-validator.version>
 		<glassfish.version>3.0.0</glassfish.version>
 		<logstash.version>7.2</logstash.version>
-		<nextgen-core.version>1.8.x</nextgen-core.version>
+		<nextgen-core.version>2.0.37</nextgen-core.version>
 		<java-client.version>3.4.4</java-client.version>
 		<projectlombok.version>1.18.24</projectlombok.version>
 		<spring-kafka.version>2.9.2</spring-kafka.version>
