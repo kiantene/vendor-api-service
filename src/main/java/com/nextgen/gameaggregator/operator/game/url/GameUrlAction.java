@@ -99,10 +99,8 @@ public class GameUrlAction {
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             responseVo.setData(gameUrlData);
 
-        } catch (IllegalArgumentException illegalArgumentException) {
-            // thrown when any field encountered type mismatch during conversion from json to dto
-            log.error(illegalArgumentException.toString());
-            responseVo.setResponseCode(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+        } catch (JsonProcessingException jsonProcessingException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
@@ -123,6 +121,13 @@ public class GameUrlAction {
         } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
 
+        } catch (IllegalArgumentException illegalArgumentException) {
+            // thrown when any field encountered type mismatch during conversion from json to dto
+            log.error(illegalArgumentException.toString());
+            responseVo.setResponseCode(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
+
+
+
         } catch (DuplicateRequestException duplicateRequestException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
 
@@ -131,9 +136,6 @@ public class GameUrlAction {
 
         } catch (InvalidVendorLineException invalidVendorLineException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
-
-        } catch (JsonProcessingException jsonProcessingException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (ClassNotFoundException
                  | InvocationTargetException
@@ -162,6 +164,11 @@ public class GameUrlAction {
 //            httpService.logError(httpRequestLog, exception);
 //            exception.printStackTrace();
 //        }
+
+        finally {
+            responseVo.setMessage(responseVo.getStatus().description);
+
+        }
         httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
