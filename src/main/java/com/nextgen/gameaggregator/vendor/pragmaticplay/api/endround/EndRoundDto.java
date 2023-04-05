@@ -62,7 +62,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
 
     @Override
     public String getVendorBetId() {
-        return null;
+        return roundId;
     }
 
     @Override

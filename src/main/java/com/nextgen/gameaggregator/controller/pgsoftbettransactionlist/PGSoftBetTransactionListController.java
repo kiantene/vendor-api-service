@@ -1,9 +1,13 @@
 package com.nextgen.gameaggregator.controller.pgsoftbettransactionlist;
 
-import com.nextgen.gameaggregator.controller.pgsoftgamelist.GameListResponseVo;
+import com.nextgen.gameaggregator.entity.Agent;
+import com.nextgen.gameaggregator.entity.Vendor;
 import com.nextgen.gameaggregator.entity.VendorLine;
+import com.nextgen.gameaggregator.exception.InvalidVendorException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
+import com.nextgen.gameaggregator.repository.AgentRepository;
+import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
@@ -30,11 +34,20 @@ public class PGSoftBetTransactionListController {
     @Autowired
     private VendorLineService vendorLineService;
 
+    @Autowired
+    private AgentRepository agentRepository;
+
+    @Autowired
+    private VendorRepository vendorRepository;
+
     @PostMapping(path = "transactionList")
     public BetHistoryListResponseVo getTransactionList() {
         try {
+            Agent agent = agentRepository.findAgentById(4);
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(4, 2, 2);
+            Vendor vendor = vendorRepository.findVendorById(2);
+
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(agent, vendor, 2, 1);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
@@ -45,6 +58,8 @@ public class PGSoftBetTransactionListController {
         } catch (InvalidVendorLineException e) {
             throw new RuntimeException(e);
         } catch (NoAvailableLineException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidVendorException e) {
             throw new RuntimeException(e);
         }
 

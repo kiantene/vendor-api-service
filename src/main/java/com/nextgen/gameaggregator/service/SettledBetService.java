@@ -96,7 +96,7 @@ public class SettledBetService {
      * @param entity RawSettledBet entity object containing information of a single settled bet
      * @return RawSettledBet entity object after a successful save
      */
-    @CachePut(value = "SettledBet", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @CachePut(value = "SettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public RawSettledBet createSettledBet(RawSettledBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
         entity.setStatus(2); // TODO: refactor, map to constant/enum value

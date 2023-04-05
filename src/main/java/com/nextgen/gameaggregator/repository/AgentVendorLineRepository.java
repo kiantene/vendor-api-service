@@ -4,7 +4,13 @@ import com.nextgen.gameaggregator.entity.AgentVendorLine;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface AgentVendorLineRepository extends JpaRepository<AgentVendorLine, Integer> {
-    AgentVendorLine findByAgentIdAndVendorIdAndCurrencyId(Integer agentId, Integer vendorId, Integer currencyId);
+    AgentVendorLine findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id
+            (Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId);
+
+    List<AgentVendorLine> findByAgentIdAndVendorIdAndCurrencyIdAndStatus
+            (Integer agentId, Integer vendorId, Integer currencyId, Integer status);
 }

@@ -77,7 +77,7 @@ public class RefundAction {
             BetRefundEvent betRefundEvent = walletService.processRefund(traceId, refundDto.getMtcode(), gameSession, body);
 
             commonVo.setBalance(betRefundEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             responseVo.setData(commonVo);
 

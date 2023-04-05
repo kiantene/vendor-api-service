@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ public class WalletBetAction {
 
     @Value("${testing.stub:false}")
     private Boolean useStub;
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
 
@@ -59,35 +63,39 @@ public class WalletBetAction {
             // throw exception if response is null
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            Gson gson = new Gson();
-            log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
-            new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-        }
+            ValidationUtils.validateResponse(responseVo);
 
-        switch (responseVo.getStatus()) {
-            case SC_OK -> {
-                BigDecimal balance = responseVo.getData().getBalance();
-
-                //TODO to be discuss whether should system pre handle negative if
-                boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-                if (isNegativeBalance){
-                    Gson gson = new Gson();
-                    log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
+            switch (responseVo.getStatus()) {
+                case SC_OK -> {
+                    //To validate the username and currency is match with request
+                    if ((!responseVo.getData().getUsername().equals(dto.getUsername())) ||
+                            (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
+                        throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
+                    } else {
+                        ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
+                    }
+                    BigDecimal balance = responseVo.getData().getBalance();
+                    //TODO to be discuss whether should system pre handle negative if
+                    boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+                    if (isNegativeBalance) {
+                        ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
+                        throw new InsufficientBalanceException(responseVo.toString());
+                    }
+                }
+                case SC_INSUFFICIENT_FUNDS -> {
+                    ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
                     throw new InsufficientBalanceException(responseVo.toString());
                 }
+                default -> {
+                    throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
+                }
             }
-            case SC_INSUFFICIENT_FUNDS -> {
-                Gson gson = new Gson();
-                log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
-                throw new InsufficientBalanceException(responseVo.toString());
-            }
-            default -> {
-                Gson gson = new Gson();
-                log.error("Operator " +Endpoints.WALLET_BET + " FAIL ! \n EndPoint:"+callbackUrl+ " \n ApiParam:"+gson.toJson(dto) +" \n Response:"+ responseString  );
-                throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
-            }
+
+        } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
+            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, responseString, profilesActive);
+            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
+
 
         return responseVo;
     }

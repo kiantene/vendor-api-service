@@ -60,7 +60,7 @@ public class AuthAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             authVo.setUsername(gameSession.getVendorPlayerUsername());
-            authVo.setCurrency(gameSession.getCurrencyCode());
+            authVo.setCurrency(gameSession.getVendorCurrencyCode());
             authVo.setBalance(balance);
             authVo.setToken(gameSession.getToken());
 

@@ -25,11 +25,15 @@ public class GameListDto {
     @NotNull
     @Positive
     @Range(min= 1, max= Integer.MAX_VALUE)
-    private Integer pageNo;
+    private Integer pageNo =1;
+
+    @NotBlank
+    @Size(min = 2, max = 20)
+    private String displayLanguage = "en";
 
     @NotNull
     @Positive
     @Range(min= 1, max= 500)
-    private Integer pageSize;
+    private Integer pageSize = 500;
 
 }

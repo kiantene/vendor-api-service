@@ -43,7 +43,7 @@ public class GameUrlService implements GameUrl {
         arrayMap.put("game_id", gameCode);
         arrayMap.put("user_id", gameSession.getVendorPlayerUsername());
         arrayMap.put("user_token", gameSession.getToken());
-        arrayMap.put("currency", gameSession.getCurrencyCode());
+        arrayMap.put("currency", gameSession.getVendorCurrencyCode());
         arrayMap.put("wallet_type", wallet_type);
         HashMap<String, String> settings = new HashMap<>();
         settings.put("lang", gameSession.getLanguage());
@@ -71,7 +71,6 @@ public class GameUrlService implements GameUrl {
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info("Spinix GameUrlService: " + formData.getFirst("json").toString());
 
-        // TODO: need to add error handling
         GameUrlVendorResponseVo responseVo = WebClient.create(apiUrl)
                 .post()
                 .uri(EndPoints.GAME_URL)

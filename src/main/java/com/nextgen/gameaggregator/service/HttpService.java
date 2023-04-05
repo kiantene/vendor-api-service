@@ -40,7 +40,6 @@ public class HttpService {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
             String requestBody = this.getRawRequestBody(request);
-
             httpRequestLog.setTraceId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());

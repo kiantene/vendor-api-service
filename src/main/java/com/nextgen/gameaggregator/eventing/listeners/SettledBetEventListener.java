@@ -32,13 +32,16 @@ public class SettledBetEventListener implements EventListener<SettledBetEvent> {
     public void onEvent(SettledBetEvent event) {
 
         RawSettledBet rawSettledBet = event.getRawSettledBet();
-        cachingService.deleteUnsettledBetCaching(rawSettledBet.getRoundId(), rawSettledBet.getVendorGameId(),
+        cachingService.deleteUnsettledBetCaching(rawSettledBet.getVendorBetId(), rawSettledBet.getRoundId(), rawSettledBet.getVendorLineId(),
                 rawSettledBet.getVendorPlayerId());
 
-        cachingService.deleteResultBetCaching(rawSettledBet.getRoundId(), rawSettledBet.getVendorGameId(),
+        cachingService.deleteResultBetCaching(rawSettledBet.getVendorBetId(), rawSettledBet.getRoundId(), rawSettledBet.getVendorLineId(),
                 rawSettledBet.getVendorPlayerId());
 
-        String Id = rawSettledBet.getRoundId()+'_'+rawSettledBet.getVendorGameId()+'_'+rawSettledBet.getVendorPlayerId();
+        cachingService.deleteUnsettledBetByGameIdCaching(rawSettledBet.getVendorBetId(), rawSettledBet.getRoundId(), rawSettledBet.getVendorGameId(),
+                rawSettledBet.getVendorPlayerId());
+
+        String Id = rawSettledBet.getVendorBetId()+'_'+rawSettledBet.getRoundId()+'_'+rawSettledBet.getVendorLineId()+'_'+rawSettledBet.getVendorPlayerId();
 
         try {
             rawUnsettledBetRepository.deleteById(Id);

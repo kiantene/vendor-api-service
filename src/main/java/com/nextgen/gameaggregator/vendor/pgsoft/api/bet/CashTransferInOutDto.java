@@ -4,15 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pgsoft.dto.CommonDto;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import org.hibernate.validator.constraints.Range;
-import org.intellij.lang.annotations.RegExp;
 
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
@@ -158,7 +153,7 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
 
     @Override
     public WinType getResultType() {
-        return (this.getWinLoss().compareTo(BigDecimal.ZERO) >= 0)?WinType.WIN:WinType.LOSE;
+        return (this.winAmount.compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
     }
 
     @Override

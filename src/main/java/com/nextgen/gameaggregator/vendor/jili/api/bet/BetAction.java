@@ -1,14 +1,9 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -21,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -65,24 +59,13 @@ public class BetAction {
             this.doVerification(betDto, gameSession);
 
             // 3. Process bet data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
-
             // 4. Process win data
-            WinDto winDto = new ObjectMapper().convertValue(betDto, WinDto.class);
-            winDto.setExternalTransactionId(betDto.getReqId());
-            winDto.setAmount(betDto.getWinloseAmount());
-            winDto.setWinType(getWinType(betDto));
-            winDto.setEffectiveTurnover(betDto.getBetAmount());
-            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
-            betVo.setCurrency(gameSession.getCurrencyCode());
-            betVo.setBalance(betResultEvent.getLastBalance());
+            betVo.setCurrency(gameSession.getVendorCurrencyCode());
+            betVo.setBalance(settledBetEvent.getLastBalance());
             betVo.setToken(gameSession.getToken());
-
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
@@ -100,8 +83,6 @@ public class BetAction {
                   DisabledGameException |
                   DisabledAgentPlayerException |
                   BetNotFoundException |
-                  BetResultNotFoundException |
-                  DuplicateExternalTransactionIdException |
                   InvalidOperatorResponseException |
                   InvalidAgentApiCredentialException e) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
@@ -145,9 +126,5 @@ public class BetAction {
         // 4. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-    }
-
-    private WinType getWinType(BetDto betDto) {
-        return (betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }

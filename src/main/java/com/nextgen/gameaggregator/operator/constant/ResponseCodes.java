@@ -22,11 +22,13 @@ public class ResponseCodes {
         SC_TRANSACTION_DUPLICATED(14, "Duplicate transaction Id was sent."),
         SC_TRANSACTION_NOT_EXISTS(15, "Corresponding bet transaction cannot be found."),
         SC_VENDOR_ERROR(16, "Error encountered on game vendor."),
-        SC_INVALID_CURRENCY (17, "Currency is not supported"),
+        //SC_INVALID_CURRENCY (17, "Currency is not supported"),
         SC_UNDER_MAINTENANCE (18, "Game is under maintenance."),
         SC_MISMATCHED_DATA_TYPE (19, "Invalid data type."),
         SC_INVALID_RESPONSE(20, "Invalid response"),
-        SC_VENDOR_LANGUAGE_NOT_SUPPORTED(21, "Vendor language is not supported.")
+        SC_VENDOR_LANGUAGE_NOT_SUPPORTED(21, "Vendor language is not supported."),
+        SC_INVALID_VENDOR (22, "Vendor is not supported"),
+        SC_INVALID_LANGUAGE (23, "Language is not supported"),
         ;
 
         public final Integer code;

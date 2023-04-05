@@ -77,7 +77,8 @@ public class EndRoundAction {
             // 2. Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
-            RawUnsettledBet rawUnsettledBet  = betHistoryService.getRawUnsettledBetByRoundId(endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
+            RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(endRoundDto.getVendorBetId(),
+                    endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(rawUnsettledBet.getGameSessionToken());
@@ -94,7 +95,7 @@ public class EndRoundAction {
             // Construct VO data
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(settledBetEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
@@ -156,6 +157,9 @@ public class EndRoundAction {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         formatter.parse(dto.getCreateTime());
         formatter.parse(endRoundDataDtoList.get(0).getEventtime());
+
+        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
+        dto.setExternalTransactionId(dto.getVendorBetId());
     }
 
     private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
@@ -188,11 +192,10 @@ public class EndRoundAction {
         Instant instant = Instant.parse(endRoundDataDtoList.get(0).getEventtime());
         Long resultTime = instant.toEpochMilli();
 
-        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
-        dto.setExternalTransactionId(dto.getVendorBetId());
-        dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
         dto.setResultTime(resultTime);
         dto.setVendorSettleTime(dto.getResultTime());
+
+        dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
         dto.setEffectiveTurnover(rawUnsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(rawUnsettledBet.getBetAmount()));
         dto.setVendorWinLoss(dto.getWinLoss());

@@ -4,11 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -18,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -72,18 +68,21 @@ public class RoundPayoutAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto, sign);
 
-            // Get game session
-            // GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
-
-            // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
+            GameSession gameSession;
+            if(dto.getUserToken() == null) {
+                // Get game session
+                // TODO: vendor has no intention to send user_token with value for fish game's win transaction record. Use user token from last game session first
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUserId(), dto.getGameId());
+            } else {
+                // Verify session token
+                gameSession = gameSessionService.verifyToken(dto.getUserToken());
+            }
 
             // Verify remaining parameters (Verify against database values)
             List<RoundPayoutTransactionDto> list = dto.getTransactionList();
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-
-
+            
             this.doVerification(dto, list, gameSession, sign, bodyObj);
 
             // Search for bet, win and/or cancel bet
@@ -96,37 +95,41 @@ public class RoundPayoutAction {
             // Set necessary values to process bet record
             if(betRecord != null && betRecord.getType().equals("bet")) {
                 BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
-                betDto.setExternalTransactionId(betRecord.getId());
+                betDto.setReqId(betRecord.getId());
+                betDto.setRoundId(dto.getRoundId());
+                betDto.setId(betRecord.getId());
                 betDto.setAmount(betRecord.getAmount().abs());
+                betDto.setValidTurnover(dto.getValidTurnover());
+                betDto.setGameId(dto.getGameId());
+                betDto.setWinType(this.getWinType(betRecord));
                 betDto.setTimestamp(betRecord.getTimestamp());
-                BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+
+                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
 
                 // Set Balance
-                roundPayoutDataWalletVo.setBalance(betEvent.getLastBalance());
+                roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
+
+                // Set new trace id for possible win transaction record
+                UUID uuid = UUID.randomUUID();
+                traceId = uuid.toString();
             }
 
-            // Check if bet record exists before process win record
-            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-
             // Set necessary values to process win record
-            if (winRecord != null && betHistory.getRoundId() != null) {
+            if (winRecord != null && winRecord.getType().equals("win")) {
                 WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
-                winDto.setExternalTransactionId(winRecord.getId());
+                winDto.setReqId(winRecord.getId());
+                winDto.setRoundId(dto.getRoundId());
+                winDto.setId(winRecord.getId());
                 winDto.setAmount(winRecord.getAmount());
+                winDto.setValidTurnover(BigDecimal.ZERO);
+                winDto.setGameId(dto.getGameId());
                 winDto.setWinType(this.getWinType(winRecord));
                 winDto.setTimestamp(winRecord.getTimestamp());
-                winDto.setEffectiveTurnover(dto.getValidTurnover().abs());
 
-                BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDto, body);
-
-                // Emit event for additional asynchronous processing
-                if(winRecord.getIsEnd() == true) {
-                    Thread.sleep(1000); // Sleep for 1 second
-                    EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
-                }
+                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDto, body);
 
                 // Set Balance
-                roundPayoutDataWalletVo.setBalance(betResultEvent.getLastBalance());
+                roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
             }
 
             // Set necessary values to process cancel bet record
@@ -139,16 +142,14 @@ public class RoundPayoutAction {
             }
 
             // Set Currency + RoundPayoutDataWalletVo + Status + req_id
-            roundPayoutDataWalletVo.setCurrency(gameSession.getCurrencyCode());
+            roundPayoutDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
             roundPayoutVo.setReqId(dto.getReqId());
 
         } catch(BetNotFoundException |
                 DuplicateExternalTransactionIdException |
-                BetResultNotFoundException |
-                RecordNotFoundException |
-                InterruptedException e
+                RecordNotFoundException  e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
@@ -254,8 +255,9 @@ public class RoundPayoutAction {
             throw new InvalidVendorLineException();
         }
 
-        // Verify received game id is the same from game session
+        // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -269,11 +271,7 @@ public class RoundPayoutAction {
 
     private WinType getWinType(RoundPayoutTransactionDto winRecord) {
         WinType winType;
-        if (winRecord.getInfo().equals("feature_freespin")) {
-            winType = WinType.WIN;
-        } else {
-            winType = (winRecord.getAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
-        }
+        winType = (winRecord.getAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
 
         return winType;
     }

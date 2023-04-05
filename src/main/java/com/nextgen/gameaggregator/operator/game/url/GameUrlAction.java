@@ -6,10 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +32,9 @@ public class GameUrlAction {
     private VendorLineService vendorLineService;
     @Autowired
     private GameSessionService gameSessionService;
+
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
@@ -64,13 +64,14 @@ public class GameUrlAction {
             gameUrlService.checkCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
 
             // 5. Check if game is supported
-            VendorGame vendorGame = gameUrlService.checkGameSupported(dto.getGameCode());
+            VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());
 
             // 6 Check if game details is supported (platform, language, and status)
             VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(vendorGame.getId(), dto.getPlatform(), dto.getLanguage());
 
             Integer agentId = apiCredential.getAgent().getId();
-            Integer vendorId = vendorGame.getVendorId();
+            Integer vendorId = vendorGame.getVendor().getId();
+            Integer gameCategoryId = vendorGame.getGameCategory().getId();
             Currency currency = apiCredential.getAgent().getCurrency();
 
             // 7. check if the language is supported by vendor
@@ -79,23 +80,21 @@ public class GameUrlAction {
             // 8. Check if trace Id has been sent before
             gameUrlService.checkDuplicateRequest(agentId, dto.getTraceId());
 
-            // 9. Retrieve vendor line credentials
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
+            // 9. Retrieve vendor line credentials by category
+            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(apiCredential.getAgent(), vendorGame.getVendor(), currency.getId(), gameCategoryId);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
+
+            // 10. Check if Vendor Line currency is supported
+            VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
 
-            // 10. Check if vendor player account exists
+            // 11. Check if vendor player account exists
             GameSession gameSession = gameUrlService.checkPlayer(agentId, dto.getUsername(), vendorLine, currency.getId());
-
-            // 11. Check if Vendor Line currency is supported
-            VendorLineCurrency vendorLineCurrency = vendorLineService.checkVendorLineSupportedCurrency(vendorLine.getId(), currency.getId());
 
             gameSession = gameSessionService.createSession(gameSession, dto, vendorGame, vendorGameCode, currency, vendorLineCurrency, vendorLanguageCode, vendorPlatformCode);
             gameSessionService.createSessionByVendorPlayer(gameSession);
-            log.info(gameSession.toString());
-
-
+            
             // 12. Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             responseVo.setData(gameUrlData);
@@ -129,27 +128,33 @@ public class GameUrlAction {
 
         } catch (NoAvailableLineException noAvailableLineException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
-        } catch (InvalidVendorLineException e) {
-            throw new RuntimeException(e);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException classNotFoundException) {
-            httpService.logError(httpRequestLog, classNotFoundException);
+
+        } catch (InvalidVendorLineException invalidVendorLineException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
+        } catch (JsonProcessingException jsonProcessingException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
+
+        } catch (ClassNotFoundException
+                 | InvocationTargetException
+                 | NoSuchMethodException
+                 | IllegalAccessException
+                 | InstantiationException gameClassError) {
+            //all the exception related to vendor game url service
+            httpService.logError(httpRequestLog, gameClassError);
             //TODO (by Alex), the correct code to response to operator
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNDER_MAINTENANCE);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (InstantiationException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+
         } catch (InvalidVendorResponseException invalidVendorResponseException) {
             httpService.logError(httpRequestLog, invalidVendorResponseException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
+
         } catch (InvalidFormatException invalidFormatException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+
+        } catch (InvalidVendorException invalidVendorException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
         }
 
 //        catch (Exception exception) {

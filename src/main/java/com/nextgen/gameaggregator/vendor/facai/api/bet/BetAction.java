@@ -3,11 +3,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -24,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
@@ -49,7 +44,7 @@ public class BetAction {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = EndPoints.SLOT_BET)
+    @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
@@ -73,60 +68,47 @@ public class BetAction {
             //Decrypt raw respond with key from vendor line credential
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
 
-            //map decrypted data(string json) into balanceDto
-            VendorBetDto vendorBetDto = HttpService.convertJsonToDto(jsonParam, VendorBetDto.class);
+            //map decrypted data(string json) into betDto
+            BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
-            this.doDecryptValidation(vendorBetDto);
+            this.doDecryptValidation(betDto);
 
             //get gameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(vendorBetDto.getMemberAccount(), Integer.toString(vendorBetDto.getGameID()));
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, vendorBetDto, gameSession, jsonParam);
+            this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
-            //check bet type
-            WinType winType = this.getWinType(vendorBetDto);
-
-            //Construct BetDto
-            BetDto betDto = this.setBetDto(vendorBetDto, winType);
-            //Send bet request to Operator
-            //check if player has enough balance
-            //used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
-
-            //Construct WinDataDto
-            WinDataDto winDataDto = this.setWinDataDto(vendorBetDto, winType);
-            //Send settle request to Operator
-            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, winDataDto, body);
-
-            //Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
+            //Process full bet data
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
 
             //set VO data
             //convert bigDecimal balance into double
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(betResultEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
+            commonVo.setMainPoints(settledBetEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidDecryptionException invalidDecryptionException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+        } catch (InvalidEncryptionException invalidEncryptionException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
+        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (CredentialNotFoundException credentialNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledVendorLineException disabledVendorLineException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (BetResultNotFoundException betResultNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
@@ -163,7 +145,7 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doDecryptValidation(VendorBetDto dto) throws InvalidRequestException, InvalidPlayerException, InvalidDateException, CurrencyNotSupportedException {
+    private void doDecryptValidation(BetDto dto) throws InvalidRequestException, InvalidPlayerException, InvalidDateException, CurrencyNotSupportedException {
         // General validation
         ValidationUtils.validateRequest(dto);
         //date format validation
@@ -172,20 +154,15 @@ public class BetAction {
 
     }
 
-    private void doVerification(CommonDto commonDto, VendorBetDto vendorBetDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(CommonDto commonDto, BetDto betDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidEncryptionException {
 
         //Verify received currency is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), vendorBetDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
-        String md5Param = "";
-        try {
-            md5Param = vendorService.md5(jsonParam);
-        } catch (Exception exception) { // any other exception encountered
-            throw new InvalidRequestException();
-        }
+        String md5Param = vendorService.md5(jsonParam);
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
@@ -202,57 +179,5 @@ public class BetAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 
-    private WinType getWinType(VendorBetDto vendorBetDto) {
-        WinType winType ;
 
-        if(vendorBetDto.getBet().compareTo(BigDecimal.ZERO) > 0 || vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) {
-            winType = (vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
-        } else if (vendorBetDto.getJpPrize().compareTo(BigDecimal.ZERO) > 0) {
-            winType = WinType.JACKPOT;
-        } else{
-            winType = (vendorBetDto.getWin().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
-        }
-
-        return winType;
-    }
-
-    private BetDto setBetDto(VendorBetDto vendorBetDto, WinType winType){
-        BetDto betDto = new BetDto();
-
-        betDto.setExternalTransactionId(Long.toString(vendorBetDto.getBankID()));
-        betDto.setRoundId(vendorBetDto.getRecordID());
-        betDto.setGameCode(Integer.toString(vendorBetDto.getGameID()));
-        betDto.setEventTime(vendorBetDto.getCreateDate());
-
-        //set bet amount according bet type
-        if(winType == WinType.JACKPOT) {
-            betDto.setAmount(BigDecimal.valueOf(0));
-        }else{
-            betDto.setAmount(vendorBetDto.getBet());
-        }
-
-        return betDto;
-    }
-
-    private WinDataDto setWinDataDto(VendorBetDto vendorBetDto, WinType winType){
-
-        WinDataDto winDataDto = new WinDataDto();
-        winDataDto.setExternalTransactionId(Long.toString(vendorBetDto.getBankID()));
-        winDataDto.setRoundid(vendorBetDto.getRecordID());
-        winDataDto.setGamecode(Integer.toString(vendorBetDto.getGameID()));
-        winDataDto.setEventTime(vendorBetDto.getGameDate());
-        winDataDto.setWinType(winType);
-
-        //set win amount according bet type
-        if(winType == WinType.JACKPOT) {
-            winDataDto.setAmount(vendorBetDto.getJpPrize());
-            winDataDto.setEffectiveTurnover(BigDecimal.valueOf(0));
-        }else{
-            winDataDto.setAmount(vendorBetDto.getWin());
-            winDataDto.setEffectiveTurnover(vendorBetDto.getBet());
-        }
-
-        return winDataDto;
-
-    }
 }

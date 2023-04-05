@@ -48,7 +48,7 @@ public class GameUrlService {
 
         String gameCode = vendorGame.getVendorGameCode();
         String token = gameSession.getToken();
-        Integer vendorId = vendorGame.getVendorId();
+        Integer vendorId = vendorGame.getVendor().getId();
         String className = "com.nextgen.gameaggregator.vendor."+vendorLine.getVendor().getClassName()+".api.gameurl.GameUrlService";
 
         GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
@@ -80,11 +80,11 @@ public class GameUrlService {
         Platform platformEntity = platformRepository.findByCode(platformCode);
         Optional.ofNullable(platformEntity).orElseThrow(GameNotSupportedException::new);
 
-        Languages languagesEntity = languageRepository.findByCode(languageCode);
-        Optional.ofNullable(languagesEntity).orElseThrow(GameNotSupportedException::new);
+        Language languageEntity = languageRepository.findByCode(languageCode);
+        Optional.ofNullable(languageEntity).orElseThrow(GameNotSupportedException::new);
 
         VendorGameCode vendorGameCodeEntity = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(
-                gameId, platformEntity.getId(), languagesEntity.getId());
+                gameId, platformEntity.getId(), languageEntity.getId());
         Optional.ofNullable(vendorGameCodeEntity).orElseThrow(GameNotSupportedException::new);
 
         if (vendorGameCodeEntity.getStatus() == 0) {
@@ -174,14 +174,13 @@ public class GameUrlService {
     }
 
     public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId, Integer currencyId) {
-        String vendorPlayerUsername = NameUtils.generateUsername("O", agentPlayerId, vendorLineId.longValue());
+        String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId);
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
         entity.setVendorLineId(vendorLineId);
         entity.setVendorId(vendorId);
         entity.setUsername(vendorPlayerUsername);
-        entity.setStatus(1);
-        //TODO SET CURRENCY ID
+        entity.setStatus(1); // TODO: to use constant/enum
         entity.setCurrencyId(currencyId);
         entity.prepareSave(0, USERTYPE);
         log.info("Insert new vendor player " + vendorPlayerUsername);

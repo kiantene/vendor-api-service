@@ -45,7 +45,7 @@ public class BetResultLogService {
      * @param entity RawResultBet entity object containing information of a single result bet
      * @return RawResultBet entity object after a successful save
      */
-    @CachePut(value = "ResultBet", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @CachePut(value = "ResultBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public RawResultBet createResultBet(RawResultBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
         entity.setStatus(1); // TODO: refactor, map to constant/enum value
@@ -65,15 +65,15 @@ public class BetResultLogService {
      * Retrieve a result bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorGameId         Game Id within Game Aggregator System
+     * @param vendorLineId         vendor line id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return result bet entity object containing all information of a single result Bet
      * If no bet record is found, return null (valid scenario)
      */
-    @Cacheable(value = "ResultBet", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawResultBet getRawResultBetByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId){
+    @Cacheable(value = "ResultBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public RawResultBet getRawResultBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId){
 
-        String mergeId = roundId+'_'+vendorGameId+'_'+vendorPlayerId;
+        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
         return rawResultBetRepository.findById(mergeId).orElse(null);
     }
 }

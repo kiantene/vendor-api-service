@@ -23,7 +23,7 @@
 		<hibernate-validator.version>6.0.13.Final</hibernate-validator.version>
 		<glassfish.version>3.0.0</glassfish.version>
 		<logstash.version>7.2</logstash.version>
-		<nextgen-core.version>1.8.x</nextgen-core.version>
+		<nextgen-core.version>2.0.37</nextgen-core.version>
 		<java-client.version>3.4.4</java-client.version>
 		<projectlombok.version>1.18.24</projectlombok.version>
 		<spring-kafka.version>2.9.2</spring-kafka.version>
@@ -31,6 +31,7 @@
 		<commons-codec.version>1.15</commons-codec.version>
 		<netty.version>4.1.86.Final</netty.version>
 		<mariadb.version>3.0.8</mariadb.version>
+		<poi.version>4.1.2</poi.version>
 		<maven.compiler.source>18</maven.compiler.source>
 		<maven.compiler.target>18</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -141,6 +142,17 @@
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>${commons-codec.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>${poi.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>${poi.version}</version>
 		</dependency>
 
 		<!-- Support for Apple M1 chip -->

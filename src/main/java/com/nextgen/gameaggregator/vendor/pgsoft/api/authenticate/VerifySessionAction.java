@@ -74,7 +74,7 @@ public class VerifySessionAction {
             VerifySessionVo responseVo = new VerifySessionVo();
             parentResponseVo.setData(responseVo);
             responseVo.setPlayerName(gameSession.getVendorPlayerUsername());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
 
 
         } catch (InvalidRequestException invalidRequestException) {
