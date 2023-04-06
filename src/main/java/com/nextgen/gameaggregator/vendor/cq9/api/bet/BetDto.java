@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -55,17 +54,17 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public String getExternalTransactionId() {
-        return mtcode;
+        return this.mtcode;
     }
 
     @Override
     public String getVendorBetId() {
-        return mtcode;
+        return this.roundid;
     }
 
     @Override
     public String getRoundId() {
-        return roundid;
+        return this.roundid;
     }
 
     @Override
