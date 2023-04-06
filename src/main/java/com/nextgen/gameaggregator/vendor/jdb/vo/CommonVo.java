@@ -1,11 +1,12 @@
 package com.nextgen.gameaggregator.vendor.jdb.vo;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
-import lombok.Data;
 
-import java.math.BigDecimal;
+import lombok.Data;
 
 @Data
 public class CommonVo implements HttpResponse {

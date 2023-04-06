@@ -19,7 +19,6 @@ import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -33,14 +32,19 @@ public class GameUrlService implements GameUrl {
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+        // Split the gameCode into two parts based on the underscore character "_"
+        String[] parts = gameCode.split("_");
+        int gType = Integer.parseInt(parts[0]);
+        int mType = Integer.parseInt(parts[1]);
+        
         JSONObject json = new JSONObject();
         json.put("action", Actions.GAME_URL);
         json.put("ts", System.currentTimeMillis());
         json.put("parent", credentials.get(Credentials.PARENT));
         json.put("uid", gameSession.getVendorPlayerUsername());
         json.put("balance", 0);
-        json.put("gType", GameCategory.CATEGORY.get(gameSession.getGameCategoryId()));
-        json.put("mType", gameSession.getVendorGameCode());
+        json.put("gType", gType);
+        json.put("mType", mType);
         json.put("windowMode", "2");
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
