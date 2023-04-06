@@ -1,5 +1,16 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.gameurl;
 
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.alibaba.fastjson.JSONObject;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
@@ -10,17 +21,8 @@ import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -44,7 +46,7 @@ public class GameUrlService implements GameUrl {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
         try {
-            String x = vendorService.encrypt(json.toString(), credentials.get(Credentials.KEY), credentials.get(Credentials.IV));
+            String x = VendorService.encrypt(json.toString(), credentials.get(Credentials.KEY), credentials.get(Credentials.IV));
 
             params.add("dc", credentials.get(Credentials.DC));
             params.add("x", x);
