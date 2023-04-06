@@ -158,7 +158,7 @@ public class EndRoundAction {
         formatter.parse(dto.getCreateTime());
         formatter.parse(endRoundDataDtoList.get(0).getEventtime());
 
-        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
+//        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
         dto.setExternalTransactionId(dto.getVendorBetId());
     }
 
