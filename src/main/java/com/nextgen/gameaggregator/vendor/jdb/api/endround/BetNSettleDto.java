@@ -7,7 +7,7 @@ import javax.validation.constraints.Negative;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -72,7 +72,7 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     private BigDecimal bet;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private BigDecimal win;
 
     @NotNull
