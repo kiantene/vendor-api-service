@@ -23,6 +23,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -77,7 +78,7 @@ public class GameUrlService implements GameUrl {
         String responseString = "";
         try (Response response = client.newCall(request).execute()) {
             if (response.isSuccessful()) {
-                responseString = response.body().string();
+                responseString = Objects.requireNonNull(response.body()).string();
             } else {
                 throw new InvalidVendorResponseException("Request failed");
             }
