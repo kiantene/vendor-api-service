@@ -99,7 +99,7 @@ public class RoundPayoutAction {
                 betDto.setRoundId(dto.getRoundId());
                 betDto.setId(betRecord.getId());
                 betDto.setAmount(betRecord.getAmount().abs());
-                betDto.setValidTurnover(dto.getValidTurnover());
+                betDto.setValidTurnover(dto.getValidTurnover().abs());
                 betDto.setGameId(dto.getGameId());
                 betDto.setWinType(this.getWinType(betRecord));
                 betDto.setTimestamp(betRecord.getTimestamp());
