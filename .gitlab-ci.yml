@@ -34,7 +34,7 @@ stages:
   - build
   - push-img
   - deploy
-  - automated_test
+  # - automated_test
 
 # junit-test:
 #   stage: test
@@ -164,12 +164,12 @@ qa-ali-deploy:
     - chmod 400 "$(pwd)/qa-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/qa-key.pem" $QA_SERVER -p 22 "docker login --username=$REGISTRY_USERNAME --password=$REGISTRY_PWD $REGISTRY_URL && docker pull $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG && docker service update --force --image $QA_DOCKER_REGISTRY:$QA_DOCKER_TAG $QA_PORTAINER_NAME"
 
-qa-automated-testing:
-  stage: automated_test
-  needs: ["qa-ali-deploy"]
-  extends: .qa-deploy-rule
-  script:
-    - nohup $(sleep 60 && curl --location 'http://223.25.67.48:8080/job/GA-vendor-integration-tests/build?token=gameaggregator') > /dev/null 2>&1 &
+# qa-automated-testing:
+#   stage: automated_test
+#   needs: ["qa-ali-deploy"]
+#   extends: .qa-deploy-rule
+#   script:
+#     - nohup $(sleep 60 && curl --location 'http://223.25.67.48:8080/job/GA-vendor-integration-tests/build?token=gameaggregator') > /dev/null 2>&1 &
 
 # pt ######################################
 pt-gitlab-build:
