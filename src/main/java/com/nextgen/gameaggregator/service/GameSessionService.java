@@ -46,7 +46,7 @@ public class GameSessionService {
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
-                                     Currency currency, VendorLineCurrency vendorLineCurrency, String vendorLanguageCode,
+                                     Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
                                      String vendorPlatformCode) {
 
         gameSession.setTraceId(dto.getTraceId());
@@ -58,8 +58,8 @@ public class GameSessionService {
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());
-        gameSession.setVendorCurrencyCode(vendorLineCurrency.getVendorCurrencyCode());
-        gameSession.setVendorLanguageCode(vendorLanguageCode);
+        gameSession.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+        gameSession.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());
         gameSession.setLanguageId(vendorGameCode.getLanguageId());
         gameSession.setPlatformId(vendorGameCode.getPlatformId());
         gameSession.setVendorPlatformCode(vendorPlatformCode);

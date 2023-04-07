@@ -26,9 +26,21 @@ public class ResponseCodes {
         SC_UNDER_MAINTENANCE (18, "Game is under maintenance."),
         SC_MISMATCHED_DATA_TYPE (19, "Invalid data type."),
         SC_INVALID_RESPONSE(20, "Invalid response"),
-        SC_VENDOR_LANGUAGE_NOT_SUPPORTED(21, "Vendor language is not supported."),
         SC_INVALID_VENDOR (22, "Vendor is not supported"),
         SC_INVALID_LANGUAGE (23, "Language is not supported"),
+
+        SC_GAME_DISABLED(24, "Game is disabled"),
+        SC_INVALID_PLATFORM (23, "Platform is not supported"),
+        SC_GAME_LANGUAGE_NOT_SUPPORTED (24, "Game language is not supported"),
+        SC_GAME_PLATFORM_NOT_SUPPORTED (25, "Game platform is not supported"),
+        SC_GAME_CURRENCY_NOT_SUPPORTED (26, "Game currency is not supported"),
+
+        SC_VENDOR_LINE_DISABLED(27, "Vendor line is disable"),
+
+        SC_VENDOR_CURRENCY_NOT_SUPPORTED (28, "Vendor currency is not supported"),
+        SC_VENDOR_LANGUAGE_NOT_SUPPORTED (29, "Vendor language is not supported"),
+
+        SC_VENDOR_PLATFORM_NOT_SUPPORTED (30, "Vendor platform is not supported"),
         ;
 
         public final Integer code;

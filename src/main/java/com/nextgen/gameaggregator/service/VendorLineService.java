@@ -5,7 +5,7 @@ import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
 import com.nextgen.gameaggregator.repository.VendorLineCredentialRepository;
-import com.nextgen.gameaggregator.repository.VendorLineCurrencyRepository;
+
 import com.nextgen.gameaggregator.repository.VendorLineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,29 +25,32 @@ public class VendorLineService {
     @Autowired
     private AgentVendorLineRepository agentVendorLineRepository;
 
-    @Autowired
-    private VendorLineCurrencyRepository vendorLineCurrencyRepository;
 
-    public VendorLine getVendorLineByAgentAndGameCategory(Agent agent, Vendor vendor, Integer currencyId, Integer gameCategoryId) throws NoAvailableLineException, InvalidVendorLineException, InvalidVendorException {
-        AgentVendorLine agentVendorLine = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id(agent.getId(), vendor.getId(), currencyId, gameCategoryId);
-        Optional.ofNullable(agentVendorLine).orElseThrow(InvalidVendorLineException::new);
+    public VendorLine findAgentVendorLine(Agent agent, Vendor vendor,Currency currency , GameCategory gameCategory)
+            throws InvalidVendorLineException, DisabledVendorLineException {
 
-        VendorLine vendorLine = agentVendorLine.getVendorLine();
-        final Integer INACTIVE = Status.INACTIVE.code;
-        if (vendorLine == null || agentVendorLine.getStatus().equals(INACTIVE) || vendorLine.getStatus().equals(INACTIVE)) {
-            throw new NoAvailableLineException();
+        List<AgentVendorLine>  agentVendorLines = agentVendorLineRepository.
+                findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryId(
+                        agent.getId(), vendor.getId(), currency.getId(), gameCategory.getId());
+        //vendor line not found
+        if (agentVendorLines.isEmpty()) {
+            throw new InvalidVendorLineException();
         }
+        AgentVendorLine activeAgentVendorLine = null;
 
-        //check is vendor supported transfer
-        if (agent.getWalletType().equals(2) && (!vendor.getIsSupportTransfer().equals(1))) {
-            throw new InvalidVendorException();
-        //check is vendor supported seamless
-        } else if (agent.getWalletType().equals(1) && (!vendor.getIsSupportSeamless().equals(1))) {
-            throw new InvalidVendorException();
+        for (AgentVendorLine agentVendorLine : agentVendorLines) {
+            if(agentVendorLine.getStatus().equals(Status.ACTIVE.code)){
+                activeAgentVendorLine = agentVendorLine;
+                break;
+            }
         }
+        //not active vendor line found
+        Optional.ofNullable(activeAgentVendorLine).orElseThrow(DisabledVendorLineException::new);
 
-        return vendorLine;
+        return activeAgentVendorLine.getVendorLine();
     }
+
+
 
     public List<AgentVendorLine> getVendorLineByAgent(Integer agentId, Integer vendorId, Integer currencyId) throws NoAvailableLineException, InvalidVendorLineException {
         final Integer ACTIVE = Status.ACTIVE.code;
@@ -93,18 +96,6 @@ public class VendorLineService {
         Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
 
         return vendorLine.getId();
-    }
-
-
-    public VendorLineCurrency checkVendorLineSupportedCurrency(Integer vendorLineId, Integer currencyId) throws CurrencyNotSupportedException {
-        final Integer ACTIVE = Status.ACTIVE.code;
-        VendorLineCurrency entity = vendorLineCurrencyRepository.findByVendorLineIdAndCurrencyIdAndStatus(vendorLineId, currencyId, ACTIVE);
-        Optional.ofNullable(entity).orElseThrow(CurrencyNotSupportedException::new);
-
-        if (entity.getVendorCurrencyCode().isEmpty()) {
-            throw new CurrencyNotSupportedException();
-        }
-        return entity;
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {

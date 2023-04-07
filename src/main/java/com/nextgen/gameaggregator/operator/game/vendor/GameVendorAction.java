@@ -65,7 +65,7 @@ public class GameVendorAction {
             String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            List<IGameVendor> vendorList = vendorService.findAgentSupportedVendorList(dto, apiCredential.getAgent());
+            List<IGameVendor> vendorList = vendorService.findAgentSupportedVendors(dto.getDisplayLanguage(), apiCredential.getAgent());
 
             System.err.println(vendorList);
 

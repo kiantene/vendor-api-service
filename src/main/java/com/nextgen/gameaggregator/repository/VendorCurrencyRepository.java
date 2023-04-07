@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface VendorCurrencyRepository extends JpaRepository<VendorCurrency, Integer> {
     List<VendorCurrency> findByVendorId(Integer vendorId);
+
+    VendorCurrency findByVendorIdAndCurrencyId(Integer vendorId, Integer currencyId);
 }

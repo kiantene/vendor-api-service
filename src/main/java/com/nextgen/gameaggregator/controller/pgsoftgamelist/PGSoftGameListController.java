@@ -1,13 +1,12 @@
 package com.nextgen.gameaggregator.controller.pgsoftgamelist;
 
-import com.nextgen.gameaggregator.entity.Agent;
-import com.nextgen.gameaggregator.entity.Vendor;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.exception.InvalidVendorException;
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.repository.AgentRepository;
+import com.nextgen.gameaggregator.repository.CurrencyRepository;
+import com.nextgen.gameaggregator.repository.GameCategoryRepository;
 import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -51,14 +50,21 @@ public class PGSoftGameListController {
     @Autowired
     private VendorRepository vendorRepository;
 
+    @Autowired
+    private CurrencyRepository currencyRepository;
+
+    @Autowired
+    private GameCategoryRepository gameCategoryRepository;
+
     @PostMapping(path = "gameList")
     public GameListResponseVo getGameList() {
         try {
             Agent agent = agentRepository.findAgentById(4);
-
             Vendor vendor = vendorRepository.findVendorById(2);
+            Currency currency = currencyRepository.findByCode("CNY");
+            GameCategory gameCategory = gameCategoryRepository.findByCode("SLOTS");
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(agent, vendor, 2, 1);
+            VendorLine vendorLine = vendorLineService.findAgentVendorLine(agent, vendor, currency, gameCategory);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
@@ -68,9 +74,7 @@ public class PGSoftGameListController {
 
         } catch (InvalidVendorLineException e) {
             throw new RuntimeException(e);
-        } catch (NoAvailableLineException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidVendorException e) {
+        } catch ( DisabledVendorLineException e) {
             throw new RuntimeException(e);
         }
     }

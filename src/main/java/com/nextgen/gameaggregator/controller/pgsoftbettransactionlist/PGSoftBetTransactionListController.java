@@ -1,12 +1,11 @@
 package com.nextgen.gameaggregator.controller.pgsoftbettransactionlist;
 
-import com.nextgen.gameaggregator.entity.Agent;
-import com.nextgen.gameaggregator.entity.Vendor;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.exception.InvalidVendorException;
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.NoAvailableLineException;
 import com.nextgen.gameaggregator.repository.AgentRepository;
+import com.nextgen.gameaggregator.repository.CurrencyRepository;
+import com.nextgen.gameaggregator.repository.GameCategoryRepository;
 import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
@@ -40,14 +39,21 @@ public class PGSoftBetTransactionListController {
     @Autowired
     private VendorRepository vendorRepository;
 
+    @Autowired
+    private CurrencyRepository currencyRepository;
+
+    @Autowired
+    private GameCategoryRepository gameCategoryRepository;
+
     @PostMapping(path = "transactionList")
     public BetHistoryListResponseVo getTransactionList() {
         try {
             Agent agent = agentRepository.findAgentById(4);
-
             Vendor vendor = vendorRepository.findVendorById(2);
+            Currency currency = currencyRepository.findByCode("CNY");
+            GameCategory gameCategory = gameCategoryRepository.findByCode("SLOTS");
 
-            VendorLine vendorLine = vendorLineService.getVendorLineByAgentAndGameCategory(agent, vendor, 2, 1);
+            VendorLine vendorLine = vendorLineService.findAgentVendorLine(agent, vendor, currency, gameCategory);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             MultiValueMap<String,String> formData = formDataBuilder(vendorLine, lineCredentials);
@@ -57,9 +63,7 @@ public class PGSoftBetTransactionListController {
 
         } catch (InvalidVendorLineException e) {
             throw new RuntimeException(e);
-        } catch (NoAvailableLineException e) {
-            throw new RuntimeException(e);
-        } catch (InvalidVendorException e) {
+        } catch (DisabledVendorLineException e) {
             throw new RuntimeException(e);
         }
 
