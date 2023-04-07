@@ -77,14 +77,13 @@ public class GameVendorAction {
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
-            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
 
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
         } catch (InvalidSignatureException invalidSignatureException) {
