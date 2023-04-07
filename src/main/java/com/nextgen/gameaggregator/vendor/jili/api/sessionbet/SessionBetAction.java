@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -134,9 +132,5 @@ public class SessionBetAction {
         // 4. Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-    }
-
-    private WinType getWinType(SessionBetDto sessionBetDto) {
-        return (sessionBetDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 }

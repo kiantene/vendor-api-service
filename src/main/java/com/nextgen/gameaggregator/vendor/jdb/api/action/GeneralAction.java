@@ -1,5 +1,12 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
@@ -19,13 +26,8 @@ import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -65,23 +67,21 @@ public class GeneralAction {
 
             // Convert original request body into dto
             VendorRequestDto commonDto = HttpService.convertQueryStringToDto(body, VendorRequestDto.class);
-            ValidationUtils.validateRequest(commonDto);
+            //ValidationUtils.validateRequest(commonDto);
             String params = VendorService.decrypt(commonDto.getX(), "47e0cd2ece0883e2", "b87f2867577b68ce");
-            log.info(params);
             ActionDto actionDto = HttpService.convertJsonToDto(params, ActionDto.class);
             this.doValidation(actionDto);
             actionDto.setParams(params);
             vo = this.actionHandling(actionDto, traceId);
 
-        } catch (InvalidDecryptionException ex) {
+        } catch (InvalidDecryptionException invalidDecryptionException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (InvalidRequestException ex) {
+        } catch (InvalidRequestException invalidRequestException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (JsonProcessingException ex) {
+        } catch (JsonProcessingException jsonProcessingException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (Exception ex) {
+        } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
-            log.error(ex.getMessage());
         } finally {
             httpService.end(httpRequestLog, vo);
         }

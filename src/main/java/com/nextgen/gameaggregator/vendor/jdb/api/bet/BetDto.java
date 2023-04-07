@@ -1,27 +1,51 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
-import lombok.Data;
-
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
+import javax.validation.constraints.*;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+
+import lombok.Data;
+
 @Data
-public class BetDto implements BetData {
+public class BetDto implements UnsettledResultSettledData {
+    @NotBlank
+    @Pattern(regexp = "^[0-9]+$")
     private String action;
 
-    @NotBlank
-    @Size(min = 12, max = 12)
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
     private Long ts;
-    private Long transferId;
+
+    @NotBlank
+    @Pattern(regexp = "^[0-9]+$")
+    private String transferId;
+
+    @NotBlank
+    @Size(min = 1, max = 30)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
+    
+    @NotBlank
+    @Size(max = 3)
     private String currency;
+
+    @Positive
     private BigDecimal amount;
+
+    @Positive
     private Long gameRoundSeqNo;
+
+    @NotBlank
     @JsonProperty("mType")
-    private Integer mType;
+    @Pattern(regexp = "^[0-9]+$")
+    private String mType;
+
+    private BigDecimal effectiveTurnover;
 
     @Override
     public String getExternalTransactionId() {
@@ -38,8 +62,81 @@ public class BetDto implements BetData {
         return this.mType.toString();
     }
 
-    @Override
     public Long getTimestamp() {
         return this.ts;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.transferId.toString();
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return amount;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getVendorWinLoss() {
+        return getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return effectiveTurnover;
+    }
+
+    @Override
+    public BigDecimal getRefundAmount() {
+        return BigDecimal.valueOf(0);
+    }
+
+    @Override
+    public WinType getResultType() {
+        return WinType.LOSE;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return ts;
+    }
+
+    public void setVendorBetTime(Long ts) {
+        this.ts = ts;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return ts;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return ts;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsCancelled() {
+        return 0;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
     }
 }

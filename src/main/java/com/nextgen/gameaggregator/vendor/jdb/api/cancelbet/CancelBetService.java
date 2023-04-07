@@ -1,15 +1,20 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 @Service
 public class CancelBetService {
@@ -22,6 +27,10 @@ public class CancelBetService {
     private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     public CommonVo cancelBet(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -49,7 +58,13 @@ public class CancelBetService {
 
             vo.setBalance(betRefundEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
-
+        
+        } catch (InvalidRequestException InvalidRequestException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -57,11 +72,16 @@ public class CancelBetService {
         return vo;
     }
 
-    private void doValidation(CancelBetDto dto) {
-
+    private void doValidation(CancelBetDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetDto dto, GameSession gameSession) {
+    private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException {
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 }
