@@ -57,9 +57,9 @@ public class GameImportController {
             gameCategoryService.checkVendorSupportGameCategory(vendor, gameCategory);
 
             //5. get vendor supported language
-            HashMap<String, Language> vendorLanguages = vendorService.findVendorSupportedLanguage(vendor.getId());
+            HashMap<String, Language> vendorLanguages = vendorService.findVendorSupportedLanguages(vendor.getId());
             //6. get vendor supported currencies
-            HashMap<String, Currency> vendorCurrencies = vendorService.findVendorSupportedCurrency(vendor.getId());
+            HashMap<String, Currency> vendorCurrencies = vendorService.findVendorSupportedCurrencies(vendor.getId());
 
             HashMap<String, Platform> platforms = gameExcelValidatorService.getSystemSupportedPlatform();
 

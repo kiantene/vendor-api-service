@@ -3,11 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.entity.custom.IGameVendor;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.DisabledVendorException;
-import com.nextgen.gameaggregator.exception.InvalidLanguageException;
-import com.nextgen.gameaggregator.exception.InvalidVendorException;
-import com.nextgen.gameaggregator.operator.game.vendor.GameVendorDto;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.LanguageRepository;
 import com.nextgen.gameaggregator.repository.VendorCurrencyRepository;
 import com.nextgen.gameaggregator.repository.VendorLanguageCodeRepository;
@@ -60,12 +56,12 @@ public class VendorService {
         return vendor;
     }
 
-    public HashMap<String, Language>  findVendorSupportedLanguage(Integer VendorId) throws InvalidLanguageException {
-        List<VendorLanguageCode> vendorLanguageCodes= vendorLanguageCodeRepository.findByVendorId(VendorId);
+    public HashMap<String, Language> findVendorSupportedLanguages(Integer VendorId) throws InvalidLanguageException {
+        List<VendorLanguageCode> vendorLanguageCodes = vendorLanguageCodeRepository.findByVendorId(VendorId);
         Optional.ofNullable(vendorLanguageCodes).orElseThrow(InvalidLanguageException::new);
 
         HashMap<String, Language> vendorLanguages = new HashMap<>();
-        for (VendorLanguageCode vendorLanguageCode: vendorLanguageCodes) {
+        for (VendorLanguageCode vendorLanguageCode : vendorLanguageCodes) {
 
             vendorLanguages.put(vendorLanguageCode.getLanguage().getId().toString(), vendorLanguageCode.getLanguage());
         }
@@ -73,24 +69,48 @@ public class VendorService {
     }
 
 
-    public HashMap<String, Currency>  findVendorSupportedCurrency(Integer VendorId) throws CurrencyNotSupportedException {
-        List<VendorCurrency> VendorCurrencyCodes= vendorCurrencyRepository.findByVendorId(VendorId);
+    public HashMap<String, Currency> findVendorSupportedCurrencies(Integer VendorId) throws CurrencyNotSupportedException {
+        List<VendorCurrency> VendorCurrencyCodes = vendorCurrencyRepository.findByVendorId(VendorId);
         Optional.ofNullable(VendorCurrencyCodes).orElseThrow(CurrencyNotSupportedException::new);
 
         HashMap<String, Currency> vendorCurrencies = new HashMap<>();
-        for (VendorCurrency vendorCurrency: VendorCurrencyCodes) {
+        for (VendorCurrency vendorCurrency : VendorCurrencyCodes) {
             vendorCurrencies.put(vendorCurrency.getCurrency().getId().toString(), vendorCurrency.getCurrency());
         }
         return vendorCurrencies;
     }
 
-    public List<IGameVendor> findAgentSupportedVendorList(GameVendorDto dto, Agent agent) throws InvalidLanguageException {
-        Language language = languageRepository.findByCode(dto.getDisplayLanguage());
+    public List<IGameVendor> findAgentSupportedVendors(String displayLanguageCode, Agent agent) throws InvalidLanguageException {
+        Language language = languageRepository.findByCode(displayLanguageCode);
         Optional.ofNullable(language).orElseThrow(InvalidLanguageException::new);
 
-
         return vendorRepository.findByAgentSupportedVendorAndStatus(
-                agent.getId(),agent.getCurrency().getId(), language.getId(), Status.ACTIVE.code);
+                agent.getId(), agent.getCurrency().getId(), language.getId(), Status.ACTIVE.code);
+    }
+
+    public VendorLanguageCode findVendorLanguageCode(Vendor vendor, Language language) throws VendorLanguageNotSupportedException {
+
+        VendorLanguageCode vendorLanguageCode =
+                vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendor.getId(), language.getId());
+        Optional.ofNullable(vendorLanguageCode).orElseThrow(VendorLanguageNotSupportedException::new);
+
+        if (vendorLanguageCode.getStatus() == 0) {
+            throw new VendorLanguageNotSupportedException();
+        }
+
+        return vendorLanguageCode;
+    }
+
+    public VendorCurrency findVendorCurrency(Vendor vendor, Currency currency) throws VendorCurrencyNotSupportException {
+        VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendor.getId(), currency.getId());
+
+        Optional.ofNullable(vendorCurrency).orElseThrow(VendorCurrencyNotSupportException::new);
+
+        if (vendorCurrency.getStatus() == 0) {
+            throw new VendorCurrencyNotSupportException();
+        }
+
+        return vendorCurrency;
     }
 
 }

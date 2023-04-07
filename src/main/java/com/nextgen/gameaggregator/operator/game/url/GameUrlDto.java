@@ -31,7 +31,7 @@ public class GameUrlDto {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = ValidationUtils.WEB_OR_H5, message = "WEB/H5")
+    @Pattern(regexp = ValidationUtils.WEB_OR_H5, message = "Platform is not supported.")
     private String platform;
 
     @NotBlank

@@ -8,7 +8,7 @@ import java.util.List;
 
 @Repository
 public interface AgentVendorLineRepository extends JpaRepository<AgentVendorLine, Integer> {
-    AgentVendorLine findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id
+    List<AgentVendorLine>  findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryId
             (Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId);
 
     List<AgentVendorLine> findByAgentIdAndVendorIdAndCurrencyIdAndStatus
