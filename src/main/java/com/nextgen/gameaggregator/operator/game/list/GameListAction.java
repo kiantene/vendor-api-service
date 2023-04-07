@@ -62,15 +62,14 @@ public class GameListAction {
             Vendor vendor = vendorService.verifyVendorByCodeAndWalletType
                     (dto.getVendorCode(), apiCredential.getAgent().getWalletType());
 
-            Integer agentId = apiCredential.getAgent().getId();
-            Integer vendorId = vendor.getId();
+
             Currency currency = apiCredential.getAgent().getCurrency();
 
             // 5. validate agent supported vendor line
 
-            List<AgentVendorLine> agentVendorLines = vendorLineService.getVendorLineByAgent(agentId, vendorId, currency.getId());
+            List<AgentVendorLine> agentVendorLines = vendorLineService.getVendorLineByAgent(apiCredential.getAgent(), vendor, currency);
 
-            GameListData gameListData = gameListService.getGameList(dto, agentVendorLines, vendorId, currency.getId());
+            GameListData gameListData = gameListService.getGameList(dto, agentVendorLines, vendor, currency);
             responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
@@ -88,36 +87,24 @@ public class GameListAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
-        } catch (InvalidVendorException invalidVendorException) {
+        } catch (InvalidVendorException | InvalidVendorLineException invalidVendorException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
 
-        } catch (DisabledVendorException disabledVendorException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+        } catch (DisabledVendorLineException | DisabledVendorException disabledVendorLineException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
 
-        } catch (NoAvailableLineException noAvailableLineException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
-
-        } catch (InvalidVendorLineException invalidVendorLineException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
-
-        }
-        catch (InvalidLanguageException invalidLanguageException) {
+        } catch (InvalidLanguageException invalidLanguageException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
 
-        } catch (RecordNotFoundException recordNotFoundException) {
-            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
-
-        } catch (InvalidSignatureException e) {
+        } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
 
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
 
-        }
-        finally {
+        } finally {
             responseVo.setMessage(responseVo.getStatus().description);
 
         }

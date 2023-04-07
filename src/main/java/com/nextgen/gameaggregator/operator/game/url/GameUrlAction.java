@@ -105,6 +105,9 @@ public class GameUrlAction {
             // 16. Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             responseVo.setData(gameUrlData);
+        } catch (IllegalArgumentException illegalArgumentException) {
+            log.error(illegalArgumentException.toString());
+            responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);

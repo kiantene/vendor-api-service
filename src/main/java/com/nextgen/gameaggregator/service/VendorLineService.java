@@ -2,15 +2,17 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
 import com.nextgen.gameaggregator.repository.VendorLineCredentialRepository;
-
 import com.nextgen.gameaggregator.repository.VendorLineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,18 +54,29 @@ public class VendorLineService {
 
 
 
-    public List<AgentVendorLine> getVendorLineByAgent(Integer agentId, Integer vendorId, Integer currencyId) throws NoAvailableLineException, InvalidVendorLineException {
-        final Integer ACTIVE = Status.ACTIVE.code;
+    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, Currency currency) throws InvalidVendorLineException, DisabledVendorLineException {
 
-        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByAgentIdAndVendorIdAndCurrencyIdAndStatus(agentId, vendorId, currencyId, ACTIVE);
-        Optional.ofNullable(agentVendorLines).orElseThrow(InvalidVendorLineException::new);
+        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
+                findByAgentIdAndVendorIdAndCurrencyId(agent.getId(), vendor.getId(), currency.getId());
 
-        //TODO (bu Alex), to discuss should validated agent supported vendor
-//        if(agentVendorLines.isEmpty()){
-//            throw new NoAvailableLineException();
-//        }
+        //vendor line not found
+        if (agentVendorLines.isEmpty()) {
+            throw new InvalidVendorLineException();
+        }
 
-        return agentVendorLines;
+        List<AgentVendorLine> activeAgentVendorLines  = new ArrayList<>();
+
+        for (AgentVendorLine agentVendorLine : agentVendorLines) {
+            if(agentVendorLine.getStatus().equals(Status.ACTIVE.code)){
+                activeAgentVendorLines.add(agentVendorLine);
+            }
+        }
+
+        if (activeAgentVendorLines.isEmpty()) {
+            throw new DisabledVendorLineException();
+        }
+
+        return activeAgentVendorLines;
     }
 
     @Cacheable(value = "VendorLineCredentials", key = "{#vendorLineId, #name}", cacheManager = "cacheManager")
