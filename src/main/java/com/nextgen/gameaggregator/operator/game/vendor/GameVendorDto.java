@@ -11,12 +11,12 @@ import javax.validation.constraints.Size;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GameVendorDto {
-    @NotBlank
-    @Size(min = 36, max = 36)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    @NotBlank(message = "UUID format only")
+    @Size(min = 36, max = 36, message = "UUID format only")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
 
-    @NotBlank
-    @Size(min = 2, max = 20)
+    @NotBlank(message = "min 2 characters")
+    @Size(min = 2, max = 20, message = "min 2 characters")
     private String displayLanguage = "en";
 }

@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -32,7 +31,7 @@ public class WalletBalanceAction {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return this.stub();
+            return ValidationUtils.responseOperatorSub();
         }
 
         WalletBalanceVo responseVo = null;
@@ -79,12 +78,5 @@ public class WalletBalanceAction {
         return responseVo;
     }
 
-    public WalletBalanceVo stub() throws InvalidOperatorResponseException {
-        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-        responseData.setBalance(BigDecimal.ONE);
-        WalletBalanceVo balanceVo = new WalletBalanceVo();
-        balanceVo.setData(responseData);
 
-        return balanceVo;
-    }
 }

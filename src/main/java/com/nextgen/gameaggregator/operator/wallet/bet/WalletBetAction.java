@@ -34,7 +34,7 @@ public class WalletBetAction {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return this.stub();
+            return ValidationUtils.responseOperatorSub();
         }
 //        log.info(dto.toString());
         WalletBalanceVo responseVo = null;
@@ -100,12 +100,4 @@ public class WalletBetAction {
         return responseVo;
     }
 
-    public WalletBalanceVo stub() {
-        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-        responseData.setBalance(BigDecimal.ONE);
-        WalletBalanceVo balanceVo = new WalletBalanceVo();
-        balanceVo.setData(responseData);
-
-        return balanceVo;
-    }
 }

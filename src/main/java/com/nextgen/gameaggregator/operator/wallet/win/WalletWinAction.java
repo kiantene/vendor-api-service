@@ -8,14 +8,13 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.beans.factory.annotation.Value;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -32,7 +31,7 @@ public class WalletWinAction {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return this.stub();
+            return ValidationUtils.responseOperatorSub();
         }
         WalletBalanceVo responseVo = null;
 
@@ -76,14 +75,5 @@ public class WalletWinAction {
 
         return responseVo;
 
-    }
-
-    public WalletBalanceVo stub() throws InvalidOperatorResponseException {
-        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-        responseData.setBalance(BigDecimal.ONE);
-        WalletBalanceVo balanceVo = new WalletBalanceVo();
-        balanceVo.setData(responseData);
-
-        return balanceVo;
     }
 }

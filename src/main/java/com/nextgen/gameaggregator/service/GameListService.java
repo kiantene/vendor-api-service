@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.Currency;
 import com.nextgen.gameaggregator.entity.Language;
 import com.nextgen.gameaggregator.entity.Vendor;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.operator.game.list.GameListData;
 import com.nextgen.gameaggregator.operator.game.list.GameListDto;
 import com.nextgen.gameaggregator.repository.LanguageRepository;
@@ -35,12 +34,8 @@ public class GameListService {
 
 
 
-    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Vendor vendor, Currency currency)
-            throws InvalidLanguageException {
+    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Vendor vendor, Currency currency, Language language) {
         GameListData gameListData = new GameListData();
-
-        Language language = languageRepository.findByCode(dto.getDisplayLanguage());
-        Optional.ofNullable(language).orElseThrow(InvalidLanguageException::new);
 
         List<Integer> gameCategoryIds = new ArrayList<>();
         for (AgentVendorLine agentVendorLine : agentVendorLines) {

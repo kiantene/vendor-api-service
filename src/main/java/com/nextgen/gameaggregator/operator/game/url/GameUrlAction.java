@@ -33,6 +33,9 @@ public class GameUrlAction {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorService vendorService;
+
+    @Autowired
+    private LanguageService languageService;
     @Autowired
     private VendorGameService vendorGameService;
 
@@ -70,7 +73,7 @@ public class GameUrlAction {
             Platform platform = gameUrlService.checkPlatformCode(dto.getPlatform());
 
             // 7. check if platform supported
-            Language language = gameUrlService.checkLanguageCode(dto.getLanguage());
+            Language language = languageService.checkLanguageCode(dto.getLanguage());
 
             // 8. Check if game is supported
             VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());

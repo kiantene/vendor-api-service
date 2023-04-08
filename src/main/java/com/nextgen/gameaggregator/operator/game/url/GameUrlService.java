@@ -81,12 +81,7 @@ public class GameUrlService {
 
     }
 
-    public Language checkLanguageCode(String languageCode) throws InvalidLanguageException {
-        Language language = languageRepository.findByCode(languageCode);
-        Optional.ofNullable(language).orElseThrow(InvalidLanguageException::new);
-        return language;
 
-    }
 
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
