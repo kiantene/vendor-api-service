@@ -80,9 +80,7 @@ public class VendorService {
         return vendorCurrencies;
     }
 
-    public List<IGameVendor> findAgentSupportedVendors(String displayLanguageCode, Agent agent) throws InvalidLanguageException {
-        Language language = languageRepository.findByCode(displayLanguageCode);
-        Optional.ofNullable(language).orElseThrow(InvalidLanguageException::new);
+    public List<IGameVendor> findAgentSupportedVendors(Language language, Agent agent){
 
         return vendorRepository.findByAgentSupportedVendorAndStatus(
                 agent.getId(), agent.getCurrency().getId(), language.getId(), Status.ACTIVE.code);

@@ -31,7 +31,8 @@ public class GameListAction {
 
     @Autowired
     private VendorService vendorService;
-
+    @Autowired
+    private LanguageService languageService;
     @Autowired
     private GameListService gameListService;
 
@@ -62,14 +63,16 @@ public class GameListAction {
             Vendor vendor = vendorService.verifyVendorByCodeAndWalletType
                     (dto.getVendorCode(), apiCredential.getAgent().getWalletType());
 
-
             Currency currency = apiCredential.getAgent().getCurrency();
 
-            // 5. validate agent supported vendor line
+            // 5. check if platform supported
+            Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
 
-            List<AgentVendorLine> agentVendorLines = vendorLineService.getVendorLineByAgent(apiCredential.getAgent(), vendor, currency);
+            // 6. validate agent supported vendor line
+            List<AgentVendorLine> agentVendorLines =
+                    vendorLineService.getVendorLineByAgent(apiCredential.getAgent(), vendor, currency);
 
-            GameListData gameListData = gameListService.getGameList(dto, agentVendorLines, vendor, currency);
+            GameListData gameListData = gameListService.getGameList(dto, agentVendorLines, vendor, currency, language);
             responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {

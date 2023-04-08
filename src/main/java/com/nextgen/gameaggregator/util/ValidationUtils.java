@@ -3,12 +3,14 @@ package com.nextgen.gameaggregator.util;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +70,6 @@ public class ValidationUtils {
             });
 
             if (!validation.isEmpty()) { // Missing/Invalid request parameters
-                System.err.println("CCCCCC");
                 throw new InvalidOperatorResponseException(validation.toString());
             }
         }
@@ -88,6 +89,15 @@ public class ValidationUtils {
         if (!expected.equalsIgnoreCase(actual)) {
             throw exceptionSupplier.get();
         }
+    }
+
+    public static WalletBalanceVo responseOperatorSub(){
+        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
+        responseData.setBalance(BigDecimal.ONE);
+        WalletBalanceVo balanceVo = new WalletBalanceVo();
+        balanceVo.setData(responseData);
+
+        return balanceVo;
     }
 
     public static void operatorResponseLogging(Boolean isSuccess, String endpoint, String callbackUrl, Object dto, String responseString, String profilesActive) {

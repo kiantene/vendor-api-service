@@ -21,10 +21,15 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class WalletRefundAction {
-
+    @Value("${testing.stub:false}")
+    private Boolean useStub;
     @Value("${spring.profiles.active}")
     private String profilesActive;
     public WalletBalanceVo call(String callbackUrl, String signature, WalletRefundDto dto) throws InvalidOperatorResponseException {
+        // Call stub function instead if config file set to use stub
+        if (useStub) {
+            return ValidationUtils.responseOperatorSub();
+        }
 
         WalletBalanceVo responseVo = null;
         String responseString = WebClient.create(callbackUrl)
