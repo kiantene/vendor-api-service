@@ -1,5 +1,7 @@
-package com.nextgen.gameaggregator.controller.vendorgame;
+package com.nextgen.gameaggregator.controller.vendorgame.service;
 
+import com.nextgen.gameaggregator.controller.vendorgame.vo.GameDataEntity;
+import com.nextgen.gameaggregator.controller.vendorgame.vo.ImportResponse;
 import com.nextgen.gameaggregator.controller.vendorgame.enums.HeaderName;
 import com.nextgen.gameaggregator.entity.Currency;
 import com.nextgen.gameaggregator.entity.*;

@@ -3,9 +3,6 @@ package com.nextgen.gameaggregator.controller;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
@@ -45,10 +42,10 @@ public class OperatorController {
     @PostMapping(path = Endpoints.WALLET_BALANCE)
     public ResponseEntity<Map<String, Object>> walletBalance(@RequestBody ObjectNode json) {
         HashMap<String, Object> responseMap = new HashMap<>();
-        try{
+        try {
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
-            if(gameSession!=null){
+            if (gameSession != null) {
                 Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
@@ -57,22 +54,16 @@ public class OperatorController {
 
                 BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
 
-                responseMap.put("balance",balance);
+                responseMap.put("balance", balance);
             }
 
-        }catch (AuthenticationException authenticationException){
-            responseMap.put("exceptionName","authenticationException");
-
-        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-            responseMap.put("exceptionName","InvalidAgentApiCredentialException");
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseMap.put("exceptionName","InvalidOperatorResponseException");
+        } catch (Exception exception) {
+            responseMap.put("exceptionName", exception.getClass().getSimpleName());
         }
 
         return new ResponseEntity<>(
-                responseMap ,
-                HttpStatus.BAD_REQUEST);
+                responseMap,
+                HttpStatus.OK);
 
     }
 }
