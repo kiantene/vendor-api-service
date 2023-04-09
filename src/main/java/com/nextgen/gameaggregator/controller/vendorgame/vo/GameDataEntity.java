@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.controller.vendorgame;
+package com.nextgen.gameaggregator.controller.vendorgame.vo;
 
 import com.nextgen.gameaggregator.entity.Platform;
 import com.nextgen.gameaggregator.entity.VendorGame;

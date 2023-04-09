@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.controller.vendorgame;
+package com.nextgen.gameaggregator.controller.vendorgame.vo;
 
 import lombok.Data;
 

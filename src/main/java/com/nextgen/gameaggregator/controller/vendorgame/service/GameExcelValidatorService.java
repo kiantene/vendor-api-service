@@ -1,5 +1,6 @@
-package com.nextgen.gameaggregator.controller.vendorgame;
+package com.nextgen.gameaggregator.controller.vendorgame.service;
 
+import com.nextgen.gameaggregator.controller.vendorgame.vo.GameDataEntity;
 import com.nextgen.gameaggregator.controller.vendorgame.enums.HeaderName;
 import com.nextgen.gameaggregator.entity.Currency;
 import com.nextgen.gameaggregator.entity.*;
@@ -275,8 +276,8 @@ public class GameExcelValidatorService {
 
     //region validate row value
     public GameDataEntity verifyGameName(GameDataEntity gameDataEntity, HashMap<String, Language> vendorLanguages,
-                                          HashMap<Integer, HashMap<String, String>> columnTypes,
-                                          Integer columnNum, Integer rowNum, String name) throws InvalidFormatException {
+                                         HashMap<Integer, HashMap<String, String>> columnTypes,
+                                         Integer columnNum, Integer rowNum, String name) throws InvalidFormatException {
         if (columnTypes.get(columnNum).get("id").equals("ALL")) {
             //set default game name
             gameDataEntity.getVendorGame().setName(name.trim());

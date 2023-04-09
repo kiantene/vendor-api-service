@@ -6,8 +6,9 @@ import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.service.OperatorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,12 +27,14 @@ public class WalletWinAction {
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
+    @Autowired
+    OperatorService operatorService;
 
     public WalletBalanceVo call(String callbackUrl, String signature, WalletWinDto dto) throws InvalidOperatorResponseException {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return ValidationUtils.responseOperatorSub();
+            return operatorService.responseOperatorSub();
         }
         WalletBalanceVo responseVo = null;
 
@@ -58,18 +61,18 @@ public class WalletWinAction {
             // throw exception if response is null
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 
-            ValidationUtils.validateResponse(responseVo);
+            operatorService.validateResponse(responseVo);
 
             if ((!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ||
                     (!responseVo.getData().getUsername().equals(dto.getUsername())) ||
                     (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
-                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
+                operatorService.operatorResponseLogging(true, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
+            operatorService.operatorResponseLogging(false, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 

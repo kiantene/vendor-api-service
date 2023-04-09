@@ -31,8 +31,6 @@ public class WalletBalanceVo extends ResponseVo {
 
     }
 
-
-
     @Valid
     private ResponseData data;
 }
