@@ -7,7 +7,9 @@ import org.springframework.http.ResponseEntity;
 public class OperatorLogVo {
     String endpoint;
     String callbackUrl;
+    String signature;
     Object requestObject;
+
     ResponseEntity responseEntity;
     String profilesActive;
 }

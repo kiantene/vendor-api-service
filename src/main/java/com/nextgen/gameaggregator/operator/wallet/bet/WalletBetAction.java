@@ -58,7 +58,7 @@ public class WalletBetAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BALANCE, callbackUrl, dto, apiResponse, profilesActive);
+        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BALANCE, callbackUrl, dto, apiResponse, signature, profilesActive);
 
         try {
             // 1. validate HTTP Response Code
@@ -142,7 +142,9 @@ public class WalletBetAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             operatorService.failResponseLog(operatorLogVo, insufficientBalanceException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+           // throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            //TODO by Alex, to check the response code
+            throw new InsufficientBalanceException();
 
         } catch (InvalidRequestException invalidRequestException) {
             operatorService.failResponseLog(operatorLogVo, invalidRequestException.getClass().getName());

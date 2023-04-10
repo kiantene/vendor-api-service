@@ -1,12 +1,17 @@
 package com.nextgen.gameaggregator;
 
+import com.google.gson.Gson;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 public class ApiSecurityUtilsTest {
+
+
     @Test
     void testKeyGeneration() {
         try {
@@ -57,8 +62,32 @@ public class ApiSecurityUtilsTest {
             System.out.println("Bob   Shared Secret: " + bobSharedSecret);
             System.out.println("\n========== END ==========");
 
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    @Test
+    void testSignature() {
+        Gson gson = new Gson();
+        WalletBetDto walletBetDto = new WalletBetDto();
+
+        walletBetDto.setTraceId("d541e5cd-5306-4efe-83a2-830cea4cd614");
+        walletBetDto.setUsername("100125");
+        walletBetDto.setTransactionId("d541e5cd-5306-4efe-83a2-830cea4cd614");
+        walletBetDto.setExternalTransactionId("1645311546127716352");
+        walletBetDto.setAmount(BigDecimal.valueOf(5));
+        walletBetDto.setCurrency("CNY");
+        walletBetDto.setToken("2979a267-c0bd-4ad7-8684-038e800db53e");
+        walletBetDto.setGameCode("PGS_100");
+        walletBetDto.setRoundId("1645311546127716352");
+        walletBetDto.setTimestamp(1681107814755L);
+
+        String jsonPayload = gson.toJson(walletBetDto);
+
+        System.out.println(jsonPayload);
+        String apiSecret = "8c6450bce62aee29a530da1020dc8f6c19a4e4599a0941bb96839a765d03e5ec";
+        String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
+        System.err.println(actualSignature);
     }
 }

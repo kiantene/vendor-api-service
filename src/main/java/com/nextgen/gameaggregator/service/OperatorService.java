@@ -178,12 +178,13 @@ public class OperatorService {
         }
     }
 
-    public OperatorLogVo createOperatorLogVo(String endpoint, String callbackUrl, Object requestObject, ResponseEntity responseEntity, String profilesActive) {
+    public OperatorLogVo createOperatorLogVo(String endpoint, String callbackUrl, Object requestObject, ResponseEntity responseEntity, String signature, String profilesActive) {
         OperatorLogVo operatorLogVo = new OperatorLogVo();
         operatorLogVo.setEndpoint(endpoint);
         operatorLogVo.setCallbackUrl(callbackUrl);
         operatorLogVo.setRequestObject(requestObject);
         operatorLogVo.setResponseEntity(responseEntity);
+        operatorLogVo.setSignature(signature);
         operatorLogVo.setProfilesActive(profilesActive);
         return operatorLogVo;
     }
