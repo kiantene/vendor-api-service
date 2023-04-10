@@ -58,7 +58,7 @@ public class WalletBetAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BALANCE, callbackUrl, dto, apiResponse, signature, profilesActive);
+        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BET, callbackUrl, dto, apiResponse, signature, profilesActive);
 
         try {
             // 1. validate HTTP Response Code
