@@ -137,6 +137,7 @@ public class OperatorService {
         logInfo.put("Response: ", operatorLogVo.getResponseEntity().getBody());
         logInfo.put("HttpStatusCode: ", operatorLogVo.getResponseEntity().getStatusCodeValue());
         logInfo.put("OperatorService: ", operatorLogVo.getEndpoint());
+        logInfo.put("RequestSignature: ", operatorLogVo.getSignature());
         logInfo.put("ExceptionName: ", exceptionName);
         log.error(gson.toJson(logInfo));
     }
@@ -149,6 +150,7 @@ public class OperatorService {
         logInfo.put("Response: ", operatorLogVo.getResponseEntity().getBody());
         logInfo.put("HttpStatusCode: ", operatorLogVo.getResponseEntity().getStatusCodeValue());
         logInfo.put("OperatorService: ", operatorLogVo.getEndpoint());
+        logInfo.put("RequestSignature: ", operatorLogVo.getSignature());
         if ((operatorLogVo.getProfilesActive().equals("dev")) ||
                 (operatorLogVo.getProfilesActive().equals("qa")) ||
                 (operatorLogVo.getProfilesActive().equals("stg"))) {
