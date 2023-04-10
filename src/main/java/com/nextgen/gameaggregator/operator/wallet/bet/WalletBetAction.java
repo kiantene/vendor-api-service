@@ -84,6 +84,8 @@ public class WalletBetAction {
                 throw new InsufficientBalanceException();
             }
 
+            operatorService.successResponseLog(operatorLogVo);
+            
             /**
             switch (responseVo.getStatus()) {
                 case SC_OK -> {
