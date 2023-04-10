@@ -3,13 +3,12 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
@@ -59,11 +58,27 @@ public class CancelBetNSettleService {
             vo.setBalance(betRefundEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
         
-        } catch (InvalidRequestException InvalidRequestException) {
+        } catch (AuthenticationException authenticationException) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (BetNotFoundException betNotFoundException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (DisabledVendorLineException disabledVendorLineException) {
+        } catch (InvalidRequestException invalidRequestException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (JsonProcessingException jsonProcessingException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+        } catch (RecordNotFoundException recordNotFoundException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledVendorLineException disabledVendorLineException) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);

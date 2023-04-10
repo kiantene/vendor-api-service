@@ -57,15 +57,15 @@ public class BetService {
             vo.setResponseCode(ResponseCode.SUCCESS);
         
         } catch (InsufficientBalanceException exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
         } catch (CouchbaseDataIntegrityException exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (InvalidOperatorResponseException exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidAgentApiCredentialException exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledVendorLineException exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException exception) {
