@@ -57,7 +57,7 @@ public class WalletBalanceAction {
                 .block();
 
 
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BALANCE, callbackUrl, dto, apiResponse, profilesActive);
+        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BALANCE, callbackUrl, dto, apiResponse, signature, profilesActive);
 
         try {
             // 1. validate HTTP Response Code
