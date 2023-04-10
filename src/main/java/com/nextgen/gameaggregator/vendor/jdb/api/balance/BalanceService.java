@@ -58,9 +58,9 @@ public class BalanceService {
         } catch (InvalidAgentApiCredentialException exception) {
             vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidOperatorResponseException exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidPlayerException exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException exception) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException exception) {
