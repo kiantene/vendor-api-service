@@ -72,7 +72,7 @@ public class SettleDto implements UnsettledResultSettledData {
     private String lastModifyTime;
 
     @NotNull
-    @Negative
+    @Positive
     private BigDecimal bet;
 
     @NotNull
@@ -95,7 +95,7 @@ public class SettleDto implements UnsettledResultSettledData {
 
     @Override
     public String getExternalTransactionId() {
-        return transferId;
+        return refTransferIds.get(0).toString();
     }
 
     public void setExternalTransactionId(String transferId) {

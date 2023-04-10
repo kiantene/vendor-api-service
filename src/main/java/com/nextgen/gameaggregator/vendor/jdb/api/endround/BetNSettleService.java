@@ -64,7 +64,7 @@ public class BetNSettleService {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException jsonProcessingException) {

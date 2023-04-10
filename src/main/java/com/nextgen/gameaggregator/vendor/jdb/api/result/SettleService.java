@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -53,6 +54,30 @@ public class SettleService {
             vo.setBalance(betResultEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
 
+        } catch (AuthenticationException authenticationException) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (BetNotFoundException betNotFoundException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidRequestException invalidRequestException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (JsonProcessingException jsonProcessingException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledGameException disabledGameException) {
+            vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
