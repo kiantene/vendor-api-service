@@ -1,11 +1,11 @@
 package com.nextgen.gameaggregator;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
@@ -68,25 +68,43 @@ public class ApiSecurityUtilsTest {
     }
 
     @Test
-    void testSignature() {
+    void testSignatureWalletBet() {
         Gson gson = new Gson();
         WalletBetDto walletBetDto = new WalletBetDto();
 
-        walletBetDto.setTraceId("d541e5cd-5306-4efe-83a2-830cea4cd614");
-        walletBetDto.setUsername("100125");
-        walletBetDto.setTransactionId("d541e5cd-5306-4efe-83a2-830cea4cd614");
-        walletBetDto.setExternalTransactionId("1645311546127716352");
-        walletBetDto.setAmount(BigDecimal.valueOf(5));
+        walletBetDto.setTraceId("26eeb910-af71-43a0-82ad-92dcbbc2d794");
+        walletBetDto.setUsername("testsignature5");
+        walletBetDto.setTransactionId("26eeb910-af71-43a0-82ad-92dcbbc2d794");
+        walletBetDto.setExternalTransactionId("64341147eb26a071a3da4deb");
+        walletBetDto.setAmount("5");
         walletBetDto.setCurrency("CNY");
-        walletBetDto.setToken("2979a267-c0bd-4ad7-8684-038e800db53e");
-        walletBetDto.setGameCode("PGS_100");
-        walletBetDto.setRoundId("1645311546127716352");
-        walletBetDto.setTimestamp(1681107814755L);
+        walletBetDto.setToken("078bfcc3-a08c-41aa-82fb-c9b6b7afc374");
+        walletBetDto.setGameCode("PP_bndt");
+        walletBetDto.setRoundId("2915958074");
+        walletBetDto.setTimestamp(1681133895473L);
+
 
         String jsonPayload = gson.toJson(walletBetDto);
-
         System.out.println(jsonPayload);
         String apiSecret = "8c6450bce62aee29a530da1020dc8f6c19a4e4599a0941bb96839a765d03e5ec";
+        String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
+        System.err.println(actualSignature);
+    }
+
+    @Test
+    void testSignatureWalletBalance() {
+        Gson gson = new Gson();
+        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+
+        walletBalanceDto.setTraceId("4fce7194-b507-492a-a757-723f643c130a");
+        walletBalanceDto.setUsername("testsignature");
+        walletBalanceDto.setCurrency("CNY");
+        walletBalanceDto.setToken("af766113-2ce7-4827-b746-8ef056efbafd");
+
+        String jsonPayload = gson.toJson(walletBalanceDto);
+
+        System.out.println(jsonPayload);
+        String apiSecret = "9632b4a7a57fcdfb8339b7dc2e57dae3778216378810155f9f74c057cb99921b";
         String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
         System.err.println(actualSignature);
     }

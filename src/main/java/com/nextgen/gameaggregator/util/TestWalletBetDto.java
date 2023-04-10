@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.operator.wallet.bet;
+package com.nextgen.gameaggregator.util;
 
 import lombok.Data;
-
 @Data
-public class WalletBetDto {
+public class TestWalletBetDto {
+
     private String traceId;
     private String username;
     private String transactionId;
