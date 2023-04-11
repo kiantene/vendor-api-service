@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.jdb.api.bet.BetService;
@@ -20,9 +21,7 @@ import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
-import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
-import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.jdb.constant.*;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -52,6 +51,8 @@ public class GeneralAction {
     private CancelBetNSettleService cancelBetNSettleService;
     @Autowired
     private SettleService settleService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) {
@@ -67,11 +68,27 @@ public class GeneralAction {
 
             // Convert original request body into dto
             VendorRequestDto commonDto = HttpService.convertQueryStringToDto(body, VendorRequestDto.class);
-            //ValidationUtils.validateRequest(commonDto);
-            String params = VendorService.decrypt(commonDto.getX(), "47e0cd2ece0883e2", "b87f2867577b68ce");
+
+            // Validate request parameters (Non-database related)
+            ValidationUtils.validateRequest(commonDto);
+
+            // Get the key and iv value from table
+            String key = vendorLineService.getCredentialValueByName(13, Credentials.KEY);
+            String iv = vendorLineService.getCredentialValueByName(13, Credentials.IV);
+
+            // Decrypt the 'X' field in the VendorRequestDto object using the key and iv values obtained earlier.
+            String params = VendorService.decrypt(commonDto.getX(), key, iv);
+
+            // Convert the params string to an ActionDto object
             ActionDto actionDto = HttpService.convertJsonToDto(params, ActionDto.class);
+
+            // Validate the actionDto object
             this.doValidation(actionDto);
+
+            // Set params to be the decrypted 'X' value again
             actionDto.setParams(params);
+
+            // Handle the action and return the resulting value
             vo = this.actionHandling(actionDto, traceId);
 
         } catch (InvalidDecryptionException invalidDecryptionException) {
