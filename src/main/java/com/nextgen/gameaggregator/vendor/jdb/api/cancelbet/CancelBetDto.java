@@ -40,6 +40,7 @@ public class CancelBetDto {
     private BigDecimal amount;
 
     @NotNull
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private List<Long> refTransferIds;
 
     @NotNull

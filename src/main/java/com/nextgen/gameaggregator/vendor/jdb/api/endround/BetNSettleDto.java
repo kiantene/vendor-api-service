@@ -51,10 +51,12 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 10)
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "Date must be in the format dd-MM-yyyy")
     private String reportDate;
 
     @NotBlank
     @Size(max = 19)
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
     private String gameDate;
 
     @NotBlank
@@ -77,6 +79,7 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 50)
+    @Pattern(regexp = "^(([01]?\\d{1,2}|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d{1,2}|2[0-4]\\d|25[0-5])$|^(([a-fA-F\\d]{1,4}:){7}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){1,7}:|([a-fA-F\\d]{1,4}:){6}:([01][a-fA-F\\d]{1,3}:){1,4}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){5}:([01][a-fA-F\\d]{1,3}:){1,5}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){4}:([01][a-fA-F\\d]{1,3}:){1,6}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){3}:([01][a-fA-F\\d]{1,3}:){1,7}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){2}:([01][a-fA-F\\d]{1,3}:){1,8}[a-fA-F\\d]{1,4}|[a-fA-F\\d]:([01][a-fA-F\\d]{1,3}:){1,8}:[a-fA-F\\d]{1,4}|:((:[a-fA-F\\d]{1,4}){1,7}|:)|fe80:(:[a-fA-F\\d]{0,4}){0,4}%[\\w\\d]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)|([a-fA-F\\d]{1,4}:){1,4}:((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?))$", message = "Invalid IP address")
     private String ipAddress;
 
     @NotBlank
@@ -84,10 +87,13 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     private String clientType;
 
     @NotNull
-    private Boolean systemTakeWin;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer systemTakeWin;
 
     @NotBlank
     @Size(max = 19)
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
     private String lastModifyTime;
 
     @Size(max = 50)
@@ -98,12 +104,16 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
 
     // Slot Only, gType = 0
+    @PositiveOrZero
     private BigDecimal jackpotWin;
 
+    @Negative
     private BigDecimal jackpotContribute;
 
-    @JsonProperty("hasFreegame")
-    private Boolean hasFreeGame;
+    @NotNull
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer hasFreeGame;
 
 
     // Fish Only, gType = 7
@@ -112,11 +122,16 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
 
     // Slot and Arcade, gType = 0 OR gType = 9
-    private Boolean hasGamble;
+    @NotNull
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer hasGamble;
 
 
     // Arcade and Lottery, gType = 9 OR gType = 12
-    private Boolean hasBonusGame;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer hasBonusGame;
 
     @Override
     public String getExternalTransactionId() {
