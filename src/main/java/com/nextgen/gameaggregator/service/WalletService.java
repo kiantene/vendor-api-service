@@ -109,6 +109,10 @@ public class WalletService {
 
         try {
 //            WalletBalanceVo balanceVo = walletBetAction.stub();
+            if(agentId ==4){
+                log.info("DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
+                log.info("DEBUG-SINGATURE : "+ signature);
+            }
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
             // TODO: check for null pointer
@@ -170,6 +174,10 @@ public class WalletService {
             String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
 
             // 5. send this unsettled bet to operator
+            if(agentId ==4){
+                log.info("DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
+                log.info("DEBUG-SINGATURE : "+ signature);
+            }
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
 
@@ -976,6 +984,10 @@ public class WalletService {
                 //else send as lose
                 WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, gameSession, rawSettledBet);
                 String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
+                if(agentId ==4){
+                    log.info("DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
+                    log.info("DEBUG-SINGATURE : "+ signature);
+                }
                 balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             }
         } else {
