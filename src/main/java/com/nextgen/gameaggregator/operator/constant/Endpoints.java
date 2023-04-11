@@ -10,4 +10,5 @@ public class Endpoints {
     public static final String WALLET_BET = "/wallet/bet";
     public static final String WALLET_WIN = "/wallet/win";
     public static final String WALLET_REFUND = "/wallet/refund";
+    public static final String WALLET_RESULT = "/wallet/result";
 }

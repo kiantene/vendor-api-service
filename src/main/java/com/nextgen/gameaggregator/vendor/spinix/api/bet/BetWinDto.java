@@ -1,23 +1,18 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.math.BigDecimal;
-
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class BetDto implements UnsettledResultSettledData {
+public class BetWinDto implements UnsettledResultSettledData {
     private String reqId;
     private String roundId;
     private String id;
-    private BigDecimal amount;
+    private BigDecimal betAmount;
+    private BigDecimal winAmount;
     private WinType winType;
     private BigDecimal validTurnover;
     private String gameId;
@@ -30,27 +25,25 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public String getVendorBetId() {
-        return this.id;
+        return this.roundId;
     }
 
     @Override
-    public BigDecimal getBetAmount() {
-        return this.amount;
-    }
+    public BigDecimal getBetAmount() { return this.betAmount; }
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.ZERO;
+        return this.winAmount;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
+        return this.winAmount.subtract(this.betAmount);
     }
 
     @Override
     public BigDecimal getVendorWinLoss() {
-        return getBetAmount().negate();
+        return this.winAmount.subtract(this.betAmount);
     }
 
     @Override
@@ -65,7 +58,12 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public WinType getResultType() {
-        return WinType.LOSE;
+        this.winType = WinType.WIN;
+
+        if(this.betAmount.compareTo(BigDecimal.ZERO) > 0 && this.winAmount.compareTo(BigDecimal.ZERO) == 0) {
+            this.winType = WinType.LOSE;
+        }
+        return this.winType;
     }
 
     @Override
@@ -98,3 +96,4 @@ public class BetDto implements UnsettledResultSettledData {
         return 0;
     }
 }
+
