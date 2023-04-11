@@ -39,6 +39,10 @@ public class WalletBetResultAction {
         }
         WalletBalanceVo responseVo = null;
 
+        System.out.println("walletBetResultDto : " + dto);
+        System.out.println("callbackUrl : " + callbackUrl);
+        System.out.println("signature : " + signature);
+
         String responseString = WebClient.create(callbackUrl)
                 .post()
                 .uri(Endpoints.WALLET_RESULT)

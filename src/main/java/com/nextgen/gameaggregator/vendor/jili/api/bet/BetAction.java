@@ -60,7 +60,8 @@ public class BetAction {
 
             // 3. Process bet data
             // 4. Process win data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+            //SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, gameSession, betDto, body);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
             betVo.setCurrency(gameSession.getVendorCurrencyCode());
