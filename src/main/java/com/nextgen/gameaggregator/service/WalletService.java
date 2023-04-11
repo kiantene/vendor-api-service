@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import static java.util.UUID.randomUUID;
 
@@ -644,7 +645,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
-        walletBetDto.setAmount(betData.getAmount());
+        walletBetDto.setAmount(betData.getAmount().setScale(4, RoundingMode.CEILING));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
@@ -660,7 +661,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
-        walletBetDto.setAmount(unsettledResultSettledData.getBetAmount());
+        walletBetDto.setAmount(unsettledResultSettledData.getBetAmount().setScale(4, RoundingMode.CEILING));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(unsettledResultSettledData.getRoundId());
         walletBetDto.setTimestamp(unsettledResultSettledData.getVendorBetTime());
@@ -801,7 +802,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
-        walletBetDto.setAmount(rawSettledBet.getWinLoss().abs());
+        walletBetDto.setAmount(rawSettledBet.getWinLoss().abs().setScale(4, RoundingMode.CEILING));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(rawSettledBet.getRoundId());
         walletBetDto.setTimestamp(rawSettledBet.getVendorBetTime());
