@@ -850,6 +850,7 @@ public class WalletService {
         walletBetResultDto.setExternalBetId(rawSettledBet.getVendorBetId());
         walletBetResultDto.setBetAmount(rawSettledBet.getBetAmount());
         walletBetResultDto.setWinAmount(rawSettledBet.getWinAmount());
+        walletBetResultDto.setEffectiveTurnover(rawSettledBet.getEffectiveTurnover());
         walletBetResultDto.setJackpotAmount(rawSettledBet.getJackpotAmount());
         walletBetResultDto.setWinLoss(rawSettledBet.getWinLoss());
         walletBetResultDto.setWinType((winAmount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE);
