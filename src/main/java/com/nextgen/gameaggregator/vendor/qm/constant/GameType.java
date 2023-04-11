@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qmrt.constant;
+package com.nextgen.gameaggregator.vendor.qm.constant;
 
 import java.util.Arrays;
 import java.util.List;

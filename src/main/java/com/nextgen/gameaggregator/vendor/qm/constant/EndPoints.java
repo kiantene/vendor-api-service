@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.vendor.qmrt.constant;
+package com.nextgen.gameaggregator.vendor.qm.constant;
 
 public class EndPoints {
     public static final Integer TIMEOUT = 10000;
 
-    public static final String PATH = "api/v1/qm-rt";
+    public static final String PATH = "api/v1/qm";
 
     public static final String WALLET_CREDIT = "/wallet/credit";
     public static final String WALLET_DEBIT = "/wallet/debit";
