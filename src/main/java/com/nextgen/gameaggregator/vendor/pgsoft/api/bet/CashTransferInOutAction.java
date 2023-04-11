@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +39,8 @@ public class CashTransferInOutAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private Environment environment;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -59,7 +62,15 @@ public class CashTransferInOutAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            // temporary code to ensure when commit to stg branch will still use old code for new changes
+            SettledBetEvent settledBetEvent;
+            if(environment.getProperty("spring.couchbase.userName") == "stg"){
+                //if env = stg will use old code
+                settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            } else {
+                //else use new code
+                settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, gameSession, dto, body);
+            }
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
