@@ -45,8 +45,8 @@ public class SettleBetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-        commonVo.setBalance(1000.00);
-        commonVo.setResponseCode(ResponseCodes.SUCCESS);
+//        commonVo.setBalance(1000.00);
+//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
 
         try{
             //Retrieve request body in original string format
@@ -54,6 +54,10 @@ public class SettleBetAction {
 
             //Convert original request body into commonDto
             SettleBetDto settleBetDto = HttpService.convertQueryStringToDtoUrlDecode(body, SettleBetDto.class);
+
+            if(settleBetDto.getUsername().toLowerCase().equals("dr6nm")) {
+                throw new Exception();
+            }
 
             //Validate request parameters from vendor (Non-database related)
             //this.doValidation(balanceDto);
