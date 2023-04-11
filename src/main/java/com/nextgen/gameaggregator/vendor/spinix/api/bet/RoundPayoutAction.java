@@ -129,10 +129,7 @@ public class RoundPayoutAction {
                     
                 } else if (winRecord != null && winRecord.getType().equals("win")) {
 
-                    throw new InvalidRequestException();
-
                     // Set necessary values to process win record
-                    /*
                     WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
                     winDto.setReqId(dto.getReqId());
                     winDto.setRoundId(dto.getRoundId());
@@ -146,8 +143,6 @@ public class RoundPayoutAction {
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
-                    
-                     */
 
                 } else if(cancelBet != null && cancelBet.getType().equals("cancelBet")) {
                     // Send refund to Operator
