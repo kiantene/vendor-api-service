@@ -614,7 +614,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
-        walletBetDto.setAmount(betData.getAmount().toString());
+        walletBetDto.setAmount(betData.getAmount());
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
@@ -630,7 +630,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
-        walletBetDto.setAmount(unsettledResultSettledData.getBetAmount().toString());
+        walletBetDto.setAmount(unsettledResultSettledData.getBetAmount());
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(unsettledResultSettledData.getRoundId());
         walletBetDto.setTimestamp(unsettledResultSettledData.getVendorBetTime());
@@ -653,7 +653,7 @@ public class WalletService {
         betHistory.setHouseId(0);
         betHistory.setGameCategoryId(gameSession.getGameCategoryId());
         betHistory.setCurrencyId(gameSession.getCurrencyId());
-        betHistory.setBetAmount(new BigDecimal(walletBetDto.getAmount()));
+        betHistory.setBetAmount(walletBetDto.getAmount());
         betHistory.setGameSessionToken(gameSession.getToken());
         betHistory.setRawData(rawData);
         betHistory.setVendorBetTime(walletBetDto.getTimestamp());
@@ -683,7 +683,7 @@ public class WalletService {
         rawUnsettledBet.setHouseId(0);
         rawUnsettledBet.setGameCategoryId(gameSession.getGameCategoryId());
         rawUnsettledBet.setCurrencyId(gameSession.getCurrencyId());
-        rawUnsettledBet.setBetAmount(new BigDecimal(walletBetDto.getAmount()));
+        rawUnsettledBet.setBetAmount(walletBetDto.getAmount());
         rawUnsettledBet.setGameSessionToken(gameSession.getToken());
         rawUnsettledBet.setResultType(unsettledResultSettledData.getResultType().code);
         rawUnsettledBet.setVendorBetTime(walletBetDto.getTimestamp());
@@ -771,7 +771,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
-        walletBetDto.setAmount(rawSettledBet.getWinLoss().abs().toString());
+        walletBetDto.setAmount(rawSettledBet.getWinLoss().abs());
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(rawSettledBet.getRoundId());
         walletBetDto.setTimestamp(rawSettledBet.getVendorBetTime());
