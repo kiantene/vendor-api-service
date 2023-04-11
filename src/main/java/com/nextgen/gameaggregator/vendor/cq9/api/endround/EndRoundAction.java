@@ -159,7 +159,7 @@ public class EndRoundAction {
         formatter.parse(endRoundDataDtoList.get(0).getEventtime());
 
 //        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
-        dto.setExternalTransactionId(dto.getVendorBetId());
+        dto.setExternalTransactionId(endRoundDataDtoList.get(0).getMtcode());
     }
 
     private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
