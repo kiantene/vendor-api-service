@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 import java.math.BigDecimal;
 import java.util.List;
 
+import javax.validation.Valid;
 import javax.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -41,9 +42,10 @@ public class SettleDto implements UnsettledResultSettledData {
     @Positive
     private BigDecimal amount;
 
+    @Valid
     @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    private List<Long> refTransferIds;
+    @Size(min = 1, max = 30)
+    private List<@NotNull Long> refTransferIds;
 
     @NotNull
     @Positive
