@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
@@ -72,21 +73,21 @@ public class ApiSecurityUtilsTest {
         Gson gson = new Gson();
         WalletBetDto walletBetDto = new WalletBetDto();
 
-        walletBetDto.setTraceId("26eeb910-af71-43a0-82ad-92dcbbc2d794");
-        walletBetDto.setUsername("testsignature5");
-        walletBetDto.setTransactionId("26eeb910-af71-43a0-82ad-92dcbbc2d794");
-        walletBetDto.setExternalTransactionId("64341147eb26a071a3da4deb");
-        walletBetDto.setAmount("5");
+        walletBetDto.setTraceId("fc6112c7-fe4e-4453-ae88-18a7e8b62979");
+        walletBetDto.setUsername("rwqrqwe");
+        walletBetDto.setTransactionId("c01512a2-a19b-4973-862c-d0883b68345b");
+        walletBetDto.setExternalTransactionId("fa228a98-84c8-4e4b-bf0a-bde06470c9a2");
+        walletBetDto.setAmount(BigDecimal.valueOf(5));
         walletBetDto.setCurrency("CNY");
-        walletBetDto.setToken("078bfcc3-a08c-41aa-82fb-c9b6b7afc374");
-        walletBetDto.setGameCode("PP_bndt");
-        walletBetDto.setRoundId("2915958074");
-        walletBetDto.setTimestamp(1681133895473L);
+        walletBetDto.setToken("ecf9d4df-f0a5-48e7-b773-ada7040cf632");
+        walletBetDto.setGameCode("PP_bjmb");
+        walletBetDto.setRoundId("48867e2d-7ce1-442f-aeef-8bd1a1f2c8da");
+        walletBetDto.setTimestamp(1681176476596L);
 
 
         String jsonPayload = gson.toJson(walletBetDto);
         System.out.println(jsonPayload);
-        String apiSecret = "8c6450bce62aee29a530da1020dc8f6c19a4e4599a0941bb96839a765d03e5ec";
+        String apiSecret = "319f90ab0762831a0fb00f99f3f8572b18c3ae9ff14df6144a9f7998a37eb198";
         String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
         System.err.println(actualSignature);
     }
