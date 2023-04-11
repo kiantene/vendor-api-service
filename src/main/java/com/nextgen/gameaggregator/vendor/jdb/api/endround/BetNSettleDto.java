@@ -51,12 +51,10 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = "^[0-9-]+$") // only accept numbers and dashes
     private String reportDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^[0-9:-\\s]+$")
     private String gameDate;
 
     @NotBlank
@@ -75,26 +73,21 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     private BigDecimal netWin;
 
     @NotNull
-    @PositiveOrZero
     private BigDecimal denom;
 
     @NotBlank
     @Size(max = 50)
-    @Pattern(regexp = "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")
     private String ipAddress;
 
     @NotBlank
     @Size(max = 20)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String clientType;
 
     @NotNull
-    @Size(min = 0, max = 1)
-    private Integer systemTakeWin;
+    private Boolean systemTakeWin;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^[0-9:-\\s]+$")
     private String lastModifyTime;
 
     @Size(max = 50)
@@ -109,9 +102,8 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
     private BigDecimal jackpotContribute;
 
-    @Size(min = 0, max = 1)
     @JsonProperty("hasFreegame")
-    private Integer hasFreeGame;
+    private Boolean hasFreeGame;
 
 
     // Fish Only, gType = 7
@@ -120,13 +112,11 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
 
     // Slot and Arcade, gType = 0 OR gType = 9
-    @Size(min = 0, max = 1)
-    private Integer hasGamble;
+    private Boolean hasGamble;
 
 
     // Arcade and Lottery, gType = 9 OR gType = 12
-    @Size(min = 0, max = 1)
-    private Integer hasBonusGame;
+    private Boolean hasBonusGame;
 
     @Override
     public String getExternalTransactionId() {
