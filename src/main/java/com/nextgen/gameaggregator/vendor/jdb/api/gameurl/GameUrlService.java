@@ -43,7 +43,7 @@ public class GameUrlService implements GameUrl {
         json.put("parent", credentials.get(Credentials.PARENT));
         json.put("uid", gameSession.getVendorPlayerUsername());
         json.put("balance", 0);
-        json.put("lang", gameSession.getVendorCurrencyCode());
+        json.put("lang", gameSession.getVendorLanguageCode());
         json.put("gType", gType);
         json.put("mType", mType);
         json.put("windowMode", "2");
