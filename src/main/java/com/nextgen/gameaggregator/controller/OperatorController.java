@@ -4,10 +4,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
+import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,14 @@ public class OperatorController {
     private WalletService walletService;
 
     @Autowired
+    private WalletBetAction walletBetAction;
+
+    @Autowired
     AgentApiCredentialRepository agentApiCredentialRepository;
+
+    @Autowired
+    private AuthenticationService authenticationService;
+
 
     @PostMapping(path = Endpoints.WALLET_BALANCE)
     public ResponseEntity<Map<String, Object>> walletBalance(@RequestBody ObjectNode json) {
@@ -65,5 +73,56 @@ public class OperatorController {
                 responseMap,
                 HttpStatus.OK);
 
+    }
+
+    @PostMapping(path = Endpoints.WALLET_BET)
+    public ResponseEntity<Map<String, Object>> walletBet(@RequestBody ObjectNode json) {
+        HashMap<String, Object> responseMap = new HashMap<>();
+        try {
+
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
+
+            if (gameSession != null) {
+                Integer agentId = gameSession.getAgentId();
+                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+                controllerServices.clearAgentApiCredentials();
+                agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
+                agentApiCredentialRepository.save(agentApiCredential);
+
+                //BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
+
+//                responseMap.put("balance", balance);
+
+
+                String test = "{\"traceId\":\"d541e5cd-5306-4efe-83a2-830cea4cd614\",\"username\":\"100125\",\"transactionId\":\"d541e5cd-5306-4efe-83a2-830cea4cd614\",\"externalTransactionId\":\"1645311546127716352\",\"amount\":5,\"currency\":\"CNY\",\"token\":\"2979a267-c0bd-4ad7-8684-038e800db53e\",\"gameCode\":\"PGS_100\",\"roundId\":\"1645311546127716352\",\"timestamp\":1681107814755}";
+                WalletBetDto walletBetDto = HttpService.convertJsonToDto(test, WalletBetDto.class);
+
+//                WalletBetDto walletBetDto = new WalletBetDto();
+//                walletBetDto.setTraceId(String.valueOf(UUID.randomUUID()));
+//                walletBetDto.setTransactionId(String.valueOf(UUID.randomUUID()));
+//                walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
+//                walletBetDto.setCurrency(gameSession.getCurrencyCode());
+//                walletBetDto.setToken(gameSession.getToken());
+//                walletBetDto.setExternalTransactionId(String.valueOf(UUID.randomUUID()));
+//                walletBetDto.setAmount(BigDecimal.valueOf(5));
+//                walletBetDto.setGameCode(gameSession.getGameCode());
+//                walletBetDto.setRoundId(String.valueOf(UUID.randomUUID()));
+//                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+//                walletBetDto.setTimestamp(timestamp.getTime());
+
+                String signature = authenticationService.generateSignature(walletBetDto, "8c6450bce62aee29a530da1020dc8f6c19a4e4599a0941bb96839a765d03e5ec");
+
+                WalletBalanceVo balanceVo = walletBetAction.call(json.get("callbackUrl").asText(), signature, walletBetDto);
+
+            }
+
+
+        } catch (Exception exception) {
+            responseMap.put("exceptionName", exception.getClass().getSimpleName());
+        }
+
+        return new ResponseEntity<>(
+                responseMap,
+                HttpStatus.OK);
     }
 }
