@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
@@ -18,6 +19,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettled
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
+import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -95,10 +97,22 @@ public class WalletService {
 
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+
         String callbackUrl = agentApiCredential.getCallbackUrl();
 
         WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
         String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
+
+        if(agentId ==2){
+            Gson gson = new Gson();
+            String jsonPayload = gson.toJson(walletBetDto);
+            String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, agentApiCredential.getApiSecret());
+
+            log.error("CHECK-AGENT-SECRET :" + agentApiCredential.getApiSecret());
+            log.error("CHECK-AGENT-PAYLOAD :" + jsonPayload);
+            log.error("CHECK-AGENT-SIGNATURE :" + actualSignature);
+
+        }
 
         BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
         betHistoryService.create(betHistory);
