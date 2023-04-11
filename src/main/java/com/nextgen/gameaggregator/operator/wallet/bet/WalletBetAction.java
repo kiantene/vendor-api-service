@@ -56,6 +56,7 @@ public class WalletBetAction {
                 .onStatus(HttpStatus::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                .retry(3)
                 .block();
 
         OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BET, callbackUrl, dto, apiResponse, signature, profilesActive);
