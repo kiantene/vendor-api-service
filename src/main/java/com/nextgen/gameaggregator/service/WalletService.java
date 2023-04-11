@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
@@ -18,6 +19,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettled
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
+import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -28,6 +30,8 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+
+import static java.util.UUID.randomUUID;
 
 @Service
 @Slf4j
@@ -110,8 +114,15 @@ public class WalletService {
         try {
 //            WalletBalanceVo balanceVo = walletBetAction.stub();
             if(agentId ==4){
-                log.info("DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
-                log.info("DEBUG-SINGATURE : "+ signature);
+                String random = randomUUID().toString();
+                log.info(random +"-DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
+                log.info(random +"-DEBUG-SINGATURE : "+ signature);
+                Gson gson = new Gson();
+                String jsonPayloadTest = gson.toJson(walletBetDto);
+                log.info(random +"-DEBUG-payload : "+ jsonPayloadTest);
+                String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayloadTest, agentApiCredential.getApiSecret());
+                log.info(random +"-DEBUG-AFTERSIGNATURE : "+ actualSignature);
+
             }
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
@@ -175,8 +186,15 @@ public class WalletService {
 
             // 5. send this unsettled bet to operator
             if(agentId ==4){
-                log.info("DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
-                log.info("DEBUG-SINGATURE : "+ signature);
+                String random = randomUUID().toString();
+                log.info(random +"-DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
+                log.info(random +"-DEBUG-SINGATURE : "+ signature);
+                Gson gson = new Gson();
+                String jsonPayloadTest = gson.toJson(walletBetDto);
+                log.info(random +"-DEBUG-payload : "+ jsonPayloadTest);
+                String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayloadTest, agentApiCredential.getApiSecret());
+                log.info(random +"-DEBUG-AFTERSIGNATURE : "+ actualSignature);
+
             }
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
@@ -985,8 +1003,15 @@ public class WalletService {
                 WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, gameSession, rawSettledBet);
                 String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
                 if(agentId ==4){
-                    log.info("DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
-                    log.info("DEBUG-SINGATURE : "+ signature);
+                    String random = randomUUID().toString();
+                    log.info(random +"-DEBUG-SECRET : "+ agentApiCredential.getApiSecret());
+                    log.info(random +"-DEBUG-SINGATURE : "+ signature);
+                    Gson gson = new Gson();
+                    String jsonPayloadTest = gson.toJson(walletBetDto);
+                    log.info(random +"-DEBUG-payload : "+ jsonPayloadTest);
+                    String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayloadTest, agentApiCredential.getApiSecret());
+                    log.info(random +"-DEBUG-AFTERSIGNATURE : "+ actualSignature);
+
                 }
                 balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             }
