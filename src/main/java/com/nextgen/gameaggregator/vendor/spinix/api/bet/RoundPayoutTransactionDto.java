@@ -28,7 +28,6 @@ public class RoundPayoutTransactionDto {
     public BigDecimal amount;
 
     @NotBlank
-    @DateTimeFormat(pattern = "yyyy-MM-ddTHH:mm:ss.SSSZ")
     public String timestamp;
 
     @NotBlank
@@ -43,7 +42,7 @@ public class RoundPayoutTransactionDto {
     @NotNull
     public Boolean isEnd;
 
-    public Long getTimestamp() {
+    public Long getConvertedTimestamp() {
         Instant instant = Instant.parse(this.timestamp);
         return instant.getEpochSecond();
     }
