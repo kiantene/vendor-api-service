@@ -27,7 +27,7 @@ public class WinDto implements UnsettledResultSettledData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.reqId;
+        return this.roundId;
     }
 
     @Override

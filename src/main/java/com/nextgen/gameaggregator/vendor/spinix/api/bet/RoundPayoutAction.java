@@ -111,7 +111,6 @@ public class RoundPayoutAction {
 
             } else {
 
-
                 if(betRecord != null && betRecord.getType().equals("bet")) {
                     // Set necessary values to process bet record
                     BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
@@ -129,11 +128,8 @@ public class RoundPayoutAction {
                     roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
                     
                 } else if (winRecord != null && winRecord.getType().equals("win")) {
-                    // Throw exception to test cancel bet
-                    throw new InvalidRequestException();
 
                     // Set necessary values to process win record
-                    /*
                     WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
                     winDto.setReqId(dto.getReqId());
                     winDto.setRoundId(dto.getRoundId());
@@ -148,12 +144,10 @@ public class RoundPayoutAction {
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
 
-                     */
-
                 } else if(cancelBet != null && cancelBet.getType().equals("cancelBet")) {
                     // Send refund to Operator
                     // TODO: to confirm whether to use id or round id for cancel bet
-                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBet.getId(), gameSession, body);
+                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getRoundId(), gameSession, body);
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(betRefundEvent.getLastBalance());
