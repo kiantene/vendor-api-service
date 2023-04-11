@@ -42,6 +42,7 @@ public class SettleDto implements UnsettledResultSettledData {
     private BigDecimal amount;
 
     @NotNull
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private List<Long> refTransferIds;
 
     @NotNull
@@ -64,17 +65,17 @@ public class SettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = "^[0-9-]+$") // only accept numbers and dashes
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "Date must be in the format dd-MM-yyyy")
     private String reportDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^[0-9:-\\s]+$")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
     private String gameDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^[0-9:-\\s]+$")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
     private String lastModifyTime;
 
     @NotNull
