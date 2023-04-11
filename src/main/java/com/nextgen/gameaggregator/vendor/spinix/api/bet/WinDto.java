@@ -67,7 +67,7 @@ public class WinDto implements UnsettledResultSettledData {
 
     @Override
     public WinType getResultType() {
-        return this.winType;
+        return WinType.WIN;
     }
 
     @Override
