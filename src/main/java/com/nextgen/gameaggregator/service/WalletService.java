@@ -107,16 +107,7 @@ public class WalletService {
         WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
         String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
 
-        if(agentId ==2){
-            Gson gson = new Gson();
-            String jsonPayload = gson.toJson(walletBetDto);
-            String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, agentApiCredential.getApiSecret());
 
-            log.error("CHECK-AGENT-SECRET :" + agentApiCredential.getApiSecret());
-            log.error("CHECK-AGENT-PAYLOAD :" + jsonPayload);
-            log.error("CHECK-AGENT-SIGNATURE :" + actualSignature);
-
-        }
 
         BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
         betHistoryService.create(betHistory);
@@ -185,6 +176,17 @@ public class WalletService {
             String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
 
             // 5. send this unsettled bet to operator
+            if(agentId ==2){
+                Gson gson = new Gson();
+                String jsonPayload = gson.toJson(walletBetDto);
+                String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, agentApiCredential.getApiSecret());
+
+                log.error("CHECK-AGENT-SECRET :" + agentApiCredential.getApiSecret());
+                log.error("CHECK-AGENT-PAYLOAD :" + jsonPayload);
+                log.error("CHECK-AGENT-SIGNATURE :" + actualSignature);
+
+            }
+
             WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
 
