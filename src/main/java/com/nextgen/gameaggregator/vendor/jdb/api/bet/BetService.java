@@ -56,6 +56,8 @@ public class BetService {
             vo.setBalance(betEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
         
+        } catch (AuthenticationException authenticationException) {
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);   
         } catch (InsufficientBalanceException exception) {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
         } catch (CouchbaseDataIntegrityException exception) {
@@ -68,6 +70,10 @@ public class BetService {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledVendorLineException exception) {
             vo.setResponseCode(ResponseCode.FAILED);
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledAgentPlayerException exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (DisabledGameException exception) {
@@ -85,7 +91,7 @@ public class BetService {
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws DisabledVendorLineException, 
-    DisabledAgentPlayerException, DisabledGameException{
+    DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException{
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -94,6 +100,10 @@ public class BetService {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // Verify vendor gameCode, currency and platform
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
 }

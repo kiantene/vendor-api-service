@@ -34,9 +34,11 @@ public class BetDto implements UnsettledResultSettledData {
     @Size(max = 3)
     private String currency;
 
+    @NotNull
     @Positive
     private BigDecimal amount;
 
+    @NotNull
     @Positive
     private Long gameRoundSeqNo;
 

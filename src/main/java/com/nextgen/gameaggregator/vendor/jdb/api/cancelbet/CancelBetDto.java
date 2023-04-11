@@ -35,11 +35,14 @@ public class CancelBetDto {
     @Size(max = 3)
     private String currency;
 
+    @NotNull
     @Positive
     private BigDecimal amount;
 
+    @NotNull
     private List<Long> refTransferIds;
 
+    @NotNull
     @Positive
     private Long gameRoundSeqNo;
 }

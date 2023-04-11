@@ -76,6 +76,10 @@ public class SettleService {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
             vo.setResponseCode(ResponseCode.FAILED);
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledGameException disabledGameException) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
@@ -91,7 +95,7 @@ public class SettleService {
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
-    DisabledVendorLineException, DisabledGameException {
+    DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException {
        // Verify vendor line is active
        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -100,5 +104,9 @@ public class SettleService {
 
        // Verify vendor game is active
        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+       // Verify vendor gameCode, currency
+       ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+       ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
    }
 }

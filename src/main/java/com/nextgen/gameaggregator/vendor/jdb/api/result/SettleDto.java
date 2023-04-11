@@ -37,11 +37,14 @@ public class SettleDto implements UnsettledResultSettledData {
     @Size(max = 3)
     private String currency;
 
+    @NotNull
     @Positive
     private BigDecimal amount;
 
+    @NotNull
     private List<Long> refTransferIds;
 
+    @NotNull
     @Positive
     private Long gameRoundSeqNo;
 
@@ -61,14 +64,17 @@ public class SettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 10)
+    @Pattern(regexp = "^[0-9-]+$") // only accept numbers and dashes
     private String reportDate;
 
     @NotBlank
     @Size(max = 19)
+    @Pattern(regexp = "^[0-9:-\\s]+$")
     private String gameDate;
 
     @NotBlank
     @Size(max = 19)
+    @Pattern(regexp = "^[0-9:-\\s]+$")
     private String lastModifyTime;
 
     @NotNull
@@ -86,11 +92,13 @@ public class SettleDto implements UnsettledResultSettledData {
     @NotNull
     private BigDecimal netWin;
 
+    @NotNull
     @Positive
     private BigDecimal tax;
 
     @NotBlank
     @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String sessionNo;
 
     @Override

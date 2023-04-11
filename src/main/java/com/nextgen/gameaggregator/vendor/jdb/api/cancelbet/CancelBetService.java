@@ -80,6 +80,8 @@ public class CancelBetService {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
             vo.setResponseCode(ResponseCode.FAILED);
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -92,11 +94,15 @@ public class CancelBetService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException {
+    private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
+     CurrencyNotSupportedException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor currency
+       ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }
