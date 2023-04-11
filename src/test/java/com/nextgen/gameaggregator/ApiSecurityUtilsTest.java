@@ -1,12 +1,13 @@
 package com.nextgen.gameaggregator;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
@@ -69,25 +70,17 @@ public class ApiSecurityUtilsTest {
     }
 
     @Test
-    void testSignatureWalletBet() {
+    void testSignatureWalletBet() throws JsonProcessingException {
         Gson gson = new Gson();
-        WalletBetDto walletBetDto = new WalletBetDto();
+//        WalletBetDto walletBetDto = new WalletBetDto();
 
-        walletBetDto.setTraceId("fc6112c7-fe4e-4453-ae88-18a7e8b62979");
-        walletBetDto.setUsername("rwqrqwe");
-        walletBetDto.setTransactionId("c01512a2-a19b-4973-862c-d0883b68345b");
-        walletBetDto.setExternalTransactionId("fa228a98-84c8-4e4b-bf0a-bde06470c9a2");
-        walletBetDto.setAmount(BigDecimal.valueOf(5));
-        walletBetDto.setCurrency("CNY");
-        walletBetDto.setToken("ecf9d4df-f0a5-48e7-b773-ada7040cf632");
-        walletBetDto.setGameCode("PP_bjmb");
-        walletBetDto.setRoundId("48867e2d-7ce1-442f-aeef-8bd1a1f2c8da");
-        walletBetDto.setTimestamp(1681176476596L);
+        String test = "{\"traceId\":\"f76fefaa-3dc3-4348-a8a8-e106cf72d00e\",\"username\":\"testbbbbbbb\",\"transactionId\":\"f76fefaa-3dc3-4348-a8a8-e106cf72d00e\",\"externalTransactionId\":\"6434cd93cb15585ac3bc5b74\",\"amount\":15,\"currency\":\"CNY\",\"token\":\"d5d9bb51-1e5a-4189-aed5-372c60825c32\",\"gameCode\":\"PP_cs5triple8gold\",\"roundId\":\"2916168397\",\"timestamp\":1681182099989}";
+        WalletBetDto walletBetDto = HttpService.convertJsonToDto(test, WalletBetDto.class);
 
 
         String jsonPayload = gson.toJson(walletBetDto);
-        System.out.println(jsonPayload);
-        String apiSecret = "319f90ab0762831a0fb00f99f3f8572b18c3ae9ff14df6144a9f7998a37eb198";
+        System.err.println(jsonPayload);
+        String apiSecret = "9632b4a7a57fcdfb8339b7dc2e57dae3778216378810155f9f74c057cb99921b";
         String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
         System.err.println(actualSignature);
     }
