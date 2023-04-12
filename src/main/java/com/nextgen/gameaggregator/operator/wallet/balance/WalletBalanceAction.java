@@ -53,6 +53,7 @@ public class WalletBalanceAction {
                 .retrieve()
                 .onStatus(HttpStatus::isError, response -> Mono.empty())
                 .toEntity(String.class)
+                .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
