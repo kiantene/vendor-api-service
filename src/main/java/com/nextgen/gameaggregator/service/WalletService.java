@@ -659,7 +659,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
-        walletBetDto.setAmount(betData.getAmount().stripTrailingZeros());
+        walletBetDto.setAmount(new BigDecimal(betData.getAmount().stripTrailingZeros().toPlainString()));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
@@ -675,7 +675,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
-        walletBetDto.setAmount(unsettledResultSettledData.getBetAmount().stripTrailingZeros());
+        walletBetDto.setAmount(new BigDecimal(unsettledResultSettledData.getBetAmount().stripTrailingZeros().toPlainString()));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(unsettledResultSettledData.getRoundId());
         walletBetDto.setTimestamp(unsettledResultSettledData.getVendorBetTime());
@@ -759,7 +759,7 @@ public class WalletService {
         walletWinDto.setToken(gameSession.getToken());
         walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(referenceTransactionId);
-        walletWinDto.setAmount(winData.getAmount().stripTrailingZeros());
+        walletWinDto.setAmount(new BigDecimal(winData.getAmount().stripTrailingZeros().toPlainString()));
         walletWinDto.setGameCode(gameSession.getGameCode());
         walletWinDto.setRoundId(winData.getRoundId());
         walletWinDto.setWinType(winData.getWinType());
@@ -780,7 +780,9 @@ public class WalletService {
         walletWinDto.setToken(gameSession.getToken());
         walletWinDto.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(referenceTransactionId);
-        walletWinDto.setAmount((transferAmount == null)?unsettledResultSettledData.getWinAmount().stripTrailingZeros():transferAmount.stripTrailingZeros());
+        walletWinDto.setAmount((transferAmount == null)?
+                new BigDecimal(unsettledResultSettledData.getWinAmount().stripTrailingZeros().toPlainString()):
+                new BigDecimal(transferAmount.stripTrailingZeros().toPlainString()));
         walletWinDto.setGameCode(gameSession.getGameCode());
         walletWinDto.setRoundId(unsettledResultSettledData.getRoundId());
         walletWinDto.setWinType((winAmount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE);
@@ -800,7 +802,7 @@ public class WalletService {
         walletWinDto.setToken(gameSession.getToken());
         walletWinDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(rawSettledBet.getInternalTransactionId());
-        walletWinDto.setAmount(transferAmount.stripTrailingZeros());
+        walletWinDto.setAmount(new BigDecimal(transferAmount.stripTrailingZeros().toPlainString()));
         walletWinDto.setGameCode(gameSession.getGameCode());
         walletWinDto.setRoundId(rawSettledBet.getRoundId());
         walletWinDto.setWinType((winAmount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE);
@@ -816,7 +818,7 @@ public class WalletService {
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
         walletBetDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
-        walletBetDto.setAmount(rawSettledBet.getWinLoss().abs().stripTrailingZeros());
+        walletBetDto.setAmount(new BigDecimal(rawSettledBet.getWinLoss().abs().stripTrailingZeros().toPlainString()));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(rawSettledBet.getRoundId());
         walletBetDto.setTimestamp(rawSettledBet.getVendorBetTime());
