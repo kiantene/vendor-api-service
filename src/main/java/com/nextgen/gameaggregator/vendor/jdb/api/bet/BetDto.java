@@ -35,11 +35,11 @@ public class BetDto implements UnsettledResultSettledData {
     private String currency;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal amount;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private Long gameRoundSeqNo;
 
     @NotBlank

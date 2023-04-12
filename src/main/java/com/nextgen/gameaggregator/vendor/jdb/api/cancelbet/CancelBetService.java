@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -68,6 +70,8 @@ public class CancelBetService {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidFormatException invalidFormatException) {
+            vo.setResponseCode(ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE);
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -89,9 +93,20 @@ public class CancelBetService {
         return vo;
     }
 
-    private void doValidation(CancelBetDto dto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(dto);
+    private void doValidation(CancelBetDto dto) throws InvalidRequestException, InvalidFormatException {
+        try {
+            ValidationUtils.validateRequest(dto);
+        } catch (InvalidRequestException e) {
+            // Handle validation errors with dto message
+            Map<String, String> validationErrors = e.getValidation();
+            for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
+                String value = entry.getValue();
+                switch (value) {
+                    case "PARAMETER_CANNOT_BE_NEGATIVE":
+                        throw new InvalidFormatException();
+                }
+            }
+        }
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,

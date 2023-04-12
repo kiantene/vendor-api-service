@@ -39,7 +39,7 @@ public class SettleDto implements UnsettledResultSettledData {
     private String currency;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal amount;
 
     @Valid
@@ -48,7 +48,7 @@ public class SettleDto implements UnsettledResultSettledData {
     private List<@NotNull Long> refTransferIds;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private Long gameRoundSeqNo;
 
     @NotBlank
@@ -67,36 +67,36 @@ public class SettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "Date must be in the format dd-MM-yyyy")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "WRONG_DATE_FORMAT")
     private String reportDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
     private String gameDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
     private String lastModifyTime;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal bet;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal validBet;
 
     @NotNull
-    @PositiveOrZero
+    @PositiveOrZero(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal win;
 
     @NotNull
     private BigDecimal netWin;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal tax;
 
     @NotBlank
