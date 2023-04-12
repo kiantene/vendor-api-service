@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
+import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 
@@ -95,11 +96,34 @@ public class BetNSettleService {
     private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        switch(dto.getGType()) {
+            case "0":
+                if (dto.getJackpotWin() == null || dto.getJackpotContribute() == null || dto.getHasFreeGame() == null || dto.getHasGamble() == null){
+                    throw new InvalidRequestException();
+                }
+                break;
+            case "7":
+                if (dto.getRoomType() == null){
+                    throw new InvalidRequestException();
+                }
+                break;
+            case "9":
+                if (dto.getHasBonusGame() == null || dto.getHasGamble() == null){
+                    throw new InvalidRequestException();
+                }
+                break;
+            case "12":
+                if (dto.getHasBonusGame() == null) {
+                    throw new InvalidRequestException();
+                }
+                break;
+        }
     }
 
     private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
      DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-     VendorPlatformNotSupportedException {
+     VendorPlatformNotSupportedException, InvalidRequestException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -113,5 +137,8 @@ public class BetNSettleService {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
+
+        // Verify game category
+        if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();
     }
 }
