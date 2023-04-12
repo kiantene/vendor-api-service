@@ -110,7 +110,6 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     @Negative
     private BigDecimal jackpotContribute;
 
-    @NotNull
     @Min(value = 0)
     @Max(value = 1)
     private Integer hasFreeGame;
@@ -122,7 +121,6 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
 
     // Slot and Arcade, gType = 0 OR gType = 9
-    @NotNull
     @Min(value = 0)
     @Max(value = 1)
     private Integer hasGamble;
