@@ -2,11 +2,12 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
+import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.OperatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +32,10 @@ public class WalletBetResultAction {
     @Autowired
     OperatorService operatorService;
 
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletBetResultDto dto) throws InvalidOperatorResponseException {
+    @Autowired
+    AuthenticationService authenticationService;
+
+    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletBetResultDto dto) throws InvalidOperatorResponseException {
 //        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -40,10 +44,10 @@ public class WalletBetResultAction {
         WalletBalanceVo responseVo = null;
 
         System.out.println("walletBetResultDto : " + dto);
-        System.out.println("callbackUrl : " + callbackUrl);
-        System.out.println("signature : " + signature);
 
-        String responseString = WebClient.create(callbackUrl)
+        String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+
+        String responseString = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_RESULT)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -73,11 +77,11 @@ public class WalletBetResultAction {
                     (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
-                operatorService.operatorResponseLogging(true, Endpoints.WALLET_RESULT, callbackUrl, dto, responseString, profilesActive);
+                operatorService.operatorResponseLogging(true, Endpoints.WALLET_RESULT, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            operatorService.operatorResponseLogging(false, Endpoints.WALLET_RESULT, callbackUrl, dto, responseString, profilesActive);
+            operatorService.operatorResponseLogging(false, Endpoints.WALLET_RESULT, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 

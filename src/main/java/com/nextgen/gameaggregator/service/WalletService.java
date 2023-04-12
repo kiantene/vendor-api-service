@@ -234,9 +234,7 @@ public class WalletService {
         try {
             // 7. Prepare to send this transaction to operator as win
             AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            String callbackUrl = agentApiCredential.getCallbackUrl();
-            String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-            WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+            WalletBalanceVo balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
 
             // 8. prepare the async event to flush cache from redis and couchbase
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
@@ -478,9 +476,7 @@ public class WalletService {
             // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
             try {
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-                String callbackUrl = agentApiCredential.getCallbackUrl();
-                String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-                WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+                WalletBalanceVo balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
                 betResultEvent = new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
 
             } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
@@ -544,9 +540,7 @@ public class WalletService {
         try {
             // 5. Prepare to send this transaction to operator as win
             AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            String callbackUrl = agentApiCredential.getCallbackUrl();
-            String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-            WalletBalanceVo balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+            WalletBalanceVo balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
 
             //TODO: refine proper handle for result bet event
             ResultBetEvent resultBetEvent = new ResultBetEvent(rawResultBet, balanceVo.getData().getBalance());
@@ -625,9 +619,7 @@ public class WalletService {
             // TODO: ok To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
             try {
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-                String callbackUrl = agentApiCredentialService.getAgentApiCredential(betHistory.getAgentId()).getCallbackUrl();
-                String signature = authenticationService.generateSignature(walletRefundDto, agentApiCredential.getApiSecret());
-                WalletBalanceVo balanceVo = walletRefundAction.call(callbackUrl, signature, walletRefundDto);
+                WalletBalanceVo balanceVo = walletRefundAction.call(agentApiCredential, walletRefundDto);
 
                 betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, balanceVo.getData().getBalance());
 
@@ -1036,7 +1028,6 @@ public class WalletService {
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, InsufficientBalanceException {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String callbackUrl = agentApiCredential.getCallbackUrl();
         WalletBalanceVo balanceVo;
 
         if (isFullBet == true) {
@@ -1044,8 +1035,7 @@ public class WalletService {
             if ((rawSettledBet.getWinLoss().compareTo(BigDecimal.ZERO) >= 0)) {
                 //if WinLoss >= 0 then we will send as win
                 WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, gameSession, rawSettledBet, rawSettledBet.getWinLoss());
-                String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-                balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+                balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
 
             } else {
                 //else send as lose
@@ -1055,8 +1045,7 @@ public class WalletService {
         } else {
             //else isFullBet = false, then we will send as wallet/win with winAmount (because bet already deducted)
             WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, gameSession, rawSettledBet, rawSettledBet.getWinAmount());
-            String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-            balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+            balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
         }
 
         return balanceVo;
@@ -1067,20 +1056,17 @@ public class WalletService {
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, InsufficientBalanceException {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String callbackUrl = agentApiCredential.getCallbackUrl();
         WalletBalanceVo balanceVo;
 
         if (isFullBet == true) {
             //if isFullBet = true, then we will compare with using winLoss to decide send as wallet/win or lose
             WalletBetResultDto walletBetResultDto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, rawSettledBet);
-            String signature = authenticationService.generateSignature(walletBetResultDto, agentApiCredential.getApiSecret());
-            balanceVo = walletBetResultAction.call(callbackUrl, signature, walletBetResultDto);
+            balanceVo = walletBetResultAction.call(agentApiCredential, walletBetResultDto);
 
         } else {
             //else isFullBet = false, then we will send as wallet/win with winAmount (because bet already deducted)
             WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, gameSession, rawSettledBet, rawSettledBet.getWinAmount());
-            String signature = authenticationService.generateSignature(walletWinDto, agentApiCredential.getApiSecret());
-            balanceVo = walletWinAction.call(callbackUrl, signature, walletWinDto);
+            balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
 
         }
 
