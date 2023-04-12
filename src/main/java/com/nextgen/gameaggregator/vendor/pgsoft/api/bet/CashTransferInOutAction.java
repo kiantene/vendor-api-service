@@ -4,10 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
@@ -38,6 +35,8 @@ public class CashTransferInOutAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -115,6 +114,10 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
 
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
@@ -131,13 +134,15 @@ public class CashTransferInOutAction {
 
     private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException, GameNotSupportedException {
 
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerName(), InvalidPlayerException::new);
 
+        // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        // ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
 
         // 3. Verify vendor currency code is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
