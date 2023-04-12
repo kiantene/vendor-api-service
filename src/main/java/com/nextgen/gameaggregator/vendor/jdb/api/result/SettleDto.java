@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 import java.math.BigDecimal;
 import java.util.List;
 
+import javax.validation.Valid;
 import javax.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -41,8 +42,10 @@ public class SettleDto implements UnsettledResultSettledData {
     @Positive
     private BigDecimal amount;
 
+    @Valid
     @NotNull
-    private List<Long> refTransferIds;
+    @Size(min = 1, max = 30)
+    private List<@NotNull Long> refTransferIds;
 
     @NotNull
     @Positive
@@ -64,17 +67,17 @@ public class SettleDto implements UnsettledResultSettledData {
 
     @NotBlank
     @Size(max = 10)
-    @Pattern(regexp = "^[0-9-]+$") // only accept numbers and dashes
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "Date must be in the format dd-MM-yyyy")
     private String reportDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^[0-9:-\\s]+$")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
     private String gameDate;
 
     @NotBlank
     @Size(max = 19)
-    @Pattern(regexp = "^[0-9:-\\s]+$")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "Date must be in the format dd-MM-yyyy HH:mm:ss")
     private String lastModifyTime;
 
     @NotNull

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qmrt.service;
+package com.nextgen.gameaggregator.vendor.qm.service;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

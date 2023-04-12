@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qmrt.constant;
+package com.nextgen.gameaggregator.vendor.qm.constant;
 
 public class Credentials {
     public static final String API_URL = "apiUrl";

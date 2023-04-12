@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 import java.math.BigDecimal;
 import java.util.List;
 
+import javax.validation.Valid;
 import javax.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -39,8 +40,10 @@ public class CancelBetDto {
     @Positive
     private BigDecimal amount;
 
+    @Valid
     @NotNull
-    private List<Long> refTransferIds;
+    @Size(min = 1, max = 30)
+    private List<@NotNull Long> refTransferIds;
 
     @NotNull
     @Positive

@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -102,7 +104,7 @@ public class RoundPayoutAction {
                 betWinDto.setWinAmount(winRecord.getAmount());
                 betWinDto.setValidTurnover(dto.getValidTurnover().abs());
                 betWinDto.setGameId(dto.getGameId());
-                betWinDto.setTimestamp(winRecord.getTimestamp());
+                betWinDto.setTimestamp(winRecord.getConvertedTimestamp());
 
                 SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betWinDto, body);
 
@@ -120,7 +122,7 @@ public class RoundPayoutAction {
                     betDto.setAmount(betRecord.getAmount().abs());
                     betDto.setValidTurnover(dto.getValidTurnover().abs());
                     betDto.setGameId(dto.getGameId());
-                    betDto.setTimestamp(betRecord.getTimestamp());
+                    betDto.setTimestamp(betRecord.getConvertedTimestamp());
 
                     SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
 
@@ -137,7 +139,7 @@ public class RoundPayoutAction {
                     winDto.setAmount(winRecord.getAmount());
                     winDto.setValidTurnover(dto.getValidTurnover());
                     winDto.setGameId(dto.getGameId());
-                    winDto.setTimestamp(winRecord.getTimestamp());
+                    winDto.setTimestamp(winRecord.getConvertedTimestamp());
 
                     SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDto, body);
 
@@ -193,6 +195,7 @@ public class RoundPayoutAction {
             roundPayoutVo.setStatus(HttpStatus.SC_FORBIDDEN);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
+                 DateTimeParseException |
                  CurrencyNotSupportedException |
                  JsonProcessingException |
                  InsufficientBalanceException |
@@ -242,8 +245,11 @@ public class RoundPayoutAction {
             InvalidVendorLineException,
             CredentialNotFoundException {
 
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+
         // General validation
         for (RoundPayoutTransactionDto obj : roundPayoutTransactionDtoList) {
+            formatter.parse(obj.getTimestamp());
             ValidationUtils.validateRequest(obj);
             switch(obj.getType()) {
                 case "bet":
