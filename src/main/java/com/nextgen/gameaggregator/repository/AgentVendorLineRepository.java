@@ -13,4 +13,8 @@ public interface AgentVendorLineRepository extends JpaRepository<AgentVendorLine
 
     List<AgentVendorLine> findByAgentIdAndVendorIdAndCurrencyId
             (Integer agentId, Integer vendorId, Integer currencyId);
+
+    List<AgentVendorLine> findByVendorLineId(Integer vendorLineId);
+
+    List<AgentVendorLine> findByAgentIdAndVendorLineId(Integer agentId, Integer vendorLineId);
 }
