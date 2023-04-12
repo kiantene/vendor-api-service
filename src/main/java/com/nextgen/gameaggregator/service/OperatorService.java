@@ -61,6 +61,28 @@ public class OperatorService {
 
     }
 
+    public void validateResponseMatchRequest(WalletBalanceVo walletBalanceVo, String userName, String currency, String traceId) throws ResponseNotMatchRequestException {
+        Map<String, String> validation = new HashMap<>();
+
+        if (walletBalanceVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+            if (!walletBalanceVo.getData().getUsername().equals(userName)) {
+                validation.put("username", "username not match");
+            }
+
+            if (!walletBalanceVo.getData().getCurrency().equals(currency)) {
+                validation.put("currency", "currency not match");
+            }
+
+            if (!walletBalanceVo.getTraceId().equals(traceId)) {
+                validation.put("currency", "trace Id not match");
+            }
+        }
+
+        if (!validation.isEmpty()) { // Missing/Invalid request parameters
+            throw new ResponseNotMatchRequestException(validation.toString());
+        }
+    }
+
     public void validateResponseUserNameAndCurrency(WalletBalanceVo walletBalanceVo, String userName, String currency) throws InvalidOperatorResponseException {
         Map<String, String> validation = new HashMap<>();
 

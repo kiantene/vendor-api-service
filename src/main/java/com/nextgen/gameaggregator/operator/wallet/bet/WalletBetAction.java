@@ -2,11 +2,13 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorLogVo;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.OperatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +38,10 @@ public class WalletBetAction {
     @Autowired
     OperatorService operatorService;
 
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
+    @Autowired
+    AuthenticationService authenticationService;
+
+    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -45,7 +50,9 @@ public class WalletBetAction {
 
         WalletBalanceVo responseVo = null;
 
-        ResponseEntity apiResponse = WebClient.create(callbackUrl)
+        String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+
+        ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_BET)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -59,7 +66,8 @@ public class WalletBetAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BET, callbackUrl, dto, apiResponse, signature, profilesActive);
+        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(
+                Endpoints.WALLET_BET, agentApiCredential.getCallbackUrl(), dto, apiResponse, signature, profilesActive);
 
         try {
             // 1. validate HTTP Response Code
@@ -71,9 +79,7 @@ public class WalletBetAction {
             operatorService.validateResponse(responseVo);
 
             //3. validate username and currency
-            operatorService.validateResponseUserNameAndCurrency(responseVo, dto.getUsername(), dto.getCurrency());
-
-            //TODO by Alex, to dicuss whether should we validate trace Id matching
+            operatorService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
             operatorService.operatorStatusException(responseVo.getStatus());
@@ -86,34 +92,6 @@ public class WalletBetAction {
             }
 
             operatorService.successResponseLog(operatorLogVo);
-            
-            /**
-            switch (responseVo.getStatus()) {
-                case SC_OK -> {
-                    //To validate the username and currency is match with request
-                    if ((!responseVo.getData().getUsername().equals(dto.getUsername())) ||
-                            (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
-                        throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
-                    } else {
-                        operatorService.operatorResponseLogging(true, Endpoints.WALLET_BET, callbackUrl, dto, (String) apiResponse.getBody(), profilesActive);
-                    }
-                    BigDecimal balance = responseVo.getData().getBalance();
-                    //TODO to be discuss whether should system pre handle negative if
-                    boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-                    if (isNegativeBalance) {
-                        operatorService.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, (String) apiResponse.getBody(), profilesActive);
-                        throw new InsufficientBalanceException(responseVo.toString());
-                    }
-                }
-                case SC_INSUFFICIENT_FUNDS -> {
-                    operatorService.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, (String) apiResponse.getBody(), profilesActive);
-                    throw new InsufficientBalanceException(responseVo.toString());
-                }
-                default -> {
-                    throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
-                }
-            }
-             **/
 
         } catch (HttpResponseStatusCodeException httpResponseStatusCodeException) {
             operatorService.failResponseLog(operatorLogVo, httpResponseStatusCodeException.getClass().getName());
@@ -173,10 +151,16 @@ public class WalletBetAction {
             operatorService.failResponseLog(operatorLogVo, invalidCurrencyException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_WRONG_CURRENCY.code);
 
-        }catch (Exception exception){
-            operatorService.failResponseLog(operatorLogVo, exception.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+        } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
+            operatorService.failResponseLog(operatorLogVo, responseNotMatchRequestException.getClass().getName() +
+                    " [" +responseNotMatchRequestException.getMessage()  + "]");
+            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+
         }
+//        catch (Exception exception){
+//            operatorService.failResponseLog(operatorLogVo, exception.getClass().getName());
+//            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+//        }
 
         return responseVo;
     }
