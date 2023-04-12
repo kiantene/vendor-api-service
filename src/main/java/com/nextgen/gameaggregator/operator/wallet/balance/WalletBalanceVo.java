@@ -20,13 +20,13 @@ public class WalletBalanceVo extends ResponseVo {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Data
     public static class ResponseData {
-        @NotBlank
+        @NotBlank(message = "username can not be blank")
         private String username;
-        @NotNull
+        @NotNull(message = "balance can not be blank")
        // @Digits(integer = 8, fraction = 4)
         private BigDecimal balance;
-        @NotBlank
-        @Size(min = 3, max = 6)
+        @NotBlank( message = "min 3 and max 10  characters")
+        @Size(min = 3, max = 10,  message = "min 3 and max 10  characters")
         private String currency;
 
     }

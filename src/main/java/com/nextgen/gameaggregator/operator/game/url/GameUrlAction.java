@@ -167,6 +167,9 @@ public class GameUrlAction {
         } catch (VendorPlatformNotSupportedException vendorPlatformNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_PLATFORM_NOT_SUPPORTED);
 
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_USER_DISABLED);
+
         } catch (InvalidVendorResponseException invalidVendorResponseException) {
             httpService.logError(httpRequestLog, invalidVendorResponseException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
@@ -175,6 +178,7 @@ public class GameUrlAction {
             responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
+
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
