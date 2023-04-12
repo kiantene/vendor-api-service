@@ -262,7 +262,12 @@ public class WalletService {
         settledBetService.createSettledBet(rawSettledBet);
         boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
         if (stub == false){
-            settledBetService.createSettleBetMariaDB(rawSettledBet);
+            try {
+                settledBetService.createSettleBetMariaDB(rawSettledBet);
+            }catch (Exception exception){
+                exception.printStackTrace();
+                log.error("INSERT MARIA ERROR" +exception.getMessage());
+            }
         }
 
         try {
@@ -325,7 +330,12 @@ public class WalletService {
         settledBetService.createSettledBet(rawSettledBet);
         boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
         if (stub == false){
-            settledBetService.createSettleBetMariaDB(rawSettledBet);
+            try {
+                settledBetService.createSettleBetMariaDB(rawSettledBet);
+            }catch (Exception exception){
+                exception.printStackTrace();
+                log.error("INSERT MARIA ERROR" +exception.getMessage());
+            }
         }
 
         try {
@@ -378,7 +388,12 @@ public class WalletService {
         settledBetService.createSettledBet(rawSettledBet);
         boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
         if (stub == false){
-            settledBetService.createSettleBetMariaDB(rawSettledBet);
+            try {
+                settledBetService.createSettleBetMariaDB(rawSettledBet);
+            }catch (Exception exception){
+                exception.printStackTrace();
+                log.error("INSERT MARIA ERROR" +exception.getMessage());
+            }
         }
 
         try {
