@@ -2,10 +2,12 @@ package com.nextgen.gameaggregator.operator.wallet.balance;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorLogVo;
+import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.OperatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,7 +36,10 @@ public class WalletBalanceAction {
     @Autowired
     OperatorService operatorService;
 
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletBalanceDto dto) throws InvalidOperatorResponseException {
+    @Autowired
+    AuthenticationService authenticationService;
+
+    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletBalanceDto dto) throws InvalidOperatorResponseException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -43,7 +48,9 @@ public class WalletBalanceAction {
 
         WalletBalanceVo responseVo = null;
 
-        ResponseEntity apiResponse = WebClient.create(callbackUrl)
+        String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+
+        ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_BALANCE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -57,10 +64,11 @@ public class WalletBalanceAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BALANCE, callbackUrl, dto, apiResponse, signature, profilesActive);
+        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(
+                Endpoints.WALLET_BALANCE, agentApiCredential.getCallbackUrl(), dto, apiResponse, signature, profilesActive);
 
         try {
+
             // 1. validate HTTP Response Code
             operatorService.validateOperatorHttpStatusResponse(apiResponse);
 
@@ -70,9 +78,7 @@ public class WalletBalanceAction {
             operatorService.validateResponse(responseVo);
 
             //3. validate username and currency
-            operatorService.validateResponseUserNameAndCurrency(responseVo, dto.getUsername(), dto.getCurrency());
-
-            //TODO by Alex, to dicuss whether should we validate trace Id matching
+            operatorService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
             operatorService.operatorStatusException(responseVo.getStatus());
@@ -135,11 +141,16 @@ public class WalletBalanceAction {
             operatorService.failResponseLog(operatorLogVo, invalidCurrencyException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_WRONG_CURRENCY.code);
 
+        } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
+            operatorService.failResponseLog(operatorLogVo, responseNotMatchRequestException.getClass().getName() +
+                    " [" +responseNotMatchRequestException.getMessage()  + "]");
+            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+
         }
-        catch (Exception exception){
-            operatorService.failResponseLog(operatorLogVo, exception.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
-        }
+//        catch (Exception exception){
+//            operatorService.failResponseLog(operatorLogVo, exception.getClass().getName());
+//            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+//        }
 
         return responseVo;
     }

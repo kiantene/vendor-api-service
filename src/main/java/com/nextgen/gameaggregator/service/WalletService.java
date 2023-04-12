@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service;
 
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
@@ -21,7 +20,6 @@ import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettled
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
-import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -70,13 +68,10 @@ public class WalletService {
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String callbackUrl = agentApiCredential.getCallbackUrl();
 
         WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
-        String signature = authenticationService.generateSignature(walletBalanceDto, agentApiCredential.getApiSecret());
 
-
-        WalletBalanceVo balanceVo = walletBalanceAction.call(callbackUrl, signature, walletBalanceDto);
+        WalletBalanceVo balanceVo = walletBalanceAction.call(agentApiCredential, walletBalanceDto);
         // TODO: to handle balance returned with more than 4 decimals
         // TODO: implement error handling
         return balanceVo.getData().getBalance();
@@ -101,13 +96,7 @@ public class WalletService {
 
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-
-        String callbackUrl = agentApiCredential.getCallbackUrl();
-
         WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
-        String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
-
-
 
         BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
         betHistoryService.create(betHistory);
@@ -115,7 +104,7 @@ public class WalletService {
 
         try {
 //            WalletBalanceVo balanceVo = walletBetAction.stub();
-            WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
+            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
             BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
             // TODO: check for null pointer
             // Emit event for additional asynchronous processing
@@ -172,22 +161,8 @@ public class WalletService {
         try {
             // 4. Prepare callback info
             AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            String callbackUrl = agentApiCredential.getCallbackUrl();
-            String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
 
-            // 5. send this unsettled bet to operator
-            if(agentId ==2){
-                Gson gson = new Gson();
-                String jsonPayload = gson.toJson(walletBetDto);
-                String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, agentApiCredential.getApiSecret());
-
-                log.error("CHECK-AGENT-SECRET :" + agentApiCredential.getApiSecret());
-                log.error("CHECK-AGENT-PAYLOAD :" + jsonPayload);
-                log.error("CHECK-AGENT-SIGNATURE :" + actualSignature);
-
-            }
-
-            WalletBalanceVo balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
+            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
 
             // TODO: if operator failed
@@ -1075,8 +1050,7 @@ public class WalletService {
             } else {
                 //else send as lose
                 WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, gameSession, rawSettledBet);
-                String signature = authenticationService.generateSignature(walletBetDto, agentApiCredential.getApiSecret());
-                balanceVo = walletBetAction.call(callbackUrl, signature, walletBetDto);
+                balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
             }
         } else {
             //else isFullBet = false, then we will send as wallet/win with winAmount (because bet already deducted)

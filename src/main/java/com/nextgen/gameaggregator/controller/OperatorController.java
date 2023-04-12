@@ -112,7 +112,7 @@ public class OperatorController {
 
                 String signature = authenticationService.generateSignature(walletBetDto, "8c6450bce62aee29a530da1020dc8f6c19a4e4599a0941bb96839a765d03e5ec");
 
-                WalletBalanceVo balanceVo = walletBetAction.call(json.get("callbackUrl").asText(), signature, walletBetDto);
+                WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
 
             }
 
