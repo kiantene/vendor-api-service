@@ -3,11 +3,10 @@ package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.BetHistoryService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
@@ -38,6 +37,13 @@ public class SettleBetAction {
     @Autowired
     private BetHistoryService betHistoryService;
 
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
+
     @PostMapping(path = EndPoints.SETTLE_BET)
     public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -56,17 +62,17 @@ public class SettleBetAction {
             SettleBetDto settleBetDto = HttpService.convertQueryStringToDtoUrlDecode(body, SettleBetDto.class);
 
             if(settleBetDto.getUsername().toLowerCase().equals("dr6nm")) {
-                throw new Exception();
+                throw new InvalidRequestException();
             }
 
             //Validate request parameters from vendor (Non-database related)
-            //this.doValidation(balanceDto);
+            this.doValidation(settleBetDto);
 
             //get gameSession by player name in lowercase (vendor return in uppercase)
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleBetDto.getUsername().toLowerCase());
 
             // Verify remaining parameters (Verify against database values)
-            //this.doVerification(betDto, gameSession, wToken);
+            this.doVerification(settleBetDto, gameSession);
 
             //Process full bet data
             SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, settleBetDto, body);
@@ -75,13 +81,61 @@ public class SettleBetAction {
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
             commonVo.setBalance(settledBetEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
-        } catch (Exception exception) {
+        } catch (InvalidAgentApiCredentialException e) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (AuthenticationException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (DisabledAgentPlayerException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (MergedBetDataIntegrityException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (DisabledGameException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InsufficientBalanceException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidOperatorResponseException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (BetNotFoundException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (CouchbaseDataIntegrityException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (CredentialNotFoundException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (DisabledVendorLineException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidRequestException invalidRequestException) {
+            //return error message according param
+            if(invalidRequestException.getValidation() != null) {
+                commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
+            }else{
+                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            }
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
 
         return commonVo;
+    }
+
+    private void doValidation(SettleBetDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(SettleBetDto settleBetDto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+
+        //Verify received agent code is the same from credential
+        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
+        ValidationUtils.isEquals(AgentCode, settleBetDto.getAppid(), InvalidRequestException::new);
+
+        //Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        //Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        //Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 
 }

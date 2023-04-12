@@ -2,10 +2,13 @@ package com.nextgen.gameaggregator.vendor.joker.api.token;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +35,9 @@ public class TokenAction {
     @Autowired
     private WalletService walletService;
 
+    @Autowired
+    private VendorLineService vendorLineService;
+
     @PostMapping(path = EndPoints.TOKEN)
     public TokenVo balance(HttpServletRequest request) throws InvalidRequestException {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -50,7 +56,7 @@ public class TokenAction {
             TokenDto tokenDto = HttpService.convertQueryStringToDtoUrlDecode(body, TokenDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            //this.doValidation(tokenDto);
+            this.doValidation(tokenDto);
 
             //get gameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(tokenDto.getToken());
@@ -59,7 +65,7 @@ public class TokenAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             //Verify remaining parameters (Verify against database values)
-            //this.doVerification(commonDto, balanceDto, gameSession, jsonParam);
+            this.doVerification(tokenDto, gameSession);
 
             //return double balance and success code
             tokenVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -67,13 +73,38 @@ public class TokenAction {
             tokenVo.setUsername(gameSession.getVendorPlayerUsername());
 
 
-        } catch (Exception exception) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            throw new RuntimeException(invalidAgentApiCredentialException);
+        } catch (AuthenticationException authenticationException) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            throw new RuntimeException(invalidOperatorResponseException);
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            throw new RuntimeException(credentialNotFoundException);
+        } catch (InvalidRequestException invalidRequestException) {
+            //return error message according param
+            if(invalidRequestException.getValidation() != null) {
+                tokenVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
+            }else{
+                tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            }
         } finally {
             httpService.end(httpRequestLog, tokenVo);
         }
 
         return tokenVo;
+    }
+
+    private void doValidation(TokenDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(TokenDto dto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException {
+
+        //Verify received agent code is the same from credential
+        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
+        ValidationUtils.isEquals(AgentCode, dto.getAppid(), InvalidRequestException::new);
 
     }
 

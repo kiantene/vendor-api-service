@@ -2,10 +2,13 @@ package com.nextgen.gameaggregator.vendor.joker.api.balance;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
@@ -34,6 +37,9 @@ public class BalanceAction {
     @Autowired
     private WalletService walletService;
 
+    @Autowired
+    private VendorLineService vendorLineService;
+
     @PostMapping(path = EndPoints.BALANCE)
     public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -51,7 +57,7 @@ public class BalanceAction {
             BalanceDto balanceDto = HttpService.convertQueryStringToDtoUrlDecode(body, BalanceDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            //this.doValidation(balanceDto);
+            this.doValidation(balanceDto);
 
             //get gameSession by player name in lowercase (vendor return in uppercase)
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername().toLowerCase());
@@ -60,20 +66,45 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             //Verify remaining parameters (Verify against database values)
-            //this.doVerification(commonDto, balanceDto, gameSession, jsonParam);
+            this.doVerification(balanceDto, gameSession);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
             commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
-        } catch (Exception exception) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            throw new RuntimeException(invalidAgentApiCredentialException);
+        } catch (AuthenticationException authenticationException) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            throw new RuntimeException(invalidOperatorResponseException);
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            throw new RuntimeException(credentialNotFoundException);
+        } catch (InvalidRequestException invalidRequestException) {
+            //return error message according param
+            if(invalidRequestException.getValidation() != null) {
+                commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
+            }else{
+                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            }
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
 
-
         return commonVo;
+    }
+
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException {
+
+        //Verify received agent code is the same from credential
+        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
+        ValidationUtils.isEquals(AgentCode, dto.getAppid(), InvalidRequestException::new);
+
     }
 
 }
