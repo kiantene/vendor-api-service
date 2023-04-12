@@ -47,6 +47,7 @@ public class WalletBetResultAction {
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+        log.info("walletBetResultDto : " + dto);
 
         ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()

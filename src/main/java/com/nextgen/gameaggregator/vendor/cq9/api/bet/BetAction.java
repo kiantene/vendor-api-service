@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -15,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,6 +47,8 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private Environment environment;
 
     @PostMapping(path = EndPoints.BET)
     public ResponseVo<CommonVo> bet(HttpServletRequest request) {
@@ -74,7 +78,13 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
+            // temporary code to ensure when commit to stg branch will still use old code for new changes
+            UnsettledBetEvent unsettledBetEvent;
+            if(environment.getProperty("spring.couchbase.userName") == "stg"){
+                unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
+            }else{
+                unsettledBetEvent = walletService.processUnsettledBetPlus(traceId, gameSession, betDto, body);
+            }
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
