@@ -39,7 +39,7 @@ public class CashTransferInOutAction {
     @Autowired
     private Environment environment;
     @Autowired
-    private VendorGameService vendorGameService;ßß
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
