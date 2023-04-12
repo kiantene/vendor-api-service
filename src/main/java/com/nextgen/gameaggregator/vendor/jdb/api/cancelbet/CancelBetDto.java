@@ -37,7 +37,7 @@ public class CancelBetDto {
     private String currency;
 
     @NotNull
-    @Positive
+    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
     private BigDecimal amount;
 
     @Valid

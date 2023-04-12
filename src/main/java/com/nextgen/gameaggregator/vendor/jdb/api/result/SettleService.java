@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -67,6 +69,10 @@ public class SettleService {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidDateException invalidDateException) {
+            vo.setResponseCode(ResponseCode.WRONG_DATE_FORMAT);
+        } catch (InvalidFormatException invalidFormatException) {
+            vo.setResponseCode(ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE);
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
@@ -90,9 +96,22 @@ public class SettleService {
         return vo;
     }
 
-    private void doValidation(SettleDto dto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(dto);
+    private void doValidation(SettleDto dto) throws InvalidRequestException, InvalidDateException, InvalidFormatException {
+        try {
+            ValidationUtils.validateRequest(dto);
+        } catch (InvalidRequestException e) {
+            // Handle validation errors with dto message
+            Map<String, String> validationErrors = e.getValidation();
+            for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
+                String value = entry.getValue();
+                switch (value) {
+                    case "WRONG_DATE_FORMAT":
+                        throw new InvalidDateException();
+                    case "PARAMETER_CANNOT_BE_NEGATIVE":
+                        throw new InvalidFormatException();
+                }
+            }
+        }
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,

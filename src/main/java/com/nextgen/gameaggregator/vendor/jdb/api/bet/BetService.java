@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -58,7 +60,7 @@ public class BetService {
         
         } catch (AuthenticationException authenticationException) {
             vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);   
-        } catch (InsufficientBalanceException exception) {
+        } catch (InsufficientBalanceException nsufficientBalanceException) {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
         } catch (CouchbaseDataIntegrityException exception) {
             vo.setResponseCode(ResponseCode.FAILED);
@@ -68,6 +70,8 @@ public class BetService {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException exception) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidFormatException InvalidFormatException) {
+            vo.setResponseCode(ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE);
         } catch (DisabledVendorLineException exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (GameNotSupportedException gameNotSupportedException) {
@@ -85,9 +89,20 @@ public class BetService {
         return vo;
     }
 
-    private void doValidation(BetDto dto) throws InvalidRequestException{
-        // General validation
-        ValidationUtils.validateRequest(dto);
+    private void doValidation(BetDto dto) throws InvalidRequestException, InvalidFormatException{
+        try {
+            ValidationUtils.validateRequest(dto);
+        } catch (InvalidRequestException e) {
+            // Handle validation errors with dto message
+            Map<String, String> validationErrors = e.getValidation();
+            for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
+                String value = entry.getValue();
+                switch (value) {
+                    case "PARAMETER_CANNOT_BE_NEGATIVE":
+                        throw new InvalidFormatException();
+                }
+            }
+        }
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws DisabledVendorLineException, 
