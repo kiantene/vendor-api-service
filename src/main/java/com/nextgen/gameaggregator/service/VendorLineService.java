@@ -46,8 +46,13 @@ public class VendorLineService {
                 break;
             }
         }
+
         //not active vendor line found
         Optional.ofNullable(activeAgentVendorLine).orElseThrow(DisabledVendorLineException::new);
+
+        if(activeAgentVendorLine.getVendorLine().getStatus().equals(Status.INACTIVE.code)){
+            
+        }
 
         return activeAgentVendorLine.getVendorLine();
     }

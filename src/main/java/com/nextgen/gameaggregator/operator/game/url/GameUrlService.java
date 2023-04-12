@@ -87,7 +87,7 @@ public class GameUrlService {
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
 
 
-        List<VendorGameCode> vendorGameCodes = vendorGameCodeRepository.findByVendorGameIdAndLanguageId(vendorGame.getId(), language.getId());
+        List<VendorGameCode> vendorGameCodes = vendorGameCodeRepository.findByVendorGameIdAndLanguageIdAndStatus(vendorGame.getId(), language.getId(), Status.ACTIVE.code);
         //not vendor game id and language matched
         if (vendorGameCodes.isEmpty()) {
             throw new GameLanguageNotSupportException();
@@ -108,6 +108,10 @@ public class GameUrlService {
 
         //not currency match with the requested game id
         Optional.ofNullable(vendorGameCurrency).orElseThrow(GameCurrencyNotSupportException::new);
+
+        if (vendorGameCurrency.getStatus() == 0) {
+            throw new GameCurrencyNotSupportException();
+        }
 
         return vendorGameCodeMatched;
     }
@@ -143,7 +147,7 @@ public class GameUrlService {
         }
     }
 
-    public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) {
+    public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;
         Integer vendorId = vendorLine.getVendor().getId();
@@ -152,6 +156,11 @@ public class GameUrlService {
             agentPlayer = this.createAgentPlayer(agent.getId(), username);
             agentPlayerRepository.save(agentPlayer);
         } else {
+
+            if(agentPlayer.getStatus().equals(Status.INACTIVE.code)){
+                throw new DisabledAgentPlayerException();
+            }
+
             vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
                     currency.getId());
         }
