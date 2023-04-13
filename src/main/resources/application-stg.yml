@@ -56,6 +56,7 @@ spring:
           ms: "45000"
 logging:
   config: classpath:logback-spring.xml
+  http-request: true
 logstash:
   host: logstash
   port: 5000
