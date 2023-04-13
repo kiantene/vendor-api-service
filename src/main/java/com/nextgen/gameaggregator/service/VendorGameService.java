@@ -35,13 +35,17 @@ public class VendorGameService {
     }
 
     public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException, DisabledGameException {
-        VendorGame vendorGameEntity = vendorGameRepository.findByCode(gameCode);
-        Optional.ofNullable(vendorGameEntity).orElseThrow(GameNotSupportedException::new);
+        VendorGame vendorGame = vendorGameRepository.findByCode(gameCode);
+        Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
 
-        if (vendorGameEntity.getStatus() == 0) {
+        if (vendorGame.getStatus() == 0) {
             throw new DisabledGameException();
         }
 
-        return vendorGameEntity;
+        return vendorGame;
+    }
+
+    public void checkVendorGameCodeStatus(Integer gameId, Integer currencyId, Integer languageId, Integer platformId){
+
     }
 }

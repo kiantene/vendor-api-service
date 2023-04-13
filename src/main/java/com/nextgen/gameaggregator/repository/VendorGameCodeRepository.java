@@ -10,10 +10,14 @@ import java.util.List;
 public interface VendorGameCodeRepository extends JpaRepository<VendorGameCode, Integer> {
     VendorGameCode findByVendorGameIdAndPlatformIdAndLanguageId(Integer vendorGameId, Integer platformId, Integer languageId);
 
+    VendorGameCode findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(Integer vendorGameId, Integer platformId, Integer languageId, Integer status);
+
     List<VendorGameCode> findByVendorGameId(Integer vendorGameId);
 
     List<VendorGameCode> findByVendorGameIdAndLanguageId(Integer vendorGameId,  Integer languageId);
 
     List<VendorGameCode> findByVendorGameIdAndLanguageIdAndStatus(Integer vendorGameId,  Integer languageId, Integer status);
+
+
 
 }
