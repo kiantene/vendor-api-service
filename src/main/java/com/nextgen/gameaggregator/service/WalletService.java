@@ -287,7 +287,7 @@ public class WalletService {
 //        settledBetService.createSettledBet(rawSettledBet);
 //        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
 //        if (stub == false) {
-            settledBetService.createSettleBetMariaDB(rawSettledBet);
+//            settledBetService.createSettleBetMariaDB(rawSettledBet);
 //        }
 
         BetHistory betHistory = this.toBetHistory(rawSettledBet);
