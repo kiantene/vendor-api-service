@@ -30,16 +30,16 @@ public class BetAction {
 
     @Autowired
     private GameSessionService gameSessionService;
-
     @Autowired
     private WalletService walletService;
-
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
@@ -65,8 +65,8 @@ public class BetAction {
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
-            //get gameSession by player name in lowercase (vendor return in uppercase)
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUsername().toLowerCase());
+            //get gameSession by player name in lowercase (vendor return in uppercase) and vendor game id
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getUsername().toLowerCase(), betDto.getGamecode());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
@@ -100,6 +100,8 @@ public class BetAction {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } catch (DisabledVendorLineException e) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidPlayerException e) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -119,20 +121,14 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetDto betDto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+    private void doVerification(BetDto betDto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
 
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
         ValidationUtils.isEquals(AgentCode, betDto.getAppid(), InvalidRequestException::new);
 
-        //Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        //Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        //Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        //Validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, betDto.getUsername());
     }
 
 }
