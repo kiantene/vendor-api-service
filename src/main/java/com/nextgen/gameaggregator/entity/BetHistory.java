@@ -46,12 +46,6 @@ public class BetHistory {
     @JsonProperty("operator_status")
     private Integer operatorStatus;
 
-    @JsonProperty("master_agent_id")
-    private Integer masterAgentId;
-
-    @JsonProperty("house_id")
-    private Integer houseId;
-
     @JsonProperty("game_category_id")
     private Integer gameCategoryId;
 
@@ -67,9 +61,6 @@ public class BetHistory {
     @JsonProperty("win_loss")
     private BigDecimal winLoss;
 
-    @JsonProperty("vendor_win_loss")
-    private BigDecimal vendorWinLoss;
-
     @JsonProperty("effective_turnover")
     private BigDecimal effectiveTurnover;
 
@@ -81,9 +72,6 @@ public class BetHistory {
 
     @JsonProperty("result_type")
     private Integer resultType;
-
-    @JsonProperty("is_cancelled")
-    private Integer isCancelled;
 
     @JsonProperty("is_freespin")
     private Integer isFreespin;
@@ -111,7 +99,4 @@ public class BetHistory {
 
     @JsonProperty("result_time")
     private Long resultTime;
-
-    @JsonProperty("refund_time")
-    private Long refundTime;
 }

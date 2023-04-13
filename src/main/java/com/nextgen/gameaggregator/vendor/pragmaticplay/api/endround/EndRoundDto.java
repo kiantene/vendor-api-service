@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.entity.RawResultBet;
-import com.nextgen.gameaggregator.entity.RawSettledBet;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.SettledData;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -81,11 +78,6 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return null;
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return null;
     }
@@ -121,13 +113,16 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 
 

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -62,8 +63,7 @@ public class BetDto implements UnsettledResultSettledData {
     public BigDecimal getWinAmount() { return this.winloseAmount; }
     @Override
     public BigDecimal getWinLoss() { return getWinloseAmount().subtract(getBetAmount()); }
-    @Override
-    public BigDecimal getVendorWinLoss() { return this.getWinLoss(); }
+
     @Override
     public BigDecimal getEffectiveTurnover() { return this.betAmount; }
     @Override
@@ -86,10 +86,17 @@ public class BetDto implements UnsettledResultSettledData {
     }
     @Override
     public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
-    @Override
-    public Integer getIsCancelled() { return 0;}
+
     @Override
     public Integer getIsFreespin() { return 0;}
+
+    /**
+     * @return
+     */
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
+    }
 
     private Long getTimestamp() {
         long timestamp = this.getWagersTime().longValueExact();

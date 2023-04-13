@@ -3,11 +3,9 @@ package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.SettledData;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
-import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -51,11 +49,6 @@ public class WinDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return this.amount;
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return BigDecimal.ZERO;
     }
@@ -91,13 +84,16 @@ public class WinDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 }
 
