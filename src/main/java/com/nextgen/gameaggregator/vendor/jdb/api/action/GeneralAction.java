@@ -3,12 +3,11 @@ package com.nextgen.gameaggregator.vendor.jdb.api.action;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -54,8 +53,8 @@ public class GeneralAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @PostMapping(path = EndPoints.ACTION)
-    public CommonVo action(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.ACTION + "/{id}")
+    public CommonVo action(HttpServletRequest request, @PathVariable String id) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -72,9 +71,12 @@ public class GeneralAction {
             // Validate request parameters (Non-database related)
             ValidationUtils.validateRequest(commonDto);
 
-            // Get the key and iv value from table
-            String key = vendorLineService.getCredentialValueByName(13, Credentials.KEY);
-            String iv = vendorLineService.getCredentialValueByName(13, Credentials.IV);
+            // Get the vendor line id from table
+            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.JDB_ID, id);
+
+            // Get the key and iv value with vendorLineId
+            String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);
+            String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.IV);
 
             // Decrypt the 'X' field in the VendorRequestDto object using the key and iv values obtained earlier.
             String params = VendorService.decrypt(commonDto.getX(), key, iv);
@@ -90,7 +92,9 @@ public class GeneralAction {
 
             // Handle the action and return the resulting value
             vo = this.actionHandling(actionDto, traceId);
-
+        
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidDecryptionException invalidDecryptionException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
@@ -114,27 +118,13 @@ public class GeneralAction {
     private CommonVo actionHandling(ActionDto actionDto, String traceId) {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
-            case Actions.CANCEL_BET_AND_SETTLE:
-                vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId);
-                break;
-            case Actions.GET_BALANCE:
-                vo = balanceService.balance(actionDto, traceId);
-                break;
-            case Actions.BET_AND_SETTLE:
-                vo = betNSettleService.betNSettle(actionDto, traceId);
-                break;
-            case Actions.BET:
-                vo = betService.bet(actionDto, traceId);
-                break;
-            case Actions.SETTLE:
-                vo = settleService.settle(actionDto, traceId);
-                break;
-            case Actions.CANCEL_BET:
-                vo = cancelBetService.cancelBet(actionDto, traceId);
-                break;
-            default:
-                vo.setResponseCode(ResponseCode.INVALID_ACTION);
-                break;
+            case Actions.CANCEL_BET_AND_SETTLE -> vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId);
+            case Actions.GET_BALANCE -> vo = balanceService.balance(actionDto, traceId);
+            case Actions.BET_AND_SETTLE -> vo = betNSettleService.betNSettle(actionDto, traceId);
+            case Actions.BET -> vo = betService.bet(actionDto, traceId);
+            case Actions.SETTLE -> vo = settleService.settle(actionDto, traceId);
+            case Actions.CANCEL_BET -> vo = cancelBetService.cancelBet(actionDto, traceId);
+            default -> vo.setResponseCode(ResponseCode.INVALID_ACTION);
         }
 
         return vo;
