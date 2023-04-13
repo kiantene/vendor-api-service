@@ -22,6 +22,7 @@ import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
@@ -73,13 +74,15 @@ public class GameUrlService implements GameUrl {
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters.fromFormData(formData))
                     .retrieve()
-                    .onStatus(HttpStatus::isError,
-                            response -> {
-                                HttpStatus clientResponseStatus = response.statusCode();
-                                return response.bodyToMono(String.class).map(body ->
-                                        new InvalidVendorResponseException
-                                                ("response status :" + clientResponseStatus + ", response body :" + body));
-                            })
+                    // TODO: to catch more error codes
+                    .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
+//                    .onStatus(HttpStatus::isError,
+//                            response -> {
+//                                HttpStatus clientResponseStatus = response.statusCode();
+//                                return response.bodyToMono(String.class).map(body ->
+//                                        new InvalidVendorResponseException
+//                                                ("response status :" + clientResponseStatus + ", response body :" + body));
+//                            })
                     .bodyToMono(GameUrlVo.class)
                     .block();
 

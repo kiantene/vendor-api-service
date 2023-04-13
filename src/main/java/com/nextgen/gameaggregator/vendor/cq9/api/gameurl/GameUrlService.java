@@ -15,6 +15,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Optional;
@@ -55,13 +56,15 @@ public class GameUrlService implements GameUrl {
                 .body(BodyInserters.fromFormData(formData))
                 .header("Authorization", secretKey)
                 .retrieve()
-                .onStatus(HttpStatus::isError,
-                        response -> {
-                            HttpStatus clientResponseStatus = response.statusCode();
-                            return response.bodyToMono(String.class).map(body ->
-                                    new InvalidVendorResponseException
-                                            ("response status :" + clientResponseStatus + ", response body :" + body));
-                        })
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
+//                .onStatus(HttpStatus::isError,
+//                        response -> {
+//                            HttpStatus clientResponseStatus = response.statusCode();
+//                            return response.bodyToMono(String.class).map(body ->
+//                                    new InvalidVendorResponseException
+//                                            ("response status :" + clientResponseStatus + ", response body :" + body));
+//                        })
                 .bodyToMono(GameUrlVendorResponseVo.class)
                 .block();
 

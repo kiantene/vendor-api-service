@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.5</version>
+		<version>3.0.5</version>
 		<relativePath/>
 		<!-- lookup parent from repository -->
 	</parent>
@@ -17,21 +17,21 @@
 	<description>game aggregator vendor api service</description>
 
 	<properties>
-		<spring-cloud.version>2021.0.5</spring-cloud.version>
+		<spring-cloud.version>2022.0.1</spring-cloud.version>
 		<java.version>18</java.version>
 		<javax.version>2.0.1.Final</javax.version>
 		<hibernate-validator.version>6.0.13.Final</hibernate-validator.version>
 		<glassfish.version>3.0.0</glassfish.version>
-		<logstash.version>7.2</logstash.version>
-		<nextgen-core.version>2.0.37</nextgen-core.version>
+		<logstash.version>7.3</logstash.version>
+		<nextgen-core.version>2.0.49</nextgen-core.version>
 		<java-client.version>3.4.4</java-client.version>
-		<projectlombok.version>1.18.24</projectlombok.version>
-		<spring-kafka.version>2.9.2</spring-kafka.version>
-		<kafka.version>3.3.1</kafka.version>
+		<projectlombok.version>1.18.26</projectlombok.version>
+		<spring-kafka.version>3.0.4</spring-kafka.version>
+		<kafka.version>3.4.0</kafka.version>
 		<commons-codec.version>1.15</commons-codec.version>
-		<netty.version>4.1.86.Final</netty.version>
-		<mariadb.version>3.0.8</mariadb.version>
-		<poi.version>4.1.2</poi.version>
+		<netty.version>4.1.90.Final</netty.version>
+		<mariadb.version>3.1.2</mariadb.version>
+		<poi.version>5.2.2</poi.version>
 		<maven.compiler.source>18</maven.compiler.source>
 		<maven.compiler.target>18</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

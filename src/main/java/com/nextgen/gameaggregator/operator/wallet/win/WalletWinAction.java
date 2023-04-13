@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -53,13 +54,8 @@ public class WalletWinAction {
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                .onStatus(HttpStatus::isError,
-                        response -> {
-                            HttpStatus clientResponsestatus = response.statusCode();
-                            return response.bodyToMono(String.class).map(body ->
-                                    new InvalidOperatorResponseException
-                                            ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-                        })
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
                 .block();
