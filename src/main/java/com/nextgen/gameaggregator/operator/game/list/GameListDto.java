@@ -27,8 +27,9 @@ public class GameListDto {
     @Range(min= 1, max= Integer.MAX_VALUE, message = "numeric number only")
     private Integer pageNo =1;
 
-    @NotBlank( message = "min 2 characters")
-    @Size(min = 2, max = 20, message = "min 2 characters")
+    @NotBlank(message = "2 alphanumeric")
+    @Size(min = 2, max = 2, message = " 2 alphanumeric only")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "2 alphanumeric only") // Only alphanumeric allowed
     private String displayLanguage = "en";
 
     @NotNull(message = "min 1 and max 500 numeric number only")

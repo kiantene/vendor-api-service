@@ -16,7 +16,8 @@ public class GameVendorDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
 
-    @NotBlank(message = "min 2 characters")
-    @Size(min = 2, max = 20, message = "min 2 characters")
+    @NotBlank(message = "2 alphanumeric")
+    @Size(min = 2, max = 2, message = " 2 alphanumeric only")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "2 alphanumeric only") // Only alphanumeric allowed
     private String displayLanguage = "en";
 }
