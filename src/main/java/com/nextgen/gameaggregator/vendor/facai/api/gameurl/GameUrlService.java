@@ -37,7 +37,7 @@ public class GameUrlService implements GameUrl {
         //map request param and convert to json string
         Map<String, Object> loginParam = new HashMap<String, Object>();
         loginParam.put("MemberAccount",gameSession.getVendorPlayerUsername());
-        loginParam.put("GameID",gameCode);
+        loginParam.put("GameID",gameSession.getVendorGameCode());
         loginParam.put("LanguageID",gameSession.getVendorLanguageCode());
         loginParam.put("JackpotStatus",GameType.ENABLE_JACKPOT);
         String jsonParamString = "";
