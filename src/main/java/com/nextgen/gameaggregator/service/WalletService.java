@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Service
 @Slf4j
@@ -65,6 +66,8 @@ public class WalletService {
     private Environment environment;
     @Autowired
     private WalletBetResultAction walletBetResultAction;
+    @Autowired
+    private KafkaService kafkaService;
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         Integer agentId = gameSession.getAgentId();
@@ -281,11 +284,15 @@ public class WalletService {
         WalletWinDto walletWinDto = this.newWalletResultDto(traceId, gameSession, unsettledResultSettledData, rawUnsettledBet.getId(), transferAmount, rawSettledBet.getResultTime());
 
         // 6. Insert into couchbase settled_bet table and also mariadb
-        settledBetService.createSettledBet(rawSettledBet);
-        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
-        if (stub == false) {
+//        settledBetService.createSettledBet(rawSettledBet);
+//        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+//        if (stub == false) {
             settledBetService.createSettleBetMariaDB(rawSettledBet);
-        }
+//        }
+
+        BetHistory betHistory = this.toBetHistory(rawSettledBet);
+        kafkaService.produceBetHistory(betHistory);
+
 
         try {
             // 7. Prepare to send this transaction to operator as win
@@ -353,11 +360,14 @@ public class WalletService {
             WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
 
             // 7. Insert into couchbase settled_bet table and also mariadb
-            settledBetService.createSettledBet(rawSettledBet);
-            boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
-            if (stub == false) {
-                settledBetService.createSettleBetMariaDB(rawSettledBet);
-            }
+//            settledBetService.createSettledBet(rawSettledBet);
+//            boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+//            if (stub == false) {
+//                settledBetService.createSettleBetMariaDB(rawSettledBet);
+//            }
+
+            BetHistory betHistory = this.toBetHistory(rawSettledBet);
+            kafkaService.produceBetHistory(betHistory);
 
             // 8. prepare the async event to flush cache from redis and couchbase
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
@@ -413,11 +423,14 @@ public class WalletService {
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, null, rawSettledBet);
 
         // 4. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
-        settledBetService.createSettledBet(rawSettledBet);
-        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
-        if (stub == false) {
-            settledBetService.createSettleBetMariaDB(rawSettledBet);
-        }
+//        settledBetService.createSettledBet(rawSettledBet);
+//        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+//        if (stub == false) {
+//            settledBetService.createSettleBetMariaDB(rawSettledBet);
+//        }
+
+        BetHistory betHistory = this.toBetHistory(rawSettledBet);
+        kafkaService.produceBetHistory(betHistory);
 
         try {
             // 5. Prepare to send this transaction to operator with isFullBet is false
@@ -482,11 +495,14 @@ public class WalletService {
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
             // 5. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
-            settledBetService.createSettledBet(rawSettledBet);
-            boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
-            if (stub == false) {
-                settledBetService.createSettleBetMariaDB(rawSettledBet);
-            }
+//            settledBetService.createSettledBet(rawSettledBet);
+//            boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+//            if (stub == false) {
+//                settledBetService.createSettleBetMariaDB(rawSettledBet);
+//            }
+
+            BetHistory betHistory = this.toBetHistory(rawSettledBet);
+            kafkaService.produceBetHistory(betHistory);
 
             // 6. Create async thread to flush rawUnsettledBet in couchbase and redis
             EventDispatcherSystem.emitAsync(settledBetEvent);
@@ -530,11 +546,14 @@ public class WalletService {
         RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, gameSession, unsettledResultSettledData, rawData);
 
         // 2. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
-        settledBetService.createSettledBet(rawSettledBet);
-        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
-        if (stub == false) {
-            settledBetService.createSettleBetMariaDB(rawSettledBet);
-        }
+//        settledBetService.createSettledBet(rawSettledBet);
+//        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+//        if (stub == false) {
+//            settledBetService.createSettleBetMariaDB(rawSettledBet);
+//        }
+
+        BetHistory betHistory = this.toBetHistory(rawSettledBet);
+        kafkaService.produceBetHistory(betHistory);
 
         try {
             // 3. Prepare to send this transaction to operator, with isFullBet as true
@@ -588,11 +607,14 @@ public class WalletService {
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
             // 3. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
-            settledBetService.createSettledBet(rawSettledBet);
-            boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
-            if (stub == false) {
-                settledBetService.createSettleBetMariaDB(rawSettledBet);
-            }
+//            settledBetService.createSettledBet(rawSettledBet);
+//            boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
+//            if (stub == false) {
+//                settledBetService.createSettleBetMariaDB(rawSettledBet);
+//            }
+
+            BetHistory betHistory = this.toBetHistory(rawSettledBet);
+            kafkaService.produceBetHistory(betHistory);
 
             return settledBetEvent;
 
@@ -1350,5 +1372,26 @@ public class WalletService {
         WalletBalanceVo balanceVo = walletBetResultAction.call(agentApiCredential, walletBetResultDto);
 
         return balanceVo;
+    }
+
+    private BetHistory toBetHistory(RawSettledBet rawSettledBet) throws MergedBetDataIntegrityException {
+
+        try {
+            BetHistory betHistory = new BetHistory();
+            BeanUtils.copyProperties(betHistory, rawSettledBet);
+            betHistory.setRawData(rawSettledBet.getMd5RawSettledResult());
+            //TODO HOUSE AND MASTERAGENT ID MAPPING
+            betHistory.setHouseId(0);
+            betHistory.setMasterAgentId(0);
+            //TODO REMOVING OPERATORSTATUS
+            betHistory.setOperatorStatus(1);
+            betHistory.setId(rawSettledBet.getInternalTransactionId());
+            betHistory.setCreateTime(Instant.now().getEpochSecond());
+
+            return betHistory;
+
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new MergedBetDataIntegrityException("copyProperties invalid : " + e.getMessage());
+        }
     }
 }

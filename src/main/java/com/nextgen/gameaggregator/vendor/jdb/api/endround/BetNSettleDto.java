@@ -49,12 +49,12 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
 
-    @NotBlank
+    @NotBlank(message = "WRONG_DATE_FORMAT")
     @Size(max = 10, message = "WRONG_DATE_FORMAT")
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "WRONG_DATE_FORMAT")
     private String reportDate;
 
-    @NotBlank
+    @NotBlank(message = "WRONG_DATE_FORMAT")
     @Size(max = 19, message = "WRONG_DATE_FORMAT")
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
     private String gameDate;
@@ -92,7 +92,7 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     @Max(value = 1)
     private Integer systemTakeWin;
 
-    @NotBlank
+    @NotBlank(message = "WRONG_DATE_FORMAT")
     @Size(max = 19, message = "WRONG_DATE_FORMAT")
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
     private String lastModifyTime;

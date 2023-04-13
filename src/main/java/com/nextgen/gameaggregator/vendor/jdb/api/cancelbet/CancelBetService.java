@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,9 +27,7 @@ public class CancelBetService {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorLineService vendorLineService;
+    private ValidationService validationService;
 
     public CommonVo cancelBet(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -86,6 +82,8 @@ public class CancelBetService {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (DisabledGameException disabledGameException) {
+            vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -98,29 +96,21 @@ public class CancelBetService {
             ValidationUtils.validateRequest(dto);
         } catch (InvalidRequestException e) {
             // Handle validation errors with dto message
-            Map<String, String> validationErrors = e.getValidation();
-            for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
-                String value = entry.getValue();
+            String violation = e.getValidation().values().stream()
+                    .findFirst()
+                    .orElseThrow(InvalidRequestException::new);
 
-                if (value == null) {
-                    throw new InvalidRequestException();
-                }
-
-                switch (value) {
-                    case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
-                    default -> throw new InvalidRequestException();
-                }
+            switch (violation) {
+                case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
+                default -> throw new InvalidRequestException();
             }
         }
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
-     CurrencyNotSupportedException {
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+     CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
         // Verify vendor currency
        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);

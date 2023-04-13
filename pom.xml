@@ -139,6 +139,18 @@
 		</dependency>
 
 		<dependency>
+			<groupId>io.confluent</groupId>
+			<artifactId>kafka-json-schema-serializer</artifactId>
+			<version>5.5.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.confluent</groupId>
+			<artifactId>kafka-avro-serializer</artifactId>
+			<version>5.2.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>${commons-codec.version}</version>
@@ -206,6 +218,11 @@
 		<repository>
 			<id>gitlab-maven-3</id>
 			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
+		</repository>
+		<repository>
+			<id>confluent</id>
+			<name>Confluent</name>
+			<url>http://packages.confluent.io/maven/</url>
 		</repository>
 	</repositories>
 
