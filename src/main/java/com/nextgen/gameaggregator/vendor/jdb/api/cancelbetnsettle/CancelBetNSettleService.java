@@ -27,9 +27,7 @@ public class CancelBetNSettleService {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorLineService vendorLineService;
+    private ValidationService validationService;
 
     public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -80,6 +78,8 @@ public class CancelBetNSettleService {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
             vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledGameException disabledGameException) {
+            vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -92,11 +92,9 @@ public class CancelBetNSettleService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException {
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException, 
+    DisabledAgentPlayerException, InvalidPlayerException, DisabledGameException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
     }
 }
