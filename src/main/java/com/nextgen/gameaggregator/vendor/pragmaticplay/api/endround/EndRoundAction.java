@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.RawSettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -17,6 +18,7 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +41,8 @@ public class EndRoundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private BetHistoryService betHistoryService;
+    @Autowired
+    private Environment environment;
 
     @PostMapping(path = Endpoints.END_ROUND)
     public ResponseVo endRound(HttpServletRequest request) {
@@ -61,7 +65,14 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
+            SettledBetEvent settledBetEvent;
+            // temporary code to ensure when commit to stg branch will still use old code for new changes
+            ResultBetEvent resultBetEvent;
+            if(environment.getProperty("spring.couchbase.userName") == "stg"){
+                settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
+            }else{
+                settledBetEvent = walletService.processSettledBetPlus(traceId, gameSession, dto);
+            }
 
             responseVo.setCash(settledBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);

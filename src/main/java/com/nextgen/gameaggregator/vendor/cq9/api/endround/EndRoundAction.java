@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,6 +51,8 @@ public class EndRoundAction {
     private VendorGameService vendorGameService;
     @Autowired
     private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private Environment environment;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
@@ -90,7 +93,15 @@ public class EndRoundAction {
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, rawUnsettledBet);
 
             // 6. Process result settle data
-            SettledBetEvent settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
+            // temporary code to ensure when commit to stg branch will still use old code for new changes
+            SettledBetEvent settledBetEvent;
+            if(environment.getProperty("spring.couchbase.userName") == "stg"){
+                //if env = stg will use old code
+                settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
+            } else {
+                //else use new code
+                settledBetEvent = walletService.processResultSettlePlus(traceId, gameSession, endRoundDto, body);
+            }
 
             // Construct VO data
             CommonVo commonVo = new CommonVo();

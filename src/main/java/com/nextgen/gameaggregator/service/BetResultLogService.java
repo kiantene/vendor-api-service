@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.entity.RawResultBet;
 import com.nextgen.gameaggregator.entity.RawUnsettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
@@ -48,7 +49,7 @@ public class BetResultLogService {
     @CachePut(value = "ResultBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public RawResultBet createResultBet(RawResultBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
-        entity.setStatus(1); // TODO: refactor, map to constant/enum value
+        entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
 
         try{

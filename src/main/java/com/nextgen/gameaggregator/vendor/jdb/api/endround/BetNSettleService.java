@@ -107,6 +107,11 @@ public class BetNSettleService {
             Map<String, String> validationErrors = e.getValidation();
             for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
                 String value = entry.getValue();
+
+                if (value == null) {
+                    throw new InvalidRequestException();
+                }
+                
                 switch (value) {
                     case "WRONG_DATE_FORMAT":
                         throw new InvalidDateException();

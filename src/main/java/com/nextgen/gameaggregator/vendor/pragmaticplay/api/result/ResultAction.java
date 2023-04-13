@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -16,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +38,8 @@ public class ResultAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private Environment environment;
 
     @PostMapping(path = Endpoints.RESULT)
     public ResponseVo betResult(HttpServletRequest request) {
@@ -59,7 +63,13 @@ public class ResultAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            ResultBetEvent resultBetEvent = walletService.processResultBet(traceId, gameSession, dto, body);
+            // temporary code to ensure when commit to stg branch will still use old code for new changes
+            ResultBetEvent resultBetEvent;
+            if(environment.getProperty("spring.couchbase.userName") == "stg"){
+                resultBetEvent = walletService.processResultBet(traceId, gameSession, dto, body);
+            }else{
+                resultBetEvent = walletService.processResultBetPlus(traceId, gameSession, dto, body);
+            }
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode()); // TODO: vendor currency map

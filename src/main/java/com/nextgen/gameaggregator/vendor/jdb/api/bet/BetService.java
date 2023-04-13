@@ -97,6 +97,11 @@ public class BetService {
             Map<String, String> validationErrors = e.getValidation();
             for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
                 String value = entry.getValue();
+
+                if (value == null) {
+                    throw new InvalidRequestException();
+                }
+                
                 switch (value) {
                     case "PARAMETER_CANNOT_BE_NEGATIVE":
                         throw new InvalidFormatException();
