@@ -6,4 +6,5 @@ public class Credentials {
     public static final String IV = "IV";
     public static final String KEY = "KEY";
     public static final String PARENT = "PARENT";
+    public static final String JDB_ID = "JDB_ID";
 }

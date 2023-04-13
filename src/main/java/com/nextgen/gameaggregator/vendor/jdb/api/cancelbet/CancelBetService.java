@@ -105,10 +105,10 @@ public class CancelBetService {
                 if (value == null) {
                     throw new InvalidRequestException();
                 }
-                
+
                 switch (value) {
-                    case "PARAMETER_CANNOT_BE_NEGATIVE":
-                        throw new InvalidFormatException();
+                    case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
+                    default -> throw new InvalidRequestException();
                 }
             }
         }

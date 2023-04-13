@@ -110,10 +110,9 @@ public class SettleService {
                 }
 
                 switch (value) {
-                    case "WRONG_DATE_FORMAT":
-                        throw new InvalidDateException();
-                    case "PARAMETER_CANNOT_BE_NEGATIVE":
-                        throw new InvalidFormatException();
+                    case "WRONG_DATE_FORMAT" -> throw new InvalidDateException();
+                    case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
+                    default -> throw new InvalidRequestException();
                 }
             }
         }
@@ -134,7 +133,7 @@ public class SettleService {
        // Verify vendor gameCode, currency
        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        System.out.println(dto.getGType());
+
        // Verify game category
        if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();
    }
