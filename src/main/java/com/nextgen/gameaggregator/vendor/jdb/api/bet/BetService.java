@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -57,7 +58,8 @@ public class BetService {
 
             vo.setBalance(betEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
-        
+        } catch (JsonProcessingException jsonProcessingException) {
+            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);   
         } catch (AuthenticationException authenticationException) {
             vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);   
         } catch (InsufficientBalanceException nsufficientBalanceException) {
@@ -101,10 +103,10 @@ public class BetService {
                 if (value == null) {
                     throw new InvalidRequestException();
                 }
-                
+
                 switch (value) {
-                    case "PARAMETER_CANNOT_BE_NEGATIVE":
-                        throw new InvalidFormatException();
+                    case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
+                    default -> throw new InvalidRequestException();
                 }
             }
         }

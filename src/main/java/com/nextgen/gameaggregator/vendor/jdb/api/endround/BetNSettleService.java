@@ -111,12 +111,11 @@ public class BetNSettleService {
                 if (value == null) {
                     throw new InvalidRequestException();
                 }
-                
+
                 switch (value) {
-                    case "WRONG_DATE_FORMAT":
-                        throw new InvalidDateException();
-                    case "PARAMETER_CANNOT_BE_NEGATIVE":
-                        throw new InvalidFormatException();
+                    case "WRONG_DATE_FORMAT" -> throw new InvalidDateException();
+                    case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
+                    default -> throw new InvalidRequestException();
                 }
             }
         }
