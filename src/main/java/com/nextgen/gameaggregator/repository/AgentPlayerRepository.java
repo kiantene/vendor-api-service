@@ -8,5 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface AgentPlayerRepository extends JpaRepository<AgentPlayer, Long> {
     AgentPlayer findByAgentIdAndUsername(Integer agentId, String username);
 
+    AgentPlayer findByAgentIdAndUsernameAndStatus(Integer agentId, String username, Integer status);
+
     AgentPlayer findByIdAndStatus(Long id, Integer status);
 }

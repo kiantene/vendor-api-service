@@ -11,6 +11,8 @@ import java.util.List;
 public interface VendorGameCurrencyRepository extends JpaRepository<VendorGameCurrency, Integer> {
     VendorGameCurrency findByVendorGameIdAndCurrencyId(Integer vendorGameId,Integer currencyId);
 
+    VendorGameCurrency findByVendorGameIdAndCurrencyIdAndStatus(Integer vendorGameId,Integer currencyId, Integer status);
+
     List<VendorGameCurrency> findByVendorGameId(Integer vendorGameId);
 
 }
