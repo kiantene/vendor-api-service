@@ -14,6 +14,6 @@ public class KafkaService {
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
 
     public void produceBetHistory(BetHistory betHistory){
-        jsonSchemaKafkaTemplate.send("topic_test_connector_4", betHistory);
+        jsonSchemaKafkaTemplate.send("topic_16", betHistory);
     }
 }

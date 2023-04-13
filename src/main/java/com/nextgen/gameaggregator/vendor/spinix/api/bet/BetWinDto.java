@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import lombok.Data;
@@ -38,11 +39,6 @@ public class BetWinDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.winAmount.subtract(this.betAmount);
-    }
-
-    @Override
-    public BigDecimal getVendorWinLoss() {
         return this.winAmount.subtract(this.betAmount);
     }
 
@@ -87,13 +83,16 @@ public class BetWinDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 }
 
