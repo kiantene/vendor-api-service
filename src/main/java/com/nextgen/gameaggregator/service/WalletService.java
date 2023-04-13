@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Service
 @Slf4j
@@ -286,7 +287,7 @@ public class WalletService {
 //        settledBetService.createSettledBet(rawSettledBet);
 //        boolean stub = Boolean.parseBoolean(environment.getProperty("testing.stub"));
 //        if (stub == false) {
-//            settledBetService.createSettleBetMariaDB(rawSettledBet);
+            settledBetService.createSettleBetMariaDB(rawSettledBet);
 //        }
 
         BetHistory betHistory = this.toBetHistory(rawSettledBet);
@@ -1385,6 +1386,7 @@ public class WalletService {
             //TODO REMOVING OPERATORSTATUS
             betHistory.setOperatorStatus(1);
             betHistory.setId(rawSettledBet.getInternalTransactionId());
+            betHistory.setCreateTime(Instant.now().getEpochSecond());
 
             return betHistory;
 
