@@ -21,7 +21,7 @@ public class GameUrlService implements GameUrl {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("appID", credentials.get(Credentials.APP_ID));
         formData.add("token", gameSession.getToken());
-        formData.add("gameCode", gameCode);
+        formData.add("gameCode", gameSession.getVendorGameCode());
         formData.add("language", gameSession.getVendorLanguageCode());
         return formData;
     }
