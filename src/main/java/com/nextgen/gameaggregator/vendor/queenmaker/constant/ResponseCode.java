@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qm.constant;
+package com.nextgen.gameaggregator.vendor.queenmaker.constant;
 
 import lombok.AllArgsConstructor;
 

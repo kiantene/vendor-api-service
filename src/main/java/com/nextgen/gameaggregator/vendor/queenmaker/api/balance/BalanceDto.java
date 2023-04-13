@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qm.api.balance;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
