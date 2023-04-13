@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qm.constant;
+package com.nextgen.gameaggregator.vendor.queenmaker.constant;
 
 public class EndPoints {
     public static final Integer TIMEOUT = 10000;

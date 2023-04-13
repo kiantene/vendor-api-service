@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.qm.vo;
+package com.nextgen.gameaggregator.vendor.queenmaker.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nextgen.gameaggregator.service.HttpResponse;
