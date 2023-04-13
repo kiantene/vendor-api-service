@@ -43,6 +43,8 @@ public class BetAction {
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
@@ -169,14 +171,8 @@ public class BetAction {
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
-        //Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        //Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        //Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        //Validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, betDto.getMemberAccount());
     }
 
 
