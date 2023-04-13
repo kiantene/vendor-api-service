@@ -104,6 +104,11 @@ public class SettleService {
             Map<String, String> validationErrors = e.getValidation();
             for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
                 String value = entry.getValue();
+
+                if (value == null) {
+                    throw new InvalidRequestException();
+                }
+
                 switch (value) {
                     case "WRONG_DATE_FORMAT":
                         throw new InvalidDateException();
@@ -129,7 +134,7 @@ public class SettleService {
        // Verify vendor gameCode, currency
        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
+        System.out.println(dto.getGType());
        // Verify game category
        if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();
    }

@@ -70,7 +70,68 @@ public class SettledBetService {
         return rawSettledBet;
     }
 
+    /**
+     * Creates a Result bet record of the given RawResultBet entity object.
+     * This function will also populate default values of certain fields.
+     *
+     * @param  rawUnsettledBet, rawResultBet, rawSettledBet entity object containing information of a single result bet
+     * @return RawResultBet entity object after a successful save
+     */
+    public RawSettledBet updateRawResultBet(RawUnsettledBet rawUnsettledBet, RawResultBet rawResultBet)
+            throws MergedBetDataIntegrityException {
 
+        try {
+            RawSettledBet unsettledData = new RawSettledBet();
+            BeanUtils.copyProperties(unsettledData, rawUnsettledBet);
+
+            //resultData could be null if the bet is lose
+            RawSettledBet resultData = new RawSettledBet();
+            BeanUtils.copyProperties(resultData, rawResultBet);
+
+            for (Field field : RawSettledBet.class.getDeclaredFields()) {
+                field.setAccessible(true);
+                Object value = getValueFromObject(resultData, field.getName());
+                if (value == null) {
+                    value = getValueFromObject(unsettledData, field.getName());
+                }
+                if (value != null) {
+                    field.set(resultData, value);
+                }
+            }
+
+            return resultData;
+
+        } catch (IllegalAccessException illegalAccessException) {
+            throw new MergedBetDataIntegrityException("getValueFromObject invalid : " + illegalAccessException.getMessage());
+
+        } catch (InvocationTargetException invocationTargetException) {
+            throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
+        }
+    }
+
+    /**
+     * Creates a Result bet record of the given RawResultBet entity object.
+     * This function will also populate default values of certain fields.
+     *
+     * @param  rawUnsettledBet, rawResultBet, rawSettledBet entity object containing information of a single result bet
+     * @return RawResultBet entity object after a successful save
+     */
+    public RawSettledBet convertRawUnsettledBetForWalletTransaction(RawUnsettledBet rawUnsettledBet)
+            throws MergedBetDataIntegrityException {
+
+        try {
+            RawSettledBet unsettledData = new RawSettledBet();
+            BeanUtils.copyProperties(unsettledData, rawUnsettledBet);
+
+            return unsettledData;
+
+        } catch (IllegalAccessException illegalAccessException) {
+            throw new MergedBetDataIntegrityException("getValueFromObject invalid : " + illegalAccessException.getMessage());
+
+        } catch (InvocationTargetException invocationTargetException) {
+            throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
+        }
+    }
 
     /**
      * Get values that is not null from the object.
