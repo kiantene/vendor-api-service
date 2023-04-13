@@ -70,6 +70,9 @@ public class WalletBetAction {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             operatorService.validateResponse(responseVo);
 
+            //temp check response from operator
+            log.info("responseVo bet =" + responseVo);
+
             //3. validate username and currency
             operatorService.validateResponseUserNameAndCurrency(responseVo, dto.getUsername(), dto.getCurrency());
 

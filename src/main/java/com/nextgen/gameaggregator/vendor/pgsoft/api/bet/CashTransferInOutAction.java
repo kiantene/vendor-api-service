@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -20,6 +21,7 @@ import org.springframework.web.context.annotation.RequestScope;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.util.UUID;
 
 @RestController
 @RequestScope
@@ -58,7 +60,13 @@ public class CashTransferInOutAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            // comment sent in full first
+            // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            // send as bet first
+            walletService.processUnsettledBet(traceId, gameSession, dto, body);
+            // send as result settled later and regenerate traceId
+            traceId = UUID.randomUUID().toString();
+            SettledBetEvent settledBetEvent = walletService.processResultSettle(traceId, gameSession, dto, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
