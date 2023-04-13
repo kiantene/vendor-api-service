@@ -129,7 +129,7 @@ public class GameUrlAction {
             responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            responseVo.setResponseCode(ResponseCodes.Status.SC_WRONG_CURRENCY);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
 
         } catch (InvalidPlatformException invalidPlatformException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_PLATFORM);
