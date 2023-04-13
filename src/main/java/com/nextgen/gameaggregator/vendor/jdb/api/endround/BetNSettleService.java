@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +25,7 @@ public class BetNSettleService {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    private ValidationService validationService;
 
     public CommonVo betNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -92,6 +86,8 @@ public class BetNSettleService {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledGameException disabledGameException) {
             vo.setResponseCode(ResponseCode.FAILED);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -104,57 +100,50 @@ public class BetNSettleService {
             ValidationUtils.validateRequest(dto);
         } catch (InvalidRequestException e) {
             // Handle validation errors with dto message
-            Map<String, String> validationErrors = e.getValidation();
-            for (Map.Entry<String, String> entry : validationErrors.entrySet()) {
-                String value = entry.getValue();
+            String violation = e.getValidation().values().stream()
+                    .findFirst()
+                    .orElseThrow(InvalidRequestException::new);
 
-                if (value == null) {
-                    throw new InvalidRequestException();
-                }
-
-                switch (value) {
-                    case "WRONG_DATE_FORMAT" -> throw new InvalidDateException();
-                    case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
-                    default -> throw new InvalidRequestException();
-                }
+            switch (violation) {
+                case "WRONG_DATE_FORMAT" -> throw new InvalidDateException();
+                case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
+                default -> throw new InvalidRequestException();
             }
         }
-        
-        switch(dto.getGType()) {
-            case "0":
-                if (dto.getJackpotWin() == null || dto.getJackpotContribute() == null || dto.getHasFreeGame() == null || dto.getHasGamble() == null){
+
+        switch (dto.getGType()) {
+            case "0" -> {
+                if (dto.getJackpotWin() == null || dto.getJackpotContribute() == null || dto.getHasFreeGame() == null || dto.getHasGamble() == null) {
                     throw new InvalidRequestException();
                 }
                 break;
-            case "7":
-                if (dto.getRoomType() == null){
+            }
+            case "7" -> {
+                if (dto.getRoomType() == null) {
                     throw new InvalidRequestException();
                 }
                 break;
-            case "9":
-                if (dto.getHasBonusGame() == null || dto.getHasGamble() == null){
+            }
+            case "9" -> {
+                if (dto.getHasBonusGame() == null || dto.getHasGamble() == null) {
                     throw new InvalidRequestException();
                 }
                 break;
-            case "12":
+            }
+            case "12" -> {
                 if (dto.getHasBonusGame() == null) {
                     throw new InvalidRequestException();
                 }
                 break;
+            }
         }
     }
 
     private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
      DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-     VendorPlatformNotSupportedException, InvalidRequestException {
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+     VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
         // Verify vendor gameCode, currency and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
