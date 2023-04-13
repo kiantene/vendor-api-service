@@ -37,17 +37,11 @@ public class RoundPayoutAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private WalletService walletService;
-    @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
+    private WalletService walletService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
+    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.ROUND)
     public RoundPayoutVo bet(HttpServletRequest request) {
@@ -279,14 +273,8 @@ public class RoundPayoutAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUserId());
     }
 
 }
