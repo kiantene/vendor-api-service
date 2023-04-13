@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.vendor.qm.api.balance;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.vendor.qm.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;

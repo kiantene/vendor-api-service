@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -93,11 +94,6 @@ public class SettleBetDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss()  {
-        return (this.amount.subtract(this.getBetAmount()));
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return BigDecimal.valueOf(0);
     }
@@ -131,12 +127,15 @@ public class SettleBetDto implements UnsettledResultSettledData {
     public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 }

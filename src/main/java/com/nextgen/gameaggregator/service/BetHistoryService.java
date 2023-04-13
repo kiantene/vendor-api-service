@@ -56,7 +56,6 @@ public class BetHistoryService {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
         entity.setWinLoss(BigDecimal.ZERO);
-        entity.setVendorWinLoss(BigDecimal.ZERO);
         entity.setEffectiveTurnover(BigDecimal.ZERO);
         entity.setResultType(WinType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
@@ -116,7 +115,7 @@ public class BetHistoryService {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
         entity.setWinLoss(BigDecimal.ZERO);
-        entity.setVendorWinLoss(BigDecimal.ZERO);
+        //entity.setVendorWinLoss(BigDecimal.ZERO);
         entity.setEffectiveTurnover(BigDecimal.ZERO);
         entity.setResultType(WinType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
@@ -130,8 +129,8 @@ public class BetHistoryService {
                 "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
                 entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(),
                 entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
-                entity.getGameSessionToken(), entity.getMasterAgentId(), entity.getHouseId(), entity.getGameCategoryId(),
-                entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(), entity.getVendorWinLoss(),
+                entity.getGameSessionToken(), entity.getGameCategoryId(),
+                entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(),
                 entity.getEffectiveTurnover(), entity.getResultType(), entity.getRawData(), entity.getStatus(),
                 entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime());
 

@@ -78,13 +78,7 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            // temporary code to ensure when commit to stg branch will still use old code for new changes
-            UnsettledBetEvent unsettledBetEvent;
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
-            }else{
-                unsettledBetEvent = walletService.processUnsettledBetPlus(traceId, gameSession, betDto, body);
-            }
+            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();

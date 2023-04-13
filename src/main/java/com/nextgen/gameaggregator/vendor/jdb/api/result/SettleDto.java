@@ -8,6 +8,7 @@ import javax.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -65,17 +66,17 @@ public class SettleDto implements UnsettledResultSettledData {
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
 
-    @NotBlank
+    @NotBlank(message = "WRONG_DATE_FORMAT")
     @Size(max = 10)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "WRONG_DATE_FORMAT")
     private String reportDate;
 
-    @NotBlank
+    @NotBlank(message = "WRONG_DATE_FORMAT")
     @Size(max = 19)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
     private String gameDate;
 
-    @NotBlank
+    @NotBlank(message = "WRONG_DATE_FORMAT")
     @Size(max = 19)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
     private String lastModifyTime;
@@ -155,11 +156,6 @@ public class SettleDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return netWin;
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return bet;
     }
@@ -199,13 +195,16 @@ public class SettleDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 
 }

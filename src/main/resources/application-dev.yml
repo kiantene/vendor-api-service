@@ -55,6 +55,7 @@ spring:
         timeout:
           ms: "45000"
 logging:
+  http-request: true
 #  level:
 #    org:
 #      hibernate:
@@ -69,6 +70,8 @@ logstash:
   port: 5000
 testing:
   stub: false
+
+
 image:
   gameurl: https://develops-bo-s3.s3.ap-east-1.amazonaws.com
 #logstash:

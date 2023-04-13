@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,6 +32,8 @@ public class HttpService {
     private static final Integer THREAD_SIZE = 8;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
 
+    @Value("${logging.http-request:true}")
+    private Boolean enableHttpRequestLog;
     @Autowired
     private HttpRequestLogRepository httpRequestLogRepository;
 
@@ -59,18 +62,20 @@ public class HttpService {
     public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
         if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
-            THREAD_POOL.submit(() -> {
-                try {
-                    String responseBody = new ObjectMapper().writeValueAsString(responseVo);
-                    requestLog.setResponseBody(responseBody);
-                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                    requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
+            if(enableHttpRequestLog) {
+                THREAD_POOL.submit(() -> {
+                    try {
+                        String responseBody = new ObjectMapper().writeValueAsString(responseVo);
+                        requestLog.setResponseBody(responseBody);
+                        requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
+                        requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                    httpRequestLogRepository.save(requestLog);
-                } catch (Exception exception) {
-                    log.error(exception.getMessage());
-                }
-            });
+                        httpRequestLogRepository.save(requestLog);
+                    } catch (Exception exception) {
+                        log.error(exception.getMessage());
+                    }
+                });
+            }
         } else {
             log.warn("HttpService.end: requestLog or responseVo is null");
         }

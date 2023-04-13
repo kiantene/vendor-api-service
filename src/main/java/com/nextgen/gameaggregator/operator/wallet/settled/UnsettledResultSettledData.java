@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.settled;
 
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import java.math.BigDecimal;
 
@@ -11,7 +12,6 @@ public interface UnsettledResultSettledData {
     BigDecimal getBetAmount();
     BigDecimal getWinAmount();
     BigDecimal getWinLoss();
-    BigDecimal getVendorWinLoss();
     BigDecimal getEffectiveTurnover();
     BigDecimal getRefundAmount();
     WinType getResultType();
@@ -19,6 +19,6 @@ public interface UnsettledResultSettledData {
     Long getResultTime();
     Long getVendorSettleTime();
     BigDecimal getJackpotAmount();
-    Integer getIsCancelled();
     Integer getIsFreespin();
+    BetStatus getBetStatus();
 }

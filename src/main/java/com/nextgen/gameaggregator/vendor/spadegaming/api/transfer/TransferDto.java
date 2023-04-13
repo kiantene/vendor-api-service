@@ -11,6 +11,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import com.nextgen.gameaggregator.enums.BetStatus;
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -121,11 +122,6 @@ public class TransferDto implements UnsettledResultSettledData{
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return getBetAmount().negate();
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return getBetAmount();
     }
@@ -161,13 +157,16 @@ public class TransferDto implements UnsettledResultSettledData{
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 
     public Long getTimestamp() {

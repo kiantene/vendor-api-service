@@ -168,8 +168,6 @@ public class EndRoundAction {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
         formatter.parse(dto.getCreateTime());
         formatter.parse(endRoundDataDtoList.get(0).getEventtime());
-
-//        dto.setVendorBetId(endRoundDataDtoList.get(0).getMtcode());
         dto.setExternalTransactionId(endRoundDataDtoList.get(0).getMtcode());
     }
 

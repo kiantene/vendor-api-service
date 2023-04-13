@@ -41,7 +41,7 @@ public class GameUrlService implements GameUrl {
 
         Map<String, Object> arrayMap = new HashMap<>();
         arrayMap.put("platform_id", agent_id);
-        arrayMap.put("game_id", gameCode);
+        arrayMap.put("game_id", gameSession.getVendorGameCode());
         arrayMap.put("user_id", gameSession.getVendorPlayerUsername());
         arrayMap.put("user_token", gameSession.getToken());
         arrayMap.put("currency", gameSession.getVendorCurrencyCode());

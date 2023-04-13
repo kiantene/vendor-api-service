@@ -46,7 +46,7 @@ public class GameUrlService implements GameUrl {
         json.put("balance", 0);
         json.put("lang", gameSession.getVendorLanguageCode());
         json.put("gType", gType);
-        json.put("mType", mType);
+        json.put("mType", gameSession.getVendorGameCode());
         json.put("windowMode", "2");
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();

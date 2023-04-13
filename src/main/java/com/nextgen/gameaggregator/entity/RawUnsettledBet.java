@@ -27,19 +27,15 @@ public class RawUnsettledBet {
     private Long agentPlayerId;
     private Integer agentId;
     private Integer operatorStatus;
-    private Integer masterAgentId;
-    private Integer houseId;
     private Integer gameCategoryId;
     private Integer currencyId;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal winLoss;
-    private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
     private BigDecimal refundAmount;
     private BigDecimal jackpotAmount;
     private Integer resultType;
-    private Integer isCancelled;
     private Integer isFreespin;
     private String md5RawSettledResult;
     private Integer resettleNum;
@@ -49,5 +45,5 @@ public class RawUnsettledBet {
     private Long vendorSettleTime;
     private Long createTime;
     private Long resultTime;
-    private Long refundTime;
+
 }
