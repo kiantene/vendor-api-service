@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.entity;
 
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "vendor_game_codes")

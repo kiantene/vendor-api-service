@@ -32,10 +32,10 @@ public class HealthCheckController {
     @Value("${spring.datasource.maria-default.username}")
     private String dbUsername;
 
-    @Value("${spring.redis.database}")
+    @Value("${spring.data.redis.database}")
     private String redisDB;
 
-    @Value("${spring.redis.host}")
+    @Value("${spring.data.redis.host}")
     private String redisHost;
 
     @Value("${testing.stub}")

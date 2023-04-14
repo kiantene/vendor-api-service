@@ -6,11 +6,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import com.couchbase.client.java.Bucket;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
+import org.springframework.data.couchbase.core.CouchbaseTemplate;
 import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
 import org.springframework.util.ResourceUtils;
 
@@ -58,9 +61,12 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
     }
 
     @Bean
-    public CustomConversions customConversions() {
+    @Primary
+    public CustomConversions customConversions2() {
         return super.customConversions();
     }
+
+
 
     @Override
     protected void configureEnvironment(final ClusterEnvironment.Builder builder) {

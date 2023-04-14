@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity

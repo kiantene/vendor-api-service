@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.WinType;

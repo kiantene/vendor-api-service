@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 import org.checkerframework.checker.index.qual.Positive;
 

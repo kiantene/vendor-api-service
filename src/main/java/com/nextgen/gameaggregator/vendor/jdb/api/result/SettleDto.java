@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 import java.math.BigDecimal;
 import java.util.List;
 
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

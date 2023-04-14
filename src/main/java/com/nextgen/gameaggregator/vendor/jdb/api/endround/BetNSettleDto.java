@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
 import java.math.BigDecimal;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

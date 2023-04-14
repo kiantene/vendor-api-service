@@ -1,118 +1,118 @@
-package com.nextgen.gameaggregator.config;
-
-
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CachingConfigurerSupport;
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.cache.interceptor.CacheErrorHandler;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
-import org.springframework.data.redis.cache.RedisCacheWriter;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
-import org.springframework.data.redis.serializer.*;
-import org.springframework.stereotype.Component;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-
-
-@Configuration
-@EnableRedisRepositories
-@EnableCaching
-@Component
-public class RedisConfig extends CachingConfigurerSupport {
-
-    @Value("${spring.redis.database}")
-    private Integer REDIS_DATABASE;
-    @Value("${spring.redis.host}")
-    private String REDIS_HOST;
-    @Value("${spring.redis.port}")
-    private Integer REDIS_PORT;
-    @Value("${spring.redis.username}")
-    private String REDIS_USERNAME;
-    @Value("${spring.redis.password}")
-    private String REDIS_PASSWORD;
-
-    @Override
-    public CacheErrorHandler errorHandler() {
-        return new CustomCacheErrorHandler();
-    }
-
-    @Bean
-    public JedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration(REDIS_HOST, REDIS_PORT);
-        configuration.setUsername(REDIS_USERNAME);
-        configuration.setPassword(REDIS_PASSWORD);
-        configuration.setDatabase(REDIS_DATABASE);
-        return new JedisConnectionFactory(configuration);
-    }
-
-    @Bean
-    @Primary
-    RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<String, Object>();
-        redisTemplate.setConnectionFactory(factory);
-        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
-        ObjectMapper om = new ObjectMapper();
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
-        jackson2JsonRedisSerializer.setObjectMapper(om);
-        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-        redisTemplate.setKeySerializer(stringRedisSerializer);
-        redisTemplate.setHashKeySerializer(stringRedisSerializer);
-        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
-        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer);
-        redisTemplate.afterPropertiesSet();
-        redisTemplate.setEnableTransactionSupport(true);
-        return redisTemplate;
-    }
-
-    @Bean
-    @Primary
-    CacheManager cacheManager(RedisConnectionFactory factory) {
-        RedisSerializationContext.SerializationPair<Object> pair = RedisSerializationContext.SerializationPair
-                .fromSerializer(new GenericJackson2JsonRedisSerializer());
-
-        Map<String, RedisCacheConfiguration> cacheNamesConfigurationMap = new HashMap<>();
-
-        cacheNamesConfigurationMap.put("UnsettledBetWithGameId", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("SettledBet", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("ResultBet", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("UnsettledBet", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("GameSessions", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(2)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("VendorLines", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("BetHistories", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofSeconds(10)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("VendorLineCredentials", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("AgentPlayers", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("VendorGames", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
-                serializeValuesWith(pair));
-        cacheNamesConfigurationMap.put("AgentApiCredentials", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
-                serializeValuesWith(pair));
-
-        return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
-                RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)), cacheNamesConfigurationMap);
-    }
-
-}
-
+//package com.nextgen.gameaggregator.config;
+//
+//
+//import com.fasterxml.jackson.annotation.JsonAutoDetect;
+//import com.fasterxml.jackson.annotation.PropertyAccessor;
+//import com.fasterxml.jackson.databind.ObjectMapper;
+//import org.springframework.beans.factory.annotation.Value;
+//import org.springframework.cache.CacheManager;
+//import org.springframework.cache.annotation.CachingConfigurerSupport;
+//import org.springframework.cache.annotation.EnableCaching;
+//import org.springframework.cache.interceptor.CacheErrorHandler;
+//import org.springframework.context.annotation.Bean;
+//import org.springframework.context.annotation.Configuration;
+//import org.springframework.context.annotation.Primary;
+//import org.springframework.data.redis.cache.RedisCacheConfiguration;
+//import org.springframework.data.redis.cache.RedisCacheManager;
+//import org.springframework.data.redis.cache.RedisCacheWriter;
+//import org.springframework.data.redis.connection.RedisConnectionFactory;
+//import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+//import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+//import org.springframework.data.redis.core.RedisTemplate;
+//import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
+//import org.springframework.data.redis.serializer.*;
+//import org.springframework.stereotype.Component;
+//
+//import java.time.Duration;
+//import java.util.HashMap;
+//import java.util.Map;
+//
+//
+//@Configuration
+//@EnableRedisRepositories
+//@EnableCaching
+//@Component
+//public class RedisConfig extends CachingConfigurerSupport {
+//
+//    @Value("${spring.data.redis.database}")
+//    private Integer REDIS_DATABASE;
+//    @Value("${spring.data.redis.host}")
+//    private String REDIS_HOST;
+//    @Value("${spring.data.redis.port}")
+//    private Integer REDIS_PORT;
+//    @Value("${spring.data.redis.username}")
+//    private String REDIS_USERNAME;
+//    @Value("${spring.data.redis.password}")
+//    private String REDIS_PASSWORD;
+//
+//    @Override
+//    public CacheErrorHandler errorHandler() {
+//        return new CustomCacheErrorHandler();
+//    }
+//
+//    @Bean
+//    public JedisConnectionFactory redisConnectionFactory() {
+//        RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration(REDIS_HOST, REDIS_PORT);
+//        configuration.setUsername(REDIS_USERNAME);
+//        configuration.setPassword(REDIS_PASSWORD);
+//        configuration.setDatabase(REDIS_DATABASE);
+//        return new JedisConnectionFactory(configuration);
+//    }
+//
+//    @Bean
+//    @Primary
+//    RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+//        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<String, Object>();
+//        redisTemplate.setConnectionFactory(factory);
+//        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(Object.class);
+//        ObjectMapper om = new ObjectMapper();
+//        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
+//        om.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
+//        jackson2JsonRedisSerializer.setObjectMapper(om);
+//        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+//        redisTemplate.setKeySerializer(stringRedisSerializer);
+//        redisTemplate.setHashKeySerializer(stringRedisSerializer);
+//        redisTemplate.setValueSerializer(jackson2JsonRedisSerializer);
+//        redisTemplate.setHashValueSerializer(jackson2JsonRedisSerializer);
+//        redisTemplate.afterPropertiesSet();
+//        redisTemplate.setEnableTransactionSupport(true);
+//        return redisTemplate;
+//    }
+//
+//    @Bean
+//    @Primary
+//    CacheManager cacheManager(RedisConnectionFactory factory) {
+//        RedisSerializationContext.SerializationPair<Object> pair = RedisSerializationContext.SerializationPair
+//                .fromSerializer(new GenericJackson2JsonRedisSerializer());
+//
+//        Map<String, RedisCacheConfiguration> cacheNamesConfigurationMap = new HashMap<>();
+//
+//        cacheNamesConfigurationMap.put("UnsettledBetWithGameId", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("SettledBet", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("ResultBet", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("UnsettledBet", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("GameSessions", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(2)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("VendorLines", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("BetHistories", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofSeconds(10)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("VendorLineCredentials", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("AgentPlayers", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("VendorGames", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
+//                serializeValuesWith(pair));
+//        cacheNamesConfigurationMap.put("AgentApiCredentials", RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofDays(1)).
+//                serializeValuesWith(pair));
+//
+//        return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
+//                RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)), cacheNamesConfigurationMap);
+//    }
+//
+//}
+//

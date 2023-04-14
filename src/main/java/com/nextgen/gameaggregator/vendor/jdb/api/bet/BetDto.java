@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
 import java.math.BigDecimal;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
