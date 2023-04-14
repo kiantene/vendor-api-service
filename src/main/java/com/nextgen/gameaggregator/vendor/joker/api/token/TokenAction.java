@@ -39,7 +39,7 @@ public class TokenAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.TOKEN)
-    public TokenVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public TokenVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 

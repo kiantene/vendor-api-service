@@ -27,7 +27,6 @@ public class BetAction {
 
     @Autowired
     private HttpService httpService;
-
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
@@ -35,14 +34,10 @@ public class BetAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
-    public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -57,10 +52,6 @@ public class BetAction {
 
             //Convert original request body into commonDto
             BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(body, BetDto.class);
-
-            if(betDto.getUsername().toLowerCase().equals("dr6nm")) {
-                throw new InvalidRequestException();
-            }
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);

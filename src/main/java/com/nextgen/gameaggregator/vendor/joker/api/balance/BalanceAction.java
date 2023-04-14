@@ -41,7 +41,7 @@ public class BalanceAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.BALANCE)
-    public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
