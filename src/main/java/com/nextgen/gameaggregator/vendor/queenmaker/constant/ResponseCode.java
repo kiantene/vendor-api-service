@@ -20,6 +20,6 @@ public enum ResponseCode {
     CONFIGURED_TIMEOUT_EXCEEDED (903, "Configured Timeout Exceeded")
     ;
 
-    public final Integer errorCode;
-    public final String message;
+    public final Integer err;
+    public final String errdesc;
 }

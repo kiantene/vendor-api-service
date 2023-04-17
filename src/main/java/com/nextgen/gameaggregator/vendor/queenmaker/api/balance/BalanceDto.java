@@ -9,11 +9,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BalanceDto {
     private String testmode;
-    private List<User> users;
+    private List<UsersDto> users;
 }
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-class User {
+class UsersDto {
     private String authtoken;
     private String userid;
     private String brandcode;
