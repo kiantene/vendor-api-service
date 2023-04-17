@@ -202,7 +202,7 @@ public class HttpService {
         while((value = reader.read()) != -1) {
             requestBody.append((char) value);
         }
-        System.out.println("aderhser-"+requestBody.toString());
+
         return requestBody.toString();
     }
 }
