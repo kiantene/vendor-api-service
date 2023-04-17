@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 

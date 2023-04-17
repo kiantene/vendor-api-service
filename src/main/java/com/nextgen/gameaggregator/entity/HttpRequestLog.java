@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
 import lombok.Data;
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "http_request_logs")

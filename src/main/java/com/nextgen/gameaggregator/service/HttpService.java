@@ -60,9 +60,10 @@ public class HttpService {
     }
 
     public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
+        if (!enableHttpRequestLog) return;
+
         if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
-            if(enableHttpRequestLog) {
                 THREAD_POOL.submit(() -> {
                     try {
                         String responseBody = new ObjectMapper().writeValueAsString(responseVo);
@@ -75,7 +76,6 @@ public class HttpService {
                         log.error(exception.getMessage());
                     }
                 });
-            }
         } else {
             log.warn("HttpService.end: requestLog or responseVo is null");
         }

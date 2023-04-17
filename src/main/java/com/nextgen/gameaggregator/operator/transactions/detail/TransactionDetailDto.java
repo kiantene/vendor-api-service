@@ -2,9 +2,9 @@ package com.nextgen.gameaggregator.operator.transactions.detail;
 
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class TransactionDetailDto {
 

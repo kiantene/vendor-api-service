@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.gameurl;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -11,7 +14,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.alibaba.fastjson.JSONObject;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
@@ -37,22 +39,24 @@ public class GameUrlService implements GameUrl {
         String[] parts = gameCode.split("_");
         int gType = Integer.parseInt(parts[0]);
         int mType = Integer.parseInt(parts[1]);
-        
-        JSONObject json = new JSONObject();
-        json.put("action", Actions.GAME_URL);
-        json.put("ts", System.currentTimeMillis());
-        json.put("parent", credentials.get(Credentials.PARENT));
-        json.put("uid", gameSession.getVendorPlayerUsername());
-        json.put("balance", 0);
-        json.put("lang", gameSession.getVendorLanguageCode());
-        json.put("gType", gType);
-        json.put("mType", gameSession.getVendorGameCode());
-        json.put("windowMode", "2");
+        String windowMode = "2";
 
+        GameUrlDto dto = new GameUrlDto();
+        dto.setAction(Actions.GAME_URL);
+        dto.setTs(System.currentTimeMillis());
+        dto.setParent(credentials.get(Credentials.PARENT));
+        dto.setUid(gameSession.getVendorPlayerUsername());
+        dto.setBalance(BigDecimal.ZERO);
+        dto.setLang(gameSession.getVendorLanguageCode());
+        dto.setGType(gType);
+        dto.setMType(gameSession.getVendorGameCode());
+        dto.setWindowMode(windowMode);
+
+        Gson gson = new GsonBuilder().create();
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 
         try {
-            String x = VendorService.encrypt(json.toString(), credentials.get(Credentials.KEY), credentials.get(Credentials.IV));
+            String x = VendorService.encrypt(gson.toJson(dto), credentials.get(Credentials.KEY), credentials.get(Credentials.IV));
 
             params.add("dc", credentials.get(Credentials.DC));
             params.add("x", x);

@@ -5,7 +5,7 @@ import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.math.BigDecimal;
 
 @Document

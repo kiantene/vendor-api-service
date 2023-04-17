@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 import java.math.BigDecimal;
 import java.util.List;
 
-import javax.validation.Valid;
-import javax.validation.constraints.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
