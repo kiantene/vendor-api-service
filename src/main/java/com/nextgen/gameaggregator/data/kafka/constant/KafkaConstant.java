@@ -10,4 +10,7 @@ public class KafkaConstant {
     /* Producer Topic */
     public static final String TOPIC_ERROR_HANDLING = "topic_error_handling";
     public static final String TOPIC_DATA_AGGREGATE = "topic_data_aggregate";
+
+    /* Bet Processing Topic */
+    public static final String TOPIC_BET_HISTORY = "topic_bet_history";
 }
