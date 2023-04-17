@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.hacksawgaming.api.login;
+package com.nextgen.gameaggregator.vendor.hacksawgaming.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -12,20 +12,21 @@ import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class LoginAction {
+public class BalanceAction {
 
     @Autowired
     private HttpService httpService;
@@ -38,7 +39,7 @@ public class LoginAction {
     @Autowired
     private ValidationService validationService;
 
-    @PostMapping(path = EndPoints.LOGIN)
+    @PostMapping(path = EndPoints.BALANCE)
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -50,7 +51,7 @@ public class LoginAction {
 
         try {
 
-            LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
+            BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -79,8 +80,12 @@ public class LoginAction {
                 NullPointerException |
                 IllegalArgumentException e
         ) {
-
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.UNKNOWN);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
             httpService.logError(httpRequestLog, e);
         }
         httpService.end(httpRequestLog, responseVo);
@@ -89,12 +94,12 @@ public class LoginAction {
 
     }
 
-    private void doValidation(LoginDto dto) throws InvalidRequestException {
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(LoginDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String toVerifySign)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,

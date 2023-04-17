@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.hacksawgaming.api.login;
+package com.nextgen.gameaggregator.vendor.hacksawgaming.api.freespin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -12,20 +12,20 @@ import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class LoginAction {
+public class FreeSpinAction {
 
     @Autowired
     private HttpService httpService;
@@ -38,7 +38,7 @@ public class LoginAction {
     @Autowired
     private ValidationService validationService;
 
-    @PostMapping(path = EndPoints.LOGIN)
+    @PostMapping(path = EndPoints.FREE_SPIN_RESULT)
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -50,14 +50,14 @@ public class LoginAction {
 
         try {
 
-            LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
+            FreeSpinDto dto = HttpService.convertJsonToDto(body, FreeSpinDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getToken() + Credentials.API_KEY);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
+            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
             this.doVerification(dto, gameSession, toVerifySign);
 
             // Retrieve the latest wallet balance from Operator
@@ -89,12 +89,12 @@ public class LoginAction {
 
     }
 
-    private void doValidation(LoginDto dto) throws InvalidRequestException {
+    private void doValidation(FreeSpinDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(LoginDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(FreeSpinDto dto, GameSession gameSession, String toVerifySign)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
@@ -102,15 +102,15 @@ public class LoginAction {
             DisabledGameException,
             InvalidVendorLineException {
 
-        // Verify signature
-        if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
-            throw new InvalidVendorLineException();
-        }
+            // Verify signature
+            if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
+                throw new InvalidVendorLineException();
+            }
 
-        // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+            // validate vendor username, agent vendor line, player status, and game status
+            validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
 
-        // Verify currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+            // Verify currency
+            ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.hacksawgaming.api.login;
+package com.nextgen.gameaggregator.vendor.hacksawgaming.api.cancelwager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -12,20 +12,20 @@ import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class LoginAction {
+public class CancelWagerAction {
 
     @Autowired
     private HttpService httpService;
@@ -38,7 +38,7 @@ public class LoginAction {
     @Autowired
     private ValidationService validationService;
 
-    @PostMapping(path = EndPoints.LOGIN)
+    @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -50,14 +50,15 @@ public class LoginAction {
 
         try {
 
-            LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
+            CancelWagerDto dto = HttpService.convertJsonToDto(body, CancelWagerDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getToken() + Credentials.API_KEY);
+            // TODO: to confirm if it is okay to get game session by vendor player username only
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
             this.doVerification(dto, gameSession, toVerifySign);
 
             // Retrieve the latest wallet balance from Operator
@@ -89,12 +90,12 @@ public class LoginAction {
 
     }
 
-    private void doValidation(LoginDto dto) throws InvalidRequestException {
+    private void doValidation(CancelWagerDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(LoginDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(CancelWagerDto dto, GameSession gameSession, String toVerifySign)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,

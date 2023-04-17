@@ -9,6 +9,14 @@ public class VendorService {
         return token.toUpperCase();
     }
 
+    public static boolean isSameSignature(String sign, String toVerifySign) {
+        Boolean result = false;
+        if(sign.equals(toVerifySign)) {
+            result = true;
+        }
+        return result;
+    }
+
     public static String removeDashes(String str) {
         return str.replaceAll("-", "");
     }

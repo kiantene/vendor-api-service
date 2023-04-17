@@ -16,9 +16,6 @@ import okhttp3.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-
-
-import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,27 +27,29 @@ public class GameUrlService implements GameUrl {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
-        String brand_id = credentials.get(Credentials.BRAND_ID);
-        Optional.ofNullable(brand_id).orElseThrow(InvalidVendorLineException::new);
-        String api_key = credentials.get(Credentials.API_KEY);
-        Optional.ofNullable(api_key).orElseThrow(InvalidVendorLineException::new);
+        String brandId = credentials.get(Credentials.BRAND_ID);
+        Optional.ofNullable(brandId).orElseThrow(InvalidVendorLineException::new);
+        String apiKey = credentials.get(Credentials.API_KEY);
+        Optional.ofNullable(apiKey).orElseThrow(InvalidVendorLineException::new);
+        String countryCode = credentials.get(Credentials.COUNTRY_CODE);
+        Optional.ofNullable(countryCode).orElseThrow(InvalidVendorLineException::new);
 
-        String brand_uid = gameSession.getVendorPlayerUsername();
+        String brandUid = gameSession.getVendorPlayerUsername();
         String platform = "pc";
         if(!gameSession.getPlatformId().equals(2)) {
             platform = "mobile";
         }
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.set("brand_id", brand_id);
-        formData.set("sign", VendorService.getSign(brand_id + brand_uid + api_key));
-        formData.set("brand_uid", gameSession.getVendorPlayerUsername());
+        formData.set("brand_id", brandId);
+        formData.set("sign", VendorService.getSign(brandId + brandUid + apiKey));
+        formData.set("brand_uid", brandUid);
         formData.set("token", VendorService.removeDashes(gameSession.getToken()));
         formData.set("game_id", gameSession.getVendorGameCode());
         formData.set("currency", gameSession.getVendorCurrencyCode());
         formData.set("language", gameSession.getVendorLanguageCode());
         formData.set("channel", platform);
-        formData.set("country_code", "CN");
+        formData.set("country_code", countryCode);
 
         return formData;
     }
@@ -94,7 +93,7 @@ public class GameUrlService implements GameUrl {
 
             return responseVo.getData();
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new InvalidVendorResponseException("Invalid Response : " + e.getMessage());
         }
 
