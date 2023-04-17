@@ -39,11 +39,12 @@ public class HttpService {
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
-System.out.println("TEST TIME :"+System.currentTimeMillis());
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
+            System.out.println("DNHSRTN3-");
             String requestBody = this.getRawRequestBody(request);
+            System.out.println("DNHSRTN4-");
             httpRequestLog.setTraceId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
@@ -201,6 +202,7 @@ System.out.println("TEST TIME :"+System.currentTimeMillis());
         while((value = reader.read()) != -1) {
             requestBody.append((char) value);
         }
+
         return requestBody.toString();
     }
 }

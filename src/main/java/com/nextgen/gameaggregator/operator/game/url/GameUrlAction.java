@@ -113,6 +113,7 @@ public class GameUrlAction {
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
+            jsonProcessingException.printStackTrace();
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (InvalidRequestException invalidRequestException) {
