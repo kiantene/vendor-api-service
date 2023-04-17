@@ -1,4 +1,6 @@
 spring:
+  liquibase:
+    enabled: false
   datasource:
     hikari:
       maximum-pool-size: 100
