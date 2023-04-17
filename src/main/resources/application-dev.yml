@@ -55,6 +55,15 @@ spring:
       session:
         timeout:
           ms: "45000"
+      basic:
+        auth:
+          credentials:
+            source: "USER_INFO"
+          user:
+            info: "VSUSBSIXSWS77SLP:y8DquVxz9PVCrVM91JG2QlG7hsvzq7j0ijiRAqw/ebDtv88cL3afcm7PZnCBODJ4"
+      schema:
+        registry:
+          url: "https://psrc-l6oz3.us-east-2.aws.confluent.cloud"
 logging:
   http-request: true
 #  level:
