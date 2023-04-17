@@ -39,7 +39,7 @@ public class HttpService {
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
-
+System.out.println("TEST TIME :"+System.currentTimeMillis());
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);

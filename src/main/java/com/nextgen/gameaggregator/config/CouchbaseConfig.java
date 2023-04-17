@@ -1,20 +1,20 @@
 package com.nextgen.gameaggregator.config;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
+import com.couchbase.client.java.env.ClusterEnvironment;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
 import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
 import org.springframework.util.ResourceUtils;
 
-import com.couchbase.client.java.env.ClusterEnvironment;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 @Configuration
 @EnableCouchbaseRepositories
 public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
@@ -58,7 +58,8 @@ public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
     }
 
     @Bean
-    public CustomConversions customConversions() {
+    @Primary
+    public CustomConversions customConversions2() {
         return super.customConversions();
     }
 

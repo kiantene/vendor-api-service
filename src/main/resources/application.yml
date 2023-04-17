@@ -18,6 +18,8 @@ mavenTimestamp: @timestamp@
 sas:
   enabled: false
 spring:
+  liquibase:
+    enabled: false
   application:
     name: vendor-api-service
   profiles:

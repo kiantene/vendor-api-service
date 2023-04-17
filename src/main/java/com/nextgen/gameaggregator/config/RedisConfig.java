@@ -34,15 +34,15 @@ import java.util.Map;
 @Component
 public class RedisConfig extends CachingConfigurerSupport {
 
-    @Value("${spring.redis.database}")
+    @Value("${spring.data.redis.database}")
     private Integer REDIS_DATABASE;
-    @Value("${spring.redis.host}")
+    @Value("${spring.data.redis.host}")
     private String REDIS_HOST;
-    @Value("${spring.redis.port}")
+    @Value("${spring.data.redis.port}")
     private Integer REDIS_PORT;
-    @Value("${spring.redis.username}")
+    @Value("${spring.data.redis.username}")
     private String REDIS_USERNAME;
-    @Value("${spring.redis.password}")
+    @Value("${spring.data.redis.password}")
     private String REDIS_PASSWORD;
 
     @Override

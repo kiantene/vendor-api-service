@@ -1,10 +1,6 @@
 package com.nextgen.gameaggregator.controller;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.couchbase.core.CouchbaseTemplate;
@@ -14,7 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import lombok.extern.slf4j.Slf4j;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = "health/")
@@ -32,10 +31,10 @@ public class HealthCheckController {
     @Value("${spring.datasource.maria-default.username}")
     private String dbUsername;
 
-    @Value("${spring.redis.database}")
+    @Value("${spring.data.redis.database}")
     private String redisDB;
 
-    @Value("${spring.redis.host}")
+    @Value("${spring.data.redis.host}")
     private String redisHost;
 
     @Value("${testing.stub}")
