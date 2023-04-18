@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -87,8 +86,12 @@ public class BalanceAction {
             responseVo.setCode(ResponseCodes.UNKNOWN);
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
             httpService.logError(httpRequestLog, e);
+        } finally {
+            if(responseVo.getCode() != ResponseCodes.SUCCESS) {
+                responseVo.setData(null);
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
 
         return responseVo;
 

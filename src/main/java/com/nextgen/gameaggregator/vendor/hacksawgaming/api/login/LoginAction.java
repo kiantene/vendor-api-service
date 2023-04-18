@@ -79,11 +79,19 @@ public class LoginAction {
                 NullPointerException |
                 IllegalArgumentException e
         ) {
-
-        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
             httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.UNKNOWN);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            if(responseVo.getCode() != ResponseCodes.SUCCESS) {
+                responseVo.setData(null);
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
 
         return responseVo;
 
