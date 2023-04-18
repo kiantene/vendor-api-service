@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 
@@ -107,6 +109,41 @@ public class SettledBetService {
         } catch (InvocationTargetException invocationTargetException) {
             throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
         }
+    }
+
+    /**
+     * Reprocess betData if winLoss, effectiveTurnover, vendorSettleTime, and resultTime is not returned from vendor
+     *
+     * @param  rawBetData entity object containing information of a single result bet
+     * @return RawResultBet entity object after a successful recalculation
+     */
+    public RawSettledBet processBetData(RawSettledBet rawBetData){
+
+        //winLoss will be re-process if its empty return from vendor
+        if (ObjectUtils.isEmpty(rawBetData.getWinLoss())) {
+            //winLoss = winAmount - betAmount
+            rawBetData.setWinLoss(rawBetData.getWinAmount().subtract(rawBetData.getBetAmount()));
+        }
+
+        //effectiveTurnover will be re-process if its empty return from vendor
+        if (ObjectUtils.isEmpty(rawBetData.getEffectiveTurnover())) {
+            //effectiveTurnover = betAmount
+            rawBetData.setEffectiveTurnover(rawBetData.getBetAmount());
+        }
+
+        //vendorSettleTime will be re-process if its empty return from vendor
+        if (ObjectUtils.isEmpty(rawBetData.getVendorSettleTime())) {
+            //vendorSettleTime = vendorBetTime
+            rawBetData.setVendorSettleTime(rawBetData.getVendorBetTime());
+        }
+
+        //resultTime will be re-process if its empty return from vendor
+        if (ObjectUtils.isEmpty(rawBetData.getResultTime())) {
+            //resultTime = vendorSettleTime
+            rawBetData.setResultTime(rawBetData.getVendorSettleTime());
+        }
+
+        return rawBetData;
     }
 
     /**

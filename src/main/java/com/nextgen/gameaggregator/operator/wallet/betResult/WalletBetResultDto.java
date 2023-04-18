@@ -17,7 +17,7 @@ public class WalletBetResultDto {
     private BigDecimal effectiveTurnover;
     private BigDecimal winLoss;
     private BigDecimal jackpotAmount;
-    private Integer resultType;
+    private String resultType;
     private Integer isFreespin;
     private Integer isEndRound;
     private String currency;

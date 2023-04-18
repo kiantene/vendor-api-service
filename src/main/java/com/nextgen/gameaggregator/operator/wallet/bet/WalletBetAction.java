@@ -49,7 +49,6 @@ public class WalletBetAction {
         }
 
         WalletBalanceVo responseVo = null;
-
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
 
         ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
@@ -73,6 +72,9 @@ public class WalletBetAction {
         try {
             // 1. validate HTTP Response Code
             operatorService.validateOperatorHttpStatusResponse(apiResponse);
+
+            System.out.println("apiResponse = " + apiResponse);
+            System.out.println("dto = " + dto);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);

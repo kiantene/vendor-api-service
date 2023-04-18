@@ -19,6 +19,7 @@ public class AgentApiCredentialService {
 
     @Cacheable(value = "AgentApiCredentials", key = "#agentId", cacheManager = "cacheManager")
     public AgentApiCredential getAgentApiCredential(Integer agentId) throws InvalidAgentApiCredentialException {
+
         AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
         Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
 

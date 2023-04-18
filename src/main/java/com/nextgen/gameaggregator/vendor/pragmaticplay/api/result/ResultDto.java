@@ -105,7 +105,7 @@ public class ResultDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
@@ -130,7 +130,7 @@ public class ResultDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
@@ -138,9 +138,6 @@ public class ResultDto implements UnsettledResultSettledData {
         return 0;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;

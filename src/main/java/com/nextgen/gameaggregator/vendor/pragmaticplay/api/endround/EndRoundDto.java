@@ -109,7 +109,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override

@@ -77,6 +77,9 @@ public class WalletBetResultAction {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             operatorService.validateResponse(responseVo);
 
+            System.out.println("apiResponse = " + apiResponse);
+            System.out.println("dto = " + dto);
+
             //3. validate username and currency
             operatorService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
