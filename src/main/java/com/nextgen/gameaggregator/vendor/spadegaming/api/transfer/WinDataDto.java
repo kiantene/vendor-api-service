@@ -6,19 +6,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-
-import com.nextgen.gameaggregator.enums.BetStatus;
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -85,8 +81,8 @@ public class WinDataDto implements UnsettledResultSettledData {
     private String gameFeature;
     
     private String betId;
-    private WinType resultType;
     private BigDecimal betAmount;
+    private BigDecimal winLoss;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
 
@@ -99,17 +95,9 @@ public class WinDataDto implements UnsettledResultSettledData {
         return this.transferId;
     }
 
-    public void setExternalTransactionId(String transferId) {
-        this.transferId = transferId;
-    }
-
     @Override
     public String getVendorBetId() {
         return this.referenceId;
-    }
-
-    public void setVendorBetId(String referenceId){
-        this.referenceId = referenceId;
     }
 
     @Override
@@ -124,11 +112,7 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return betAmount;
-    }
-
-    public void setBetAmount(BigDecimal betAmount) {
-        this.betAmount = betAmount;
+        return null;
     }
 
     @Override
@@ -136,30 +120,14 @@ public class WinDataDto implements UnsettledResultSettledData {
         return this.amount;
     }
 
-    public void setWinAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
     @Override
     public BigDecimal getWinLoss() {
         return this.amount;
     }
 
-    public void setWinLoss(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public void setVendorWinLoss(BigDecimal vendorWinLoss) {
-        this.vendorWinLoss = vendorWinLoss;
-    }
-
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.effectiveTurnover;
-    }
-
-    public void setEffectiveTurnover(BigDecimal effectiveTurnover) {
-        this.effectiveTurnover = effectiveTurnover;
     }
 
     @Override
@@ -169,7 +137,7 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public WinType getResultType() {
-        return this.resultType;
+        return this.amount.compareTo(BigDecimal.ZERO) > 0 ? WinType.WIN : WinType.LOSE;
     }
 
     @Override
@@ -185,10 +153,6 @@ public class WinDataDto implements UnsettledResultSettledData {
     @Override
     public Long getVendorSettleTime() {
         return getTimestamp();
-    }
-
-    public void setResultType(WinType resultType) {
-        this.resultType = resultType;
     }
 
     @Override
