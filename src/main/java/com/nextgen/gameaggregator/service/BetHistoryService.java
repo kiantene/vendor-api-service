@@ -2,18 +2,19 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import com.nextgen.gameaggregator.entity.BetResultLog;
+import com.nextgen.gameaggregator.entity.RawUnsettledBet;
+import com.nextgen.gameaggregator.entity.VendorLine;
+import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.repository.RawResultBetRepository;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.BetResultLogRepository;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
+import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
+import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
+import com.nextgen.gameaggregator.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -21,9 +22,12 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
-import jakarta.transaction.Transactional;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -40,6 +44,11 @@ public class BetHistoryService {
 
     @Autowired
     private MariaDefaultDataSourceConfig mariaDefaultDataSourceConfig;
+
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private VendorLineRepository vendorLineRepository;
 
     @Autowired
     private RawResultBetRepository rawResultBetRepository;
@@ -253,5 +262,49 @@ public class BetHistoryService {
     public BetResultLog getBetHistoryByExternalTransaction(String txnId, String roundId, Integer vendorLineId) throws BetResultNotFoundException {
         BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(txnId, roundId, vendorLineId);
         return resultLog;
+    }
+
+    public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String transactionId) throws BetNotFoundException {
+        IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, transactionId);
+
+        if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
+            throw new BetNotFoundException();
+        }
+        return iBetDetailUrlInfo;
+    }
+
+    public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData ) throws
+            InvalidVendorResponseException, DisabledVendorLineException, InvalidVendorLineException {
+
+        //1. get vendor line
+        VendorLine vendorLine = vendorLineRepository.findById(iBetDetailUrlInfo.getVendorLineId()).orElse(null);
+        Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
+
+        if(vendorLine.getStatus().equals(Status.INACTIVE.code)){
+            throw new DisabledVendorLineException();
+        }
+        //2. get vendor line credential
+        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine);
+
+
+        try {
+
+            String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
+            BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
+            MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo);
+
+            BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo);
+            transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
+
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException | InvalidVendorLineException |
+                 InvalidFormatException | RecordNotFoundException
+                gameClassException) {
+            gameClassException.printStackTrace();
+            log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
+            throw new InvalidVendorResponseException();
+        }
+
+        return null;
     }
 }
