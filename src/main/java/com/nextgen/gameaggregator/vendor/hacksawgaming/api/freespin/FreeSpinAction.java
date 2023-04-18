@@ -48,6 +48,12 @@ public class FreeSpinAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
+        responseDataVo.setBrandUid("testgame3");
+        responseDataVo.setCurrency("CNY");
+        responseDataVo.setBalance(BigDecimal.valueOf(1000));
+        httpService.end(httpRequestLog, responseVo);
+
+        /*
         try {
 
             FreeSpinDto dto = HttpService.convertJsonToDto(body, FreeSpinDto.class);
@@ -84,6 +90,8 @@ public class FreeSpinAction {
             httpService.logError(httpRequestLog, e);
         }
         httpService.end(httpRequestLog, responseVo);
+
+         */
 
         return responseVo;
 
