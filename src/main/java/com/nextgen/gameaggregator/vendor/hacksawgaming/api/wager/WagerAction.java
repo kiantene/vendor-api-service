@@ -48,6 +48,11 @@ public class WagerAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
+        responseDataVo.setBrandUid("testgame3");
+        responseDataVo.setCurrency("CNY");
+        responseDataVo.setBalance(BigDecimal.valueOf(1000));
+        httpService.end(httpRequestLog, responseVo);
+        /*
         try {
 
             WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
@@ -93,6 +98,8 @@ public class WagerAction {
             httpService.end(httpRequestLog, responseVo);
         }
         httpService.end(httpRequestLog, responseVo);
+
+         */
 
         return responseVo;
 

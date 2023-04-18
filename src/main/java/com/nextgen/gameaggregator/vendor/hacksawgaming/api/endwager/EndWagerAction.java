@@ -48,6 +48,11 @@ public class EndWagerAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
+        responseDataVo.setBrandUid("testgame3");
+        responseDataVo.setCurrency("CNY");
+        responseDataVo.setBalance(BigDecimal.valueOf(1000));
+        httpService.end(httpRequestLog, responseVo);
+        /*
         try {
 
             EndWagerDto dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
@@ -84,6 +89,8 @@ public class EndWagerAction {
             httpService.logError(httpRequestLog, e);
         }
         httpService.end(httpRequestLog, responseVo);
+
+         */
 
         return responseVo;
 

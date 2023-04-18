@@ -48,6 +48,13 @@ public class LoginAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
+
+        // Set Vendor player username + Balance + Currency
+        responseDataVo.setBrandUid("testgame3");
+        responseDataVo.setCurrency("CNY");
+        responseDataVo.setBalance(BigDecimal.valueOf(1000));
+        httpService.end(httpRequestLog, responseVo);
+        /*
         try {
 
             LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
@@ -92,6 +99,8 @@ public class LoginAction {
             }
             httpService.end(httpRequestLog, responseVo);
         }
+
+         */
 
         return responseVo;
 
