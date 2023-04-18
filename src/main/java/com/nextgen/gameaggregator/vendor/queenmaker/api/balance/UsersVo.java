@@ -1,0 +1,15 @@
+package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
+
+import java.util.List;
+
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class UsersVo {
+    private String userid;
+    private Integer err;
+    private String errdesc;
+    private List<WalletsVo> wallets;
+}

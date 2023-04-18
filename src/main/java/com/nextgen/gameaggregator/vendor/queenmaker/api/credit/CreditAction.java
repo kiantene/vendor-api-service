@@ -3,13 +3,13 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,26 +45,25 @@ public class CreditAction {
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
-            List<Transactions> transactionsList = new LinkedList<>();
+            List<TransactionsVo> transactionsList = new LinkedList<>();
 
             for(TransactionsDto transaction : creditDto.getTransactions()) {
                 TransactionsVo transactionsVo = new TransactionsVo();
-                transactionsVo.setTxid("asdas");
-                transactionsVo.setPtxid("dasd");
-                transactionsVo.setCur("RMB");
-                transactionsVo.setBal(BigDecimal.valueOf(1000));
-                transactionsVo.setDup(false);
+                if(true){
+                    transactionsVo.setTxid(traceId);
+                    transactionsVo.setPtxid(transaction.getPtxid());
+                    transactionsVo.setCur(transaction.getCur());
+                    transactionsVo.setBal(BigDecimal.valueOf(100));
+                    transactionsVo.setDup(false);
+                }else{
+                    transactionsVo.setTxid(traceId);
+                    transactionsVo.setPtxid(transaction.getPtxid());
+                    transactionsVo.setErr(900);
+                    transactionsVo.setErrdesc("dasdasdasd");
+                }
+                transactionsList.add(transactionsVo);
             }
-
-            TransactionsVo transactionsVo = new TransactionsVo();
-            TransactionsErrorVo transactionsErrorVo = new TransactionsErrorVo();
-
-
-            transactionsList.add(transactionsVo);
-            transactionsList.add(transactionsErrorVo);
-
             creditVo.setTransactions(transactionsList);
-
 
         }  catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);

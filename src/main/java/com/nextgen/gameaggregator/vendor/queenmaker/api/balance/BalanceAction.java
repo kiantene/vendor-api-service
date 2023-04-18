@@ -5,15 +5,14 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,19 +32,13 @@ public class BalanceAction {
     private WalletService walletService;
 
     @PostMapping(path = EndPoints.WALLET_BALANCE)
-    public Object balance(HttpServletRequest request) {
+    public HttpResponse balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         BalanceVo balanceVo = new BalanceVo();
         String traceId = httpRequestLog.getTraceId();
 
-        HashMap<String, Object> response = new LinkedHashMap<>();
-        List<Object> usersList = new LinkedList<>();
-        List<Object> walletsList = new LinkedList<>();
-        HashMap<String, Object> wallets = new LinkedHashMap<>();
-        wallets.put("code", "MainWallet");
-        wallets.put("bal", 1000);
-        wallets.put("cur", "RMB");
-        walletsList.add(wallets);
+
+
 
         try {
             String clientId = request.getHeader(Formats.HEADER_CLIENT_ID);
@@ -54,20 +47,27 @@ public class BalanceAction {
 
             ObjectMapper objectMapper = new ObjectMapper();
             BalanceDto balanceDto = objectMapper.readValue(body, BalanceDto.class);
+            List<UsersVo> usersList = new LinkedList<>();
+
 
 
             for(UsersDto user : balanceDto.getUsers()) {
-                HashMap<String, Object> users = new LinkedHashMap<>();
-                users.put("userid", user.getUserid());
-                users.put("wallets", walletsList);
-                usersList.add(users);
+//                GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(user.getUserid());
+
+                // Set wallet for each user
+                WalletsVo walletVo = new WalletsVo();
+                walletVo.setCode("MainWallet");
+                walletVo.setBal(BigDecimal.valueOf(100));
+                walletVo.setCur(user.getCur());
+
+                UsersVo usersVo = new UsersVo();
+                usersVo.setUserid(user.getUserid());
+                List<WalletsVo> walletsList = new LinkedList<>();
+                walletsList.add(walletVo);
+                usersVo.setWallets(walletsList);
+                usersList.add(usersVo);
             }
-
-
-            response.put("users", usersList);
-
-
-
+            balanceVo.setUsers(usersList);
 
         } catch (Exception exception) { // any other exception encountered
 
@@ -77,7 +77,7 @@ public class BalanceAction {
             httpService.end(httpRequestLog, balanceVo);
         }
 
-        return response;
+        return balanceVo;
     }
 
 }
