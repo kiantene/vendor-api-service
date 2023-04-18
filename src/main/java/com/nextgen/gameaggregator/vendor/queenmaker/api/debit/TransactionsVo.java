@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.debit;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TransactionsVo{
+public class TransactionsVo {
 
     private String txid;
     private String ptxid;
