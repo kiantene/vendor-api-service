@@ -51,6 +51,9 @@ public class AppendWagerAction {
         responseDataVo.setBrandUid("testgame3");
         responseDataVo.setCurrency("CNY");
         responseDataVo.setBalance(BigDecimal.valueOf(1000));
+        responseVo.setData(responseDataVo);
+        responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+        responseVo.setCode(ResponseCodes.SUCCESS);
         httpService.end(httpRequestLog, responseVo);
 
         /*
