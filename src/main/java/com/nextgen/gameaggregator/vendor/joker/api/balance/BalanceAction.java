@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -41,7 +41,7 @@ public class BalanceAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.BALANCE)
-    public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 

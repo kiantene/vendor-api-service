@@ -60,7 +60,8 @@ public class WalletBetAction {
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                .onStatus(HttpStatus::isError, response -> Mono.empty())
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))

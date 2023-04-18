@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

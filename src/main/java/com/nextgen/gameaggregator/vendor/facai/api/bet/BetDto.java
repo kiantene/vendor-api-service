@@ -10,7 +10,7 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;

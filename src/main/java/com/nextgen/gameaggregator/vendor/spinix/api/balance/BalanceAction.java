@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -146,23 +146,19 @@ public class BalanceAction {
             InvalidVendorLineException,
             CredentialNotFoundException {
 
-
-        // Verify received username is the same from game session
-        // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-        if(!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
-            throw new InvalidPlayerException();
-        }
-
+        // Verify Signature
         String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
         if(!VendorService.isSameSignature(token, body, signatureKey)) {
             throw new InvalidVendorLineException();
         }
 
+        // Verify vendor username, agent vendor line, player status and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUserId());
+
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
-        // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getUserId());
+
     }
 }

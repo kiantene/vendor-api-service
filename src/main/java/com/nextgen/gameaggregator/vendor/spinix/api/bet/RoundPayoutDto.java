@@ -7,8 +7,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.annotation.Nullable;
-import javax.validation.constraints.*;
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
 

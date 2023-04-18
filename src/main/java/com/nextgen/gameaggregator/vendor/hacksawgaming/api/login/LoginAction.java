@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.api.login;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -11,17 +10,17 @@ import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.util.Map;
-import java.util.Optional;
+import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -39,12 +38,12 @@ public class LoginAction {
     @Autowired
     private ValidationService validationService;
 
-    @PostMapping(path = EndPoints.BALANCE)
-    public LoginVo balance(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.LOGIN)
+    public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        LoginVo loginVo = new LoginVo();
-        LoginDataVo loginDataVo = new LoginDataVo();
+        ResponseVo responseVo = new ResponseVo();
+        ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
@@ -58,28 +57,43 @@ public class LoginAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-            this.doVerification(dto, gameSession, bodyObj);
+            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getToken() + Credentials.API_KEY);
+            this.doVerification(dto, gameSession, toVerifySign);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Set Vendor player username + Balance + Currency
-            loginDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            loginDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            loginDataVo.setBalance(balance);
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(balance);
 
             // Set BalanceDataWalletVo Object
-            loginVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-            loginVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+            responseVo.setCode(ResponseCodes.SUCCESS);
 
-        } catch (Exception e) {
+        } catch(InvalidRequestException |
+                DateTimeParseException |
+                CurrencyNotSupportedException |
+                JsonProcessingException |
+                NullPointerException |
+                IllegalArgumentException e
+        ) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
             httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.UNKNOWN);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            if(responseVo.getCode() != ResponseCodes.SUCCESS) {
+                responseVo.setData(null);
+            }
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, loginVo);
 
-        return loginVo;
+        return responseVo;
 
     }
 
@@ -88,33 +102,23 @@ public class LoginAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(LoginDto dto, GameSession gameSession, Map<String, Object> body)
-            throws AuthenticationException,
-            InvalidPlayerException,
-            GameNotSupportedException,
+    private void doVerification(LoginDto dto, GameSession gameSession, String toVerifySign)
+            throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException,
-            CredentialNotFoundException {
+            InvalidVendorLineException {
 
-
-        // Verify received username is the same from game session
-        // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-        if(!gameSession.getVendorPlayerUsername().equals(dto.getBrandUid())) {
-            throw new InvalidPlayerException();
+        // Verify signature
+        if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
+            throw new InvalidVendorLineException();
         }
-
-//        String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
-//        if(!VendorService.isSameSignature(token, body, signatureKey)) {
-//            throw new InvalidVendorLineException();
-//        }
-
-        // Verify currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+
+        // Verify currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }

@@ -1331,7 +1331,7 @@ public class WalletService {
             //TODO REMOVING OPERATORSTATUS
             betHistory.setOperatorStatus(1);
             betHistory.setId(rawSettledBet.getInternalTransactionId());
-            betHistory.setCreateTime(Instant.now().getEpochSecond());
+            betHistory.setCreateTime(Instant.now().toEpochMilli());
 
             return betHistory;
 

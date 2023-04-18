@@ -51,13 +51,14 @@ public class WalletBetResultAction {
 
         ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
-                .uri(Endpoints.WALLET_RESULT)
+                .uri(Endpoints.WALLET_BET_RESULT)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                .onStatus(HttpStatus::isError, response -> Mono.empty())
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))

@@ -6,12 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -38,11 +39,12 @@ public class HttpService {
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
-
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
+            System.out.println("DNHSRTN3-");
             String requestBody = this.getRawRequestBody(request);
+            System.out.println("DNHSRTN4-");
             httpRequestLog.setTraceId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
@@ -59,9 +61,10 @@ public class HttpService {
     }
 
     public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
+        if (!enableHttpRequestLog) return;
+
         if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
-            if(enableHttpRequestLog) {
                 THREAD_POOL.submit(() -> {
                     try {
                         String responseBody = new ObjectMapper().writeValueAsString(responseVo);
@@ -74,7 +77,6 @@ public class HttpService {
                         log.error(exception.getMessage());
                     }
                 });
-            }
         } else {
             log.warn("HttpService.end: requestLog or responseVo is null");
         }
@@ -200,6 +202,7 @@ public class HttpService {
         while((value = reader.read()) != -1) {
             requestBody.append((char) value);
         }
+
         return requestBody.toString();
     }
 }

@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.RoundingMode;
 
 @RestController
@@ -32,18 +32,12 @@ public class SettleBetAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
     @Autowired
     private ValidationService validationService;
 
     @PostMapping(path = EndPoints.SETTLE_BET)
-    public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -58,10 +52,6 @@ public class SettleBetAction {
 
             //Convert original request body into commonDto
             SettleBetDto settleBetDto = HttpService.convertQueryStringToDtoUrlDecode(body, SettleBetDto.class);
-
-            if(settleBetDto.getUsername().toLowerCase().equals("dr6nm")) {
-                throw new InvalidRequestException();
-            }
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(settleBetDto);

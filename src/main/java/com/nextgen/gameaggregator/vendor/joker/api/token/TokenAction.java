@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -39,7 +39,7 @@ public class TokenAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.TOKEN)
-    public TokenVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public TokenVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
