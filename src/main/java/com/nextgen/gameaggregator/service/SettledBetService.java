@@ -18,6 +18,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 
 @Service
 @Slf4j
@@ -112,32 +113,38 @@ public class SettledBetService {
     }
 
     /**
-     * Reprocess betData if winLoss, effectiveTurnover, vendorSettleTime, and resultTime is not returned from vendor
+     * Reprocess betData if winAmount, winLoss, effectiveTurnover, vendorSettleTime, and resultTime is not returned from vendor
      *
      * @param  rawBetData entity object containing information of a single result bet
      * @return RawResultBet entity object after a successful recalculation
      */
     public RawSettledBet processBetData(RawSettledBet rawBetData){
 
-        //winLoss will be re-process if its empty return from vendor
+        //winLoss will be re-process if empty return from vendor
+        if (ObjectUtils.isEmpty(rawBetData.getWinAmount())) {
+            //winLoss = 0
+            rawBetData.setWinAmount(BigDecimal.valueOf(0));
+        }
+
+        //winLoss will be re-process if empty return from vendor
         if (ObjectUtils.isEmpty(rawBetData.getWinLoss())) {
             //winLoss = winAmount - betAmount
             rawBetData.setWinLoss(rawBetData.getWinAmount().subtract(rawBetData.getBetAmount()));
         }
 
-        //effectiveTurnover will be re-process if its empty return from vendor
+        //effectiveTurnover will be re-process if empty return from vendor
         if (ObjectUtils.isEmpty(rawBetData.getEffectiveTurnover())) {
             //effectiveTurnover = betAmount
             rawBetData.setEffectiveTurnover(rawBetData.getBetAmount());
         }
 
-        //vendorSettleTime will be re-process if its empty return from vendor
+        //vendorSettleTime will be re-process if empty return from vendor
         if (ObjectUtils.isEmpty(rawBetData.getVendorSettleTime())) {
             //vendorSettleTime = vendorBetTime
             rawBetData.setVendorSettleTime(rawBetData.getVendorBetTime());
         }
 
-        //resultTime will be re-process if its empty return from vendor
+        //resultTime will be re-process if empty return from vendor
         if (ObjectUtils.isEmpty(rawBetData.getResultTime())) {
             //resultTime = vendorSettleTime
             rawBetData.setResultTime(rawBetData.getVendorSettleTime());
