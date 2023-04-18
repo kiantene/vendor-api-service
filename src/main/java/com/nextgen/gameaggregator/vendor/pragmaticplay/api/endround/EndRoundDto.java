@@ -117,9 +117,6 @@ public class EndRoundDto implements UnsettledResultSettledData {
         return 0;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;

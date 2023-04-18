@@ -359,10 +359,7 @@ public class WalletService {
             WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
 
             BetHistory betHistory = this.toBetHistory(rawSettledBet);
-            System.out.println("betHistory = " + betHistory);
             kafkaService.produceBetHistory(betHistory);
-
-            System.out.println("betHistory2 = " + betHistory);
 
             // 6. Insert into couchbase settled_bet table and also mariadb
 //            settledBetService.createSettledBet(rawSettledBet);
@@ -1206,6 +1203,7 @@ public class WalletService {
             rawSettledBet.setAgentId(gameSession.getAgentId());
             rawSettledBet.setVendorLineId(gameSession.getVendorLineId());
             rawSettledBet.setCurrencyId(gameSession.getCurrencyId());
+            rawSettledBet.setStatus(unsettledResultSettledData.getBetStatus().code);
 
             return rawSettledBet;
 
