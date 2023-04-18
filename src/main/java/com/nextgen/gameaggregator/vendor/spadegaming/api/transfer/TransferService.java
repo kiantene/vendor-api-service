@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import java.math.BigDecimal;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -77,9 +75,6 @@ public class TransferService {
                 case Actions.PAYOUT:
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-
-                    // Bet amount is zero when free spin
-                    if (dto.getSpecialGame() == null) winDataDto.setBetAmount(BigDecimal.ZERO);
                     transferVo.setBalance(
                         dto.getSpecialGame() == null
                             ? walletService.processResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()

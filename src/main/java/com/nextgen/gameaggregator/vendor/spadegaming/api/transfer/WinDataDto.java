@@ -81,11 +81,14 @@ public class WinDataDto implements UnsettledResultSettledData {
     private String gameFeature;
     
     private String betId;
-    private BigDecimal betAmount;
-    private BigDecimal winLoss;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
 
+    public BigDecimal setBetAmount() {
+        // Bet amount is zero when free spin
+        return (getSpecialGame() == null) ? BigDecimal.ZERO : null;
+    }
+    
     public String getAcctId() {
         return this.acctId.toLowerCase();
     }
