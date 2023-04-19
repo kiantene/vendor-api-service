@@ -136,7 +136,9 @@ public class BetAction {
 
         // 2. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        if (!gameSession.getVendorGameCode().equals("101")) {
+            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        }
 
 
         // 4. Retrieve vendor line credentials and secretKey for hash validation
