@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VendorLineRepository extends JpaRepository<VendorLine, Integer> {
     VendorLine findByIdAndStatus(Integer id, Integer status);
+
 }

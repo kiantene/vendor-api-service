@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorLogVo;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.OperatorService;
+import com.nextgen.gameaggregator.service.OperatorRequestService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +33,7 @@ public class WalletBetResultAction {
     @Value("${spring.profiles.active}")
     private String profilesActive;
     @Autowired
-    OperatorService operatorService;
+    OperatorRequestService operatorRequestService;
 
     @Autowired
     AuthenticationService authenticationService;
@@ -42,7 +42,7 @@ public class WalletBetResultAction {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return operatorService.responseOperatorSub();
+            return operatorRequestService.responseOperatorSub();
         }
         WalletBalanceVo responseVo = null;
 
@@ -64,90 +64,90 @@ public class WalletBetResultAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(
+        OperatorLogVo operatorLogVo = operatorRequestService.createOperatorLogVo(
                 Endpoints.WALLET_BET, agentApiCredential.getCallbackUrl(), dto, apiResponse, signature, profilesActive);
 
 
         try {
             // 1. validate HTTP Response Code
-            operatorService.validateOperatorHttpStatusResponse(apiResponse);
+            operatorRequestService.validateOperatorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-            operatorService.validateResponse(responseVo);
+            operatorRequestService.validateResponse(responseVo);
 
             //3. validate username and currency
-            operatorService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
+            operatorRequestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
-            operatorService.operatorStatusException(responseVo.getStatus());
+            operatorRequestService.operatorStatusException(responseVo.getStatus());
 
 
         } catch (HttpResponseStatusCodeException httpResponseStatusCodeException) {
-            operatorService.failResponseLog(operatorLogVo, httpResponseStatusCodeException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, httpResponseStatusCodeException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (JsonSyntaxException jsonSyntaxException) {
-            operatorService.failResponseLog(operatorLogVo, jsonSyntaxException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, jsonSyntaxException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidTokenException invalidTokenException) {
-            operatorService.failResponseLog(operatorLogVo, invalidTokenException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, invalidTokenException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_TOKEN.code);
 
         } catch (InvalidSignatureException invalidSignatureException) {
-            operatorService.failResponseLog(operatorLogVo, invalidSignatureException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, invalidSignatureException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_SIGNATURE.code);
 
         } catch (InvalidPlayerException invalidPlayerException) {
-            operatorService.failResponseLog(operatorLogVo, invalidPlayerException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, invalidPlayerException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_USER_NOT_EXISTS.code);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            operatorService.failResponseLog(operatorLogVo, disabledAgentPlayerException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, disabledAgentPlayerException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
-            operatorService.failResponseLog(operatorLogVo, gameNotSupportedException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, gameNotSupportedException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            operatorService.failResponseLog(operatorLogVo, insufficientBalanceException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, insufficientBalanceException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidRequestException invalidRequestException) {
-            operatorService.failResponseLog(operatorLogVo, invalidRequestException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, invalidRequestException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_REQUEST.code);
 
         } catch (BetNotFoundException betNotFoundException) {
-            operatorService.failResponseLog(operatorLogVo, betNotFoundException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, betNotFoundException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code);
 
         } catch (SystemMaintenanceException systemMaintenanceException) {
-            operatorService.failResponseLog(operatorLogVo, systemMaintenanceException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, systemMaintenanceException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNDER_MAINTENANCE.code);
 
         } catch (DuplicateTransactionException duplicateTransactionException) {
-            operatorService.failResponseLog(operatorLogVo, duplicateTransactionException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, duplicateTransactionException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code);
 
         } catch (DuplicateRequestException duplicateRequestException) {
-            operatorService.failResponseLog(operatorLogVo, duplicateRequestException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, duplicateRequestException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code);
 
         } catch (InvalidCurrencyException invalidCurrencyException) {
-            operatorService.failResponseLog(operatorLogVo, invalidCurrencyException.getClass().getName());
+            operatorRequestService.failResponseLog(operatorLogVo, invalidCurrencyException.getClass().getName());
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_WRONG_CURRENCY.code);
 
         } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
-            operatorService.failResponseLog(operatorLogVo, responseNotMatchRequestException.getClass().getName() +
+            operatorRequestService.failResponseLog(operatorLogVo, responseNotMatchRequestException.getClass().getName() +
                     " [" +responseNotMatchRequestException.getMessage()  + "]");
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         }
 //        catch (Exception exception){
-//            operatorService.failResponseLog(operatorLogVo, exception.getClass().getName());
+//            operatorRequestService.failResponseLog(operatorLogVo, exception.getClass().getName());
 //            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
 //        }
 

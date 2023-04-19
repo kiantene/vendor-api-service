@@ -20,7 +20,7 @@ import java.util.Set;
 
 @Service
 @Slf4j
-public class OperatorService {
+public class OperatorRequestService {
 
     public WalletBalanceVo responseOperatorSub() {
         WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
@@ -31,7 +31,7 @@ public class OperatorService {
     }
 
     public void validateOperatorHttpStatusResponse(ResponseEntity responseEntity) throws HttpResponseStatusCodeException {
-        if (responseEntity.getStatusCodeValue() != 200) {
+        if (responseEntity.getStatusCode().isError()) {
             throw new HttpResponseStatusCodeException();
         }
     }
@@ -157,7 +157,7 @@ public class OperatorService {
         logInfo.put("CallbackUrl: ", operatorLogVo.getCallbackUrl());
         logInfo.put("RequestParam: ", operatorLogVo.getRequestObject());
         logInfo.put("Response: ", operatorLogVo.getResponseEntity().getBody());
-        logInfo.put("HttpStatusCode: ", operatorLogVo.getResponseEntity().getStatusCodeValue());
+        logInfo.put("HttpStatusCode: ", operatorLogVo.getResponseEntity().getStatusCode());
         logInfo.put("OperatorService: ", operatorLogVo.getEndpoint());
         logInfo.put("RequestSignature: ", operatorLogVo.getSignature());
         logInfo.put("ExceptionName: ", exceptionName);
