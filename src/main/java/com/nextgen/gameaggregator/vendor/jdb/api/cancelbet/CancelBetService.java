@@ -59,7 +59,7 @@ public class CancelBetService {
             vo.setResponseCode(ResponseCode.SUCCESS);
         
         } catch (AuthenticationException authenticationException) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (BetNotFoundException betNotFoundException) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
