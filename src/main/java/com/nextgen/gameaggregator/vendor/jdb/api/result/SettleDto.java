@@ -3,16 +3,16 @@ package com.nextgen.gameaggregator.vendor.jdb.api.result;
 import java.math.BigDecimal;
 import java.util.List;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -40,7 +40,7 @@ public class SettleDto implements UnsettledResultSettledData {
     private String currency;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal amount;
 
     @Valid
@@ -49,7 +49,7 @@ public class SettleDto implements UnsettledResultSettledData {
     private List<@NotNull Long> refTransferIds;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private Long gameRoundSeqNo;
 
     @NotBlank
@@ -66,38 +66,38 @@ public class SettleDto implements UnsettledResultSettledData {
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
 
-    @NotBlank(message = "WRONG_DATE_FORMAT")
+    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 10)
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = "WRONG_DATE_FORMAT")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String reportDate;
 
-    @NotBlank(message = "WRONG_DATE_FORMAT")
+    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 19)
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String gameDate;
 
-    @NotBlank(message = "WRONG_DATE_FORMAT")
+    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 19)
-    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = "WRONG_DATE_FORMAT")
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String lastModifyTime;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal bet;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal validBet;
 
     @NotNull
-    @PositiveOrZero(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal win;
 
     @NotNull
     private BigDecimal netWin;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal tax;
 
     @NotBlank
