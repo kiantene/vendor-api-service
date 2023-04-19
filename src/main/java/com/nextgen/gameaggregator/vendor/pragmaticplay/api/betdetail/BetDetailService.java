@@ -3,16 +3,15 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.betdetail;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
-import com.nextgen.gameaggregator.exception.RecordNotFoundException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
-import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import com.nextgen.gameaggregator.service.VendorRequestService;
+import com.nextgen.gameaggregator.vendor.VendorLogVo;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,11 +27,15 @@ import java.util.Optional;
 
 public class BetDetailService implements BetDetailUrl {
 
+
     @Autowired
-    private VendorPlayerRepository vendorPlayerRepository;
+    VendorRequestService vendorRequestService;
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder( Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo)
+    public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
         String secureLogin = credentials.get(Credentials.SECURE_LOGIN);
         Optional.ofNullable(secureLogin).orElseThrow(InvalidVendorLineException::new);
@@ -58,9 +61,9 @@ public class BetDetailService implements BetDetailUrl {
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
 
-        ResponseEntity apiResponse =  WebClient.create("https://stg.gasea168.com/")
+        ResponseEntity apiResponse = WebClient.create("https://stg.gasea168.com/")
                 .post()
-                .uri(Endpoints.OPEN_HISTORY+"sdfsd")
+                .uri(Endpoints.OPEN_HISTORY )
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
@@ -70,21 +73,25 @@ public class BetDetailService implements BetDetailUrl {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-
-        Gson gson = new Gson();
-        System.err.println();
-        System.err.println(apiUrl);
-        System.err.println(gson.toJson(formData));
-        System.err.println(apiResponse.getBody());
+        VendorLogVo vendorLogVo = vendorRequestService.createVendorLogVo(
+                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, profilesActive);
 
         BetDetailUrlVo responseVo = null;
         try {
+
+            // 1. validate HTTP Response Code
+            vendorRequestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), BetDetailUrlVo.class);
 
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            throw new InvalidVendorResponseException( "Invalid vendor response body :"+apiResponse.getBody());
+            //2. validate vendor response
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
+            vendorRequestService.validateResponse(responseVo);
+
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidVendorResponseException invalidException) {
+            vendorRequestService.failResponseLog(vendorLogVo, invalidException);
+            throw new InvalidVendorResponseException();
         }
-        System.err.println(responseVo);
+
         return responseVo;
     }
 }

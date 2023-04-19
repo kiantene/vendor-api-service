@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -32,6 +33,9 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class BetHistoryService {
+    @Autowired
+    private AutowireCapableBeanFactory autowireCapableBeanFactory;
+
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
     @Autowired
@@ -290,6 +294,7 @@ public class BetHistoryService {
         try {
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
             BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
+            autowireCapableBeanFactory.autowireBean(betDetailUrl);
             MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo);
 
             BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo);

@@ -31,7 +31,7 @@ public class OperatorRequestService {
     }
 
     public void validateOperatorHttpStatusResponse(ResponseEntity responseEntity) throws HttpResponseStatusCodeException {
-        if (responseEntity.getStatusCodeValue() != 200) {
+        if (responseEntity.getStatusCode().isError()) {
             throw new HttpResponseStatusCodeException();
         }
     }
@@ -157,7 +157,7 @@ public class OperatorRequestService {
         logInfo.put("CallbackUrl: ", operatorLogVo.getCallbackUrl());
         logInfo.put("RequestParam: ", operatorLogVo.getRequestObject());
         logInfo.put("Response: ", operatorLogVo.getResponseEntity().getBody());
-        logInfo.put("HttpStatusCode: ", operatorLogVo.getResponseEntity().getStatusCodeValue());
+        logInfo.put("HttpStatusCode: ", operatorLogVo.getResponseEntity().getStatusCode());
         logInfo.put("OperatorService: ", operatorLogVo.getEndpoint());
         logInfo.put("RequestSignature: ", operatorLogVo.getSignature());
         logInfo.put("ExceptionName: ", exceptionName);

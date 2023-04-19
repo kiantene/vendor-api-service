@@ -8,6 +8,8 @@ public class BetDetailUrlVo implements com.nextgen.gameaggregator.operator.trans
     private String error;
     private String description;
     private String url;
+//    @NotBlank(message = "test can not be blank")
+//    private String test;
 
     @Override
     public String getBetDetailUrl() { return this.getUrl(); }
