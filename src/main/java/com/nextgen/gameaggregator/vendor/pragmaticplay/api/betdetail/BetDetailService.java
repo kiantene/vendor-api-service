@@ -5,8 +5,9 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
+import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.service.VendorRequestService;
-import com.nextgen.gameaggregator.vendor.VendorLogVo;
+import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
@@ -30,6 +31,9 @@ public class BetDetailService implements BetDetailUrl {
 
     @Autowired
     VendorRequestService vendorRequestService;
+
+    @Autowired
+    RequestService requestService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -60,8 +64,9 @@ public class BetDetailService implements BetDetailUrl {
         String apiUrl = credentials.get(Credentials.REPORT_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
+        System.err.println(this.getClass().getPackage().getName());
 
-        ResponseEntity apiResponse = WebClient.create("https://stg.gasea168.com/")
+        ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.OPEN_HISTORY )
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -73,22 +78,24 @@ public class BetDetailService implements BetDetailUrl {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
-        VendorLogVo vendorLogVo = vendorRequestService.createVendorLogVo(
-                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, profilesActive);
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(
+                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, this.getClass().getPackage().getName(), profilesActive);
 
         BetDetailUrlVo responseVo = null;
         try {
 
             // 1. validate HTTP Response Code
-            vendorRequestService.validateVendorHttpStatusResponse(apiResponse);
+            requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), BetDetailUrlVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            vendorRequestService.validateResponse(responseVo);
+            requestService.validateResponse(responseVo);
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidVendorResponseException invalidException) {
-            vendorRequestService.failResponseLog(vendorLogVo, invalidException);
+            requestService.successResponseLog(requestLogVo);
+
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
+            requestService.failResponseLog(requestLogVo, invalidException);
             throw new InvalidVendorResponseException();
         }
 
