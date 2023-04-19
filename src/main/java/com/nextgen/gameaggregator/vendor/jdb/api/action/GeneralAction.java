@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
@@ -25,6 +25,7 @@ import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
@@ -53,10 +54,14 @@ public class GeneralAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @PostMapping(path = EndPoints.ACTION + "/{id}")
-    public CommonVo action(HttpServletRequest request, @PathVariable String id) {
+    //@PostMapping(path = EndPoints.ACTION + "/{id}")
+    //public CommonVo action(HttpServletRequest request, @PathVariable String id) {
+    
+    @PostMapping(path = EndPoints.ACTION)
+    public CommonVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
+        String id = "1681359443"; // Test
 
         // Construct VO
         CommonVo vo = new CommonVo();
