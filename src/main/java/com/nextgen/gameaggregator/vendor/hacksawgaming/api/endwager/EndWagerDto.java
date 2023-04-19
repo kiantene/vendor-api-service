@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import javax.validation.constraints.Pattern;
@@ -59,9 +60,8 @@ public class EndWagerDto {
     @Size(max = 20)
     public String provider;
 
-    @NotBlank
-    @Size(max = 100)
-    public Integer description;
+    @Nullable
+    public String gameResult;
 
     @NotNull
     // 0= Unfinished, 1= Round Finish
