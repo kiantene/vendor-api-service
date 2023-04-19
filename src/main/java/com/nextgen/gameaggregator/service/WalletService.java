@@ -14,7 +14,6 @@ import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
-import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultDto;
 import com.nextgen.gameaggregator.operator.wallet.refund.WalletRefundAction;
 import com.nextgen.gameaggregator.operator.wallet.refund.WalletRefundDto;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
@@ -28,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -84,59 +82,6 @@ public class WalletService {
     }
 
     /**
-     * To process the bet by sending the bet data to Operator to validate the player has sufficient balance
-     * to place the bet.
-     * <p>
-     * When the Operator has responded with sufficient balance, we will save a record of the bet
-     * as Unsettled.
-     *
-     * @param traceId     A unique Id for this request
-     * @param gameSession GameSession object containing information of the vendor, game, player
-     * @param betData     BetData object containing information of the bet such as betAmount, game, betTime
-     * @param rawData     Raw data sent by vendor containing information of the bet
-     * @return The player's current wallet balance after deducting the bet amount
-     */
-    // TODO: Deprecated -> to be removed
-//    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
-//            InsufficientBalanceException, DuplicateExternalTransactionIdException,
-//            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
-//
-//        Integer agentId = gameSession.getAgentId();
-//        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-//        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
-//
-//        BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
-//        betHistoryService.create(betHistory);
-//        BetOperatorFailEvent betOperatorFailEvent = null;
-//
-//        try {
-////            WalletBalanceVo balanceVo = walletBetAction.stub();
-//            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
-//            BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
-//            // TODO: check for null pointer
-//            // Emit event for additional asynchronous processing
-//            EventDispatcherSystem.emitAsync(betEvent);
-//
-//            return betEvent;
-//
-//        } catch (InsufficientBalanceException insufficientBalanceException) {
-//            betOperatorFailEvent = new BetOperatorFailEvent(betHistory, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-//            throw insufficientBalanceException;
-//
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            betOperatorFailEvent = new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
-//            throw invalidOperatorResponseException;
-//
-//        } finally {
-//            boolean isOperatorFailed = betOperatorFailEvent != null;
-//            if (isOperatorFailed) {
-//                // emit operator failed event to update operator status
-//                EventDispatcherSystem.emitAsync(betOperatorFailEvent);
-//            }
-//        }
-//    }
-
-    /**
      * To process the unsettled bet by sending the bet data to Operator to validate the player has sufficient balance
      * to place the bet.
      * <p>
@@ -169,61 +114,6 @@ public class WalletService {
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
 
             // 5. Insert into couchbase unsettled_bet table
-            betHistoryService.createUnsettledBet(rawUnsettledBet);
-
-            // TODO: if operator failed
-            //EventDispatcherSystem.emitAsync(unsettledBetEvent);
-
-            return unsettledBetEvent;
-
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(rawUnsettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-            throw insufficientBalanceException;
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(rawUnsettledBet, invalidOperatorResponseException.getOperatorStatus());
-            throw invalidOperatorResponseException;
-
-        } finally {
-            boolean isOperatorFailed = unsettledBetOperatorFailEvent != null;
-            if (isOperatorFailed) {
-                // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
-                //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
-            }
-        }
-    }
-
-    /**
-     * To process the unsettled bet by sending the bet data to Operator to validate the player has sufficient balance
-     * to place the bet.
-     * <p>
-     * When the Operator has responded with sufficient balance, we will save a record of the bet
-     * as Unsettled.
-     *
-     * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
-     * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
-     * @param rawData                    Raw data sent by vendor containing information of the bet
-     * @return The player's current wallet balance after deducting the bet amount
-     */
-    public UnsettledBetEvent processUnsettledBetPlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
-            InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
-            InvalidAgentApiCredentialException, MergedBetDataIntegrityException {
-
-        Integer agentId = gameSession.getAgentId();
-        UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
-
-        // 1. Generate rawUnsettledBet
-        RawUnsettledBet rawUnsettledBet = this.newUnsettledBet(gameSession, rawData, unsettledResultSettledData, traceId);
-
-        try {
-            // 2. Prepare callback info
-            RawSettledBet rawSettledBet = settledBetService.convertRawUnsettledBetForWalletTransaction(rawUnsettledBet);
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
-
-            UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
-
-            // 3. Insert into couchbase unsettled_bet table
             betHistoryService.createUnsettledBet(rawUnsettledBet);
 
             // TODO: if operator failed
@@ -737,71 +627,6 @@ public class WalletService {
 
     }
 
-
-    /**
-     * To process the result of a bet by sending the bet result data to Operator so that the Operator can update
-     * the player's balance.
-     *
-     * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
-     * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet result
-     * @param rawData                    Raw data sent by vendor containing information of the bet result
-     * @return ResultBetEvent An event object containing Bet and Bet Result information as well as the last balance
-     * that can be used for further processing, if required
-     * @throws BetNotFoundException            If no bet record is found
-     * @throws CouchbaseDataIntegrityException If anything wrong data inser into couchbase Id is found
-     */
-    public ResultBetEvent processResultBet(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
-            BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, InvalidAgentApiCredentialException {
-
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
-        String roundId = unsettledResultSettledData.getRoundId();
-        String vendorBetId = unsettledResultSettledData.getVendorBetId();
-        ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
-
-        // 1. Retrieve the bet transaction
-        RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
-
-        // 2. Generate wallet result dto
-        WalletWinDto walletWinDto = this.newWalletResultDto(traceId, gameSession, unsettledResultSettledData, rawUnsettledBet.getId(), null, rawUnsettledBet.getResultTime());
-
-        // 3. Generate raw result bet
-        RawResultBet rawResultBet = this.newResultBet(gameSession, unsettledResultSettledData, rawData, rawUnsettledBet);
-
-        // 4. Insert into couchbase result_bet table
-        betResultLogService.createResultBet(rawResultBet);
-
-        try {
-            // 5. Prepare to send this transaction to operator as win
-            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            WalletBalanceVo balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
-
-            //TODO: refine proper handle for result bet event
-            ResultBetEvent resultBetEvent = new ResultBetEvent(rawResultBet, balanceVo.getData().getBalance());
-            //EventDispatcherSystem.emitAsync(resultBetEvent);
-            return resultBetEvent;
-
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            //TODO: To discuss if Agent is disable, should we just remove the session of this player and return vendor with invalid bet request?
-            resultBetOperatorFailEvent = new ResultBetOperatorFailEvent(rawResultBet, ResponseCodes.Status.SC_USER_DISABLED.code);
-            throw invalidAgentApiCredentialException;
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //TODO: if operator responses failed message, we should just move on and expect vendor resend?
-            resultBetOperatorFailEvent = new ResultBetOperatorFailEvent(rawResultBet, invalidOperatorResponseException.getOperatorStatus());
-            throw invalidOperatorResponseException;
-
-        } finally {
-            boolean isOperatorFailed = resultBetOperatorFailEvent != null;
-            if (isOperatorFailed) {
-                // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
-                //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
-            }
-        }
-    }
-
     /**
      * To process the result of a bet by sending the bet result data to Operator so that the Operator can update
      * the player's balance.
@@ -874,7 +699,7 @@ public class WalletService {
     }
 
     /**
-     * To process the reversal of a bet by sending the refund instruction to Operator so that the Operator can perform
+     * To process the reversal of a bet by sending the rollback instruction to Operator so that the Operator can perform
      * a reversal and return the updated balance of the player.
      *
      * @param traceId               A unique Id for this request
@@ -885,7 +710,7 @@ public class WalletService {
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BetRefundEvent processRefund(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws
+    public BetRefundEvent processRollback(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws
             BetNotFoundException, RecordNotFoundException, InvalidAgentApiCredentialException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException {
 
         Integer agentId = gameSession.getAgentId();

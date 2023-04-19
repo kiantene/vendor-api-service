@@ -74,7 +74,7 @@ public class RefundAction {
             this.doVerification(refundDto, wToken, betHistory);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, refundDto.getMtcode(), gameSession, body);
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, refundDto.getMtcode(), gameSession, body);
 
             commonVo.setBalance(betRefundEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());

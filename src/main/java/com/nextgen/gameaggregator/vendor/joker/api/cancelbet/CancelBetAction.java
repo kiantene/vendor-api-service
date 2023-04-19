@@ -68,7 +68,7 @@ public class CancelBetAction {
             this.doVerification(cancelBetDto, gameSession);
 
             //Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getBetid(), gameSession, body);
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getBetid(), gameSession, body);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);

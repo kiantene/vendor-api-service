@@ -51,7 +51,7 @@ public class CancelBetService {
             this.doVerification(cancelBetDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
 
             vo.setBalance(betRefundEvent.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);

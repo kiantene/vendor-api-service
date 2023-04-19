@@ -143,7 +143,7 @@ public class RoundPayoutAction {
                 } else if(cancelBet != null && cancelBet.getType().equals("cancelBet")) {
                     // Send refund to Operator
                     // TODO: to confirm whether to use id or round id for cancel bet
-                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getRoundId(), gameSession, body);
+                    BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getRoundId(), gameSession, body);
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(betRefundEvent.getLastBalance());

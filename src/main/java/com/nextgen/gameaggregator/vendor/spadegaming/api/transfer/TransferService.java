@@ -67,7 +67,7 @@ public class TransferService {
                     break;
                 case Actions.CANCEL_BET:
                     // Cancel bet and refund action
-                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getTransferId(), gameSession, body);
+                    BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
                     transferVo.setBalance(betRefundEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
