@@ -95,44 +95,45 @@ public class WalletService {
      * @param rawData     Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
-            InsufficientBalanceException, DuplicateExternalTransactionIdException,
-            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
-
-        Integer agentId = gameSession.getAgentId();
-        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
-
-        BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
-        betHistoryService.create(betHistory);
-        BetOperatorFailEvent betOperatorFailEvent = null;
-
-        try {
-//            WalletBalanceVo balanceVo = walletBetAction.stub();
-            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
-            BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
-            // TODO: check for null pointer
-            // Emit event for additional asynchronous processing
-            EventDispatcherSystem.emitAsync(betEvent);
-
-            return betEvent;
-
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            betOperatorFailEvent = new BetOperatorFailEvent(betHistory, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-            throw insufficientBalanceException;
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            betOperatorFailEvent = new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
-            throw invalidOperatorResponseException;
-
-        } finally {
-            boolean isOperatorFailed = betOperatorFailEvent != null;
-            if (isOperatorFailed) {
-                // emit operator failed event to update operator status
-                EventDispatcherSystem.emitAsync(betOperatorFailEvent);
-            }
-        }
-    }
+    // TODO: Deprecated -> to be removed
+//    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
+//            InsufficientBalanceException, DuplicateExternalTransactionIdException,
+//            InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+//
+//        Integer agentId = gameSession.getAgentId();
+//        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+//        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
+//
+//        BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
+//        betHistoryService.create(betHistory);
+//        BetOperatorFailEvent betOperatorFailEvent = null;
+//
+//        try {
+////            WalletBalanceVo balanceVo = walletBetAction.stub();
+//            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+//            BetEvent betEvent = new BetEvent(betHistory, balanceVo.getData().getBalance());
+//            // TODO: check for null pointer
+//            // Emit event for additional asynchronous processing
+//            EventDispatcherSystem.emitAsync(betEvent);
+//
+//            return betEvent;
+//
+//        } catch (InsufficientBalanceException insufficientBalanceException) {
+//            betOperatorFailEvent = new BetOperatorFailEvent(betHistory, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+//            throw insufficientBalanceException;
+//
+//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//            betOperatorFailEvent = new BetOperatorFailEvent(betHistory, invalidOperatorResponseException.getOperatorStatus());
+//            throw invalidOperatorResponseException;
+//
+//        } finally {
+//            boolean isOperatorFailed = betOperatorFailEvent != null;
+//            if (isOperatorFailed) {
+//                // emit operator failed event to update operator status
+//                EventDispatcherSystem.emitAsync(betOperatorFailEvent);
+//            }
+//        }
+//    }
 
     /**
      * To process the unsettled bet by sending the bet data to Operator to validate the player has sufficient balance
@@ -147,7 +148,7 @@ public class WalletService {
      * @param rawData                    Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public UnsettledBetEvent processUnsettledBet(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public UnsettledBetEvent processBet(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException {
 
@@ -155,7 +156,7 @@ public class WalletService {
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
 
         // 1. Generate walletBetDto
-        WalletBetDto walletBetDto = this.newWalletUnsettledBetDto(traceId, gameSession, unsettledResultSettledData);
+        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, unsettledResultSettledData);
 
         // 2. Generate rawUnsettledBet
         RawUnsettledBet rawUnsettledBet = this.newUnsettledBet(gameSession, rawData, unsettledResultSettledData, traceId);
@@ -788,7 +789,7 @@ public class WalletService {
      * @throws BetNotFoundException            If no bet record is found
      * @throws CouchbaseDataIntegrityException If anything wrong data inser into couchbase Id is found
      */
-    public ResultBetEvent processResultBetPlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public ResultBetEvent processBetResult(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
         Integer agentId = gameSession.getAgentId();
@@ -942,7 +943,7 @@ public class WalletService {
         return walletBetDto;
     }
 
-    private WalletBetDto newWalletUnsettledBetDto(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData) {
+    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData) {
         WalletBetDto walletBetDto = new WalletBetDto();
         walletBetDto.setTraceId(traceId);
         walletBetDto.setTransactionId(traceId);

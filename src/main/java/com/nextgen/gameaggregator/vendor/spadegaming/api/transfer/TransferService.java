@@ -60,7 +60,7 @@ public class TransferService {
             switch(dto.getType()) {
                 case Actions.PLACE_BET:
                     // Place bet action
-                    UnsettledBetEvent betEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
+                    UnsettledBetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     transferVo.setBalance(betEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);

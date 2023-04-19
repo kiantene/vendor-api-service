@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -64,12 +64,7 @@ public class ResultAction {
 
             // 4. Send win result to Operator
             // temporary code to ensure when commit to stg branch will still use old code for new changes
-            ResultBetEvent resultBetEvent;
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                resultBetEvent = walletService.processResultBet(traceId, gameSession, dto, body);
-            }else{
-                resultBetEvent = walletService.processResultBetPlus(traceId, gameSession, dto, body);
-            }
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode()); // TODO: vendor currency map

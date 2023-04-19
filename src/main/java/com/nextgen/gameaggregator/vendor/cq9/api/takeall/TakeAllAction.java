@@ -78,11 +78,13 @@ public class TakeAllAction {
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             BigDecimal walletBalance = walletService.getBalance(traceId, gameSession);
             takeAllDto.setAmount(walletBalance);
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, takeAllDto, body);
+            // TODO: to revisit
+//            BetEvent betEvent = walletService.processBet(traceId, gameSession, takeAllDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(betEvent.getLastBalance());
+//            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setBalance(BigDecimal.ZERO);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
@@ -104,12 +106,12 @@ public class TakeAllAction {
         } catch (DisabledVendorLineException disabledVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
-
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
+//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+//
+//        } catch (InsufficientBalanceException insufficientBalanceException) {
+//            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);

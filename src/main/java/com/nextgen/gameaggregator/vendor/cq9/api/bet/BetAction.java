@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -78,7 +77,7 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
+            UnsettledBetEvent unsettledBetEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();

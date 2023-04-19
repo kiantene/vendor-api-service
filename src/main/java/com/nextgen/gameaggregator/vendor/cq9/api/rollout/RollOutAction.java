@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -75,11 +77,13 @@ public class RollOutAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, rollOutDto, body);
+            // TODO: to revisit
+//            BetEvent betEvent = walletService.processBet(traceId, gameSession, rollOutDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(betEvent.getLastBalance());
+//            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setBalance(BigDecimal.ZERO);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
@@ -101,19 +105,19 @@ public class RollOutAction {
         } catch (DisabledVendorLineException disabledVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
-
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
-
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
+//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+//
+//        } catch (InsufficientBalanceException insufficientBalanceException) {
+//            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+//
+//        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+//            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+//
+//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//            statusVo.setCode(ResponseCodes.SERVER_ERROR);
+//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);

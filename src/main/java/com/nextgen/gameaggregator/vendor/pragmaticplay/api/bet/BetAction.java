@@ -59,7 +59,7 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
+            UnsettledBetEvent unsettledBetEvent = walletService.processBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());

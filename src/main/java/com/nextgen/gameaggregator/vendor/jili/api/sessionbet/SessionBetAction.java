@@ -59,7 +59,7 @@ public class SessionBetAction {
 
             switch (sessionBetDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
-                    UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, sessionBetDto, body);
+                    UnsettledBetEvent unsettledBetEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
                     sessionBetVo.setBalance(unsettledBetEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
