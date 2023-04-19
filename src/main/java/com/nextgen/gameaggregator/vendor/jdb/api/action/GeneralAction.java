@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
@@ -54,14 +52,10 @@ public class GeneralAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    //@PostMapping(path = EndPoints.ACTION + "/{id}")
-    //public CommonVo action(HttpServletRequest request, @PathVariable String id) {
-    
-    @PostMapping(path = EndPoints.ACTION)
-    public CommonVo action(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.ACTION + "/{id}")
+    public CommonVo action(HttpServletRequest request, @PathVariable String id) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
-        String id = "1681359443"; // Test
 
         // Construct VO
         CommonVo vo = new CommonVo();
