@@ -28,7 +28,7 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     private Long ts;
 
     @NotBlank
-    @Pattern(regexp = "^[0-9]+$", message = "")
+    @Pattern(regexp = "^[0-9]+$")
     private String transferId;
 
     @NotBlank
