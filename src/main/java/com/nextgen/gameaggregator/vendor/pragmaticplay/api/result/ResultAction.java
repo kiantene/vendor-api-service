@@ -133,7 +133,7 @@ public class ResultAction {
 
         // 2. Verify received game id is the same from game session
         //TODO: review this exception
-        if (!gameSession.getVendorGameCode().equals(101)) {
+        if (!gameSession.getVendorGameCode().equals("101")) {
             ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
         }
 
