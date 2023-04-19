@@ -288,7 +288,6 @@ public class BetHistoryService {
 
 
         try {
-
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
             BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
             MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo);
@@ -296,6 +295,7 @@ public class BetHistoryService {
             BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo);
             transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
 
+            return transactionDetailData;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException | InvalidVendorLineException |
                  InvalidFormatException | RecordNotFoundException
@@ -304,7 +304,5 @@ public class BetHistoryService {
             log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
             throw new InvalidVendorResponseException();
         }
-
-        return null;
     }
 }

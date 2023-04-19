@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
@@ -64,9 +61,8 @@ public class TransactionDetailAction {
 
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);
-            //transactionDetailData.setBetDetail(iBetDetail);
 
-
+            transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData);
 
             responseVo.setData(transactionDetailData);
 
@@ -89,6 +85,15 @@ public class TransactionDetailAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS);
+
+        } catch (InvalidVendorResponseException invalidVendorResponseException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_ERROR);
+
+        } catch (InvalidVendorLineException invalidVendorLineException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);

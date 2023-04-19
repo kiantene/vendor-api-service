@@ -24,5 +24,5 @@ public interface IBetDetailUrlInfo {
     Integer getVendorLineId();
     String getIsFreeSpin();
 
-    Long getVendorPlayerId();
+    String getVendorUsername();
 }

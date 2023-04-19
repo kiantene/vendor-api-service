@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
@@ -42,10 +41,9 @@ public class BetDetailService implements BetDetailUrl {
         Optional.ofNullable(secret).orElseThrow(InvalidVendorLineException::new);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        VendorPlayer vendorPlayer =vendorPlayerRepository.findById(iBetDetailUrlInfo.getVendorPlayerId()).orElseThrow(RecordNotFoundException::new);
 
         formData.add("secureLogin", secureLogin);
-        formData.add("playerId", vendorPlayer.getUsername());
+        formData.add("playerId", iBetDetailUrlInfo.getVendorUsername());
         formData.add("roundId", iBetDetailUrlInfo.getExternalRoundId());
         String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
@@ -56,12 +54,13 @@ public class BetDetailService implements BetDetailUrl {
     @Override
     public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-        String apiUrl = credentials.get(Credentials.API_URL);
+        String apiUrl = credentials.get(Credentials.REPORT_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
-System.err.println("AAAAAAA");
-        ResponseEntity apiResponse =  WebClient.create(apiUrl)
+
+
+        ResponseEntity apiResponse =  WebClient.create("https://stg.gasea168.com/")
                 .post()
-                .uri(Endpoints.GAME_URL)
+                .uri(Endpoints.OPEN_HISTORY+"sdfsd")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
@@ -71,7 +70,13 @@ System.err.println("AAAAAAA");
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
+
+        Gson gson = new Gson();
+        System.err.println();
+        System.err.println(apiUrl);
+        System.err.println(gson.toJson(formData));
         System.err.println(apiResponse.getBody());
+
         BetDetailUrlVo responseVo = null;
         try {
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), BetDetailUrlVo.class);
@@ -79,6 +84,7 @@ System.err.println("AAAAAAA");
         } catch (JsonSyntaxException jsonSyntaxException) {
             throw new InvalidVendorResponseException( "Invalid vendor response body :"+apiResponse.getBody());
         }
+        System.err.println(responseVo);
         return responseVo;
     }
 }

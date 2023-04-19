@@ -20,7 +20,7 @@ import java.util.Set;
 
 @Service
 @Slf4j
-public class OperatorService {
+public class OperatorRequestService {
 
     public WalletBalanceVo responseOperatorSub() {
         WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();

@@ -58,9 +58,10 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "bh.vendor_settle_time AS vendorSettleTime, " +
             "bh.vendor_line_id AS vendorLineId, " +
             "IF(bh.is_freespin =0 ,'TRUE','FALSE') AS isFreeSpin, "+
-            "bh.vendor_player_id AS vendorPlayerId " +
+            "vp.username AS vendorUsername " +
             "FROM bet_history AS bh " +
             "INNER JOIN agent_players AS ap ON ap.id = bh.agent_player_id " +
+            "INNER JOIN vendor_players AS vp ON vp.id = bh.vendor_player_id " +
             "INNER JOIN currencies AS c ON c.id = bh.currency_id " +
             "INNER JOIN vendor_games AS vg ON vg.id = bh.vendor_game_id " +
             "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
