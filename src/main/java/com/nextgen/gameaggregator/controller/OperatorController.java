@@ -54,7 +54,6 @@ public class OperatorController {
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
             if (gameSession != null) {
-                System.err.println("AAAAA");
                 Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
