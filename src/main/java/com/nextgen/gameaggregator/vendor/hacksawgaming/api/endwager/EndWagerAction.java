@@ -55,7 +55,7 @@ public class EndWagerAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // Verify session token
+            // Get last game session
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify session token
