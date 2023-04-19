@@ -4,8 +4,13 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
+import org.web3j.abi.datatypes.Bool;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Digits;
 import java.math.BigDecimal;
 
 @Data
@@ -69,8 +74,7 @@ public class WagerDto {
     // 1=Normal; 2=Tip
     public Integer betType;
 
-    @NotBlank
-    @Pattern(regexp = "[01]")
+    @NotNull
     // 0= Unfinished, 1= Round Finish
-    public Integer isEndround;
+    public Boolean isEndround;
 }

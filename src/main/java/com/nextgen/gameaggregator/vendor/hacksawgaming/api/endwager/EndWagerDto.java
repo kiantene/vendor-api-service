@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.Digits;
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Digits;
 import java.math.BigDecimal;
 
 @Data
@@ -58,12 +60,10 @@ public class EndWagerDto {
     @Size(max = 20)
     public String provider;
 
-    @NotBlank
-    @Size(max = 100)
-    public Integer description;
+    @Nullable
+    public String gameResult;
 
-    @NotBlank
-    @Pattern(regexp = "[01]")
+    @NotNull
     // 0= Unfinished, 1= Round Finish
-    public Integer isEndround;
+    public Boolean isEndround;
 }
