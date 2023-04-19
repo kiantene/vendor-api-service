@@ -101,52 +101,52 @@ public class OperatorRequestService {
         }
     }
 
-    public void operatorStatusException(ResponseCodes.Status operatorStatus) throws
-            InvalidSignatureException, InvalidRequestException, DuplicateRequestException, InvalidPlayerException,
-            InvalidCurrencyException, InvalidTokenException, DisabledAgentPlayerException, SystemMaintenanceException,
-            InvalidOperatorResponseException, InsufficientBalanceException, GameNotSupportedException,
-            DuplicateTransactionException, BetNotFoundException {
-        switch (operatorStatus) {
-            case SC_INVALID_SIGNATURE -> {
-                throw new InvalidSignatureException();
-            }
-            case SC_INVALID_REQUEST -> {
-                throw new InvalidRequestException();
-            }
-            case SC_DUPLICATE_REQUEST -> {
-                throw new DuplicateRequestException();
-            }
-            case SC_USER_NOT_EXISTS -> {
-                throw new InvalidPlayerException();
-            }
-            case SC_WRONG_CURRENCY -> {
-                throw new InvalidCurrencyException();
-            }
-            case SC_INVALID_TOKEN -> {
-                throw new InvalidTokenException();
-            }
-            case SC_USER_DISABLED -> {
-                throw new DisabledAgentPlayerException();
-            }
-            case SC_UNDER_MAINTENANCE -> {
-                throw new SystemMaintenanceException();
-            }
-            case SC_UNKNOWN_ERROR -> {
-                throw new InvalidOperatorResponseException();
-            }
-            case SC_INSUFFICIENT_FUNDS -> {
-                throw new InsufficientBalanceException();
-            }
-            case SC_INVALID_GAME -> {
-                throw new GameNotSupportedException();
-            }
-            case SC_TRANSACTION_DUPLICATED -> {
-                throw new DuplicateTransactionException();
-            }
-            case SC_TRANSACTION_NOT_EXISTS -> {
-                throw new BetNotFoundException();
-            }
+    public void operatorStatusException(ResponseCodes.Status operatorStatus) throws InvalidOperatorResponseException{
+
+        if(!operatorStatus.equals(ResponseCodes.Status.SC_OK)){
+            throw new InvalidOperatorResponseException(operatorStatus.code);
         }
+//        switch (operatorStatus) {
+//            case SC_INVALID_SIGNATURE -> {
+//                throw new InvalidSignatureException();
+//            }
+//            case SC_INVALID_REQUEST -> {
+//                throw new InvalidRequestException();
+//            }
+//            case SC_DUPLICATE_REQUEST -> {
+//                throw new DuplicateRequestException();
+//            }
+//            case SC_USER_NOT_EXISTS -> {
+//                throw new InvalidPlayerException();
+//            }
+//            case SC_WRONG_CURRENCY -> {
+//                throw new InvalidCurrencyException();
+//            }
+//            case SC_INVALID_TOKEN -> {
+//                throw new InvalidTokenException();
+//            }
+//            case SC_USER_DISABLED -> {
+//                throw new DisabledAgentPlayerException();
+//            }
+//            case SC_UNDER_MAINTENANCE -> {
+//                throw new SystemMaintenanceException();
+//            }
+//            case SC_UNKNOWN_ERROR -> {
+//                throw new InvalidOperatorResponseException();
+//            }
+//            case SC_INSUFFICIENT_FUNDS -> {
+//                throw new InsufficientBalanceException();
+//            }
+//            case SC_INVALID_GAME -> {
+//                throw new GameNotSupportedException();
+//            }
+//            case SC_TRANSACTION_DUPLICATED -> {
+//                throw new DuplicateTransactionException();
+//            }
+//            case SC_TRANSACTION_NOT_EXISTS -> {
+//                throw new BetNotFoundException();
+//            }
+//        }
     }
 
 

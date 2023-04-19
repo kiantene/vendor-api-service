@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.service.VendorRequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -27,10 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public class BetDetailService implements BetDetailUrl {
-
-
-    @Autowired
-    VendorRequestService vendorRequestService;
 
     @Autowired
     RequestService requestService;
@@ -64,8 +59,10 @@ public class BetDetailService implements BetDetailUrl {
         String apiUrl = credentials.get(Credentials.REPORT_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        System.err.println(this.getClass().getPackage().getName());
+        BetDetailUrlVo responseVo = null;
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
+        long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.OPEN_HISTORY )
@@ -75,13 +72,15 @@ public class BetDetailService implements BetDetailUrl {
                 // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
+                .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
+        long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, this.getClass().getPackage().getName(), profilesActive);
+                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+                this.getClass().getPackage().getName(), profilesActive);
 
-        BetDetailUrlVo responseVo = null;
         try {
 
             // 1. validate HTTP Response Code
