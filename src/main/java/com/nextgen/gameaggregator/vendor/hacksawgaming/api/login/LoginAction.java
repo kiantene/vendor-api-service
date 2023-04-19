@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -48,16 +51,6 @@ public class LoginAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
-
-        // Set Vendor player username + Balance + Currency
-        responseDataVo.setBrandUid("testgame3");
-        responseDataVo.setCurrency("CNY");
-        responseDataVo.setBalance(BigDecimal.valueOf(1000));
-        responseVo.setData(responseDataVo);
-        responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-        responseVo.setCode(ResponseCodes.SUCCESS);
-        httpService.end(httpRequestLog, responseVo);
-        /*
         try {
 
             LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
@@ -67,8 +60,9 @@ public class LoginAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getToken() + Credentials.API_KEY);
-            this.doVerification(dto, gameSession, toVerifySign);
+
+            // Verify data
+            this.doVerification(dto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -81,6 +75,7 @@ public class LoginAction {
             // Set BalanceDataWalletVo Object
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
 
         } catch(InvalidRequestException |
                 DateTimeParseException |
@@ -91,19 +86,16 @@ public class LoginAction {
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
+            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setCode(ResponseCodes.UNKNOWN);
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
+            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
         } finally {
-            if(responseVo.getCode() != ResponseCodes.SUCCESS) {
-                responseVo.setData(null);
-            }
             httpService.end(httpRequestLog, responseVo);
         }
-
-         */
 
         return responseVo;
 
@@ -114,13 +106,18 @@ public class LoginAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(LoginDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(LoginDto dto, GameSession gameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
+
+        String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
+        String toVerifySign = VendorService.getSign(brandId + dto.getToken() + apiKey);
 
         // Verify signature
         if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
