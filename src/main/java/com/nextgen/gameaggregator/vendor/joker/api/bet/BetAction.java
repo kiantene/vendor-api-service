@@ -69,30 +69,23 @@ public class BetAction {
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
             commonVo.setBalance(settledBetEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
-        } catch (InvalidAgentApiCredentialException e) {
+        } catch (
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                DisabledAgentPlayerException |
+                MergedBetDataIntegrityException |
+                DisabledGameException |
+                InsufficientBalanceException |
+                InvalidOperatorResponseException |
+                BetNotFoundException |
+                CouchbaseDataIntegrityException |
+                CredentialNotFoundException |
+                DisabledVendorLineException |
+                InvalidPlayerException exception
+        ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (AuthenticationException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (DisabledAgentPlayerException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (MergedBetDataIntegrityException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (DisabledGameException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (InsufficientBalanceException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (InvalidOperatorResponseException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (BetNotFoundException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (CouchbaseDataIntegrityException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (CredentialNotFoundException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (DisabledVendorLineException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (InvalidPlayerException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        }  catch (NoAvailableLineException noAvailableLineException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -100,6 +93,8 @@ public class BetAction {
             }else{
                 commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             }
+        } catch (Exception exception) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
@@ -112,11 +107,11 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetDto betDto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
+    private void doVerification(BetDto betDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
 
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, betDto.getAppid(), InvalidRequestException::new);
+        ValidationUtils.isEquals(AgentCode, betDto.getAppid(), NoAvailableLineException::new);
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, betDto.getUsername());

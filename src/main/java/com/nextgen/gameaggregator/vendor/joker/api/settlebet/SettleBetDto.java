@@ -16,46 +16,46 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SettleBetDto implements UnsettledResultSettledData {
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String appid;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String hash;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String id;
 
-    @NotNull(message = ResponseCodes.OTHER_MESSAGE)
-    @Range(min = 0, message = ResponseCodes.OTHER_MESSAGE)
-    @Digits(integer = 12, fraction = 2, message = ResponseCodes.OTHER_MESSAGE)
+    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
+    @Range(min = 0, message = ResponseCodes.INVALID_PARAMETERS)
+    @Digits(integer = 12, fraction = 2, message = ResponseCodes.INVALID_PARAMETERS)
     private BigDecimal amount;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
-    @Size(min = 4, max = 32, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
+    @Size(min = 4, max = 32, message = ResponseCodes.INVALID_PARAMETERS)
     private String username;
 
-    @NotNull(message = ResponseCodes.OTHER_MESSAGE)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.OTHER_MESSAGE)
+    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
+    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_SIGNATURE)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String gamecode;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String roundid;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String description;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String type;
 
     @Override
