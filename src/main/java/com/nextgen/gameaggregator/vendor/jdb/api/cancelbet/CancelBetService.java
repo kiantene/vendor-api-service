@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +59,7 @@ public class CancelBetService {
             vo.setResponseCode(ResponseCode.SUCCESS);
         
         } catch (AuthenticationException authenticationException) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (BetNotFoundException betNotFoundException) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
@@ -65,9 +67,17 @@ public class CancelBetService {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (InvalidFormatException invalidFormatException) {
-            vo.setResponseCode(ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE);
+            if (invalidRequestException.getValidation() != null) {
+                String violation = invalidRequestException.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse(ResponseCode.INVALID_REQUEST_PARAMETER); // if there's no value, set it to the default invalid request parameter
+                vo.setResponseCode(violation);
+            } else {
+                vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            }
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -91,20 +101,8 @@ public class CancelBetService {
         return vo;
     }
 
-    private void doValidation(CancelBetDto dto) throws InvalidRequestException, InvalidFormatException {
-        try {
-            ValidationUtils.validateRequest(dto);
-        } catch (InvalidRequestException e) {
-            // Handle validation errors with dto message
-            String violation = e.getValidation().values().stream()
-                    .findFirst()
-                    .orElseThrow(InvalidRequestException::new);
-
-            switch (violation) {
-                case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
-                default -> throw new InvalidRequestException();
-            }
-        }
+    private void doValidation(CancelBetDto dto) throws InvalidRequestException {
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,

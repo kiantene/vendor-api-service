@@ -26,7 +26,7 @@ public class TokenVo implements HttpResponse {
     public void setResponseCode(String responseCode) {
         this.status = Integer.valueOf(responseCode);
         this.message = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
-        this.username = null;
+        this.username = "";
         this.balance = Double.valueOf(0);
     }
     @Override

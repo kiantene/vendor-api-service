@@ -48,14 +48,6 @@ public class CancelWagerAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
-        responseDataVo.setBrandUid("testgame3");
-        responseDataVo.setCurrency("CNY");
-        responseDataVo.setBalance(BigDecimal.valueOf(1000));
-        responseVo.setData(responseDataVo);
-        responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-        responseVo.setCode(ResponseCodes.SUCCESS);
-        httpService.end(httpRequestLog, responseVo);
-        /*
         try {
 
             CancelWagerDto dto = HttpService.convertJsonToDto(body, CancelWagerDto.class);
@@ -63,11 +55,11 @@ public class CancelWagerAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            // Verify session token
-            // TODO: to confirm if it is okay to get game session by vendor player username only
+            // Get last game session
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
-            this.doVerification(dto, gameSession, toVerifySign);
+
+            // Verify data
+            this.doVerification(dto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -80,6 +72,11 @@ public class CancelWagerAction {
             // Set BalanceDataWalletVo Object
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
+
+            // Set BalanceDataWalletVo Object
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+            responseVo.setCode(ResponseCodes.SUCCESS);
 
         } catch(InvalidRequestException |
                 DateTimeParseException |
@@ -88,13 +85,18 @@ public class CancelWagerAction {
                 NullPointerException |
                 IllegalArgumentException e
         ) {
-
-        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
+            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.UNKNOWN);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
+            responseVo.setData(null);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
-
-         */
 
         return responseVo;
 
@@ -105,18 +107,13 @@ public class CancelWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelWagerDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(CancelWagerDto dto, GameSession gameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidVendorLineException {
-
-        // Verify signature
-        if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
-            throw new InvalidVendorLineException();
-        }
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getBrandUid());

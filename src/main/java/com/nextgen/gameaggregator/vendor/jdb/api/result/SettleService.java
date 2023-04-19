@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -52,7 +54,7 @@ public class SettleService {
             vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (BetNotFoundException betNotFoundException) {
             vo.setResponseCode(ResponseCode.FAILED);
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -62,11 +64,17 @@ public class SettleService {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (InvalidDateException invalidDateException) {
-            vo.setResponseCode(ResponseCode.WRONG_DATE_FORMAT);
-        } catch (InvalidFormatException invalidFormatException) {
-            vo.setResponseCode(ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE);
+            if (invalidRequestException.getValidation() != null) {
+                String violation = invalidRequestException.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse(ResponseCode.INVALID_REQUEST_PARAMETER); // if there's no value, set it to the default invalid request parameter
+                vo.setResponseCode(violation);
+            } else {
+                vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            }
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
@@ -92,21 +100,8 @@ public class SettleService {
         return vo;
     }
 
-    private void doValidation(SettleDto dto) throws InvalidRequestException, InvalidDateException, InvalidFormatException {
-        try {
-            ValidationUtils.validateRequest(dto);
-        } catch (InvalidRequestException e) {
-            // Handle validation errors with dto message
-            String violation = e.getValidation().values().stream()
-                    .findFirst()
-                    .orElseThrow(InvalidRequestException::new);
-
-            switch (violation) {
-                case "WRONG_DATE_FORMAT" -> throw new InvalidDateException();
-                case "PARAMETER_CANNOT_BE_NEGATIVE" -> throw new InvalidFormatException();
-                default -> throw new InvalidRequestException();
-            }
-        }
+    private void doValidation(SettleDto dto) throws InvalidRequestException {
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,

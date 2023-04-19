@@ -3,12 +3,12 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 import java.math.BigDecimal;
 import java.util.List;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 
@@ -37,7 +37,7 @@ public class CancelBetDto {
     private String currency;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal amount;
 
     @Valid

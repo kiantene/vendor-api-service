@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.joker.api.cancelbet;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -11,12 +10,14 @@ import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 
@@ -68,26 +69,24 @@ public class CancelBetAction {
             this.doVerification(cancelBetDto, gameSession);
 
             //Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getBetid(), gameSession, body);
+            //BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getBetid(), gameSession, body);
+            BigDecimal betRefundEvent = walletService.getBalance(traceId, gameSession);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setBalance(betRefundEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setBalance(betRefundEvent.setScale(2, RoundingMode.DOWN).doubleValue());
+            //commonVo.setBalance(betRefundEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
-        } catch (InvalidAgentApiCredentialException e) {
+        } catch (
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                BetNotFoundException |
+                InvalidOperatorResponseException |
+                CredentialNotFoundException exception
+        ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (RecordNotFoundException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (AuthenticationException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (BetNotFoundException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (InvalidOperatorResponseException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (DuplicateExternalTransactionIdException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (CredentialNotFoundException e) {
-            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (NoAvailableLineException noAvailableLineException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -95,6 +94,8 @@ public class CancelBetAction {
             }else{
                 commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             }
+        } catch (Exception exception) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
@@ -107,11 +108,11 @@ public class CancelBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetDto cancelBetDto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException {
+    private void doVerification(CancelBetDto cancelBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException {
 
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, cancelBetDto.getAppid(), InvalidRequestException::new);
+        ValidationUtils.isEquals(AgentCode, cancelBetDto.getAppid(), NoAvailableLineException::new);
 
     }
 

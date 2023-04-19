@@ -90,36 +90,32 @@ public class BetAction {
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(settledBetEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (
+                AuthenticationException |
+                InvalidDecryptionException |
+                InvalidEncryptionException |
+                CredentialNotFoundException |
+                DisabledVendorLineException |
+                InvalidVendorLineException |
+                DisabledAgentPlayerException |
+                JsonProcessingException paramException
+        ) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidDecryptionException invalidDecryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidEncryptionException invalidEncryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+        } catch (
+                MergedBetDataIntegrityException |
+                CouchbaseDataIntegrityException |
+                InsufficientBalanceException |
+                InvalidOperatorResponseException |
+                InvalidAgentApiCredentialException |
+                BetNotFoundException cancelException
+        ) {
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
-        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (InvalidDateException invalidDateException) {
             commonVo.setErrorResponseCode(ResponseCodes.DATE_INPUT_MISSING);
-        } catch (InvalidVendorLineException invalidVendorLineException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
@@ -129,10 +125,6 @@ public class BetAction {
             }else{
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
-        } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {

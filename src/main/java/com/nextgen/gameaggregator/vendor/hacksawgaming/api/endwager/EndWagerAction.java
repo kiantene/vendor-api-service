@@ -48,14 +48,6 @@ public class EndWagerAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
-        responseDataVo.setBrandUid("testgame3");
-        responseDataVo.setCurrency("CNY");
-        responseDataVo.setBalance(BigDecimal.valueOf(1000));
-        responseVo.setData(responseDataVo);
-        responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-        responseVo.setCode(ResponseCodes.SUCCESS);
-        httpService.end(httpRequestLog, responseVo);
-        /*
         try {
 
             EndWagerDto dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
@@ -63,10 +55,11 @@ public class EndWagerAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
+            // Get last game session
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
-            this.doVerification(dto, gameSession, toVerifySign);
+            this.doVerification(dto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -79,6 +72,7 @@ public class EndWagerAction {
             // Set BalanceDataWalletVo Object
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
 
         } catch(InvalidRequestException |
                 DateTimeParseException |
@@ -87,13 +81,18 @@ public class EndWagerAction {
                 NullPointerException |
                 IllegalArgumentException e
         ) {
-
-        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
+            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            responseVo.setCode(ResponseCodes.UNKNOWN);
+            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
+            responseVo.setData(null);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
-        httpService.end(httpRequestLog, responseVo);
-
-         */
 
         return responseVo;
 
@@ -104,13 +103,18 @@ public class EndWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(EndWagerDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(EndWagerDto dto, GameSession gameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
+
+        String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
+        String toVerifySign = VendorService.getSign(brandId + dto.getWagerId() + apiKey);
 
         // Verify signature
         if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
