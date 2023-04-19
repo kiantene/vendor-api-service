@@ -2,14 +2,14 @@ package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
 import java.math.BigDecimal;
 
-import jakarta.validation.constraints.*;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -36,11 +36,11 @@ public class BetDto implements UnsettledResultSettledData {
     private String currency;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal amount;
 
     @NotNull
-    @Positive(message = "PARAMETER_CANNOT_BE_NEGATIVE")
+    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private Long gameRoundSeqNo;
 
     @NotBlank
