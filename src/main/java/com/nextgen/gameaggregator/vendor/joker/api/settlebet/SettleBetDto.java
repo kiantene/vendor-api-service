@@ -60,17 +60,17 @@ public class SettleBetDto implements UnsettledResultSettledData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.id;
+        return this.username + "_" + this.id;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.id;
+        return this.username + "_" + this.id;
     }
 
     @Override
     public String getRoundId() {
-        return this.roundid;
+        return this.username + "_" + this.roundid;
     }
 
     @Override
