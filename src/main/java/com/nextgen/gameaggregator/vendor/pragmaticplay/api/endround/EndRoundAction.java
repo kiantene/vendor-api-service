@@ -133,7 +133,7 @@ public class EndRoundAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        if (!gameSession.getVendorGameCode().equals(101)) {
+        if (!gameSession.getVendorGameCode().equals("101")) {
             ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
         }
 
