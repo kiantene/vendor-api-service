@@ -85,6 +85,22 @@ public class BalanceAction {
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
+        } catch (
+                InvalidDecryptionException |
+                InvalidEncryptionException |
+                CredentialNotFoundException |
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                InvalidOperatorResponseException |
+                JsonProcessingException paramException
+        ) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+        } catch (DisabledGameException disabledGameException) {
+            commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -92,26 +108,6 @@ public class BalanceAction {
             }else{
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
-        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
-        } catch (InvalidPlayerException invalidPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
-        } catch (DisabledGameException disabledGameException) {
-            commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
-        } catch (InvalidDecryptionException invalidDecryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidEncryptionException invalidEncryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (AuthenticationException authenticationException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {

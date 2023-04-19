@@ -11,20 +11,20 @@ import jakarta.validation.constraints.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BalanceDto {
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
-    @Size(min = 4, max = 32, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
+    @Size(min = 4, max = 32, message = ResponseCodes.INVALID_PARAMETERS)
     private String username;
 
-    @NotNull(message = ResponseCodes.OTHER_MESSAGE)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.OTHER_MESSAGE)
+    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
+    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_SIGNATURE)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String appid;
 
-    @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String hash;
 }

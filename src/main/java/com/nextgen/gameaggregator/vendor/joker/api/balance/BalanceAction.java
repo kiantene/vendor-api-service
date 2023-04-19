@@ -72,14 +72,15 @@ public class BalanceAction {
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
             commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            throw new RuntimeException(invalidAgentApiCredentialException);
-        } catch (AuthenticationException authenticationException) {
+        } catch (
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                InvalidOperatorResponseException |
+                CredentialNotFoundException exception
+        ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            throw new RuntimeException(invalidOperatorResponseException);
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            throw new RuntimeException(credentialNotFoundException);
+        } catch (NoAvailableLineException noAvailableLineException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -87,6 +88,8 @@ public class BalanceAction {
             }else{
                 commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             }
+        } catch (Exception exception) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
@@ -99,11 +102,11 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException {
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException {
 
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, dto.getAppid(), InvalidRequestException::new);
+        ValidationUtils.isEquals(AgentCode, dto.getAppid(), NoAvailableLineException::new);
 
     }
 

@@ -73,14 +73,15 @@ public class TokenAction {
             tokenVo.setUsername(gameSession.getVendorPlayerUsername());
 
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            throw new RuntimeException(invalidAgentApiCredentialException);
-        } catch (AuthenticationException authenticationException) {
+        } catch (
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                InvalidOperatorResponseException |
+                CredentialNotFoundException exception
+        ) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            throw new RuntimeException(invalidOperatorResponseException);
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            throw new RuntimeException(credentialNotFoundException);
+        } catch (NoAvailableLineException noAvailableLineException) {
+            tokenVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -88,6 +89,8 @@ public class TokenAction {
             }else{
                 tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             }
+        } catch (Exception exception) {
+            tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } finally {
             httpService.end(httpRequestLog, tokenVo);
         }
@@ -100,11 +103,11 @@ public class TokenAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(TokenDto dto, GameSession gameSession) throws InvalidRequestException, CredentialNotFoundException {
+    private void doVerification(TokenDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException {
 
         //Verify received agent code is the same from credential
         String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, dto.getAppid(), InvalidRequestException::new);
+        ValidationUtils.isEquals(AgentCode, dto.getAppid(), NoAvailableLineException::new);
 
     }
 
