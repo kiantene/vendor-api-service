@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.takeall;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -170,7 +169,7 @@ public class TakeAllAction {
 
         // 4. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), takeAllDto.getGameId(), AuthenticationException::new);
+//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), takeAllDto.getGameCode(), AuthenticationException::new);
 
         // 5. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

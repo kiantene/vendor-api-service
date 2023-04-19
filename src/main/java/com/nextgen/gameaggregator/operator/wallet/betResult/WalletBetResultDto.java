@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.operator.wallet.betResult;
 
-import com.nextgen.gameaggregator.enums.WinType;
 import lombok.Data;
 
 import java.math.BigDecimal;

@@ -357,7 +357,7 @@ public class WalletService {
 
         try {
             // 5. Prepare to send this transaction to operator
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
+            WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, rawSettledBet);
 
             BetHistory betHistory = this.toBetHistory(rawSettledBet);
             kafkaService.produceBetHistory(betHistory);
@@ -379,9 +379,9 @@ public class WalletService {
             settledBetOperatorFailEvent = new SettledBetOperatorFailEvent(rawSettledBet, invalidOperatorResponseException.getOperatorStatus());
             throw invalidOperatorResponseException;
 
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            settledBetOperatorFailEvent = new SettledBetOperatorFailEvent(rawSettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-            throw insufficientBalanceException;
+//        } catch (InsufficientBalanceException insufficientBalanceException) {
+//            settledBetOperatorFailEvent = new SettledBetOperatorFailEvent(rawSettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+//            throw insufficientBalanceException;
 
         } finally {
             boolean isOperatorFailed = settledBetOperatorFailEvent != null;
@@ -1080,36 +1080,7 @@ public class WalletService {
         return walletWinDto;
     }
 
-    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, GameSession gameSession, RawSettledBet rawSettledBet) {
 
-        BigDecimal betAmount = (ObjectUtils.isEmpty(rawSettledBet.getWinLoss()))?null:new BigDecimal(rawSettledBet.getBetAmount().stripTrailingZeros().toPlainString());
-        BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(rawSettledBet.getEffectiveTurnover()))?null:new BigDecimal(rawSettledBet.getEffectiveTurnover().stripTrailingZeros().toPlainString());
-        BigDecimal winAmount = (ObjectUtils.isEmpty(rawSettledBet.getWinAmount()))?null:new BigDecimal(rawSettledBet.getWinAmount().stripTrailingZeros().toPlainString());
-        BigDecimal winLossAmount = (ObjectUtils.isEmpty(rawSettledBet.getWinLoss()))?null:new BigDecimal(rawSettledBet.getWinLoss().stripTrailingZeros().toPlainString());
-        BigDecimal jackpotAmount = (ObjectUtils.isEmpty(rawSettledBet.getJackpotAmount()))?null:new BigDecimal(rawSettledBet.getJackpotAmount().stripTrailingZeros().toPlainString());
-
-        WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
-        walletBetResultDto.setTraceId(traceId);
-        walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetResultDto.setTransactionId(rawSettledBet.getInternalTransactionId());
-        walletBetResultDto.setExternalTransactionId(rawSettledBet.getVendorBetId());
-        walletBetResultDto.setExternalRoundId(rawSettledBet.getRoundId());
-        walletBetResultDto.setBetAmount(betAmount);
-        walletBetResultDto.setWinAmount(winAmount);
-        walletBetResultDto.setEffectiveTurnover(effectiveTurnover);
-        walletBetResultDto.setJackpotAmount(jackpotAmount);
-        walletBetResultDto.setWinLoss(winLossAmount);
-        walletBetResultDto.setResultType(WinType.RESULT_TYPE_VALUE.get(rawSettledBet.getResultType()));
-        walletBetResultDto.setIsFreespin(rawSettledBet.getIsFreespin());
-        walletBetResultDto.setIsEndRound((rawSettledBet.getStatus() == BetStatus.UNSETTLED.code)?0:1);
-        walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetResultDto.setToken(gameSession.getToken());
-        walletBetResultDto.setGameCode(gameSession.getGameCode());
-        walletBetResultDto.setBetTime(rawSettledBet.getVendorBetTime());
-        walletBetResultDto.setSettledTime(rawSettledBet.getVendorSettleTime());
-
-        return walletBetResultDto;
-    }
 
     private WalletBetDto newWalletBetForFullBetDto(String traceId, GameSession gameSession, RawSettledBet rawSettledBet) {
         WalletBetDto walletBetDto = new WalletBetDto();
@@ -1331,9 +1302,9 @@ public class WalletService {
     private WalletBalanceVo sendSettledWalletTransactionPlus(Integer agentId, String traceId, GameSession gameSession, RawSettledBet rawSettledBet)
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, InsufficientBalanceException {
 
-        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        WalletBetResultDto walletBetResultDto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, rawSettledBet);
-        WalletBalanceVo balanceVo = walletBetResultAction.call(agentApiCredential, walletBetResultDto);
+//        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+//        WalletBetResultDto walletBetResultDto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, rawSettledBet);
+        WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, rawSettledBet);
 
         return balanceVo;
     }

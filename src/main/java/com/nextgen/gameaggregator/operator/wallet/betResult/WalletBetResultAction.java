@@ -3,24 +3,32 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawSettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorLogVo;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.OperatorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -36,14 +44,21 @@ public class WalletBetResultAction {
     OperatorService operatorService;
 
     @Autowired
+    AgentApiCredentialService agentApiCredentialService;
+
+    @Autowired
     AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletBetResultDto dto) throws InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, RawSettledBet rawSettledBet)
+            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
             return operatorService.responseOperatorSub();
         }
+
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        WalletBetResultDto dto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, rawSettledBet);
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -57,8 +72,7 @@ public class WalletBetResultAction {
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                // TODO: to catch more error codes
-                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
@@ -145,7 +159,7 @@ public class WalletBetResultAction {
 
         } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
             operatorService.failResponseLog(operatorLogVo, responseNotMatchRequestException.getClass().getName() +
-                    " [" +responseNotMatchRequestException.getMessage()  + "]");
+                    " [" + responseNotMatchRequestException.getMessage() + "]");
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         }
@@ -156,5 +170,36 @@ public class WalletBetResultAction {
 
         return responseVo;
 
+    }
+
+    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, GameSession gameSession, RawSettledBet rawSettledBet) {
+
+        BigDecimal betAmount = (ObjectUtils.isEmpty(rawSettledBet.getWinLoss())) ? null : new BigDecimal(rawSettledBet.getBetAmount().stripTrailingZeros().toPlainString());
+        BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(rawSettledBet.getEffectiveTurnover())) ? null : new BigDecimal(rawSettledBet.getEffectiveTurnover().stripTrailingZeros().toPlainString());
+        BigDecimal winAmount = (ObjectUtils.isEmpty(rawSettledBet.getWinAmount())) ? null : new BigDecimal(rawSettledBet.getWinAmount().stripTrailingZeros().toPlainString());
+        BigDecimal winLossAmount = (ObjectUtils.isEmpty(rawSettledBet.getWinLoss())) ? null : new BigDecimal(rawSettledBet.getWinLoss().stripTrailingZeros().toPlainString());
+        BigDecimal jackpotAmount = (ObjectUtils.isEmpty(rawSettledBet.getJackpotAmount())) ? null : new BigDecimal(rawSettledBet.getJackpotAmount().stripTrailingZeros().toPlainString());
+
+        WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
+        walletBetResultDto.setTraceId(traceId);
+        walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetResultDto.setTransactionId(rawSettledBet.getInternalTransactionId());
+        walletBetResultDto.setExternalTransactionId(rawSettledBet.getVendorBetId());
+        walletBetResultDto.setExternalRoundId(rawSettledBet.getRoundId());
+        walletBetResultDto.setBetAmount(betAmount);
+        walletBetResultDto.setWinAmount(winAmount);
+        walletBetResultDto.setEffectiveTurnover(effectiveTurnover);
+        walletBetResultDto.setJackpotAmount(jackpotAmount);
+        walletBetResultDto.setWinLoss(winLossAmount);
+        walletBetResultDto.setResultType(WinType.RESULT_TYPE_VALUE.get(rawSettledBet.getResultType()));
+        walletBetResultDto.setIsFreespin(rawSettledBet.getIsFreespin());
+        walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(rawSettledBet.getStatus()) ? 0 : 1);
+        walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
+        walletBetResultDto.setToken(gameSession.getToken());
+        walletBetResultDto.setGameCode(gameSession.getGameCode());
+        walletBetResultDto.setBetTime(rawSettledBet.getVendorBetTime());
+        walletBetResultDto.setSettledTime(rawSettledBet.getVendorSettleTime());
+
+        return walletBetResultDto;
     }
 }

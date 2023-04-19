@@ -62,10 +62,10 @@ public class TakeAllDto implements BetData {
         return this.roundid;
     }
 
-    @Override
-    public String getGameId() {
-        return this.gamecode;
-    }
+//    @Override
+//    public String getGameCode() {
+//        return this.gamecode;
+//    }
 
     @Override
     public Long getTimestamp() {
