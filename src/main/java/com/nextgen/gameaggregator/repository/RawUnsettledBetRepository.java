@@ -6,6 +6,8 @@ import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Scope;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 @Scope("raw")
 @Collection("unsettled_bet")
@@ -14,4 +16,6 @@ public interface RawUnsettledBetRepository extends CouchbaseRepository<RawUnsett
     void deleteById(String Id);
 
     RawUnsettledBet findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId);
+
+    List<RawUnsettledBet> findByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId);
 }

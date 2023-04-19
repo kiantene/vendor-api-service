@@ -33,6 +33,7 @@ import org.springframework.util.ObjectUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -489,8 +490,11 @@ public class WalletService {
         // 3. Combine rawUnsettledBet and rawSettledBet into final rawSettledBet data
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, null, rawSettledBet);
 
+        // 4. Process bet data calculation
+        rawSettledBet = settledBetService.processBetData(rawSettledBet);
+
         try {
-            // 4. Prepare to send this transaction to operator with isFullBet is false
+            // 5. Prepare to send this transaction to operator with isFullBet is false
             WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
@@ -601,6 +605,8 @@ public class WalletService {
         // 1. Generate rawSettledBet
         RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, gameSession, unsettledResultSettledData, rawData);
 
+        System.out.println("rawSettledBet = " + rawSettledBet);
+
         try {
             // 2. Prepare to send this transaction to operator, with isFullBet as true
             WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
@@ -613,8 +619,28 @@ public class WalletService {
 //                settledBetService.createSettleBetMariaDB(rawSettledBet);
 //            }
 
-            BetHistory betHistory = this.toBetHistory(rawSettledBet);
-            kafkaService.produceBetHistory(betHistory);
+//            BetHistory betHistory = this.toBetHistory(rawSettledBet);
+//            kafkaService.produceBetHistory(betHistory);
+
+            System.out.println("rawSettledBet = " + rawSettledBet);
+            System.out.println("BetStatus.UNSETTLED.code = " + BetStatus.UNSETTLED.code);
+            System.out.println("rawSettledBet.getStatus() = " + rawSettledBet.getStatus());
+
+            // 3. Process data into couchbase
+            if(rawSettledBet.getStatus().equals(BetStatus.UNSETTLED.code)){
+                // create unsettled bet record and store to unsettledBet couchbase
+                RawUnsettledBet rawUnsettledBet = this.toUnsettleBet(rawSettledBet);
+                betHistoryService.createUnsettledBet(rawUnsettledBet);
+
+            } else {
+                // merge and create list of settled record of same round id bet to kafka
+                List<RawSettledBet> rawSettledBetLists = settledBetService.getBetResultListData(rawSettledBet);
+
+                for (RawSettledBet rawUnsettledBetList : rawSettledBetLists) {
+                    BetHistory betHistory = this.toBetHistory(rawUnsettledBetList);
+                    kafkaService.produceBetHistory(betHistory);
+                }
+            }
 
             return settledBetEvent;
 
@@ -1250,7 +1276,7 @@ public class WalletService {
         rawSettledBet.setVendorBetId(unsettledResultSettledData.getVendorBetId());
         rawSettledBet.setIsFreespin(unsettledResultSettledData.getIsFreespin());
         rawSettledBet.setJackpotAmount(unsettledResultSettledData.getJackpotAmount());
-        rawSettledBet.setStatus(BetStatus.SETTLED.code);
+        rawSettledBet.setStatus(unsettledResultSettledData.getBetStatus().code);
 
         return rawSettledBet;
     }
@@ -1353,6 +1379,19 @@ public class WalletService {
 
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new MergedBetDataIntegrityException("copyProperties invalid : " + e.getMessage());
+        }
+    }
+
+    private RawUnsettledBet toUnsettleBet(RawSettledBet rawSettledBet) throws MergedBetDataIntegrityException {
+
+        try {
+            RawUnsettledBet rawUnsettledBet = new RawUnsettledBet();
+            BeanUtils.copyProperties(rawUnsettledBet, rawSettledBet);
+
+            return rawUnsettledBet;
+
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new MergedBetDataIntegrityException("toUnsettleBet copyProperties invalid : " + e.getMessage());
         }
     }
 }

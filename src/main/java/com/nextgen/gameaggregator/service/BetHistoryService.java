@@ -1,10 +1,12 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
+import com.nextgen.gameaggregator.entity.AgentVendorLine;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.RawUnsettledBet;
 import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
@@ -24,6 +26,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -197,6 +201,33 @@ public class BetHistoryService {
         }
 
         return rawUnsettledBet;
+    }
+
+    /**
+     * Retrieve all bets within the same rounds and process together to kafka
+     *
+     * @param roundId        Vendor's round Id
+     * @param vendorLineId         vendor line id within Game Aggregator System
+     * @param vendorPlayerId Id of the record in VendorPlayer
+     * @return A list of unsettled bet entity object containing all information
+     * @throws To do if connection failed when accessing to couchbase
+     */
+    public List<RawUnsettledBet> getBetDataListByRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId){
+
+        try{
+            List<RawUnsettledBet> rawUnsettledBetLists = rawUnsettledBetRepository.findByRoundId(roundId, vendorLineId, vendorPlayerId);
+
+            if (rawUnsettledBetLists == null) {
+                return null;
+            }
+
+            return rawUnsettledBetLists;
+
+        } catch (Exception e) {
+            //TODO ERROR HANDLING IF CONNECTION TO COUCHBASE IS FAILED
+            log.error("getBetDataListByRoundId ERROR, details : " + e);
+            return null;
+        }
     }
 
     /**

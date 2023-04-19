@@ -80,27 +80,27 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return getBetAmount();
+        return null;
     }
 
     @Override
     public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
     public WinType getResultType() {
-        return WinType.LOSE;
+        return WinType.BET;
     }
 
     @Override
@@ -115,12 +115,12 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
