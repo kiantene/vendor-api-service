@@ -63,7 +63,7 @@ public class CancelBetAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelBetDto.getUsername().toLowerCase(), cancelBetDto.getGamecode());
 
             //Gather require data
-            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getBetid(), gameSession.getVendorId());
+            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getUsername() + "_" + cancelBetDto.getBetid(), gameSession.getVendorId());
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(cancelBetDto, gameSession);
