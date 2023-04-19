@@ -56,7 +56,6 @@ public class BalanceAction {
         responseVo.setCode(ResponseCodes.SUCCESS);
         httpService.end(httpRequestLog, responseVo);
 
-        /*
         try {
 
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
@@ -66,8 +65,9 @@ public class BalanceAction {
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getToken() + Credentials.API_KEY);
-            this.doVerification(dto, gameSession, toVerifySign);
+
+            // Verify data
+            this.doVerification(dto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -80,6 +80,7 @@ public class BalanceAction {
             // Set BalanceDataWalletVo Object
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
 
         } catch(InvalidRequestException |
                 DateTimeParseException |
@@ -90,19 +91,16 @@ public class BalanceAction {
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
+            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setCode(ResponseCodes.UNKNOWN);
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
+            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
         } finally {
-            if(responseVo.getCode() != ResponseCodes.SUCCESS) {
-                responseVo.setData(null);
-            }
             httpService.end(httpRequestLog, responseVo);
         }
-
-         */
 
         return responseVo;
 
@@ -113,13 +111,18 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(BalanceDto dto, GameSession gameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
+
+        String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
+        String toVerifySign = VendorService.getSign(brandId + dto.getToken() + apiKey);
 
         // Verify signature
         if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
