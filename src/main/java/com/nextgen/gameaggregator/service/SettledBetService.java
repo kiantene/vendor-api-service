@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
@@ -19,6 +21,8 @@ import org.springframework.util.ObjectUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -28,6 +32,8 @@ public class SettledBetService {
     RawSettledBetRepository rawSettledBetRepository;
     @Autowired
     BetHistoryRepository betHistoryRepository;
+    @Autowired
+    private BetHistoryService betHistoryService;
 
     /**
      * Creates a Result bet record of the given RawResultBet entity object.
@@ -71,6 +77,50 @@ public class SettledBetService {
         }
 
         return rawSettledBet;
+    }
+
+    /**
+     * Process .
+     * This function will also populate default values of certain fields.
+     *
+     * @param  rawSettledBet, entity object containing information of a single result bet
+     * @return RawResultBet entity object after a successful save
+     */
+    public List<RawSettledBet> getBetResultListData(RawSettledBet rawSettledBet){
+
+        //prepare RawSettledBet arrayList
+        List<RawSettledBet> rawSettledBetLists = new ArrayList<>();
+
+        //insert the rawSettledBet into arrayList
+        rawSettledBetLists.add(rawSettledBet);
+
+        //try to find are there any unsettled bet with the same roundId + vendorLineId + vendorPlayerId?
+        List<RawUnsettledBet> rawUnsettledBetLists = betHistoryService.getBetDataListByRoundId(rawSettledBet.getRoundId(),
+                rawSettledBet.getVendorLineId(), rawSettledBet.getVendorPlayerId());
+
+        try {
+            //if found any unsettled bet for with this roundId
+            if(rawUnsettledBetLists != null){
+                //then loop thru all unsettled bet list to update the status to settled then add to the rawSettledBet arrayList
+                for (RawUnsettledBet rawUnsettledBetList : rawUnsettledBetLists) {
+                    rawUnsettledBetList.setStatus(BetStatus.SETTLED.code);
+
+                    RawSettledBet rawSettledBetData = new RawSettledBet();
+                    BeanUtils.copyProperties(rawSettledBetData, rawUnsettledBetList);
+
+                    rawSettledBetLists.add(rawSettledBetData);
+                }
+            }
+        } catch (InvocationTargetException e){
+            //TODO ERROR HANDLING IF CONVERSION BETWEEN UNSETTLEDBET TO SETTLEDBET IS FAILED
+            log.error("getBetResultListData InvocationTargetException ERROR, details : " + e);
+        } catch (IllegalAccessException e){
+            //TODO ERROR HANDLING IF CONVERSION BETWEEN UNSETTLEDBET TO SETTLEDBET IS FAILED
+            log.error("getBetResultListData IllegalAccessException ERROR, details : " + e);
+        }
+
+        return rawSettledBetLists;
+
     }
 
     /**

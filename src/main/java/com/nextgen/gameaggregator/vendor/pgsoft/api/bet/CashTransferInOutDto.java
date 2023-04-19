@@ -149,7 +149,7 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
 
     @Override
     public WinType getResultType() {
-        return (this.winAmount.compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
+        return (this.winAmount.compareTo(BigDecimal.ZERO) > 0)?WinType.BET_WIN:WinType.BET_LOSE;
     }
 
     @Override
@@ -177,11 +177,8 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
         return 0;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return (this.isEndRound.equals(true))?BetStatus.SETTLED:BetStatus.UNSETTLED;
     }
 }

@@ -207,7 +207,6 @@ public class EndRoundAction {
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
         dto.setEffectiveTurnover(rawUnsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(rawUnsettledBet.getBetAmount()));
-        dto.setVendorWinLoss(dto.getWinLoss());
         dto.setResultType(this.getWinType(dto, dto.getWinAmount()));
     }
 }

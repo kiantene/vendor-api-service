@@ -63,7 +63,6 @@ public class EndRoundDto implements UnsettledResultSettledData {
     private Long vendorSettleTime;
     private WinType resultType;
     private BigDecimal winLoss;
-    private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
 
     @Override
@@ -117,10 +116,6 @@ public class EndRoundDto implements UnsettledResultSettledData {
         this.winLoss = winLoss;
     }
 
-    public void setVendorWinLoss(BigDecimal vendorWinLoss) {
-        this.vendorWinLoss = vendorWinLoss;
-    }
-
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.effectiveTurnover;
@@ -132,7 +127,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
@@ -165,7 +160,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
