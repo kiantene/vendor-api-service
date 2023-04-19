@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
+import org.web3j.abi.datatypes.Bool;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
@@ -75,5 +76,5 @@ public class WagerDto {
 
     @NotNull
     // 0= Unfinished, 1= Round Finish
-    public Integer isEndround;
+    public Boolean isEndround;
 }
