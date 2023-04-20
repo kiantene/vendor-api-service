@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.vo;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
@@ -9,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import lombok.Data;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonVo implements HttpResponse {
     @JsonProperty("status")
     private String status;
@@ -17,7 +19,7 @@ public class CommonVo implements HttpResponse {
     private BigDecimal balance = BigDecimal.ZERO;
 
     @JsonProperty("err_text")
-    private String errText;
+    private String err_text;
 
     public CommonVo() {
         this.setSuccessResponseCode(ResponseCode.SUCCESS);
@@ -27,9 +29,9 @@ public class CommonVo implements HttpResponse {
         this.status = responseCode;
     }
 
-    public void setResponseCode(String responseCode) {
+    public void setErrorResponseCode(String responseCode) {
         this.status = responseCode;
-        this.errText = ResponseCode.RESPONSE_DESCRIPTION.get(responseCode);
+        this.err_text = ResponseCode.RESPONSE_DESCRIPTION.get(responseCode);
     }
     @Override
     public boolean hasError() {
