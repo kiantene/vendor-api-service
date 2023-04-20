@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -68,16 +68,16 @@ public class RefundAction {
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(refundDto.getMtcode(), 3);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(refundDto, wToken, betHistory);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, refundDto.getMtcode(), gameSession, body);
+            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, refundDto.getMtcode(), rawGameSession, body);
 
             commonVo.setBalance(betRefundEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
 
             responseVo.setData(commonVo);
 

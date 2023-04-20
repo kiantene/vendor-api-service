@@ -99,14 +99,14 @@ public class GameUrlAction {
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
 
             // 15. Check if vendor player account exists
-            GameSession gameSession = gameUrlService.checkPlayer(apiCredential.getAgent(), dto.getUsername(), vendorLine, apiCredential.getAgent().getCurrency());
+            RawGameSession rawGameSession = gameUrlService.checkPlayer(apiCredential.getAgent(), dto.getUsername(), vendorLine, apiCredential.getAgent().getCurrency());
 
-            gameSession = gameSessionService.createSession(
-                    gameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(), vendorCurrency, vendorLanguageCode, vendorPlatformCode);
-            gameSessionService.createSessionByVendorPlayer(gameSession);
+            rawGameSession = gameSessionService.createSession(
+                    rawGameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(), vendorCurrency, vendorLanguageCode, vendorPlatformCode);
+            gameSessionService.createSessionByVendorPlayer(rawGameSession);
 
             // 16. Request game url from vendor
-            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
+            GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, rawGameSession, lineCredentials, vendorLine);
             responseVo.setData(gameUrlData);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error(illegalArgumentException.toString());

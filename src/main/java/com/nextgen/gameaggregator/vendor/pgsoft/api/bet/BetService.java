@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
@@ -15,7 +15,6 @@ import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.service.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.web3j.abi.datatypes.Bool;
 
 @Service
 public class BetService {
@@ -28,12 +27,12 @@ public class BetService {
     @Autowired
     private BetHistoryService betHistoryService;
 
-    public void process(String traceId, GameSession gameSession, BetData betData, String body)
+    public void process(String traceId, RawGameSession rawGameSession, BetData betData, String body)
             throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
             InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
-        walletService.processBet(traceId, gameSession, betData, body);
+        walletService.processBet(traceId, rawGameSession, betData, body);
     }
 
     public Boolean shouldReprocess(CashTransferInOutDto dto) throws InvalidPlayerException, GameNotSupportedException {

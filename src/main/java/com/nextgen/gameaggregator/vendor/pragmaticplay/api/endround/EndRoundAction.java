@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
@@ -55,19 +55,19 @@ public class EndRoundAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+            this.doVerification(httpRequestLog, dto, rawGameSession);
 
             // 4. Retrieve the bet transaction
             SettledBetEvent settledBetEvent;
             // temporary code to ensure when commit to stg branch will still use old code for new changes
             ResultBetEvent resultBetEvent;
             if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
+                settledBetEvent = walletService.processSettledBet(traceId, rawGameSession, dto);
             }else{
-                settledBetEvent = walletService.processSettledBetPlus(traceId, gameSession, dto);
+                settledBetEvent = walletService.processSettledBetPlus(traceId, rawGameSession, dto);
             }
 
             responseVo.setCash(settledBetEvent.getLastBalance());
@@ -127,18 +127,18 @@ public class EndRoundAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, EndRoundDto dto, GameSession gameSession) throws
+    private void doVerification(HttpRequestLog request, EndRoundDto dto, RawGameSession rawGameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        if (!rawGameSession.getVendorGameCode().equals("101")) {
+            ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
         }
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 4. Validate request signature
         VendorService.verifyHash(request.getRequestBody(), secretKey);

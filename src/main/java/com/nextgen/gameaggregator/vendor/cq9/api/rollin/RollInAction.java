@@ -73,13 +73,13 @@ public class RollInAction {
             BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(rollInDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(rollInDto, gameSession, wToken, betHistory.getBetAmount());
+            this.doVerification(rollInDto, rawGameSession, wToken, betHistory.getBetAmount());
 
             // 5. Process win data
-            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, rollInDto, body);
+            BetResultEvent betResultEvent = walletService.processWin(traceId, rawGameSession, rollInDto, body);
 
             // Emit event for additional asynchronous processing
             EventDispatcherSystem.emitAsync(new EndRoundEvent(betResultEvent.getBetHistory()));
@@ -87,7 +87,7 @@ public class RollInAction {
             // Construct VO data
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betResultEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
 
             responseVo.setData(commonVo);
         } catch (AuthenticationException authenticationException) {
@@ -165,15 +165,15 @@ public class RollInAction {
         }
     }
 
-    private void doVerification(RollInDto dto, GameSession gameSession, String wToken, BigDecimal rolloutAmount) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException, InvalidRequestException {
+    private void doVerification(RollInDto dto, RawGameSession rawGameSession, String wToken, BigDecimal rolloutAmount) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException, InvalidRequestException {
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGamecode(), AuthenticationException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGamecode(), AuthenticationException::new);
 
         // 3. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 4. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);

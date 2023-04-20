@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.result;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -13,9 +13,9 @@ public class ResultService {
     @Autowired
     private WalletService walletService;
 
-    public BetResultEvent process(String traceId, GameSession gameSession, WinDataDto winDataDto, String body) throws BetNotFoundException, DuplicateExternalTransactionIdException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, BetResultNotFoundException {
+    public BetResultEvent process(String traceId, RawGameSession rawGameSession, WinDataDto winDataDto, String body) throws BetNotFoundException, DuplicateExternalTransactionIdException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, BetResultNotFoundException {
 
         // Construct result dto
-        return walletService.processWin(traceId, gameSession, winDataDto, body);
+        return walletService.processWin(traceId, rawGameSession, winDataDto, body);
     }
 }

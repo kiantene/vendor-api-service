@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -72,14 +72,14 @@ public class BalanceAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(balanceDto);
 
-            //get gameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
+            //get rawGameSession by player name and vendor game id
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
 
             //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, balanceDto, gameSession, jsonParam);
+            this.doVerification(commonDto, balanceDto, rawGameSession, jsonParam);
 
             //return double balance and success code
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
@@ -128,11 +128,11 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto commonDto, BalanceDto balanceDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidEncryptionException {
+    private void doVerification(CommonDto commonDto, BalanceDto balanceDto, RawGameSession rawGameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, InvalidPlayerException, DisabledGameException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidEncryptionException {
 
         //Verify received currency is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
@@ -140,7 +140,7 @@ public class BalanceAction {
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        String AgentCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.AGENT_CODE);
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
     }

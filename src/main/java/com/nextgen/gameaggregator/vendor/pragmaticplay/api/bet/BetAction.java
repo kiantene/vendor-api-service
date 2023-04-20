@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -53,16 +53,16 @@ public class BetAction {
             this.doValidation(dto);
 
             // 2. Retrieve and verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+            this.doVerification(httpRequestLog, dto, rawGameSession);
 
             // 4. Process unsettled bet process
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
+            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, rawGameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseVo.setCash(unsettledBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
@@ -126,23 +126,23 @@ public class BetAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws
+    private void doVerification(HttpRequestLog request, BetDto dto, RawGameSession rawGameSession) throws
             AuthenticationException, InvalidPlayerException, CredentialNotFoundException,
             InvalidSignatureException, DisabledVendorLineException, DisabledAgentPlayerException,
             DisabledGameException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getUserId());
+        validationService.validateIllegibleBet(rawGameSession, dto.getUserId());
 
         // 2. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        if (!rawGameSession.getVendorGameCode().equals("101")) {
+            ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
         }
 
 
         // 4. Retrieve vendor line credentials and secretKey for hash validation
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 5. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);

@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.authorize;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
@@ -23,7 +23,7 @@ import java.util.Optional;
 @Slf4j
 public class Authorize {
 
-    public static AuthorizeDto getToken(Map<String, String> credentials, GameSession gameSession)
+    public static AuthorizeDto getToken(Map<String, String> credentials, RawGameSession rawGameSession)
             throws  InvalidVendorLineException,
                     InvalidVendorResponseException {
 
@@ -41,13 +41,13 @@ public class Authorize {
 
         Map<String, Object> formData = new LinkedHashMap<>();
         formData.put("ipaddress", ipAddress);
-        formData.put("username", gameSession.getVendorPlayerUsername());
-        formData.put("userid", gameSession.getVendorPlayerUsername());
-        formData.put("lang", gameSession.getVendorLanguageCode());
-        formData.put("cur", gameSession.getVendorCurrencyCode());
+        formData.put("username", rawGameSession.getVendorPlayerUsername());
+        formData.put("userid", rawGameSession.getVendorPlayerUsername());
+        formData.put("lang", rawGameSession.getVendorLanguageCode());
+        formData.put("cur", rawGameSession.getVendorCurrencyCode());
         formData.put("betlimitid", Formats.BRONZE);
         formData.put("istestplayer", Formats.REAL_PLAYER);
-        formData.put("platformtype", Integer.parseInt(gameSession.getVendorPlatformCode()));
+        formData.put("platformtype", Integer.parseInt(rawGameSession.getVendorPlatformCode()));
 
         String jsonBody = new Gson().toJson(formData);
 

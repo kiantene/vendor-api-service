@@ -55,17 +55,17 @@ public class ValidationService {
         }
     }
 
-    public void validateIllegibleBet(GameSession gameSession, String vendorUserName ) throws
+    public void validateIllegibleBet(RawGameSession rawGameSession, String vendorUserName ) throws
             InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         //1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorUserName, InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), vendorUserName, InvalidPlayerException::new);
 
         //2. verify agent Vendor line
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
                 findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus(
-                        gameSession.getAgentId() , gameSession.getVendorId(), gameSession.getCurrencyId(),
-                        gameSession.getGameCategoryId(), Status.ACTIVE.code);
+                        rawGameSession.getAgentId() , rawGameSession.getVendorId(), rawGameSession.getCurrencyId(),
+                        rawGameSession.getGameCategoryId(), Status.ACTIVE.code);
         //vendor line not found
         if (agentVendorLines.isEmpty()) {
             throw new DisabledVendorLineException();
@@ -73,18 +73,18 @@ public class ValidationService {
 
         //3. Verify Agent Player status
         AgentPlayer agentPlayer = agentPlayerRepository.
-                findByAgentIdAndUsernameAndStatus(gameSession.getAgentId(), gameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
+                findByAgentIdAndUsernameAndStatus(rawGameSession.getAgentId(), rawGameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
         Optional.ofNullable(agentPlayer).orElseThrow(() -> new DisabledAgentPlayerException());
 
         //4. verify vendor Game status with platform and language
         VendorGameCode vendorGameCode = vendorGameCodeRepository.
-                findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(gameSession.getVendorGameId(),
-                        gameSession.getPlatformId(), gameSession.getLanguageId(), Status.ACTIVE.code);
+                findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(rawGameSession.getVendorGameId(),
+                        rawGameSession.getPlatformId(), rawGameSession.getLanguageId(), Status.ACTIVE.code);
         Optional.ofNullable(vendorGameCode).orElseThrow(() -> new DisabledGameException());
 
         //5.  verify vendor Game status with currency
         VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyIdAndStatus(
-                gameSession.getVendorGameId(), gameSession.getCurrencyId(), Status.ACTIVE.code);
+                rawGameSession.getVendorGameId(), rawGameSession.getCurrencyId(), Status.ACTIVE.code);
         Optional.ofNullable(vendorGameCurrency).orElseThrow(() -> new DisabledGameException());
 
 

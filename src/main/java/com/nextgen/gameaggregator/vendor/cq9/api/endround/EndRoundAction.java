@@ -84,10 +84,10 @@ public class EndRoundAction {
                     endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(rawUnsettledBet.getGameSessionToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(rawUnsettledBet.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(endRoundDto, gameSession, wToken);
+            this.doVerification(endRoundDto, rawGameSession, wToken);
 
             // 5. Process extra endRoundDto bet data
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, rawUnsettledBet);
@@ -97,16 +97,16 @@ public class EndRoundAction {
             SettledBetEvent settledBetEvent;
             if(environment.getProperty("spring.couchbase.userName") == "stg"){
                 //if env = stg will use old code
-                settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
+                settledBetEvent = walletService.processResultSettle(traceId, rawGameSession, endRoundDto, body);
             } else {
                 //else use new code
-                settledBetEvent = walletService.processResultSettlePlus(traceId, gameSession, endRoundDto, body);
+                settledBetEvent = walletService.processResultSettlePlus(traceId, rawGameSession, endRoundDto, body);
             }
 
             // Construct VO data
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(settledBetEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
@@ -171,15 +171,15 @@ public class EndRoundAction {
         dto.setExternalTransactionId(endRoundDataDtoList.get(0).getMtcode());
     }
 
-    private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
+    private void doVerification(EndRoundDto dto, RawGameSession rawGameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGamecode(), AuthenticationException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGamecode(), AuthenticationException::new);
 
         // 3. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 4. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.balance;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
@@ -63,20 +63,20 @@ public class BalanceAction {
 
             // 2. Get vendor player details
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(account);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(vendorPlayer.getUsername());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(vendorPlayer, wToken);
 
             // 4. Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             // 5. Get vendor line supported currency
             VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId());
 
             // Construct VO
             commonVo.setBalance(balance);
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {

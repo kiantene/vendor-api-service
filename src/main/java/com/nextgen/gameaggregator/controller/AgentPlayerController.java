@@ -4,7 +4,7 @@ package com.nextgen.gameaggregator.controller;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
-import com.nextgen.gameaggregator.repository.GameSessionRepository;
+import com.nextgen.gameaggregator.repository.RawGameSessionRepository;
 import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,7 @@ public class AgentPlayerController {
     VendorPlayerRepository vendorPlayerRepository;
 
     @Autowired
-    GameSessionRepository gameSessionRepository;
+    RawGameSessionRepository rawGameSessionRepository;
 
     @Autowired
     ControllerServices controllerServices;
@@ -75,7 +75,7 @@ public class AgentPlayerController {
     public ResponseEntity<Detailvo> gameSession(@RequestBody ObjectNode json){
 
         Detailvo detailvo = new Detailvo();
-        detailvo.setGameSession(gameSessionRepository.findByToken(json.get("token").asText()));
+        detailvo.setRawGameSession(rawGameSessionRepository.findByToken(json.get("token").asText()));
 
         return new ResponseEntity<>(
                 detailvo ,
@@ -87,6 +87,6 @@ public class AgentPlayerController {
     @Data
     static class Detailvo{
 
-        public GameSession gameSession;
+        public RawGameSession rawGameSession;
     }
 }

@@ -69,11 +69,11 @@ public class WalletService {
     @Autowired
     private KafkaService kafkaService;
 
-    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
-        Integer agentId = gameSession.getAgentId();
+    public BigDecimal getBalance(String traceId, RawGameSession rawGameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+        Integer agentId = rawGameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
 
-        WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
+        WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, rawGameSession);
 
         WalletBalanceVo balanceVo = walletBalanceAction.call(agentApiCredential, walletBalanceDto);
         // TODO: to handle balance returned with more than 4 decimals
@@ -89,20 +89,20 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId     A unique Id for this request
-     * @param gameSession GameSession object containing information of the vendor, game, player
+     * @param rawGameSession RawGameSession object containing information of the vendor, game, player
      * @param betData     BetData object containing information of the bet such as betAmount, game, betTime
      * @param rawData     Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BetEvent processBet(String traceId, GameSession gameSession, BetData betData, String rawData) throws
+    public BetEvent processBet(String traceId, RawGameSession rawGameSession, BetData betData, String rawData) throws
             InsufficientBalanceException, DuplicateExternalTransactionIdException,
             InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
-        Integer agentId = gameSession.getAgentId();
+        Integer agentId = rawGameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betData);
+        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, rawGameSession, betData);
 
-        BetHistory betHistory = this.newBetHistory(walletBetDto, gameSession, rawData);
+        BetHistory betHistory = this.newBetHistory(walletBetDto, rawGameSession, rawData);
         betHistoryService.create(betHistory);
         BetOperatorFailEvent betOperatorFailEvent = null;
 
@@ -141,23 +141,23 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
      * @param rawData                    Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public UnsettledBetEvent processUnsettledBet(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public UnsettledBetEvent processUnsettledBet(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException {
 
-        Integer agentId = gameSession.getAgentId();
+        Integer agentId = rawGameSession.getAgentId();
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
 
         // 1. Generate walletBetDto
-        WalletBetDto walletBetDto = this.newWalletUnsettledBetDto(traceId, gameSession, unsettledResultSettledData);
+        WalletBetDto walletBetDto = this.newWalletUnsettledBetDto(traceId, rawGameSession, unsettledResultSettledData);
 
         // 2. Generate rawUnsettledBet
-        RawUnsettledBet rawUnsettledBet = this.newUnsettledBet(gameSession, rawData, unsettledResultSettledData, traceId);
+        RawUnsettledBet rawUnsettledBet = this.newUnsettledBet(rawGameSession, rawData, unsettledResultSettledData, traceId);
 
         try {
             // 3. Prepare callback info
@@ -199,25 +199,25 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
      * @param rawData                    Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public UnsettledBetEvent processUnsettledBetPlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public UnsettledBetEvent processUnsettledBetPlus(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException {
 
-        Integer agentId = gameSession.getAgentId();
+        Integer agentId = rawGameSession.getAgentId();
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
 
         // 1. Generate rawUnsettledBet
-        RawUnsettledBet rawUnsettledBet = this.newUnsettledBet(gameSession, rawData, unsettledResultSettledData, traceId);
+        RawUnsettledBet rawUnsettledBet = this.newUnsettledBet(rawGameSession, rawData, unsettledResultSettledData, traceId);
 
         try {
             // 2. Prepare callback info
             RawSettledBet rawSettledBet = settledBetService.convertRawUnsettledBetForWalletTransaction(rawUnsettledBet);
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, rawGameSession, rawSettledBet);
 
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(rawUnsettledBet, balanceVo.getData().getBalance());
 
@@ -252,17 +252,17 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
      * @return The player's current wallet
      */
-    public SettledBetEvent processSettledBet(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData) throws
+    public SettledBetEvent processSettledBet(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
             BetNotFoundException, MergedBetDataIntegrityException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorLineId = rawGameSession.getVendorLineId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
         String vendorBetId = unsettledResultSettledData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
@@ -275,13 +275,13 @@ public class WalletService {
         RawResultBet rawResultBet = betResultLogService.getRawResultBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 3. Generate settled bet with end round bet data
-        RawSettledBet rawSettledBet = this.newSettledBet(gameSession, unsettledResultSettledData);
+        RawSettledBet rawSettledBet = this.newSettledBet(rawGameSession, unsettledResultSettledData);
 
         // 4. Combine unsettled bet, result bet and end round bet data into settle bet
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, rawResultBet, rawSettledBet);
 
         // 5. Prepare wallet settled dto
-        WalletWinDto walletWinDto = this.newWalletResultDto(traceId, gameSession, unsettledResultSettledData, rawUnsettledBet.getId(), transferAmount, rawSettledBet.getResultTime());
+        WalletWinDto walletWinDto = this.newWalletResultDto(traceId, rawGameSession, unsettledResultSettledData, rawUnsettledBet.getId(), transferAmount, rawSettledBet.getResultTime());
 
         // 6. Insert into couchbase settled_bet table and also mariadb
 //        settledBetService.createSettledBet(rawSettledBet);
@@ -324,17 +324,17 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
      * @return The player's current wallet
      */
-    public SettledBetEvent processSettledBetPlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData) throws
+    public SettledBetEvent processSettledBetPlus(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
             BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorLineId = rawGameSession.getVendorLineId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
         String vendorBetId = unsettledResultSettledData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
@@ -346,14 +346,14 @@ public class WalletService {
         RawResultBet rawResultBet = betResultLogService.getRawResultBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 3. Generate settled bet with end round bet data
-        RawSettledBet rawSettledBet = this.newSettledBet(gameSession, unsettledResultSettledData);
+        RawSettledBet rawSettledBet = this.newSettledBet(rawGameSession, unsettledResultSettledData);
 
         // 4. Combine unsettled bet, result bet and end round bet data into settle bet
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, rawResultBet, rawSettledBet);
 
         try {
             // 5. Prepare to send this transaction to operator
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, rawGameSession, rawSettledBet);
 
             BetHistory betHistory = this.toBetHistory(rawSettledBet);
             kafkaService.produceBetHistory(betHistory);
@@ -394,17 +394,17 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
      * @return entire SettledBetEvent in case vendor need more than balance from the process flow.
      */
-    public SettledBetEvent processResultSettle(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public SettledBetEvent processResultSettle(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
             BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorLineId = rawGameSession.getVendorLineId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
         String vendorBetId = unsettledResultSettledData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
@@ -413,7 +413,7 @@ public class WalletService {
         RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Generate rawSettledBet
-        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(rawUnsettledBet.getInternalTransactionId(), gameSession, unsettledResultSettledData, rawData);
+        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(rawUnsettledBet.getInternalTransactionId(), rawGameSession, unsettledResultSettledData, rawData);
 
         // 3. Combine rawUnsettledBet and rawSettledBet into final rawSettledBet data
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, null, rawSettledBet);
@@ -430,7 +430,7 @@ public class WalletService {
 
         try {
             // 5. Prepare to send this transaction to operator with isFullBet is false
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransaction(agentId, traceId, gameSession, rawSettledBet, false);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransaction(agentId, traceId, rawGameSession, rawSettledBet, false);
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
             // 6. Create async thread to flush rawUnsettledBet in couchbase and redis
@@ -461,17 +461,17 @@ public class WalletService {
      * as Unsettled.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet such as betAmount, game, betTime
      * @return entire SettledBetEvent in case vendor need more than balance from the process flow.
      */
-    public SettledBetEvent processResultSettlePlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public SettledBetEvent processResultSettlePlus(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
             BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorLineId = rawGameSession.getVendorLineId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
         String vendorBetId = unsettledResultSettledData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
@@ -480,14 +480,14 @@ public class WalletService {
         RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Generate rawSettledBet
-        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(rawUnsettledBet.getInternalTransactionId(), gameSession, unsettledResultSettledData, rawData);
+        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(rawUnsettledBet.getInternalTransactionId(), rawGameSession, unsettledResultSettledData, rawData);
 
         // 3. Combine rawUnsettledBet and rawSettledBet into final rawSettledBet data
         rawSettledBet = settledBetService.updateRawSettledBet(rawUnsettledBet, null, rawSettledBet);
 
         try {
             // 4. Prepare to send this transaction to operator with isFullBet is false
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, rawGameSession, rawSettledBet);
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
             // 5. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
@@ -526,20 +526,20 @@ public class WalletService {
      * To process the full bet (unsettle + result + end round) and getting the balance of player from operator
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the full bet details
      * @param rawData                    String body of entire vendor request params.
      * @return The player's current wallet
      */
-    public SettledBetEvent processUnsettleResultSettle(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public SettledBetEvent processUnsettleResultSettle(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
             BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
-        Integer agentId = gameSession.getAgentId();
+        Integer agentId = rawGameSession.getAgentId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
 
         // 1. Generate rawSettledBet
-        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, gameSession, unsettledResultSettledData, rawData);
+        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, rawGameSession, unsettledResultSettledData, rawData);
 
         // 2. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
 //        settledBetService.createSettledBet(rawSettledBet);
@@ -553,7 +553,7 @@ public class WalletService {
 
         try {
             // 3. Prepare to send this transaction to operator, with isFullBet as true
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransaction(agentId, traceId, gameSession, rawSettledBet, true);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransaction(agentId, traceId, rawGameSession, rawSettledBet, true);
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
             // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
@@ -582,24 +582,24 @@ public class WalletService {
      * To process the full bet (unsettle + result + end round) and getting the balance of player from operator
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the full bet details
      * @param rawData                    String body of entire vendor request params.
      * @return The player's current wallet
      */
-    public SettledBetEvent processUnsettleResultSettlePlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public SettledBetEvent processUnsettleResultSettlePlus(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             CouchbaseDataIntegrityException, InvalidOperatorResponseException, InvalidAgentApiCredentialException,
             BetNotFoundException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
-        Integer agentId = gameSession.getAgentId();
+        Integer agentId = rawGameSession.getAgentId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
 
         // 1. Generate rawSettledBet
-        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, gameSession, unsettledResultSettledData, rawData);
+        RawSettledBet rawSettledBet = this.newUnsettleResultSettledBet(traceId, rawGameSession, unsettledResultSettledData, rawData);
 
         try {
             // 2. Prepare to send this transaction to operator, with isFullBet as true
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, rawGameSession, rawSettledBet);
             SettledBetEvent settledBetEvent = new SettledBetEvent(rawSettledBet, balanceVo.getData().getBalance());
 
             // 3. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
@@ -636,7 +636,7 @@ public class WalletService {
      * the player's balance.
      *
      * @param traceId     A unique Id for this request
-     * @param gameSession GameSession object containing information of the vendor, game, player
+     * @param rawGameSession RawGameSession object containing information of the vendor, game, player
      * @param winData     SettledData object containing information of the bet result
      * @param rawData     Raw data sent by vendor containing information of the bet result
      * @return BetResultEvent An event object containing Bet and Bet Result information as well as the last balance
@@ -644,20 +644,20 @@ public class WalletService {
      * @throws BetNotFoundException                    If no bet record is found
      * @throws DuplicateExternalTransactionIdException If vendor's transaction Id is found
      */
-    public BetResultEvent processWin(String traceId, GameSession gameSession, WinData winData, String rawData) throws
+    public BetResultEvent processWin(String traceId, RawGameSession rawGameSession, WinData winData, String rawData) throws
             BetNotFoundException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException, BetResultNotFoundException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorGameId = gameSession.getVendorGameId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorGameId = rawGameSession.getVendorGameId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = winData.getRoundId();
 
         // 1. Retrieve the bet transaction
         BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(roundId, vendorGameId, vendorPlayerId);
 
-        WalletWinDto walletWinDto = this.newWalletWinDto(traceId, gameSession, winData, betHistory.getId());
+        WalletWinDto walletWinDto = this.newWalletWinDto(traceId, rawGameSession, winData, betHistory.getId());
 
-        BetResultLog betResultLog = this.newBetResultLog(traceId, gameSession, winData, betHistory, walletWinDto, rawData);
+        BetResultLog betResultLog = this.newBetResultLog(traceId, rawGameSession, winData, betHistory, walletWinDto, rawData);
         BetResultEvent betResultEvent = null;
         Boolean requiredCallOperator = true;
 
@@ -713,7 +713,7 @@ public class WalletService {
      * the player's balance.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet result
      * @param rawData                    Raw data sent by vendor containing information of the bet result
      * @return ResultBetEvent An event object containing Bet and Bet Result information as well as the last balance
@@ -721,12 +721,12 @@ public class WalletService {
      * @throws BetNotFoundException            If no bet record is found
      * @throws CouchbaseDataIntegrityException If anything wrong data inser into couchbase Id is found
      */
-    public ResultBetEvent processResultBet(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public ResultBetEvent processResultBet(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, InvalidAgentApiCredentialException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorLineId = rawGameSession.getVendorLineId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
         String vendorBetId = unsettledResultSettledData.getVendorBetId();
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
@@ -735,10 +735,10 @@ public class WalletService {
         RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Generate wallet result dto
-        WalletWinDto walletWinDto = this.newWalletResultDto(traceId, gameSession, unsettledResultSettledData, rawUnsettledBet.getId(), null, rawUnsettledBet.getResultTime());
+        WalletWinDto walletWinDto = this.newWalletResultDto(traceId, rawGameSession, unsettledResultSettledData, rawUnsettledBet.getId(), null, rawUnsettledBet.getResultTime());
 
         // 3. Generate raw result bet
-        RawResultBet rawResultBet = this.newResultBet(gameSession, unsettledResultSettledData, rawData, rawUnsettledBet);
+        RawResultBet rawResultBet = this.newResultBet(rawGameSession, unsettledResultSettledData, rawData, rawUnsettledBet);
 
         // 4. Insert into couchbase result_bet table
         betResultLogService.createResultBet(rawResultBet);
@@ -777,7 +777,7 @@ public class WalletService {
      * the player's balance.
      *
      * @param traceId                    A unique Id for this request
-     * @param gameSession                GameSession object containing information of the vendor, game, player
+     * @param rawGameSession                RawGameSession object containing information of the vendor, game, player
      * @param unsettledResultSettledData UnsettledResultSettledData object containing information of the bet result
      * @param rawData                    Raw data sent by vendor containing information of the bet result
      * @return ResultBetEvent An event object containing Bet and Bet Result information as well as the last balance
@@ -785,12 +785,12 @@ public class WalletService {
      * @throws BetNotFoundException            If no bet record is found
      * @throws CouchbaseDataIntegrityException If anything wrong data inser into couchbase Id is found
      */
-    public ResultBetEvent processResultBetPlus(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
+    public ResultBetEvent processResultBetPlus(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData, String rawData) throws
             BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorLineId = rawGameSession.getVendorLineId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
         String roundId = unsettledResultSettledData.getRoundId();
         String vendorBetId = unsettledResultSettledData.getVendorBetId();
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
@@ -799,14 +799,14 @@ public class WalletService {
         RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
 
         // 2. Generate raw result bet
-        RawResultBet rawResultBet = this.newResultBet(gameSession, unsettledResultSettledData, rawData, rawUnsettledBet);
+        RawResultBet rawResultBet = this.newResultBet(rawGameSession, unsettledResultSettledData, rawData, rawUnsettledBet);
 
         // 3. Combine unsettled bet, result bet
         RawSettledBet rawSettledBet = settledBetService.updateRawResultBet(rawUnsettledBet, rawResultBet);
 
         try {
             // 4. Prepare to send this transaction to operator as win
-            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, gameSession, rawSettledBet);
+            WalletBalanceVo balanceVo = this.sendSettledWalletTransactionPlus(agentId, traceId, rawGameSession, rawSettledBet);
 
             //TODO: refine proper handle for result bet event
             ResultBetEvent resultBetEvent = new ResultBetEvent(rawResultBet, balanceVo.getData().getBalance());
@@ -846,24 +846,24 @@ public class WalletService {
      *
      * @param traceId               A unique Id for this request
      * @param externalTransactionId Vendor's bet transaction Id of a previous bet record
-     * @param gameSession           GameSession object containing information of the vendor, game, player
+     * @param rawGameSession           RawGameSession object containing information of the vendor, game, player
      * @param rawData               Raw data sent by vendor containing information of the Refund
      * @return BetRefundEvent An event object containing Bet and Refund information to be used for further processing, if required
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BetRefundEvent processRefund(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws
+    public BetRefundEvent processRefund(String traceId, String externalTransactionId, RawGameSession rawGameSession, String rawData) throws
             BetNotFoundException, RecordNotFoundException, InvalidAgentApiCredentialException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException {
 
-        Integer agentId = gameSession.getAgentId();
-        Integer vendorId = gameSession.getVendorId();
+        Integer agentId = rawGameSession.getAgentId();
+        Integer vendorId = rawGameSession.getVendorId();
         Long currentTimestamp = System.currentTimeMillis();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Long vendorPlayerId = rawGameSession.getVendorPlayerId();
 
         // 1. Retrieve the bet transaction
         BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionIdPlayerId(externalTransactionId, vendorId, vendorPlayerId);
 
-        WalletRefundDto walletRefundDto = this.newWalletRefundDto(traceId, gameSession, currentTimestamp, betHistory);
+        WalletRefundDto walletRefundDto = this.newWalletRefundDto(traceId, rawGameSession, currentTimestamp, betHistory);
 
         BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
 
@@ -875,9 +875,9 @@ public class WalletService {
 
             System.err.println(externalTransactionId);
             System.err.println(betHistory.getRoundId());
-            System.err.println(gameSession.getVendorLineId());
+            System.err.println(rawGameSession.getVendorLineId());
             BetRefundLog currentBetRefundLog = betRefundLogService.findByExternalTransactionIdAndRoundIdAndVendorLineId(
-                    externalTransactionId, betHistory.getRoundId(), gameSession.getVendorLineId());
+                    externalTransactionId, betHistory.getRoundId(), rawGameSession.getVendorLineId());
 
 
             if (currentBetRefundLog.getOperatorStatus() == 1) {
@@ -920,84 +920,84 @@ public class WalletService {
         return betRefundEvent;
     }
 
-    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetData betData) {
+    private WalletBetDto newWalletBetDto(String traceId, RawGameSession rawGameSession, BetData betData) {
         WalletBetDto walletBetDto = new WalletBetDto();
         walletBetDto.setTraceId(traceId);
         walletBetDto.setTransactionId(traceId);
-        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetDto.setToken(gameSession.getToken());
+        walletBetDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletBetDto.setToken(rawGameSession.getToken());
         walletBetDto.setExternalTransactionId(betData.getExternalTransactionId());
         walletBetDto.setAmount(betData.getAmount());
-        walletBetDto.setGameCode(gameSession.getGameCode());
+        walletBetDto.setGameCode(rawGameSession.getGameCode());
         walletBetDto.setRoundId(betData.getRoundId());
         walletBetDto.setTimestamp(betData.getTimestamp());
 
         return walletBetDto;
     }
 
-    private WalletBetDto newWalletUnsettledBetDto(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData) {
+    private WalletBetDto newWalletUnsettledBetDto(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData) {
         WalletBetDto walletBetDto = new WalletBetDto();
         walletBetDto.setTraceId(traceId);
         walletBetDto.setTransactionId(traceId);
-        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetDto.setToken(gameSession.getToken());
+        walletBetDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletBetDto.setToken(rawGameSession.getToken());
         walletBetDto.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         walletBetDto.setAmount(new BigDecimal(unsettledResultSettledData.getBetAmount().stripTrailingZeros().toPlainString()));
-        walletBetDto.setGameCode(gameSession.getGameCode());
+        walletBetDto.setGameCode(rawGameSession.getGameCode());
         walletBetDto.setRoundId(unsettledResultSettledData.getRoundId());
         walletBetDto.setTimestamp(unsettledResultSettledData.getVendorBetTime());
 
         return walletBetDto;
     }
 
-    private BetHistory newBetHistory(WalletBetDto walletBetDto, GameSession gameSession, String rawData) {
+    private BetHistory newBetHistory(WalletBetDto walletBetDto, RawGameSession rawGameSession, String rawData) {
         BetHistory betHistory = new BetHistory();
         betHistory.setId(walletBetDto.getTraceId());
         betHistory.setExternalTransactionId(walletBetDto.getExternalTransactionId());
         betHistory.setRoundId(walletBetDto.getRoundId());
-        betHistory.setVendorGameId(gameSession.getVendorGameId());
-        betHistory.setVendorPlayerId(gameSession.getVendorPlayerId());
-        betHistory.setVendorId(gameSession.getVendorId());
-        betHistory.setAgentPlayerId(gameSession.getAgentPlayerId());
-        betHistory.setAgentId(gameSession.getAgentId());
-        betHistory.setVendorLineId(gameSession.getVendorLineId());
-        betHistory.setGameCategoryId(gameSession.getGameCategoryId());
-        betHistory.setCurrencyId(gameSession.getCurrencyId());
+        betHistory.setVendorGameId(rawGameSession.getVendorGameId());
+        betHistory.setVendorPlayerId(rawGameSession.getVendorPlayerId());
+        betHistory.setVendorId(rawGameSession.getVendorId());
+        betHistory.setAgentPlayerId(rawGameSession.getAgentPlayerId());
+        betHistory.setAgentId(rawGameSession.getAgentId());
+        betHistory.setVendorLineId(rawGameSession.getVendorLineId());
+        betHistory.setGameCategoryId(rawGameSession.getGameCategoryId());
+        betHistory.setCurrencyId(rawGameSession.getCurrencyId());
         betHistory.setBetAmount(walletBetDto.getAmount());
-        betHistory.setGameSessionToken(gameSession.getToken());
+        betHistory.setGameSessionToken(rawGameSession.getToken());
         betHistory.setRawData(rawData);
         betHistory.setVendorBetTime(walletBetDto.getTimestamp());
-        betHistory.setGameSessionToken(gameSession.getToken());
+        betHistory.setGameSessionToken(rawGameSession.getToken());
         betHistory.setOperatorStatus(1);
 
         return betHistory;
     }
 
-    private RawUnsettledBet newUnsettledBet(GameSession gameSession, String rawData,
+    private RawUnsettledBet newUnsettledBet(RawGameSession rawGameSession, String rawData,
                                             UnsettledResultSettledData unsettledResultSettledData, String traceId) {
 
         RawUnsettledBet rawUnsettledBet = new RawUnsettledBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
 
-        rawUnsettledBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + gameSession.getVendorLineId() + '_' + gameSession.getVendorPlayerId());
+        rawUnsettledBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + rawGameSession.getVendorLineId() + '_' + rawGameSession.getVendorPlayerId());
         rawUnsettledBet.setInternalTransactionId(traceId);
         rawUnsettledBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawUnsettledBet.setRoundId(unsettledResultSettledData.getRoundId());
-        rawUnsettledBet.setVendorGameId(gameSession.getVendorGameId());
-        rawUnsettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
-        rawUnsettledBet.setVendorId(gameSession.getVendorId());
-        rawUnsettledBet.setAgentPlayerId(gameSession.getAgentPlayerId());
-        rawUnsettledBet.setAgentId(gameSession.getAgentId());
-        rawUnsettledBet.setVendorLineId(gameSession.getVendorLineId());
-        rawUnsettledBet.setGameCategoryId(gameSession.getGameCategoryId());
-        rawUnsettledBet.setCurrencyId(gameSession.getCurrencyId());
+        rawUnsettledBet.setVendorGameId(rawGameSession.getVendorGameId());
+        rawUnsettledBet.setVendorPlayerId(rawGameSession.getVendorPlayerId());
+        rawUnsettledBet.setVendorId(rawGameSession.getVendorId());
+        rawUnsettledBet.setAgentPlayerId(rawGameSession.getAgentPlayerId());
+        rawUnsettledBet.setAgentId(rawGameSession.getAgentId());
+        rawUnsettledBet.setVendorLineId(rawGameSession.getVendorLineId());
+        rawUnsettledBet.setGameCategoryId(rawGameSession.getGameCategoryId());
+        rawUnsettledBet.setCurrencyId(rawGameSession.getCurrencyId());
         rawUnsettledBet.setBetAmount(unsettledResultSettledData.getBetAmount());
-        rawUnsettledBet.setGameSessionToken(gameSession.getToken());
+        rawUnsettledBet.setGameSessionToken(rawGameSession.getToken());
         rawUnsettledBet.setResultType(unsettledResultSettledData.getResultType().code);
         rawUnsettledBet.setVendorBetTime(unsettledResultSettledData.getVendorBetTime());
-        rawUnsettledBet.setGameSessionToken(gameSession.getToken());
+        rawUnsettledBet.setGameSessionToken(rawGameSession.getToken());
         rawUnsettledBet.setOperatorStatus(1);
         rawUnsettledBet.setMd5RawSettledResult(md5RawData);
         rawUnsettledBet.setWinAmount(unsettledResultSettledData.getWinAmount());
@@ -1014,24 +1014,24 @@ public class WalletService {
         return rawUnsettledBet;
     }
 
-    private WalletWinDto newWalletWinDto(String traceId, GameSession gameSession, WinData winData, String referenceTransactionId) {
+    private WalletWinDto newWalletWinDto(String traceId, RawGameSession rawGameSession, WinData winData, String referenceTransactionId) {
         WalletWinDto walletWinDto = new WalletWinDto();
         walletWinDto.setTraceId(traceId);
         walletWinDto.setTransactionId(traceId);
-        walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletWinDto.setCurrency(gameSession.getCurrencyCode());
-        walletWinDto.setToken(gameSession.getToken());
+        walletWinDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletWinDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletWinDto.setToken(rawGameSession.getToken());
         walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(referenceTransactionId);
         walletWinDto.setAmount(winData.getAmount());
-        walletWinDto.setGameCode(gameSession.getGameCode());
+        walletWinDto.setGameCode(rawGameSession.getGameCode());
         walletWinDto.setRoundId(winData.getRoundId());
         walletWinDto.setWinType(winData.getWinType());
         walletWinDto.setTimestamp(winData.getTimestamp());
         return walletWinDto;
     }
 
-    private WalletWinDto newWalletResultDto(String traceId, GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData,
+    private WalletWinDto newWalletResultDto(String traceId, RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData,
                                             String referenceTransactionId, BigDecimal transferAmount, Long timestamp) {
 
         WalletWinDto walletWinDto = new WalletWinDto();
@@ -1039,13 +1039,13 @@ public class WalletService {
 
         walletWinDto.setTraceId(traceId);
         walletWinDto.setTransactionId(traceId);
-        walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletWinDto.setCurrency(gameSession.getCurrencyCode());
-        walletWinDto.setToken(gameSession.getToken());
+        walletWinDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletWinDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletWinDto.setToken(rawGameSession.getToken());
         walletWinDto.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(referenceTransactionId);
         walletWinDto.setAmount((transferAmount == null) ? unsettledResultSettledData.getWinAmount() : transferAmount);
-        walletWinDto.setGameCode(gameSession.getGameCode());
+        walletWinDto.setGameCode(rawGameSession.getGameCode());
         walletWinDto.setRoundId(unsettledResultSettledData.getRoundId());
         walletWinDto.setWinType((winAmount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE);
         walletWinDto.setTimestamp(timestamp);
@@ -1053,31 +1053,31 @@ public class WalletService {
         return walletWinDto;
     }
 
-    private WalletWinDto newWalletWinDtoForFullBetDto(String traceId, GameSession gameSession, RawSettledBet rawSettledBet, BigDecimal transferAmount) {
+    private WalletWinDto newWalletWinDtoForFullBetDto(String traceId, RawGameSession rawGameSession, RawSettledBet rawSettledBet, BigDecimal transferAmount) {
 
         BigDecimal winAmount = (rawSettledBet.getWinAmount() == null) ? BigDecimal.valueOf(0) : rawSettledBet.getWinAmount();
 
         WalletWinDto walletWinDto = new WalletWinDto();
         walletWinDto.setTraceId(traceId);
         walletWinDto.setTransactionId(traceId);
-        walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletWinDto.setCurrency(gameSession.getCurrencyCode());
-        walletWinDto.setToken(gameSession.getToken());
+        walletWinDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletWinDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletWinDto.setToken(rawGameSession.getToken());
         walletWinDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
         walletWinDto.setReferenceTransactionId(rawSettledBet.getInternalTransactionId());
         walletWinDto.setAmount(transferAmount);
-        walletWinDto.setGameCode(gameSession.getGameCode());
+        walletWinDto.setGameCode(rawGameSession.getGameCode());
         walletWinDto.setRoundId(rawSettledBet.getRoundId());
         walletWinDto.setWinType((winAmount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE);
         walletWinDto.setTimestamp(rawSettledBet.getVendorBetTime());
         return walletWinDto;
     }
 
-    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, GameSession gameSession, RawSettledBet rawSettledBet) {
+    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, RawGameSession rawGameSession, RawSettledBet rawSettledBet) {
 
         WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
         walletBetResultDto.setTraceId(traceId);
-        walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetResultDto.setUsername(rawGameSession.getAgentPlayerUsername());
         walletBetResultDto.setTransactionId(rawSettledBet.getInternalTransactionId());
         walletBetResultDto.setExternalTransactionId(rawSettledBet.getVendorBetId());
         walletBetResultDto.setExternalRoundId(rawSettledBet.getRoundId());
@@ -1089,44 +1089,44 @@ public class WalletService {
         walletBetResultDto.setResultType(rawSettledBet.getResultType());
         walletBetResultDto.setIsFreespin(rawSettledBet.getIsFreespin());
         walletBetResultDto.setIsEndRound((rawSettledBet.getStatus() == BetStatus.UNSETTLED.code)?0:1);
-        walletBetResultDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetResultDto.setToken(gameSession.getToken());
-        walletBetResultDto.setGameCode(gameSession.getGameCode());
+        walletBetResultDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletBetResultDto.setToken(rawGameSession.getToken());
+        walletBetResultDto.setGameCode(rawGameSession.getGameCode());
         walletBetResultDto.setBetTime(rawSettledBet.getVendorBetTime());
         walletBetResultDto.setSettledTime(rawSettledBet.getVendorSettleTime());
 
         return walletBetResultDto;
     }
 
-    private WalletBetDto newWalletBetForFullBetDto(String traceId, GameSession gameSession, RawSettledBet rawSettledBet) {
+    private WalletBetDto newWalletBetForFullBetDto(String traceId, RawGameSession rawGameSession, RawSettledBet rawSettledBet) {
         WalletBetDto walletBetDto = new WalletBetDto();
         walletBetDto.setTraceId(traceId);
         walletBetDto.setTransactionId(traceId);
-        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetDto.setToken(gameSession.getToken());
+        walletBetDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletBetDto.setToken(rawGameSession.getToken());
         walletBetDto.setExternalTransactionId(rawSettledBet.getExternalTransactionId());
         walletBetDto.setAmount(rawSettledBet.getWinLoss().abs());
-        walletBetDto.setGameCode(gameSession.getGameCode());
+        walletBetDto.setGameCode(rawGameSession.getGameCode());
         walletBetDto.setRoundId(rawSettledBet.getRoundId());
         walletBetDto.setTimestamp(rawSettledBet.getVendorBetTime());
 
         return walletBetDto;
     }
 
-    private BetResultLog newBetResultLog(String traceId, GameSession gameSession, WinData winData, BetHistory betHistory, WalletWinDto walletWinDto, String rawData) {
+    private BetResultLog newBetResultLog(String traceId, RawGameSession rawGameSession, WinData winData, BetHistory betHistory, WalletWinDto walletWinDto, String rawData) {
         BetResultLog betResultLog = new BetResultLog();
 
         betResultLog.setId(traceId);
         betResultLog.setBetHistoryId(walletWinDto.getReferenceTransactionId());
         betResultLog.setExternalTransactionId(walletWinDto.getExternalTransactionId());
         betResultLog.setRoundId(betHistory.getRoundId());
-        betResultLog.setVendorGameId(gameSession.getVendorGameId());
-        betResultLog.setVendorPlayerId(gameSession.getVendorPlayerId());
-        betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
-        betResultLog.setAgentId(gameSession.getAgentId());
-        betResultLog.setVendorLineId(gameSession.getVendorLineId());
-        betResultLog.setCurrencyId(gameSession.getCurrencyId());
+        betResultLog.setVendorGameId(rawGameSession.getVendorGameId());
+        betResultLog.setVendorPlayerId(rawGameSession.getVendorPlayerId());
+        betResultLog.setAgentPlayerId(rawGameSession.getAgentPlayerId());
+        betResultLog.setAgentId(rawGameSession.getAgentId());
+        betResultLog.setVendorLineId(rawGameSession.getVendorLineId());
+        betResultLog.setCurrencyId(rawGameSession.getCurrencyId());
         betResultLog.setOperatorStatus(1);
         betResultLog.setWinAmount(walletWinDto.getAmount());
         betResultLog.setEffectiveTurnover(winData.getEffectiveTurnover());
@@ -1139,23 +1139,23 @@ public class WalletService {
         return betResultLog;
     }
 
-    private RawResultBet newResultBet(GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData,
+    private RawResultBet newResultBet(RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData,
                                       String rawData, RawUnsettledBet rawUnsettledBet) {
 
         RawResultBet rawResultBet = new RawResultBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
         BigDecimal winLoss = unsettledResultSettledData.getWinAmount().subtract(rawUnsettledBet.getBetAmount());
 
-        rawResultBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + gameSession.getVendorLineId() + '_' + gameSession.getVendorPlayerId());
+        rawResultBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + rawGameSession.getVendorLineId() + '_' + rawGameSession.getVendorPlayerId());
         rawResultBet.setInternalTransactionId(rawUnsettledBet.getInternalTransactionId());
         rawResultBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawResultBet.setRoundId(unsettledResultSettledData.getRoundId());
-        rawResultBet.setVendorGameId(gameSession.getVendorGameId());
-        rawResultBet.setVendorPlayerId(gameSession.getVendorPlayerId());
-        rawResultBet.setAgentPlayerId(gameSession.getAgentPlayerId());
-        rawResultBet.setAgentId(gameSession.getAgentId());
-        rawResultBet.setVendorLineId(gameSession.getVendorLineId());
-        rawResultBet.setCurrencyId(gameSession.getCurrencyId());
+        rawResultBet.setVendorGameId(rawGameSession.getVendorGameId());
+        rawResultBet.setVendorPlayerId(rawGameSession.getVendorPlayerId());
+        rawResultBet.setAgentPlayerId(rawGameSession.getAgentPlayerId());
+        rawResultBet.setAgentId(rawGameSession.getAgentId());
+        rawResultBet.setVendorLineId(rawGameSession.getVendorLineId());
+        rawResultBet.setCurrencyId(rawGameSession.getCurrencyId());
         rawResultBet.setOperatorStatus(1);
         rawResultBet.setWinAmount(unsettledResultSettledData.getWinAmount());
         rawResultBet.setEffectiveTurnover(rawUnsettledBet.getBetAmount());
@@ -1174,20 +1174,20 @@ public class WalletService {
         return rawResultBet;
     }
 
-    private RawSettledBet newSettledBet(GameSession gameSession, UnsettledResultSettledData unsettledResultSettledData)
+    private RawSettledBet newSettledBet(RawGameSession rawGameSession, UnsettledResultSettledData unsettledResultSettledData)
             throws MergedBetDataIntegrityException {
 
         try {
             RawSettledBet rawSettledBet = new RawSettledBet();
             BeanUtils.copyProperties(rawSettledBet, unsettledResultSettledData);
 
-            rawSettledBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + gameSession.getVendorLineId() + '_' + gameSession.getVendorPlayerId());
-            rawSettledBet.setVendorGameId(gameSession.getVendorGameId());
-            rawSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
-            rawSettledBet.setAgentPlayerId(gameSession.getAgentPlayerId());
-            rawSettledBet.setAgentId(gameSession.getAgentId());
-            rawSettledBet.setVendorLineId(gameSession.getVendorLineId());
-            rawSettledBet.setCurrencyId(gameSession.getCurrencyId());
+            rawSettledBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + rawGameSession.getVendorLineId() + '_' + rawGameSession.getVendorPlayerId());
+            rawSettledBet.setVendorGameId(rawGameSession.getVendorGameId());
+            rawSettledBet.setVendorPlayerId(rawGameSession.getVendorPlayerId());
+            rawSettledBet.setAgentPlayerId(rawGameSession.getAgentPlayerId());
+            rawSettledBet.setAgentId(rawGameSession.getAgentId());
+            rawSettledBet.setVendorLineId(rawGameSession.getVendorLineId());
+            rawSettledBet.setCurrencyId(rawGameSession.getCurrencyId());
             rawSettledBet.setStatus(BetStatus.SETTLED.code);
 
             return rawSettledBet;
@@ -1201,24 +1201,24 @@ public class WalletService {
 
     }
 
-    private RawSettledBet newUnsettleResultSettledBet(String traceId, GameSession gameSession,
+    private RawSettledBet newUnsettleResultSettledBet(String traceId, RawGameSession rawGameSession,
                                                       UnsettledResultSettledData unsettledResultSettledData, String rawData) {
 
         RawSettledBet rawSettledBet = new RawSettledBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
 
-        rawSettledBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + gameSession.getVendorLineId() + '_' + gameSession.getVendorPlayerId());
+        rawSettledBet.setId(unsettledResultSettledData.getVendorBetId() + '_' + unsettledResultSettledData.getRoundId() + '_' + rawGameSession.getVendorLineId() + '_' + rawGameSession.getVendorPlayerId());
         rawSettledBet.setInternalTransactionId(traceId);
         rawSettledBet.setExternalTransactionId(unsettledResultSettledData.getExternalTransactionId());
         rawSettledBet.setRoundId(unsettledResultSettledData.getRoundId());
-        rawSettledBet.setVendorGameId(gameSession.getVendorGameId());
-        rawSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
-        rawSettledBet.setVendorId(gameSession.getVendorId());
-        rawSettledBet.setVendorLineId(gameSession.getVendorLineId());
-        rawSettledBet.setAgentPlayerId(gameSession.getAgentPlayerId());
-        rawSettledBet.setAgentId(gameSession.getAgentId());
-        rawSettledBet.setGameCategoryId(gameSession.getGameCategoryId());
-        rawSettledBet.setCurrencyId(gameSession.getCurrencyId());
+        rawSettledBet.setVendorGameId(rawGameSession.getVendorGameId());
+        rawSettledBet.setVendorPlayerId(rawGameSession.getVendorPlayerId());
+        rawSettledBet.setVendorId(rawGameSession.getVendorId());
+        rawSettledBet.setVendorLineId(rawGameSession.getVendorLineId());
+        rawSettledBet.setAgentPlayerId(rawGameSession.getAgentPlayerId());
+        rawSettledBet.setAgentId(rawGameSession.getAgentId());
+        rawSettledBet.setGameCategoryId(rawGameSession.getGameCategoryId());
+        rawSettledBet.setCurrencyId(rawGameSession.getCurrencyId());
         rawSettledBet.setBetAmount(unsettledResultSettledData.getBetAmount());
         rawSettledBet.setWinAmount(unsettledResultSettledData.getWinAmount());
         rawSettledBet.setWinLoss(unsettledResultSettledData.getWinLoss());
@@ -1227,7 +1227,7 @@ public class WalletService {
         rawSettledBet.setResultType(unsettledResultSettledData.getResultType().code);
         rawSettledBet.setMd5RawSettledResult(md5RawData);
         rawSettledBet.setResettleNum(0);
-        rawSettledBet.setGameSessionToken(gameSession.getToken());
+        rawSettledBet.setGameSessionToken(rawGameSession.getToken());
         rawSettledBet.setVendorBetTime(unsettledResultSettledData.getVendorBetTime());
         rawSettledBet.setVendorSettleTime(unsettledResultSettledData.getVendorSettleTime());
         rawSettledBet.setResultTime(unsettledResultSettledData.getResultTime());
@@ -1239,14 +1239,14 @@ public class WalletService {
         return rawSettledBet;
     }
 
-    private WalletRefundDto newWalletRefundDto(String traceId, GameSession gameSession, Long currentTimestamp, BetHistory betHistory) {
+    private WalletRefundDto newWalletRefundDto(String traceId, RawGameSession rawGameSession, Long currentTimestamp, BetHistory betHistory) {
         WalletRefundDto walletRefundDto = new WalletRefundDto();
         walletRefundDto.setTraceId(traceId);
         walletRefundDto.setTransactionId(traceId);
-        walletRefundDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletRefundDto.setUsername(rawGameSession.getAgentPlayerUsername());
         walletRefundDto.setExternalTransactionId(betHistory.getExternalTransactionId());
         walletRefundDto.setReferenceTransactionId(betHistory.getId());
-        walletRefundDto.setGameCode(gameSession.getGameCode());
+        walletRefundDto.setGameCode(rawGameSession.getGameCode());
         walletRefundDto.setRoundId(betHistory.getRoundId());
         walletRefundDto.setTimestamp(currentTimestamp);
         return walletRefundDto;
@@ -1274,17 +1274,17 @@ public class WalletService {
         return betRefundLog;
     }
 
-    private WalletBalanceDto newWalletBalanceDto(String traceId, GameSession gameSession) {
+    private WalletBalanceDto newWalletBalanceDto(String traceId, RawGameSession rawGameSession) {
         WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
         walletBalanceDto.setTraceId(traceId);
-        walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
-        walletBalanceDto.setToken(gameSession.getToken());
+        walletBalanceDto.setUsername(rawGameSession.getAgentPlayerUsername());
+        walletBalanceDto.setCurrency(rawGameSession.getCurrencyCode());
+        walletBalanceDto.setToken(rawGameSession.getToken());
 
         return walletBalanceDto;
     }
 
-    private WalletBalanceVo sendSettledWalletTransaction(Integer agentId, String traceId, GameSession gameSession, RawSettledBet rawSettledBet, Boolean isFullBet)
+    private WalletBalanceVo sendSettledWalletTransaction(Integer agentId, String traceId, RawGameSession rawGameSession, RawSettledBet rawSettledBet, Boolean isFullBet)
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, InsufficientBalanceException {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
@@ -1294,17 +1294,17 @@ public class WalletService {
             //if isFullBet = true, then we will compare with using winLoss to decide send as wallet/win or lose
             if ((rawSettledBet.getWinLoss().compareTo(BigDecimal.ZERO) >= 0)) {
                 //if WinLoss >= 0 then we will send as win
-                WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, gameSession, rawSettledBet, rawSettledBet.getWinLoss());
+                WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, rawGameSession, rawSettledBet, rawSettledBet.getWinLoss());
                 balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
 
             } else {
                 //else send as lose
-                WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, gameSession, rawSettledBet);
+                WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, rawGameSession, rawSettledBet);
                 balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
             }
         } else {
             //else isFullBet = false, then we will send as wallet/win with winAmount (because bet already deducted)
-            WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, gameSession, rawSettledBet, rawSettledBet.getWinAmount());
+            WalletWinDto walletWinDto = this.newWalletWinDtoForFullBetDto(traceId, rawGameSession, rawSettledBet, rawSettledBet.getWinAmount());
             balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
         }
 
@@ -1312,11 +1312,11 @@ public class WalletService {
     }
 
     //temporary updated version for sendSettledWalletTransaction function, avoid changes update to stg environment
-    private WalletBalanceVo sendSettledWalletTransactionPlus(Integer agentId, String traceId, GameSession gameSession, RawSettledBet rawSettledBet)
+    private WalletBalanceVo sendSettledWalletTransactionPlus(Integer agentId, String traceId, RawGameSession rawGameSession, RawSettledBet rawSettledBet)
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, InsufficientBalanceException {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        WalletBetResultDto walletBetResultDto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, rawSettledBet);
+        WalletBetResultDto walletBetResultDto = this.newWalletBetResultDtoForFullBetDto(traceId, rawGameSession, rawSettledBet);
         WalletBalanceVo balanceVo = walletBetResultAction.call(agentApiCredential, walletBetResultDto);
 
         return balanceVo;
