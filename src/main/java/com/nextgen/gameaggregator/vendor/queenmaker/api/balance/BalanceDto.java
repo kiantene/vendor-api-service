@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 import java.util.List;
@@ -8,7 +9,10 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BalanceDto {
+
     private String testmode;
+
+    @NotEmpty(message = "Empty Array")
     private List<UsersDto> users;
 }
 
