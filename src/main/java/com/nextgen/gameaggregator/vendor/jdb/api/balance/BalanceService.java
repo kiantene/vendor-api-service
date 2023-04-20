@@ -28,6 +28,8 @@ public class BalanceService {
     private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private ValidationService validationService;
 
     public CommonVo balance(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -65,6 +67,12 @@ public class BalanceService {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException exception) {
             vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (DisabledGameException disabledGameException) {
+            vo.setResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
             vo.setResponseCode(ResponseCode.FAILED);
         }
@@ -77,11 +85,9 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException {
-        // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
-
-        // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), InvalidRequestException::new);
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException, 
+    DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
     }
 }
