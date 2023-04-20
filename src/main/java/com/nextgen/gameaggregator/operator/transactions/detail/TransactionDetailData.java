@@ -9,9 +9,9 @@ import java.math.BigDecimal;
 public class TransactionDetailData {
 
     private String detailUrl;
-    private Betdetail betdetail;
+    private BetDetail betDetail;
     @Data
-    public static class Betdetail {
+    public static class BetDetail {
         String transactionId;
         String externalTransactionId;
         String externalRoundId;
@@ -33,24 +33,24 @@ public class TransactionDetailData {
 
     }
     public void setBetDetail(IBetDetailUrlInfo iBetDetailUrlInfo){
-        this.betdetail = new Betdetail();
-        this.betdetail.setTransactionId(iBetDetailUrlInfo.getTransactionId());
-        this.betdetail.setExternalTransactionId(iBetDetailUrlInfo.getExternalTransactionId());
-        this.betdetail.setExternalRoundId(iBetDetailUrlInfo.getExternalRoundId());
-        this.betdetail.setUsername(iBetDetailUrlInfo.getUsername());
-        this.betdetail.setCurrencyCode(iBetDetailUrlInfo.getCurrencyCode());
-        this.betdetail.setGameCode(iBetDetailUrlInfo.getGameCode());
-        this.betdetail.setVendorCode(iBetDetailUrlInfo.getVendorCode());
-        this.betdetail.setGameCategoryCode(iBetDetailUrlInfo.getGameCategoryCode());
-        this.betdetail.setBetAmount(iBetDetailUrlInfo.getBetAmount());
-        this.betdetail.setWinAmount(iBetDetailUrlInfo.getWinAmount());
-        this.betdetail.setWinLoss(iBetDetailUrlInfo.getWinLoss());
-        this.betdetail.setEffectiveTurnover(iBetDetailUrlInfo.getEffectiveTurnover());
-        this.betdetail.setJackpotAmount(iBetDetailUrlInfo.getJackpotAmount());
-        this.betdetail.setRefundAmount(iBetDetailUrlInfo.getRefundAmount());
-        this.betdetail.setStatus(iBetDetailUrlInfo.getStatus());
-        this.betdetail.setVendorBetTime(iBetDetailUrlInfo.getVendorBetTime());
-        this.betdetail.setVendorSettleTime(iBetDetailUrlInfo.getVendorSettleTime());
-        this.betdetail.setIsFreeSpin(iBetDetailUrlInfo.getIsFreeSpin());
+        this.betDetail = new BetDetail();
+        this.betDetail.setTransactionId(iBetDetailUrlInfo.getTransactionId());
+        this.betDetail.setExternalTransactionId(iBetDetailUrlInfo.getExternalTransactionId());
+        this.betDetail.setExternalRoundId(iBetDetailUrlInfo.getExternalRoundId());
+        this.betDetail.setUsername(iBetDetailUrlInfo.getUsername());
+        this.betDetail.setCurrencyCode(iBetDetailUrlInfo.getCurrencyCode());
+        this.betDetail.setGameCode(iBetDetailUrlInfo.getGameCode());
+        this.betDetail.setVendorCode(iBetDetailUrlInfo.getVendorCode());
+        this.betDetail.setGameCategoryCode(iBetDetailUrlInfo.getGameCategoryCode());
+        this.betDetail.setBetAmount(iBetDetailUrlInfo.getBetAmount());
+        this.betDetail.setWinAmount(iBetDetailUrlInfo.getWinAmount());
+        this.betDetail.setWinLoss(iBetDetailUrlInfo.getWinLoss());
+        this.betDetail.setEffectiveTurnover(iBetDetailUrlInfo.getEffectiveTurnover());
+        this.betDetail.setJackpotAmount(iBetDetailUrlInfo.getJackpotAmount());
+        this.betDetail.setRefundAmount(iBetDetailUrlInfo.getRefundAmount());
+        this.betDetail.setStatus(iBetDetailUrlInfo.getStatus());
+        this.betDetail.setVendorBetTime(iBetDetailUrlInfo.getVendorBetTime());
+        this.betDetail.setVendorSettleTime(iBetDetailUrlInfo.getVendorSettleTime());
+        this.betDetail.setIsFreeSpin(iBetDetailUrlInfo.getIsFreeSpin());
     }
 }

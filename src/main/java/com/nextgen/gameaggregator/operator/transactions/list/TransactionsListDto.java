@@ -10,28 +10,28 @@ import jakarta.validation.constraints.*;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionsListDto {
-    @NotBlank
+    @NotBlank(message = "UUID format only")
     @Size(min = 36, max = 36)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
+    @Pattern(regexp = ValidationUtils.UUID_REGEX,  message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
 
-    @NotNull
-    @Positive
+    @NotNull(message = "long integer number only")
+    @Positive(message = "long integer number only")
     @Range(min= 1, max= Long.MAX_VALUE)
     private Long fromTime;
 
-    @NotNull
-    @Positive
+    @NotNull(message = "long integer number only")
+    @Positive(message = "long integer number only")
     @Range(min= 1, max= Long.MAX_VALUE)
     private Long toTime;
 
-    @NotNull
+    @NotNull( message = "numeric number only")
     @Positive
-    @Range(min= 1, max= Integer.MAX_VALUE)
+    @Range(min= 1, max= Integer.MAX_VALUE, message = "numeric number only")
     private Integer pageNo;
 
-    @NotNull
-    @Positive
-    @Range(min= 1, max= 500)
+    @NotNull(message = "min 1 and max 500 numeric number only")
+    @Positive(message = "min 1 and max 500 numeric number only")
+    @Range(min= 1, max= 500, message = "min 1 and max 500 numeric number only")
     private Integer pageSize = 500;
 }
