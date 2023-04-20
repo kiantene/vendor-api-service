@@ -16,9 +16,6 @@ public class CommonVo implements HttpResponse {
     @JsonProperty("balance")
     private BigDecimal balance = BigDecimal.ZERO;
 
-    @JsonProperty("err_text")
-    private String errText;
-
     public CommonVo() {
         this.setSuccessResponseCode(ResponseCode.SUCCESS);
     }
@@ -29,8 +26,11 @@ public class CommonVo implements HttpResponse {
 
     public void setResponseCode(String responseCode) {
         this.status = responseCode;
-        this.errText = ResponseCode.RESPONSE_DESCRIPTION.get(responseCode);
+        if (responseCode != ResponseCode.SUCCESS) {
+            String errText = ResponseCode.RESPONSE_DESCRIPTION.get(responseCode);
+        }
     }
+
     @Override
     public boolean hasError() {
         return false;
