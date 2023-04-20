@@ -8,8 +8,23 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.RecordNotFoundException;
+import com.nextgen.gameaggregator.service.BetHistoryService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
@@ -54,34 +69,34 @@ public class CancelBetNSettleService {
             BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetNSettleDto.getTransferId(), gameSession, actionDto.getParams());
 
             vo.setBalance(betRefundEvent.getLastBalance());
-            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         
         } catch (AuthenticationException authenticationException) {
-            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (BetNotFoundException betNotFoundException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException jsonProcessingException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidPlayerException invalidPlayerException) {
-            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (RecordNotFoundException recordNotFoundException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledGameException disabledGameException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 
         return vo;

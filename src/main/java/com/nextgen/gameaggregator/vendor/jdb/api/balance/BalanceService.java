@@ -7,8 +7,20 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
@@ -53,28 +65,28 @@ public class BalanceService {
 
             // Construct VO
             vo.setBalance(balance);
-            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException exception) {
-            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (InvalidAgentApiCredentialException exception) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidOperatorResponseException exception) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidPlayerException exception) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException exception) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException exception) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledGameException disabledGameException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 
         return vo;

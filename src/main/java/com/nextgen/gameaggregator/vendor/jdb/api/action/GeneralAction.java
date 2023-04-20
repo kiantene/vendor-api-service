@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
@@ -18,7 +21,10 @@ import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
-import com.nextgen.gameaggregator.vendor.jdb.constant.*;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -93,15 +99,15 @@ public class GeneralAction {
             vo = this.actionHandling(actionDto, traceId);
         
         } catch (CredentialNotFoundException credentialNotFoundException) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidDecryptionException invalidDecryptionException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (JsonProcessingException jsonProcessingException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (Exception exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } finally {
             httpService.end(httpRequestLog, vo);
         }
@@ -123,7 +129,7 @@ public class GeneralAction {
             case Actions.BET -> vo = betService.bet(actionDto, traceId);
             case Actions.SETTLE -> vo = settleService.settle(actionDto, traceId);
             case Actions.CANCEL_BET -> vo = cancelBetService.cancelBet(actionDto, traceId);
-            default -> vo.setResponseCode(ResponseCode.INVALID_ACTION);
+            default -> vo.setErrorResponseCode(ResponseCode.INVALID_ACTION);
         }
 
         return vo;
