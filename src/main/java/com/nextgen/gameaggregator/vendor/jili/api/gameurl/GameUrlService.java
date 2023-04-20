@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.jili.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -31,7 +31,7 @@ import java.util.Optional;
 public class GameUrlService implements GameUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         String agentId = credentials.get(Credentials.AGENT_ID);
         Optional.ofNullable(agentId).orElseThrow(InvalidVendorLineException::new);
@@ -44,9 +44,9 @@ public class GameUrlService implements GameUrl {
         service.setAgentKey(agentKey);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("Token", gameSession.getToken());
-        formData.add("GameId", gameSession.getVendorGameCode());
-        formData.add("Lang", gameSession.getVendorLanguageCode());
+        formData.add("Token", rawGameSession.getToken());
+        formData.add("GameId", rawGameSession.getVendorGameCode());
+        formData.add("Lang", rawGameSession.getVendorLanguageCode());
         formData.add("AgentId", agentId);
         String key = service.keyGenerator(formData);
         formData.add("Key", key);
@@ -54,7 +54,7 @@ public class GameUrlService implements GameUrl {
         return formData;
     }
 
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
         String apiUrl = credentials.get(Credentials.API_URL);

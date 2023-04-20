@@ -1,12 +1,10 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.api.freespin;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -65,16 +62,16 @@ public class FreeSpinAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
             String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
-            this.doVerification(dto, gameSession, toVerifySign);
+            this.doVerification(dto, rawGameSession, toVerifySign);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             // Set Vendor player username + Balance + Currency
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
             // Set BalanceDataWalletVo Object
@@ -105,7 +102,7 @@ public class FreeSpinAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(FreeSpinDto dto, GameSession gameSession, String toVerifySign)
+    private void doVerification(FreeSpinDto dto, RawGameSession rawGameSession, String toVerifySign)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
@@ -119,9 +116,9 @@ public class FreeSpinAction {
             }
 
             // validate vendor username, agent vendor line, player status, and game status
-            validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+            validationService.validateIllegibleBet(rawGameSession, dto.getBrandUid());
 
             // Verify currency
-            ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+            ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.rollout;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -67,20 +67,20 @@ public class RollOutAction {
             this.doValidation(rollOutDto, wToken);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(rollOutDto.getSession());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(rollOutDto.getSession());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(rollOutDto, gameSession, wToken);
+            this.doVerification(rollOutDto, rawGameSession, wToken);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, rollOutDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, rawGameSession, rollOutDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
@@ -153,27 +153,27 @@ public class RollOutAction {
         formatter.parse(rollOutDto.getEventTime());
     }
 
-    private void doVerification(RollOutDto rollOutDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(RollOutDto rollOutDto, RawGameSession rawGameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // 1. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 2. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
 
         // 3. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), rollOutDto.getAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), rollOutDto.getAccount(), InvalidPlayerException::new);
 
         // 4. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), rollOutDto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), rollOutDto.getGameId(), AuthenticationException::new);
 
         // 5. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
 
         // 6. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
 
         // 7. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
     }
 }

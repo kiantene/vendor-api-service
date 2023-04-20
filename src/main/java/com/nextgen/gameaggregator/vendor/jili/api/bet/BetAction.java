@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -54,19 +54,19 @@ public class BetAction {
             this.doValidation(betDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(betDto.getToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(betDto.getToken());
 
-            this.doVerification(betDto, gameSession);
+            this.doVerification(betDto, rawGameSession);
 
             // 3. Process bet data
             // 4. Process win data
-            //SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, gameSession, betDto, body);
+            //SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, betDto, body);
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, rawGameSession, betDto, body);
 
-            betVo.setUsername(gameSession.getVendorPlayerUsername());
-            betVo.setCurrency(gameSession.getVendorCurrencyCode());
+            betVo.setUsername(rawGameSession.getVendorPlayerUsername());
+            betVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             betVo.setBalance(settledBetEvent.getLastBalance());
-            betVo.setToken(gameSession.getToken());
+            betVo.setToken(rawGameSession.getToken());
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
@@ -101,7 +101,7 @@ public class BetAction {
         // General validation
         ValidationUtils.validateRequest(betDto);
     }
-    private void doVerification(BetDto betDto, GameSession gameSession)
+    private void doVerification(BetDto betDto, RawGameSession rawGameSession)
             throws
             AuthenticationException,
             DisabledVendorLineException,
@@ -112,20 +112,20 @@ public class BetAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
+        ValidationUtils.isEquals(rawGameSession.getToken(), betDto.getToken(), AuthenticationException::new);
 
         // Verify vendor gameCode and currency
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), GameNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
 
         // 3. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
 
         // 4. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
 
     }
 }

@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
@@ -52,15 +52,15 @@ public class OperatorController {
         HashMap<String, Object> responseMap = new HashMap<>();
         try {
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
-            if (gameSession != null) {
-                Integer agentId = gameSession.getAgentId();
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
+            if (rawGameSession != null) {
+                Integer agentId = rawGameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
-                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
+                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), rawGameSession);
 
                 responseMap.put("balance", balance);
             }
@@ -80,16 +80,16 @@ public class OperatorController {
         HashMap<String, Object> responseMap = new HashMap<>();
         try {
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
 
-            if (gameSession != null) {
-                Integer agentId = gameSession.getAgentId();
+            if (rawGameSession != null) {
+                Integer agentId = rawGameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
-                //BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
+                //BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), rawGameSession);
 
 //                responseMap.put("balance", balance);
 
@@ -100,12 +100,12 @@ public class OperatorController {
 //                WalletBetDto walletBetDto = new WalletBetDto();
 //                walletBetDto.setTraceId(String.valueOf(UUID.randomUUID()));
 //                walletBetDto.setTransactionId(String.valueOf(UUID.randomUUID()));
-//                walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-//                walletBetDto.setCurrency(gameSession.getCurrencyCode());
-//                walletBetDto.setToken(gameSession.getToken());
+//                walletBetDto.setUsername(rawGameSession.getAgentPlayerUsername());
+//                walletBetDto.setCurrency(rawGameSession.getCurrencyCode());
+//                walletBetDto.setToken(rawGameSession.getToken());
 //                walletBetDto.setExternalTransactionId(String.valueOf(UUID.randomUUID()));
 //                walletBetDto.setAmount(BigDecimal.valueOf(5));
-//                walletBetDto.setGameCode(gameSession.getGameCode());
+//                walletBetDto.setGameCode(rawGameSession.getGameCode());
 //                walletBetDto.setRoundId(String.valueOf(UUID.randomUUID()));
 //                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 //                walletBetDto.setTimestamp(timestamp.getTime());

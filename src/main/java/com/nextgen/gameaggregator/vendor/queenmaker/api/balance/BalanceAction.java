@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -104,7 +104,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(balanceDto);
     }
 
-    private void doVerification(UsersDto user, GameSession gameSession, String clientId, String clientSecret)
+    private void doVerification(UsersDto user, RawGameSession rawGameSession, String clientId, String clientSecret)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -118,15 +118,15 @@ public class BalanceAction {
         Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
         Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
 
-        String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
-        String CLIENT_SECRET = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
+        String CLIENT_ID = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.CLIENT_ID);
+        String CLIENT_SECRET = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
 
         // 3. Validate request Wallet Token
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, user.getUserid());
+        validationService.validateIllegibleBet(rawGameSession, user.getUserid());
 
     }
 
@@ -135,23 +135,23 @@ public class BalanceAction {
 
         try {
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(usersDto.getUserid());
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(usersDto.getUserid());
 
-            this.doVerification(usersDto, gameSession, clientId, clientSecret);
+            this.doVerification(usersDto, rawGameSession, clientId, clientSecret);
 
             // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             // Set WalletVo for each user
             WalletsVo walletVo = new WalletsVo();
             walletVo.setCode(Formats.MAIN_WALLET_CODE);
             walletVo.setBal(balance);
-            walletVo.setCur(gameSession.getVendorCurrencyCode());
+            walletVo.setCur(rawGameSession.getVendorCurrencyCode());
             List<WalletsVo> walletsList = new LinkedList<>();
             walletsList.add(walletVo);
 
             // Set UsersVo
-            usersVo.setUserid(gameSession.getVendorPlayerUsername());
+            usersVo.setUserid(rawGameSession.getVendorPlayerUsername());
             usersVo.setWallets(walletsList);
         } catch (Exception e) {
             usersVo.setUserid(usersDto.getUserid());

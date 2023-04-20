@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.result;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -25,12 +25,12 @@ public class ResultService {
     @Autowired
     private BetHistoryService betHistoryService;
 
-    public BetResultEvent process(String traceId, GameSession gameSession, String body) throws
+    public BetResultEvent process(String traceId, RawGameSession rawGameSession, String body) throws
             InvalidRequestException, BetNotFoundException,
             InvalidOperatorResponseException, DuplicateExternalTransactionIdException, BetResultNotFoundException {
         // Construct result dto
         ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);
-        return walletService.processWin(traceId, gameSession, dto, body);
+        return walletService.processWin(traceId, rawGameSession, dto, body);
     }
 
     public Boolean shouldReprocess(CashTransferInOutDto dto) throws InvalidPlayerException, GameNotSupportedException {

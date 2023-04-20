@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.gameurl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -27,7 +27,7 @@ import java.util.Optional;
 public class GameUrlService implements GameUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -36,9 +36,9 @@ public class GameUrlService implements GameUrl {
 
         //map request param and convert to json string
         Map<String, Object> loginParam = new HashMap<String, Object>();
-        loginParam.put("MemberAccount",gameSession.getVendorPlayerUsername());
-        loginParam.put("GameID",gameSession.getVendorGameCode());
-        loginParam.put("LanguageID",gameSession.getVendorLanguageCode());
+        loginParam.put("MemberAccount", rawGameSession.getVendorPlayerUsername());
+        loginParam.put("GameID", rawGameSession.getVendorGameCode());
+        loginParam.put("LanguageID", rawGameSession.getVendorLanguageCode());
         loginParam.put("JackpotStatus",GameType.ENABLE_JACKPOT);
         String jsonParamString = "";
         try {
@@ -67,7 +67,7 @@ public class GameUrlService implements GameUrl {
 
         //setup form data
         formData.add("AgentCode", credentials.get(Credentials.AGENT_CODE));
-        formData.add("Currency", gameSession.getVendorCurrencyCode());
+        formData.add("Currency", rawGameSession.getVendorCurrencyCode());
         formData.add("Params", encryptParam);
         formData.add("Sign", md5Param);
 
@@ -75,7 +75,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);

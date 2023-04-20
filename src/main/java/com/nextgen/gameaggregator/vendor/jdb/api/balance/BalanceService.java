@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
 import java.math.BigDecimal;
 
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -43,13 +43,13 @@ public class BalanceService {
             this.doValidation(balanceDto);
 
             // 2. Get vendor player details
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUid());
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(balanceDto, rawGameSession);
 
             // 4. Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             // Construct VO
             vo.setBalance(balance);
@@ -85,9 +85,9 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException, 
+    private void doVerification(BalanceDto dto, RawGameSession rawGameSession) throws InvalidPlayerException, InvalidRequestException,
     DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getUid());
+        validationService.validateIllegibleBet(rawGameSession, dto.getUid());
     }
 }

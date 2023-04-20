@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
@@ -49,25 +49,25 @@ public class TransferService {
             transferVo.setSerialNo(traceId);
             this.doValidation(dto);
 
-            // User acctId and gameCode to get gameSession if gameCode is not null
-            GameSession gameSession = dto.getGameCode() != null
+            // User acctId and gameCode to get rawGameSession if gameCode is not null
+            RawGameSession rawGameSession = dto.getGameCode() != null
             ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
             : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
 
-            String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
-            this.doVerification(dto, gameSession, merchantCode);
+            String merchantCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            this.doVerification(dto, rawGameSession, merchantCode);
     
             switch(dto.getType()) {
                 case Actions.PLACE_BET:
                     // Place bet action
-                    UnsettledBetEvent betEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
+                    UnsettledBetEvent betEvent = walletService.processUnsettledBet(traceId, rawGameSession, dto, body);
                     transferVo.setBalance(betEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
                 case Actions.CANCEL_BET:
                     // Cancel bet and refund action
-                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getTransferId(), gameSession, body);
+                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getTransferId(), rawGameSession, body);
                     transferVo.setBalance(betRefundEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -77,8 +77,8 @@ public class TransferService {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     transferVo.setBalance(
                         dto.getSpecialGame() == null
-                            ? walletService.processResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
-                            : walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
+                            ? walletService.processResultSettle(traceId, rawGameSession, winDataDto, body).getLastBalance()
+                            : walletService.processUnsettleResultSettle(traceId, rawGameSession, winDataDto, body).getLastBalance()
                     );
 
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
@@ -94,8 +94,8 @@ public class TransferService {
     
             transferVo.setTransferId(dto.getTransferId());
             transferVo.setMerchantCode(dto.getMerchantCode());
-            transferVo.setMerchantTxId(gameSession.getToken());
-            transferVo.setAcctId(gameSession.getVendorPlayerUsername());
+            transferVo.setMerchantTxId(rawGameSession.getToken());
+            transferVo.setAcctId(rawGameSession.getVendorPlayerUsername());
             transferVo.setSerialNo(traceId);
         
         } catch (InvalidRequestException| 
@@ -158,7 +158,7 @@ public class TransferService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(TransferDto dto, GameSession gameSession, String merchantCode)
+    private void doVerification(TransferDto dto, RawGameSession rawGameSession, String merchantCode)
             throws
             UnableToFindCredentialsException,
             AuthenticationException,
@@ -173,20 +173,20 @@ public class TransferService {
         ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
 
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
 
         // Verify vendor gameCode and currency
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
 
         // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
 
         // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
 
         // Verify channel
         if (!Channel.list.contains(dto.getChannel())) throw new InvalidRequestException();

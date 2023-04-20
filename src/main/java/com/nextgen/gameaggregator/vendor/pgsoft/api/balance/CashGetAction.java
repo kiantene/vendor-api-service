@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.balance;
 
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -62,19 +62,19 @@ public class CashGetAction {
             // 2. Verify session token
             // Need to validate whether game session expired
             // If Token has been tampered, then AuthenticationException will be thrown
-            GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             // 3. Validate vendor player username
             // TODO - to refactor ValidationUtil.validateEqual to throw custom exception class
-            VendorService.validatePlayerUsername(gameSession.getVendorPlayerUsername(), dto.getPlayerName());
+            VendorService.validatePlayerUsername(rawGameSession.getVendorPlayerUsername(), dto.getPlayerName());
             // 4. Retrieve vendor line operatorToken and secretKey for validation
-            String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-            String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
+            String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
+            String operatorToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
             // 5. Validate request operatorToken and secretKey
             VendorService.validateOperatorTokenAndSecretKey(dto.getOperatorToken(), dto.getSecretKey(), operatorToken, secretKey);
             // 6. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
             // Fill VO required values
-            responseVo.setCurrencyCode(gameSession.getCurrencyCode());
+            responseVo.setCurrencyCode(rawGameSession.getCurrencyCode());
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
 

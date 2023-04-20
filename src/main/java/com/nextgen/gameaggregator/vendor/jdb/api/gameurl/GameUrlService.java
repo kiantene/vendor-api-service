@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,7 +15,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -34,7 +34,7 @@ public class GameUrlService implements GameUrl {
     private VendorService vendorService;
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
         // Split the gameCode into two parts based on the underscore character "_"
         String[] parts = gameCode.split("_");
         int gType = Integer.parseInt(parts[0]);
@@ -45,11 +45,11 @@ public class GameUrlService implements GameUrl {
         dto.setAction(Actions.GAME_URL);
         dto.setTs(System.currentTimeMillis());
         dto.setParent(credentials.get(Credentials.PARENT));
-        dto.setUid(gameSession.getVendorPlayerUsername());
+        dto.setUid(rawGameSession.getVendorPlayerUsername());
         dto.setBalance(BigDecimal.ZERO);
-        dto.setLang(gameSession.getVendorLanguageCode());
+        dto.setLang(rawGameSession.getVendorLanguageCode());
         dto.setGType(gType);
-        dto.setMType(gameSession.getVendorGameCode());
+        dto.setMType(rawGameSession.getVendorGameCode());
         dto.setWindowMode(windowMode);
 
         Gson gson = new GsonBuilder().create();
@@ -69,7 +69,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
         GameUrlVo vo = new GameUrlVo();
 
         try {

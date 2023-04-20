@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -52,22 +52,22 @@ public class AuthenticateAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+            this.doVerification(httpRequestLog, dto, rawGameSession);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             // Emit event for additional asynchronous processing
 //            eventDispatcher.emit(getClass(), body);
 
-            responseVo.setUserId(gameSession.getVendorPlayerUsername());
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setUserId(rawGameSession.getVendorPlayerUsername());
+            responseVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
-            responseVo.setToken(gameSession.getToken());
+            responseVo.setToken(rawGameSession.getToken());
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -122,27 +122,27 @@ public class AuthenticateAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, AuthenticateDto dto, GameSession gameSession) throws
+    private void doVerification(HttpRequestLog request, AuthenticateDto dto, RawGameSession rawGameSession) throws
             DisabledGameException, AuthenticationException, DisabledVendorLineException, CredentialNotFoundException,
             InvalidSignatureException, DisabledAgentPlayerException {
         // 1. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 4. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         // 5. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
 
         // 6. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
 
         //TODO (by Alex), should have child game table for save vendor game code by language, platform
     }

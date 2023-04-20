@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.gameurl;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -24,21 +24,21 @@ import java.util.Optional;
 @Slf4j
 public class GameUrlService implements GameUrl {
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("account", gameSession.getVendorPlayerUsername());
+        formData.add("account", rawGameSession.getVendorPlayerUsername());
         formData.add("gamehall", "CQ9");
         formData.add("gamecode", gameCode);
-        formData.add("gameplat", gameSession.getVendorPlatformCode());
-        formData.add("lang", gameSession.getVendorLanguageCode());
-        formData.add("session", gameSession.getToken());
+        formData.add("gameplat", rawGameSession.getVendorPlatformCode());
+        formData.add("lang", rawGameSession.getVendorLanguageCode());
+        formData.add("session", rawGameSession.getToken());
 
         return formData;
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);

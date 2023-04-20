@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
@@ -77,10 +77,10 @@ public class CancelBetAction {
             //Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(cancelbetDto.getMemberAccount());
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(Long.toString(cancelbetDto.getBankID()), vendorPlayer.getVendorId());
-            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
+            this.doVerification(commonDto, cancelbetDto, rawGameSession, jsonParam);
 
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
@@ -117,18 +117,18 @@ public class CancelBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, GameSession gameSession, String jsonParam) throws InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException, InvalidEncryptionException {
+    private void doVerification(CommonDto commonDto, CancelBetDto cancelbetDto, RawGameSession rawGameSession, String jsonParam) throws InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, DisabledGameException, InvalidEncryptionException {
 
         //Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelbetDto.getMemberAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), cancelbetDto.getMemberAccount(), InvalidPlayerException::new);
 
         //Verify received game id is the same from game session
         //comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), Integer.toString(cancelbetDto.getGameID()), DisabledGameException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), Integer.toString(cancelbetDto.getGameID()), DisabledGameException::new);
 
         //Verify received currency is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelbetDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), cancelbetDto.getCurrency(), CurrencyNotSupportedException::new);
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
@@ -136,7 +136,7 @@ public class CancelBetAction {
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        String AgentCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.AGENT_CODE);
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
     }

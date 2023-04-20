@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -55,20 +55,20 @@ public class CashTransferInOutAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+            this.doVerification(httpRequestLog, dto, rawGameSession);
 
             // 4. Process full bet data
             // temporary code to ensure when commit to stg branch will still use old code for new changes
             SettledBetEvent settledBetEvent;
             if(environment.getProperty("spring.couchbase.userName") == "stg"){
                 //if env = stg will use old code
-                settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+                settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, dto, body);
             } else {
                 //else use new code
-                settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, gameSession, dto, body);
+                settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, rawGameSession, dto, body);
             }
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
@@ -143,27 +143,27 @@ public class CashTransferInOutAction {
         ValidationUtils.validateLength(dto.getPlayerName(), 3, 20, InvalidPlayerException::new);
     }
 
-    private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
+    private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, RawGameSession rawGameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
             CurrencyNotSupportedException, GameNotSupportedException {
 
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerName(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getPlayerName(), InvalidPlayerException::new);
 
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
-        // ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+        // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), rawGameSession.getVendorId());
 
         // 3. Verify vendor currency code is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
 
         // 4. Retrieve vendor line credentials and secretKey to verify with raw request from vendor
-        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(secretKey, dto.getSecretKey(), InvalidSignatureException::new);
 
         // 5. Retrieve vendor line credentials and operatorToken to verify with raw request from vendor
-        String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
+        String operatorToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
     }
 

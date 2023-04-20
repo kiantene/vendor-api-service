@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -76,14 +76,14 @@ public class BetAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
 
-            //get gameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
+            //get rawGameSession by player name and vendor game id
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, betDto, gameSession, jsonParam);
+            this.doVerification(commonDto, betDto, rawGameSession, jsonParam);
 
             //Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, betDto, body);
 
             //set VO data
             //convert bigDecimal balance into double
@@ -148,11 +148,11 @@ public class BetAction {
 
     }
 
-    private void doVerification(CommonDto commonDto, BetDto betDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidEncryptionException {
+    private void doVerification(CommonDto commonDto, BetDto betDto, RawGameSession rawGameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidEncryptionException {
 
         //Verify received currency is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
@@ -160,11 +160,11 @@ public class BetAction {
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        String AgentCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.AGENT_CODE);
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, betDto.getMemberAccount());
+        validationService.validateIllegibleBet(rawGameSession, betDto.getMemberAccount());
     }
 
 

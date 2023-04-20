@@ -1,15 +1,13 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.api.cancelwager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawGameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,17 +54,17 @@ public class CancelWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify data
-            this.doVerification(dto, gameSession);
+            this.doVerification(dto, rawGameSession);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
 
             // Set Vendor player username + Balance + Currency
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
             // Set BalanceDataWalletVo Object
@@ -107,7 +105,7 @@ public class CancelWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelWagerDto dto, GameSession gameSession)
+    private void doVerification(CancelWagerDto dto, RawGameSession rawGameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
@@ -116,9 +114,9 @@ public class CancelWagerAction {
             InvalidVendorLineException {
 
         // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+        validationService.validateIllegibleBet(rawGameSession, dto.getBrandUid());
 
         // Verify currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }
