@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 public class CommonVo implements HttpResponse {
     @JsonProperty("status")
-    private Integer status;
+    private String status;
 
     @JsonProperty("balance")
     private BigDecimal balance = BigDecimal.ZERO;
@@ -24,11 +24,11 @@ public class CommonVo implements HttpResponse {
     }
 
     public void setSuccessResponseCode(String responseCode) {
-        this.status = Integer.valueOf(responseCode);
+        this.status = responseCode;
     }
 
     public void setResponseCode(String responseCode) {
-        this.status = Integer.valueOf(responseCode);
+        this.status = responseCode;
         this.errText = ResponseCode.RESPONSE_DESCRIPTION.get(responseCode);
     }
     @Override
