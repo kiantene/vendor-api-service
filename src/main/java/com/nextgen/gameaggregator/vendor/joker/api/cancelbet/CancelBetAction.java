@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.joker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +67,7 @@ public class CancelBetAction {
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getUsername() + "_" + cancelBetDto.getBetid(), gameSession.getVendorId());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(cancelBetDto, gameSession);
+            this.doVerification(httpRequestLog, cancelBetDto, gameSession);
 
             //Send refund to Operator
             //BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getBetid(), gameSession, body);
@@ -82,7 +83,8 @@ public class CancelBetAction {
                 AuthenticationException |
                 BetNotFoundException |
                 InvalidOperatorResponseException |
-                CredentialNotFoundException exception
+                CredentialNotFoundException |
+                InvalidSignatureException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -108,11 +110,15 @@ public class CancelBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetDto cancelBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException {
+    private void doVerification(HttpRequestLog request, CancelBetDto cancelBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, cancelBetDto.getAppid(), NoAvailableLineException::new);
+        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
+        ValidationUtils.isEquals(agentCode, cancelBetDto.getAppid(), NoAvailableLineException::new);
+
+        //Verify received hash
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
 
     }
 

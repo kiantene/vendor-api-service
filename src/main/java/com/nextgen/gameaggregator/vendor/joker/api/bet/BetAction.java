@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.joker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +61,7 @@ public class BetAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getUsername().toLowerCase(), betDto.getGamecode());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(betDto, gameSession);
+            this.doVerification(httpRequestLog, betDto, gameSession);
 
             //Process full bet data
             SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
@@ -81,7 +82,8 @@ public class BetAction {
                 CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
-                InvalidPlayerException exception
+                InvalidPlayerException |
+                InvalidSignatureException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         }  catch (NoAvailableLineException noAvailableLineException) {
@@ -107,11 +109,15 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetDto betDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
+    private void doVerification(HttpRequestLog request, BetDto betDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidSignatureException {
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, betDto.getAppid(), NoAvailableLineException::new);
+        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
+        ValidationUtils.isEquals(agentCode, betDto.getAppid(), NoAvailableLineException::new);
+
+        //Verify received hash
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, betDto.getUsername());

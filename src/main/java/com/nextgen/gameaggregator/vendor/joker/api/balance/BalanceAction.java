@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.joker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +67,7 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(httpRequestLog, balanceDto, gameSession);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -76,7 +77,8 @@ public class BalanceAction {
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
                 InvalidOperatorResponseException |
-                CredentialNotFoundException exception
+                CredentialNotFoundException |
+                InvalidSignatureException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -102,11 +104,15 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException {
+    private void doVerification(HttpRequestLog request, BalanceDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(AgentCode, dto.getAppid(), NoAvailableLineException::new);
+        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
+        ValidationUtils.isEquals(agentCode, dto.getAppid(), NoAvailableLineException::new);
+
+        //Verify received hash
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
 
     }
 
