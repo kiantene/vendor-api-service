@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.hacksawgaming.api.wager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -61,13 +62,13 @@ public class WagerAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // Process bet
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(balance);
+            responseDataVo.setBalance(settledBetEvent.getLastBalance());
 
             // Set BalanceDataWalletVo Object
             responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
