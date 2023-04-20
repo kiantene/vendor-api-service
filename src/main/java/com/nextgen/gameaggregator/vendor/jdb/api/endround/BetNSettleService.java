@@ -8,8 +8,25 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
+import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
+import com.nextgen.gameaggregator.exception.VendorPlatformNotSupportedException;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
@@ -52,18 +69,18 @@ public class BetNSettleService {
             // 4.3 Process Bet Result and End Round
             SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betNSettleDto, actionDto.getParams());
             vo.setBalance(betResultEvent.getLastBalance());
-            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {
-            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (BetNotFoundException betNotFoundException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            vo.setResponseCode(ResponseCode.NO_AUTHORIZED);
+            vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
             if (invalidRequestException.getValidation() != null) {
                 String violation = invalidRequestException.getValidation()
@@ -72,32 +89,32 @@ public class BetNSettleService {
                         .findFirst()
                         .map(Map.Entry::getValue) // get the value of the first element
                         .orElse(ResponseCode.INVALID_REQUEST_PARAMETER); // if there's no value, set it to the default invalid request parameter
-                vo.setResponseCode(violation);
+                vo.setErrorResponseCode(violation);
             } else {
-                vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+                vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
             }          
         } catch (JsonProcessingException jsonProcessingException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (GameNotSupportedException gameNotSupportedException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (VendorPlatformNotSupportedException vendorPlatformNotSupportedException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (DisabledGameException disabledGameException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (InvalidPlayerException invalidPlayerException) {
-            vo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (Exception exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 
         return vo;
