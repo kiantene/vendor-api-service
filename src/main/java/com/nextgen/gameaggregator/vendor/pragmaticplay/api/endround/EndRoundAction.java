@@ -1,14 +1,11 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawSettledBet;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
@@ -65,16 +62,17 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            SettledBetEvent settledBetEvent;
+//            SettledBetEvent settledBetEvent;
             // temporary code to ensure when commit to stg branch will still use old code for new changes
-            ResultBetEvent resultBetEvent;
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
-            }else{
-                settledBetEvent = walletService.processSettledBetPlus(traceId, gameSession, dto);
-            }
+//            ResultBetEvent resultBetEvent;
+//            if(environment.getProperty("spring.couchbase.userName") == "stg"){
+//                settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
+//            }else{
+//                settledBetEvent = walletService.processSettledBetPlus(traceId, gameSession, dto);
+//            }
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, body);
 
-            responseVo.setCash(settledBetEvent.getLastBalance());
+            responseVo.setCash(resultBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -14,7 +14,7 @@ import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 50)
@@ -69,10 +69,6 @@ public class BetDto implements UnsettledResultSettledData {
     @Override
     public BigDecimal getRefundAmount() { return BigDecimal.ZERO;}
     @Override
-    public WinType getResultType() {
-        return (getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
-    }
-    @Override
     public Long getVendorBetTime() {
         return getTimestamp();
     }
@@ -97,6 +93,7 @@ public class BetDto implements UnsettledResultSettledData {
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
+
 
     private Long getTimestamp() {
         long timestamp = this.getWagersTime().longValueExact();

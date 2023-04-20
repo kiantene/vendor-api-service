@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.enums;
+package com.nextgen.gameaggregator.operator.enums;
 
 import lombok.AllArgsConstructor;
 
@@ -6,9 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @AllArgsConstructor
-public enum WinType {
-    //TODO CHANGE TO ResultType?
-
+public enum ResultType {
     /**
      * Result Type that we will send to operator to identify the status of a bet.
      * Possible values are BET, LOSE, WIN, BET_LOSE, BET_WIN, JACKPOT, BET_JACKPOT AND END

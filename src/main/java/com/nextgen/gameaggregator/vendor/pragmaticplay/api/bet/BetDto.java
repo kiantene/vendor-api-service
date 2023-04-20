@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
 
     // Hash code of the request
     @NotBlank @Size(max = 100) @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric allowed
@@ -101,10 +101,10 @@ public class BetDto implements UnsettledResultSettledData {
         return null;
     }
 
-    @Override
-    public WinType getResultType() {
-        return WinType.BET;
-    }
+//    @Override
+//    public ResultType getResultType() {
+//        return ResultType.BET;
+//    }
 
     @Override
     public Long getVendorBetTime() {

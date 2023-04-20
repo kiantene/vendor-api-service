@@ -2,8 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
@@ -14,7 +13,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EndRoundDto implements UnsettledResultSettledData {
+public class EndRoundDto implements BetResultData {
 
     // Hash code of the request
     @NotBlank
@@ -88,11 +87,6 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public WinType getResultType() {
-        return null;
-    }
-
-    @Override
     public Long getVendorBetTime() {
         return null;
     }
@@ -121,6 +115,4 @@ public class EndRoundDto implements UnsettledResultSettledData {
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
-
-
 }

@@ -15,15 +15,15 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransferDto implements UnsettledResultSettledData{
+public class TransferDto implements BetResultData {
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -131,10 +131,10 @@ public class TransferDto implements UnsettledResultSettledData{
         return BigDecimal.valueOf(0);
     }
 
-    @Override
-    public WinType getResultType() {
-        return WinType.LOSE;
-    }
+//    @Override
+//    public ResultType getResultType() {
+//        return ResultType.LOSE;
+//    }
 
     @Override
     public Long getVendorBetTime() {

@@ -1,12 +1,9 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.nextgen.gameaggregator.entity.RawResultBet;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
+import com.nextgen.gameaggregator.entity.UnsettledBetResult;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.ResultBetOperatorFailEvent;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
 import com.nextgen.gameaggregator.repository.RawResultBetRepository;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,9 +20,9 @@ public class ResultBetOperatorFailEventListener implements EventListener<ResultB
 
     @Override
     public void onEvent(ResultBetOperatorFailEvent event) {
-        RawResultBet rawResultBet = event.getRawResultBet();
-        rawResultBet.setOperatorStatus(event.getResponseCode());
-        rawResultBetRepository.save(rawResultBet);
-        cachingService.updateResultBetCaching(rawResultBet);
+        UnsettledBetResult unsettledBetResult = event.getUnsettledBetResult();
+        unsettledBetResult.setOperatorStatus(event.getResponseCode());
+        rawResultBetRepository.save(unsettledBetResult);
+        cachingService.updateResultBetCaching(unsettledBetResult);
     }
 }

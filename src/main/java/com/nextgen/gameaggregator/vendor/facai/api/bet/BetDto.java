@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import lombok.Data;
@@ -18,7 +18,7 @@ import java.util.TimeZone;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
 
     @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PARAM_CONTAIN_ERROR)
@@ -142,14 +142,14 @@ public class BetDto implements UnsettledResultSettledData {
         return this.bet;
     }
 
-    @Override
-    public WinType getResultType() {
-        if (this.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0) {
-            return WinType.JACKPOT;
-        } else {
-            return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
-        }
-    }
+//    @Override
+//    public ResultType getResultType() {
+//        if (this.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0) {
+//            return ResultType.JACKPOT;
+//        } else {
+//            return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)? ResultType.WIN: ResultType.LOSE;
+//        }
+//    }
 
     @Override
     public BigDecimal getRefundAmount() {

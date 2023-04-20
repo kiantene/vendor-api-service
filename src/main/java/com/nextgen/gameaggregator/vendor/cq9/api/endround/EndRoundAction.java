@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -80,17 +80,17 @@ public class EndRoundAction {
             // 2. Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
-            RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(endRoundDto.getVendorBetId(),
+            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(endRoundDto.getVendorBetId(),
                     endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(rawUnsettledBet.getGameSessionToken());
+            GameSession gameSession = gameSessionService.verifyToken(unsettledBet.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(endRoundDto, gameSession, wToken);
 
             // 5. Process extra endRoundDto bet data
-            this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, rawUnsettledBet);
+            this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
             // temporary code to ensure when commit to stg branch will still use old code for new changes
@@ -185,18 +185,18 @@ public class EndRoundAction {
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
     }
 
-    private WinType getWinType(EndRoundDto endRoundDto, BigDecimal amount) {
-        WinType winType;
+    private ResultType getWinType(EndRoundDto endRoundDto, BigDecimal amount) {
+        ResultType resultType;
         if (endRoundDto.getJackpot() != null) {
-            winType = WinType.JACKPOT;
+            resultType = ResultType.JACKPOT;
         } else {
-            winType = (amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+            resultType = (amount.compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
         }
 
-        return winType;
+        return resultType;
     }
 
-    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, RawUnsettledBet rawUnsettledBet){
+    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, UnsettledBet unsettledBet){
 
         Instant instant = Instant.parse(endRoundDataDtoList.get(0).getEventtime());
         Long resultTime = instant.toEpochMilli();
@@ -205,8 +205,8 @@ public class EndRoundAction {
         dto.setVendorSettleTime(dto.getResultTime());
 
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
-        dto.setEffectiveTurnover(rawUnsettledBet.getBetAmount());
-        dto.setWinLoss(dto.getWinAmount().subtract(rawUnsettledBet.getBetAmount()));
+        dto.setEffectiveTurnover(unsettledBet.getBetAmount());
+        dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
         dto.setResultType(this.getWinType(dto, dto.getWinAmount()));
     }
 }

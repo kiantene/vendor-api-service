@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.nextgen.gameaggregator.entity.RawResultBet;
-import com.nextgen.gameaggregator.entity.RawSettledBet;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.repository.RawResultBetRepository;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
@@ -31,17 +28,17 @@ public class SettledBetEventListener implements EventListener<SettledBetEvent> {
     @Override
     public void onEvent(SettledBetEvent event) {
 
-        RawSettledBet rawSettledBet = event.getRawSettledBet();
-        cachingService.deleteUnsettledBetCaching(rawSettledBet.getVendorBetId(), rawSettledBet.getRoundId(), rawSettledBet.getVendorLineId(),
-                rawSettledBet.getVendorPlayerId());
+        SettledBet settledBet = event.getSettledBet();
+        cachingService.deleteUnsettledBetCaching(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorLineId(),
+                settledBet.getVendorPlayerId());
 
-        cachingService.deleteResultBetCaching(rawSettledBet.getVendorBetId(), rawSettledBet.getRoundId(), rawSettledBet.getVendorLineId(),
-                rawSettledBet.getVendorPlayerId());
+        cachingService.deleteResultBetCaching(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorLineId(),
+                settledBet.getVendorPlayerId());
 
-        cachingService.deleteUnsettledBetByGameIdCaching(rawSettledBet.getVendorBetId(), rawSettledBet.getRoundId(), rawSettledBet.getVendorGameId(),
-                rawSettledBet.getVendorPlayerId());
+        cachingService.deleteUnsettledBetByGameIdCaching(settledBet.getVendorBetId(), settledBet.getRoundId(), settledBet.getVendorGameId(),
+                settledBet.getVendorPlayerId());
 
-        String Id = rawSettledBet.getVendorBetId()+'_'+rawSettledBet.getRoundId()+'_'+rawSettledBet.getVendorLineId()+'_'+rawSettledBet.getVendorPlayerId();
+        String Id = settledBet.getVendorBetId()+'_'+ settledBet.getRoundId()+'_'+ settledBet.getVendorLineId()+'_'+ settledBet.getVendorPlayerId();
 
         try {
             rawUnsettledBetRepository.deleteById(Id);

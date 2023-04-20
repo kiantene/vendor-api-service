@@ -1,20 +1,20 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class BetWinDto implements UnsettledResultSettledData {
+public class BetWinDto implements BetResultData {
     private String reqId;
     private String roundId;
     private String id;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
-    private WinType winType;
+    private ResultType resultType;
     private BigDecimal validTurnover;
     private String gameId;
     private Long timestamp;
@@ -52,15 +52,15 @@ public class BetWinDto implements UnsettledResultSettledData {
         return BigDecimal.ZERO;
     }
 
-    @Override
-    public WinType getResultType() {
-        this.winType = WinType.WIN;
-
-        if(this.betAmount.compareTo(BigDecimal.ZERO) > 0 && this.winAmount.compareTo(BigDecimal.ZERO) == 0) {
-            this.winType = WinType.LOSE;
-        }
-        return this.winType;
-    }
+//    @Override
+//    public ResultType getResultType() {
+//        this.resultType = ResultType.WIN;
+//
+//        if(this.betAmount.compareTo(BigDecimal.ZERO) > 0 && this.winAmount.compareTo(BigDecimal.ZERO) == 0) {
+//            this.resultType = ResultType.LOSE;
+//        }
+//        return this.resultType;
+//    }
 
     @Override
     public Long getVendorBetTime() {

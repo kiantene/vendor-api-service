@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -13,12 +13,12 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class WinDto implements UnsettledResultSettledData {
+public class WinDto implements BetResultData {
     private String reqId;
     private String roundId;
     private String id;
     private BigDecimal amount;
-    private WinType winType;
+    private ResultType resultType;
     private BigDecimal validTurnover;
     private String gameId;
     private Long timestamp;
@@ -58,10 +58,10 @@ public class WinDto implements UnsettledResultSettledData {
         return BigDecimal.ZERO;
     }
 
-    @Override
-    public WinType getResultType() {
-        return WinType.WIN;
-    }
+//    @Override
+//    public ResultType getResultType() {
+//        return ResultType.WIN;
+//    }
 
     @Override
     public Long getVendorBetTime() {

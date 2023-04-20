@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @RestController
@@ -61,15 +64,8 @@ public class CashTransferInOutAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            // temporary code to ensure when commit to stg branch will still use old code for new changes
-            SettledBetEvent settledBetEvent;
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                //if env = stg will use old code
-                settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
-            } else {
-                //else use new code
-                settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, gameSession, dto, body);
-            }
+            ResultType resultType = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            SettledBetEvent settledBetEvent = walletService.processBetResultPlus(traceId, gameSession, dto, resultType, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);

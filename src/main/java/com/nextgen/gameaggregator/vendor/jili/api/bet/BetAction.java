@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jili.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -16,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -38,12 +41,11 @@ public class BetAction {
     @Autowired
     private BetHistoryService betHistoryService;
     @PostMapping(path = EndPoints.BET)
-    public BetVo BetAction (HttpServletRequest request) {
+    public BetVo betRequest (HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         BetVo betVo = new BetVo();
         String traceId = httpRequestLog.getTraceId();
-
 
         try{
             // Retrieve request body in original string format and convert into dto
@@ -60,8 +62,8 @@ public class BetAction {
 
             // 3. Process bet data
             // 4. Process win data
-            //SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, gameSession, betDto, body);
+            ResultType resultType = betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
+            SettledBetEvent settledBetEvent = walletService.processBetResultPlus(traceId, gameSession, betDto, resultType, body);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
             betVo.setCurrency(gameSession.getVendorCurrencyCode());

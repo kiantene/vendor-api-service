@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.joker.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
 
     @NotBlank(message = ResponseCodes.OTHER_MESSAGE)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.OTHER_MESSAGE)
@@ -90,8 +90,8 @@ public class BetDto implements UnsettledResultSettledData {
         return getBetAmount();
     }
 
-    @Override
-    public WinType getResultType() { return WinType.LOSE; }
+//    @Override
+//    public ResultType getResultType() { return ResultType.LOSE; }
 
     @Override
     public BigDecimal getRefundAmount() {

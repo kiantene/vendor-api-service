@@ -7,17 +7,17 @@ import jakarta.validation.constraints.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetNSettleDto implements UnsettledResultSettledData {
+public class BetNSettleDto implements BetResultData {
 
-    private WinType resultType;
+    private ResultType resultType;
 
     @NotBlank
     @Pattern(regexp = "^[0-9]+$")
@@ -195,10 +195,10 @@ public class BetNSettleDto implements UnsettledResultSettledData {
         return BigDecimal.ZERO;
     }
 
-    @Override
-    public WinType getResultType() {
-        return this.netWin.compareTo(BigDecimal.ZERO) > 0 ? WinType.WIN : WinType.LOSE;
-    }
+//    @Override
+//    public ResultType getResultType() {
+//        return this.netWin.compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
+//    }
 
     @Override
     public Long getVendorBetTime() {
