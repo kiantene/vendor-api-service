@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.api.cancelwager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -61,12 +63,18 @@ public class CancelWagerAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            if(dto.wagerType == 1) {
+                BetRefundEvent event = walletService.processRefund(traceId, dto.getRoundId(), gameSession, body);
+            } else if(dto.wagerType == 2) {
+                // TODO: cancel (deduct) end wager record
+            }
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+
+            // Retrieve the latest wallet balance from Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
             responseDataVo.setBalance(balance);
 
             // Set BalanceDataWalletVo Object
