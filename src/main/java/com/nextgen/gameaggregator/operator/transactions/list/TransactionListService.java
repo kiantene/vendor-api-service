@@ -61,23 +61,23 @@ public class TransactionListService {
     private HashMap<String, Integer> getHeaders() {
         HashMap<String, Integer> hm = (new HashMap<String, Integer>() {{
             put("transactionId", 0);
-            put("externalRoundId", 1);
-            put("externalTransactionId", 2);
-            put("gameId", 3);
-            put("betAmount", 4);
-            put("winAmount", 5);
-            put("winLoss", 6);
-            put("effectiveTurnover", 7);
-            put("resultType", 8);
-            put("status", 9);
-            put("vendorBetTime", 10);
-            put("vendorSettleTime", 11);
-            put("createTime", 12);
-            put("username", 13);
-            put("categoryCode", 14);
-            put("vendorCode", 15);
-            put("currency", 16);
-            put("gameCode", 17);
+            put("externalTransactionId", 1);
+            put("externalRoundId", 2);
+            put("username", 3);
+            put("currencyCode", 4);
+            put("gameCode", 5);
+            put("vendorCode", 6);
+            put("gameCategoryCode", 7);
+            put("betAmount", 8);
+            put("winAmount", 9);
+            put("winLoss", 10);
+            put("effectiveTurnover", 11);
+            put("jackpotAmount", 12);
+            put("refundAmount", 13);
+            put("status", 14);
+            put("vendorBetTime", 15);
+            put("vendorSettleTime", 16);
+            put("isFreeSpin", 17);
         }});
 
         return sortByValue(hm);

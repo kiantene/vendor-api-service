@@ -46,8 +46,11 @@ public class TransactionsListAction {
 
             // 2. Check if api key is valid
             String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
-            //TODO (by Alex), check agent status
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+
+            // 3. Validate the signature
+            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
             TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getId());
             responseVo.setData(transactionsListData);
