@@ -28,8 +28,8 @@ public class WithdrawalAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-        commonVo.setBalance(1000.00);
         commonVo.setResponseCode(ResponseCodes.SUCCESS);
+        commonVo.setBalance(1000.00);
 
         httpService.end(httpRequestLog, commonVo);
 

@@ -48,8 +48,9 @@ public class CancelBetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setBalance(1000.00);
 //        commonVo.setResponseCode(ResponseCodes.SUCCESS);
+//        commonVo.setBalance(1000.00);
+
         try{
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -83,10 +84,11 @@ public class CancelBetAction {
                 AuthenticationException |
                 BetNotFoundException |
                 InvalidOperatorResponseException |
-                CredentialNotFoundException |
-                InvalidSignatureException exception
+                CredentialNotFoundException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidSignatureException invalidSignatureException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
