@@ -44,8 +44,8 @@ public class BetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setBalance(1000.00);
 //        commonVo.setResponseCode(ResponseCodes.SUCCESS);
+//        commonVo.setBalance(1000.00);
 
         try{
             //Retrieve request body in original string format
@@ -82,11 +82,12 @@ public class BetAction {
                 CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
-                InvalidPlayerException |
-                InvalidSignatureException exception
+                InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        }  catch (NoAvailableLineException noAvailableLineException) {
+        } catch (InvalidSignatureException invalidSignatureException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
+        } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param

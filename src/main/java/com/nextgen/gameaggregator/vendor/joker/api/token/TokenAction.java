@@ -46,9 +46,10 @@ public class TokenAction {
 
         // Construct VO
         TokenVo tokenVo = new TokenVo();
+//        tokenVo.setResponseCode(ResponseCodes.SUCCESS);
 //        tokenVo.setUsername("TESTPLAYER001");
 //        tokenVo.setBalance(1000.00);
-//        tokenVo.setResponseCode(ResponseCodes.SUCCESS);
+
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -78,10 +79,11 @@ public class TokenAction {
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
                 InvalidOperatorResponseException |
-                CredentialNotFoundException |
-                InvalidSignatureException exception
+                CredentialNotFoundException exception
         ) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidSignatureException invalidSignatureException) {
+            tokenVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             tokenVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {

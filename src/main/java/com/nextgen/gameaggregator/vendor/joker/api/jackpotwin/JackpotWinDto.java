@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.joker.api.bet;
+package com.nextgen.gameaggregator.vendor.joker.api.jackpotwin;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -6,15 +6,15 @@ import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class BetDto implements UnsettledResultSettledData {
+public class JackpotWinDto implements UnsettledResultSettledData {
 
     @NotBlank(message = ResponseCodes.INVALID_APPID)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
@@ -50,6 +50,14 @@ public class BetDto implements UnsettledResultSettledData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String roundid;
 
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    private String description;
+
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    private String type;
+
     @Override
     public String getExternalTransactionId() {
         return this.username + "_" + this.id;
@@ -72,26 +80,28 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.amount;
-    }
-
-    @Override
-    public BigDecimal getWinAmount() {
         return BigDecimal.valueOf(0);
     }
 
     @Override
+    public BigDecimal getWinAmount() {
+        return this.amount;
+    }
+
+    @Override
     public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
+        return (this.amount.subtract(this.getBetAmount()));
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return getBetAmount();
+        return BigDecimal.valueOf(0);
     }
 
     @Override
-    public WinType getResultType() { return WinType.LOSE; }
+    public WinType getResultType() {
+        return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
+    }
 
     @Override
     public BigDecimal getRefundAmount() {

@@ -11,7 +11,7 @@ import jakarta.validation.constraints.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenDto {
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank(message = ResponseCodes.INVALID_TOKEN)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_TOKEN)
     @Size(min = 1, max = 64, message = ResponseCodes.INVALID_TOKEN)
     private String token;
@@ -19,14 +19,14 @@ public class TokenDto {
     private String ip;
 
     @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_SIGNATURE)
+    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_PARAMETERS)
     private Long timestamp;
 
     @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String appid;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String hash;
 }
