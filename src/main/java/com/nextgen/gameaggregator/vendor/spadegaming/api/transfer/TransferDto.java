@@ -127,16 +127,6 @@ public class TransferDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-//    @Override
-//    public ResultType getResultType() {
-//        return ResultType.LOSE;
-//    }
-
-    @Override
     public Long getVendorBetTime() {
         return getTimestamp();
     }

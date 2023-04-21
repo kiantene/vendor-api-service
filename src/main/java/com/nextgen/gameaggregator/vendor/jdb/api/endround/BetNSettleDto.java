@@ -191,16 +191,6 @@ public class BetNSettleDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-//    @Override
-//    public ResultType getResultType() {
-//        return this.netWin.compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
-//    }
-
-    @Override
     public Long getVendorBetTime() {
         return ts;
     }

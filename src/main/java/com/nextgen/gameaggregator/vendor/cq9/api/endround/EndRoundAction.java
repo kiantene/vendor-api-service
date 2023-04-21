@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -15,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -53,6 +55,8 @@ public class EndRoundAction {
     private VendorPlayerService vendorPlayerService;
     @Autowired
     private Environment environment;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
@@ -94,18 +98,20 @@ public class EndRoundAction {
 
             // 6. Process result settle data
             // temporary code to ensure when commit to stg branch will still use old code for new changes
-            SettledBetEvent settledBetEvent;
+            CommonVo commonVo = new CommonVo();
+
             if(environment.getProperty("spring.couchbase.userName") == "stg"){
                 //if env = stg will use old code
-                settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
+                SettledBetEvent settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
+                commonVo.setBalance(settledBetEvent.getLastBalance());
+
             } else {
                 //else use new code
-                settledBetEvent = walletService.processResultSettlePlus(traceId, gameSession, endRoundDto, body);
+                ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, endRoundDto, ResultType.WIN, vendorService, body);
+                commonVo.setBalance(resultBetEvent.getLastBalance());
             }
 
             // Construct VO data
-            CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(settledBetEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 

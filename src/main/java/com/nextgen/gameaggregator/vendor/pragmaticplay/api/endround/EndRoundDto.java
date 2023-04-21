@@ -82,11 +82,6 @@ public class EndRoundDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return null;
-    }
-
-    @Override
     public Long getVendorBetTime() {
         return null;
     }

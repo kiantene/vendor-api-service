@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -40,6 +39,8 @@ public class EndRoundAction {
     private BetHistoryService betHistoryService;
     @Autowired
     private Environment environment;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.END_ROUND)
     public ResponseVo endRound(HttpServletRequest request) {
@@ -70,7 +71,7 @@ public class EndRoundAction {
 //            }else{
 //                settledBetEvent = walletService.processSettledBetPlus(traceId, gameSession, dto);
 //            }
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, body);
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, body);
 
             responseVo.setCash(resultBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.repository;
 
+import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;

@@ -126,16 +126,6 @@ public class EndRoundDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return null;
-    }
-
-//    @Override
-//    public ResultType getResultType() {
-//        return this.resultType;
-//    }
-
-    @Override
     public Long getVendorBetTime() {
         return null;
     }

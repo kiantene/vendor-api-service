@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
@@ -21,7 +22,7 @@ public class UnsettledBetService {
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorLineId         vendor line id within Game Aggregator System
+     * @param vendorLineId   vendor line id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
@@ -29,11 +30,11 @@ public class UnsettledBetService {
     @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
     public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
+        String mergeId = vendorBetId + '_' + roundId + '_' + vendorLineId + '_' + vendorPlayerId;
         UnsettledBet unsettledBet = null;
 
-        try{
-             unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+        try {
+            unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
             if (unsettledBet == null) { // No matching bet record for the given round Id
                 throw new BetNotFoundException("Cannot find round Id: " + roundId);
             }
@@ -42,5 +43,9 @@ public class UnsettledBetService {
         }
 
         return unsettledBet;
+    }
+
+    public void update(UnsettledBet unsettledBet) {
+        rawUnsettledBetRepository.save(unsettledBet);
     }
 }

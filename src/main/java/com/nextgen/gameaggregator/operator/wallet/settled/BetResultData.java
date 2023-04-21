@@ -14,7 +14,6 @@ public interface BetResultData {
     BigDecimal getWinAmount();
     BigDecimal getWinLoss();
     BigDecimal getEffectiveTurnover();
-    BigDecimal getRefundAmount();
 
     //    ResultType getResultType();
     Long getVendorBetTime();

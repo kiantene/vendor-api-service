@@ -143,11 +143,6 @@ public class CashTransferInOutDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
     public Long getVendorBetTime() {
         return this.createTime;
     }

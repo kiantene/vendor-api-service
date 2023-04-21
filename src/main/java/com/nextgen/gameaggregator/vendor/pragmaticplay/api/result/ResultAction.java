@@ -41,6 +41,8 @@ public class ResultAction {
     private VendorLineService vendorLineService;
     @Autowired
     private Environment environment;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.RESULT)
     public ResponseVo betResult(HttpServletRequest request) {
@@ -64,7 +66,7 @@ public class ResultAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, body);
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode()); // TODO: vendor currency map

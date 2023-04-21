@@ -54,16 +54,6 @@ public class WinDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-//    @Override
-//    public ResultType getResultType() {
-//        return ResultType.WIN;
-//    }
-
-    @Override
     public Long getVendorBetTime() {
         return this.timestamp;
     }

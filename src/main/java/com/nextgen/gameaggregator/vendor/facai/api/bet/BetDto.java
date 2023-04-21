@@ -142,20 +142,6 @@ public class BetDto implements BetResultData {
         return this.bet;
     }
 
-//    @Override
-//    public ResultType getResultType() {
-//        if (this.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0) {
-//            return ResultType.JACKPOT;
-//        } else {
-//            return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)? ResultType.WIN: ResultType.LOSE;
-//        }
-//    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
     @Override
     public Long getVendorBetTime() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

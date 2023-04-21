@@ -98,16 +98,6 @@ public class SettleBetDto implements BetResultData {
         return BigDecimal.valueOf(0);
     }
 
-//    @Override
-//    public ResultType getResultType() {
-//        return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)? ResultType.WIN: ResultType.LOSE;
-//    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
     @Override
     public Long getVendorBetTime() {
         return getTimestamp();

@@ -34,6 +34,10 @@ public class SettledBetService {
     @Autowired
     private BetHistoryService betHistoryService;
 
+    public void create(SettledBet settledBet) {
+        rawSettledBetRepository.save(settledBet);
+    }
+
     /**
      * Creates a Result bet record of the given RawResultBet entity object.
      * This function will also populate default values of certain fields.

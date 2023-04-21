@@ -48,21 +48,6 @@ public class BetWinDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-//    @Override
-//    public ResultType getResultType() {
-//        this.resultType = ResultType.WIN;
-//
-//        if(this.betAmount.compareTo(BigDecimal.ZERO) > 0 && this.winAmount.compareTo(BigDecimal.ZERO) == 0) {
-//            this.resultType = ResultType.LOSE;
-//        }
-//        return this.resultType;
-//    }
-
-    @Override
     public Long getVendorBetTime() {
         return this.timestamp;
     }

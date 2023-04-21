@@ -90,14 +90,6 @@ public class BetDto implements BetResultData {
         return getBetAmount();
     }
 
-//    @Override
-//    public ResultType getResultType() { return ResultType.LOSE; }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
     @Override
     public Long getVendorBetTime() {
         return getTimestamp();
