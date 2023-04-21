@@ -20,7 +20,7 @@ public class EndPoints {
 
     public static final String TRANSACTION = "/transaction";
 
-    public static final String WITHDRAWAL = "/withdrawal";
+    public static final String WITHDRAWAL = "/withdraw";
 
     public static final String DEPOSIT = "/deposit";
 
