@@ -63,8 +63,11 @@ public class CancelWagerAction {
             this.doVerification(dto, rawGameSession);
 
             if(dto.wagerType == 1) {
-                // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
-                BetRefundEvent event = walletService.processRefund(traceId, dto.getRoundId(), rawGameSession, body);
+                /*
+                TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
+                 Also to retrieve more than 1 records based on same round issue
+                 */
+                // BetRefundEvent event = walletService.processRefund(traceId, dto.getRoundId(), rawGameSession, body);
             } else if(dto.wagerType == 2) {
                 // TODO: cancel (deduct) end wager record
             }
@@ -95,17 +98,17 @@ public class CancelWagerAction {
         } catch (DisabledGameException e) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
-        } catch (DuplicateExternalTransactionIdException |
+        }/* catch (DuplicateExternalTransactionIdException |
                  RecordNotFoundException e
         ) {
             responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
             httpService.logError(httpRequestLog, e);
-        }  catch (BetNotFoundException e) {
+        } catch (BetNotFoundException e) {
             responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
-        } catch(DisabledVendorLineException |
+        }*/ catch(DisabledVendorLineException |
                 DisabledAgentPlayerException |
                 CredentialNotFoundException |
                 InvalidRequestException |
