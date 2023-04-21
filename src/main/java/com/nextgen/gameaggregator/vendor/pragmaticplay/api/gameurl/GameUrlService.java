@@ -61,7 +61,7 @@ public class GameUrlService implements GameUrl {
         log.info(formData.toString());
 
         // TODO: need to add error handling
-        String responseString =  WebClient.create(apiUrl)
+        String responseString = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -84,7 +84,7 @@ public class GameUrlService implements GameUrl {
         try {
             responseVo = new Gson().fromJson(responseString, GameUrlVo.class);
         } catch (JsonSyntaxException jsonSyntaxException) {
-            throw new InvalidVendorResponseException( "Invalid vendor response body :"+responseString);
+            throw new InvalidVendorResponseException("Invalid vendor response body :" + responseString);
         }
 
         if (responseVo != null) {

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -36,6 +37,7 @@ public class JackpotAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -95,7 +97,7 @@ public class JackpotAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-            
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);

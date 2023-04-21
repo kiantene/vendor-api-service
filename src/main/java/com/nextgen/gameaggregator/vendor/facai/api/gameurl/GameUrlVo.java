@@ -6,12 +6,13 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo  {
+public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo {
 
     @JsonProperty("Result")
     private Integer result;
     @JsonProperty("Url")
     private String url;
+
     @Override
     public String getGameUrl() {
         return this.getUrl();

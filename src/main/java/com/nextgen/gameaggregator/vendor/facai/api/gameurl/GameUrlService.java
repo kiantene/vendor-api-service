@@ -36,10 +36,10 @@ public class GameUrlService implements GameUrl {
 
         //map request param and convert to json string
         Map<String, Object> loginParam = new HashMap<String, Object>();
-        loginParam.put("MemberAccount",gameSession.getVendorPlayerUsername());
-        loginParam.put("GameID",gameSession.getVendorGameCode());
-        loginParam.put("LanguageID",gameSession.getVendorLanguageCode());
-        loginParam.put("JackpotStatus",GameType.ENABLE_JACKPOT);
+        loginParam.put("MemberAccount", gameSession.getVendorPlayerUsername());
+        loginParam.put("GameID", gameSession.getVendorGameCode());
+        loginParam.put("LanguageID", gameSession.getVendorLanguageCode());
+        loginParam.put("JackpotStatus", GameType.ENABLE_JACKPOT);
         String jsonParamString = "";
         try {
             ObjectMapper objectMapper = new ObjectMapper();
@@ -85,10 +85,10 @@ public class GameUrlService implements GameUrl {
 
         //convert from data into mapper data
         Map<String, String> convertFormMap = new HashMap<String, String>();
-        convertFormMap.put("AgentCode",formData.getFirst("AgentCode"));
-        convertFormMap.put("Currency",formData.getFirst("Currency"));
-        convertFormMap.put("Params",formData.getFirst("Params"));
-        convertFormMap.put("Sign",formData.getFirst("Sign"));
+        convertFormMap.put("AgentCode", formData.getFirst("AgentCode"));
+        convertFormMap.put("Currency", formData.getFirst("Currency"));
+        convertFormMap.put("Params", formData.getFirst("Params"));
+        convertFormMap.put("Sign", formData.getFirst("Sign"));
 
         //convert mapper data into json string
         String jsonFormString = "";

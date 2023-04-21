@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 
 @Data
@@ -99,7 +100,7 @@ public class ResultDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getEffectiveTurnover(){
+    public BigDecimal getEffectiveTurnover() {
         return null;
     }
 

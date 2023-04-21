@@ -11,6 +11,7 @@ import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -149,7 +150,7 @@ public class BetDto implements BetResultData {
         try {
             Date date = dateFormat.parse(this.getCreateDate());
             return date.getTime();
-        }catch (Exception exception) {
+        } catch (Exception exception) {
         }
         return Long.valueOf(000000000000);
     }
@@ -161,7 +162,7 @@ public class BetDto implements BetResultData {
         try {
             Date date = dateFormat.parse(this.getGameDate());
             return date.getTime();
-        }catch (Exception exception) {
+        } catch (Exception exception) {
         }
         return Long.valueOf(000000000000);
     }
@@ -173,13 +174,15 @@ public class BetDto implements BetResultData {
         try {
             Date date = dateFormat.parse(this.getGameDate());
             return date.getTime();
-        }catch (Exception exception) {
+        } catch (Exception exception) {
         }
         return Long.valueOf(000000000000);
     }
 
     @Override
-    public BigDecimal getJackpotAmount() { return this.JpPrize;}
+    public BigDecimal getJackpotAmount() {
+        return this.JpPrize;
+    }
 
     @Override
     public Integer getIsFreespin() {

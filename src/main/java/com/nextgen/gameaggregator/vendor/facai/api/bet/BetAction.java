@@ -3,8 +3,9 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.RoundingMode;
 
 @RestController
@@ -83,12 +85,12 @@ public class BetAction {
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
             //Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_WIN, vendorService, body);
 
             //set VO data
             //convert bigDecimal balance into double
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(settledBetEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
+            commonVo.setMainPoints(resultBetEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (AuthenticationException authenticationException) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
@@ -99,8 +101,6 @@ public class BetAction {
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
@@ -124,9 +124,9 @@ public class BetAction {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
+            if (invalidRequestException.getValidation() != null) {
                 commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
-            }else{
+            } else {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
         } catch (BetNotFoundException betNotFoundException) {
@@ -151,8 +151,12 @@ public class BetAction {
         // General validation
         ValidationUtils.validateRequest(dto);
         //date format validation
-        if(!vendorService.isValidDateString(dto.getGameDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
-        if(!vendorService.isValidDateString(dto.getCreateDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
+        if (!vendorService.isValidDateString(dto.getGameDate(), "yyyy-MM-dd HH:mm:ss")) {
+            throw new InvalidDateException();
+        }
+        if (!vendorService.isValidDateString(dto.getCreateDate(), "yyyy-MM-dd HH:mm:ss")) {
+            throw new InvalidDateException();
+        }
 
     }
 

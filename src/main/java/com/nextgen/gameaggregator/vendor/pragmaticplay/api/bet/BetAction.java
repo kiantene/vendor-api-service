@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -76,8 +77,7 @@ public class BetAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        }
-        catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
 

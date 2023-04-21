@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 
 @Data
@@ -76,9 +77,14 @@ public class JackpotDto implements WinData {
     private String token;
 
     @Override
-    public String getExternalTransactionId() { return this.reference; }
+    public String getExternalTransactionId() {
+        return this.reference;
+    }
+
     @Override
-    public ResultType getWinType() { return ResultType.JACKPOT; }
+    public ResultType getWinType() {
+        return ResultType.JACKPOT;
+    }
 
     @Override
     public BigDecimal getEffectiveTurnover() {

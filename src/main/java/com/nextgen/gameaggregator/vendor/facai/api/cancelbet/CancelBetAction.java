@@ -95,15 +95,15 @@ public class CancelBetAction {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        }catch (CurrencyNotSupportedException currencyNotSupportedException) {
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (JsonProcessingException jsonProcessingException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        }catch (CredentialNotFoundException credentialNotFoundException) {
+        } catch (CredentialNotFoundException credentialNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        }catch (Exception exception) {
+        } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);

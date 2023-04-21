@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -87,9 +88,9 @@ public class BalanceAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
+            if (invalidRequestException.getValidation() != null) {
                 commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
-            }else{
+            } else {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
