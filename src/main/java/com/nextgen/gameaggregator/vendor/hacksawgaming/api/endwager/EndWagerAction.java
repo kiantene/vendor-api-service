@@ -61,13 +61,10 @@ public class EndWagerAction {
             // Verify data
             this.doVerification(dto, rawGameSession);
 
-            throw new AuthenticationException();
             // Process bet
-            // Commented for testing cancelEndWager
-            // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, dto, body);
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, dto, body);
 
             // Set Vendor player username + Balance + Currency
-            /*
             responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(settledBetEvent.getLastBalance());
@@ -75,8 +72,6 @@ public class EndWagerAction {
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
-
-             */
 
         } catch (AuthenticationException |
                  InvalidVendorLineException e
@@ -92,7 +87,7 @@ public class EndWagerAction {
         } catch (DisabledGameException e) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
-        } /*catch (InsufficientBalanceException e) {
+        } catch (InsufficientBalanceException e) {
             responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
             httpService.logError(httpRequestLog, e);
@@ -109,15 +104,6 @@ public class EndWagerAction {
                 InvalidOperatorResponseException |
                 CouchbaseDataIntegrityException |
                 JsonProcessingException e
-        ) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, e);
-        }*/
-        catch(DisabledVendorLineException |
-              DisabledAgentPlayerException |
-              CredentialNotFoundException |
-              InvalidRequestException |
-              JsonProcessingException e
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
