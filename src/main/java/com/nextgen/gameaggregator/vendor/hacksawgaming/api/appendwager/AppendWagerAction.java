@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
@@ -45,17 +46,13 @@ public class AppendWagerAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
-        responseDataVo.setBrandUid("testgame3");
-        responseDataVo.setCurrency("CNY");
-        responseDataVo.setBalance(BigDecimal.valueOf(1000));
-        responseVo.setData(responseDataVo);
-        responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-        responseVo.setCode(ResponseCodes.SUCCESS);
-        httpService.end(httpRequestLog, responseVo);
-
-        /*
         try {
 
+            /*
+            TODO: Hacksaw does not support Jackpot.
+             To update this endpoint if there are other game that supports Jackpot.
+             This endpoint only return current balance for now.
+             */
             AppendWagerDto dto = HttpService.convertJsonToDto(body, AppendWagerDto.class);
 
             // Validate request parameters (Non-database calls)
@@ -63,8 +60,8 @@ public class AppendWagerAction {
 
             // Verify session token
             RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
-            this.doVerification(dto, rawGameSession, toVerifySign);
+
+            this.doVerification(dto, rawGameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
@@ -74,14 +71,13 @@ public class AppendWagerAction {
             responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
+
             // Set BalanceDataWalletVo Object
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
 
         } catch(InvalidRequestException |
-                DateTimeParseException |
                 CurrencyNotSupportedException |
-                JsonProcessingException |
                 NullPointerException |
                 IllegalArgumentException e
         ) {
@@ -90,8 +86,6 @@ public class AppendWagerAction {
             httpService.logError(httpRequestLog, e);
         }
         httpService.end(httpRequestLog, responseVo);
-
-         */
 
         return responseVo;
 
@@ -102,13 +96,18 @@ public class AppendWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AppendWagerDto dto, RawGameSession rawGameSession, String toVerifySign)
+    private void doVerification(AppendWagerDto dto, RawGameSession rawGameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
+
+        String brandId = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.API_KEY);
+        String toVerifySign = VendorService.getSign(brandId + dto.getWagerId() + apiKey);
 
         // Verify signature
         if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {

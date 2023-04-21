@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
-import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -69,26 +68,33 @@ public class LoginAction {
             responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+            // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
-        } catch(InvalidRequestException |
-                DateTimeParseException |
-                CurrencyNotSupportedException |
-                JsonProcessingException |
-                NullPointerException |
-                IllegalArgumentException e
+        } catch (AuthenticationException |
+                 InvalidVendorLineException e
+        ) {
+            responseVo.setCode(ResponseCodes.SIGN_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } catch(CurrencyNotSupportedException e) {
+            responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+            httpService.logError(httpRequestLog, e);
+        } catch(InvalidPlayerException e) {
+            responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledGameException e) {
+            responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
+        } catch(DisabledVendorLineException |
+                DisabledAgentPlayerException |
+                CredentialNotFoundException |
+                InvalidRequestException |
+                InvalidAgentApiCredentialException |
+                InvalidOperatorResponseException |
+                JsonProcessingException e
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
-            responseVo.setData(null);
-            httpService.logError(httpRequestLog, e);
-        } catch (Exception e) {
-            responseVo.setCode(ResponseCodes.UNKNOWN);
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
-            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);

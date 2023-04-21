@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
@@ -45,16 +46,13 @@ public class FreeSpinAction {
         String traceId = httpRequestLog.getTraceId();
         String body = httpRequestLog.getRequestBody();
 
-        responseDataVo.setBrandUid("testgame3");
-        responseDataVo.setCurrency("CNY");
-        responseDataVo.setBalance(BigDecimal.valueOf(1000));
-        responseVo.setData(responseDataVo);
-        responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-        responseVo.setCode(ResponseCodes.SUCCESS);
-        httpService.end(httpRequestLog, responseVo);
-
-        /*
         try {
+
+            /*
+            TODO: This endpoint will only be triggered if Free Spin Campaign is set up.
+             To update this endpoint if Free Spin Campaign is required to set up.
+             This endpoint only return current balance for now
+             */
 
             FreeSpinDto dto = HttpService.convertJsonToDto(body, FreeSpinDto.class);
 
@@ -63,8 +61,9 @@ public class FreeSpinAction {
 
             // Verify session token
             RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
-            String toVerifySign = VendorService.getSign(Credentials.BRAND_ID + dto.getWagerId() + Credentials.API_KEY);
-            this.doVerification(dto, rawGameSession, toVerifySign);
+
+            // Verify data
+            this.doVerification(dto, rawGameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
@@ -79,9 +78,7 @@ public class FreeSpinAction {
             responseVo.setCode(ResponseCodes.SUCCESS);
 
         } catch(InvalidRequestException |
-                DateTimeParseException |
                 CurrencyNotSupportedException |
-                JsonProcessingException |
                 NullPointerException |
                 IllegalArgumentException e
         ) {
@@ -90,8 +87,6 @@ public class FreeSpinAction {
             httpService.logError(httpRequestLog, e);
         }
         httpService.end(httpRequestLog, responseVo);
-
-         */
 
         return responseVo;
 
@@ -102,13 +97,18 @@ public class FreeSpinAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(FreeSpinDto dto, RawGameSession rawGameSession, String toVerifySign)
+    private void doVerification(FreeSpinDto dto, RawGameSession rawGameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
+
+            String brandId = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.BRAND_ID);
+            String apiKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.API_KEY);
+            String toVerifySign = VendorService.getSign(brandId + dto.getWagerId() + apiKey);
 
             // Verify signature
             if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {

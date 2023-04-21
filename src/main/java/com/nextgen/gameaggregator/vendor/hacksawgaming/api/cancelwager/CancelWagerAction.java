@@ -7,8 +7,11 @@ import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.api.wager.WagerDto;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.time.format.DateTimeParseException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -61,6 +63,7 @@ public class CancelWagerAction {
             this.doVerification(dto, rawGameSession);
 
             if(dto.wagerType == 1) {
+                // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
                 BetRefundEvent event = walletService.processRefund(traceId, dto.getRoundId(), rawGameSession, body);
             } else if(dto.wagerType == 2) {
                 // TODO: cancel (deduct) end wager record
@@ -72,32 +75,45 @@ public class CancelWagerAction {
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
-            responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+            // Set Vendor player username + Balance + Currency
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
+            responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
-            responseVo.setCode(ResponseCodes.SUCCESS);
-
-        } catch(InvalidRequestException |
-                DateTimeParseException |
-                CurrencyNotSupportedException |
-                JsonProcessingException |
-                NullPointerException |
-                IllegalArgumentException e
+        } catch (AuthenticationException |
+                 InvalidVendorLineException e
+        ) {
+            responseVo.setCode(ResponseCodes.SIGN_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } catch(CurrencyNotSupportedException e) {
+            responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+            httpService.logError(httpRequestLog, e);
+        } catch(InvalidPlayerException e) {
+            responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledGameException e) {
+            responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
+        } catch (DuplicateExternalTransactionIdException |
+                 RecordNotFoundException e
+        ) {
+            responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            httpService.logError(httpRequestLog, e);
+        }  catch (BetNotFoundException e) {
+            responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
+        } catch(DisabledVendorLineException |
+                DisabledAgentPlayerException |
+                CredentialNotFoundException |
+                InvalidRequestException |
+                InvalidAgentApiCredentialException |
+                InvalidOperatorResponseException |
+                JsonProcessingException e
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SYSTEM_ERROR));
-            responseVo.setData(null);
-            httpService.logError(httpRequestLog, e);
-        } catch (Exception e) {
-            responseVo.setCode(ResponseCodes.UNKNOWN);
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.UNKNOWN));
-            responseVo.setData(null);
             httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
@@ -112,18 +128,57 @@ public class CancelWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelWagerDto dto, RawGameSession gameSession)
+    private void doVerification(CancelWagerDto dto, RawGameSession rawGameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            InvalidVendorLineException {
+            InvalidVendorLineException,
+            CredentialNotFoundException {
+
+        String brandId = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.API_KEY);
+        String toVerifySign = VendorService.getSign(brandId + dto.getWagerId() + apiKey);
+
+        // Verify signature
+        if(!VendorService.isSameSignature(dto.getSign(), toVerifySign)) {
+            throw new InvalidVendorLineException();
+        }
 
         // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+        validationService.validateIllegibleBet(rawGameSession, dto.getBrandUid());
 
         // Verify currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+    }
+
+    private ResponseVo getCurrentBalanceResponseVo (HttpServletRequest request, String traceId, String body) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        ResponseVo responseVo = new ResponseVo();
+        ResponseDataVo responseDataVo = new ResponseDataVo();
+
+        try {
+            WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
+            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+
+            responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(walletService.getBalance(traceId, rawGameSession));
+            responseVo.setData(responseDataVo);
+
+        } catch (InvalidAgentApiCredentialException |
+                 JsonProcessingException |
+                 InvalidOperatorResponseException e) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
+            responseVo.setCode(ResponseCodes.SIGN_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
+        }
+
+        return responseVo;
     }
 }
