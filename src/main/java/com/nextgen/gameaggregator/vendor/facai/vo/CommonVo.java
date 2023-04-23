@@ -29,6 +29,7 @@ public class CommonVo implements HttpResponse {
         this.result = Integer.valueOf(responseCode);
         this.errorText = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
     }
+
     @Override
     public boolean hasError() {
         return false;

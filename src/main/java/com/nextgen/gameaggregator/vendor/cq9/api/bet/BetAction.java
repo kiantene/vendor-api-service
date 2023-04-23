@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -71,18 +71,18 @@ public class BetAction {
             this.doValidation(betDto, wToken);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(betDto.getSession());
+            GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(betDto, rawGameSession, wToken);
+            this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, rawGameSession, betDto, body);
+            UnsettledBetEvent unsettledBetEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(unsettledBetEvent.getLastBalance());
-            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
@@ -151,27 +151,27 @@ public class BetAction {
         formatter.parse(betDto.getEventTime());
     }
 
-    private void doVerification(BetDto betDto, RawGameSession rawGameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(BetDto betDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // 1. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 2. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
 
         // 3. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), betDto.getAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), betDto.getAccount(), InvalidPlayerException::new);
 
         // 4. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), betDto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), betDto.getGameId(), AuthenticationException::new);
 
         // 5. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 6. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // 7. Verify vendor game is active
-        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 }

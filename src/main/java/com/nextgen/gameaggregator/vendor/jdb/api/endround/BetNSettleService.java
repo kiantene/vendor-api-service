@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
 import java.util.Map;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,6 +48,8 @@ public class BetNSettleService {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo betNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -58,28 +63,39 @@ public class BetNSettleService {
             this.doValidation(betNSettleDto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betNSettleDto.getUid(), betNSettleDto.getMType().toString());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betNSettleDto.getUid(), betNSettleDto.getMType().toString());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(betNSettleDto, rawGameSession);
+            this.doVerification(betNSettleDto, gameSession);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Result and End Round
-            SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, betNSettleDto, actionDto.getParams());
-            vo.setBalance(betResultEvent.getLastBalance());
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, betNSettleDto, ResultType.BET_WIN, vendorService, actionDto.getParams());
+
+            vo.setBalance(resultBetEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (AuthenticationException |
+                 InvalidPlayerException playerNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-        } catch (BetNotFoundException betNotFoundException) {
+        } catch (BetNotFoundException |
+                 CouchbaseDataIntegrityException |
+                 MergedBetDataIntegrityException |
+                 DisabledAgentPlayerException |
+                 DisabledVendorLineException |
+                 DisabledGameException failedException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (InvalidOperatorResponseException |
+                 JsonProcessingException |
+                 GameNotSupportedException |
+                 CurrencyNotSupportedException |
+                 VendorPlatformNotSupportedException invalidValidRequestException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
         } catch (InvalidRequestException invalidRequestException) {
             if (invalidRequestException.getValidation() != null) {
@@ -93,26 +109,6 @@ public class BetNSettleService {
             } else {
                 vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
             }          
-        } catch (JsonProcessingException jsonProcessingException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (GameNotSupportedException gameNotSupportedException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (VendorPlatformNotSupportedException vendorPlatformNotSupportedException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (DisabledGameException disabledGameException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (InvalidPlayerException invalidPlayerException) {
-            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (Exception exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
@@ -128,39 +124,35 @@ public class BetNSettleService {
                 if (dto.getJackpotWin() == null || dto.getJackpotContribute() == null || dto.getHasFreeGame() == null || dto.getHasGamble() == null) {
                     throw new InvalidRequestException();
                 }
-                break;
             }
             case "7" -> {
                 if (dto.getRoomType() == null) {
                     throw new InvalidRequestException();
                 }
-                break;
             }
             case "9" -> {
                 if (dto.getHasBonusGame() == null || dto.getHasGamble() == null) {
                     throw new InvalidRequestException();
                 }
-                break;
             }
             case "12" -> {
                 if (dto.getHasBonusGame() == null) {
                     throw new InvalidRequestException();
                 }
-                break;
             }
         }
     }
 
-    private void doVerification(BetNSettleDto dto, RawGameSession rawGameSession) throws DisabledAgentPlayerException,
+    private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
      DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
      VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getUid());
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
         // Verify vendor gameCode, currency and platform
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
 
         // Verify game category
         if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();

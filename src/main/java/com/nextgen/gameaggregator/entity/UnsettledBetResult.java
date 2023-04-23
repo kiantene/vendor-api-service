@@ -9,10 +9,10 @@ import jakarta.persistence.Id;
 import java.math.BigDecimal;
 
 @Document
-@Scope("raw")
-@Collection("settled_bet")
+@Scope("unsettled")
+@Collection("bet_results")
 @Data
-public class RawSettledBet {
+public class UnsettledBetResult {
     @Id
     private String id;
     private String internalTransactionId;

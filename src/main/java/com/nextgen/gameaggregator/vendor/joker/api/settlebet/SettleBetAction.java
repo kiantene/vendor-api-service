@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -58,13 +58,13 @@ public class SettleBetAction {
             this.doValidation(settleBetDto);
 
             //get rawGameSession by player name in lowercase (vendor return in uppercase) and vendor game id
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleBetDto.getUsername().toLowerCase(), settleBetDto.getGamecode());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleBetDto.getUsername().toLowerCase(), settleBetDto.getGamecode());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, settleBetDto, rawGameSession);
+            this.doVerification(httpRequestLog, settleBetDto, gameSession);
 
             //Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, settleBetDto, body);
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, settleBetDto, body);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -110,18 +110,18 @@ public class SettleBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleBetDto settleBetDto, RawGameSession rawGameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidSignatureException {
+    private void doVerification(HttpRequestLog request, SettleBetDto settleBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidSignatureException {
 
         //Verify received agent code is the same from credential
-        String agentCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.APP_ID);
+        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
         ValidationUtils.isEquals(agentCode, settleBetDto.getAppid(), NoAvailableLineException::new);
 
         //Verify received hash
-        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, settleBetDto.getUsername());
+        validationService.validateIllegibleBet(gameSession, settleBetDto.getUsername());
     }
 
 }

@@ -3,22 +3,22 @@ package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
     private String reqId;
     private String roundId;
     private String id;
     private BigDecimal amount;
-    private WinType winType;
+    private ResultType resultType;
     private BigDecimal validTurnover;
     private String gameId;
     private Long timestamp;
@@ -51,16 +51,6 @@ public class BetDto implements UnsettledResultSettledData {
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.validTurnover;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override
-    public WinType getResultType() {
-        return WinType.LOSE;
     }
 
     @Override

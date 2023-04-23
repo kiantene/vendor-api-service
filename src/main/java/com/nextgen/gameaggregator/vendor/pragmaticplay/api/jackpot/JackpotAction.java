@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -36,6 +37,7 @@ public class JackpotAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -53,17 +55,18 @@ public class JackpotAction {
             // TODO: validate gameId with rawGameSession
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, rawGameSession);
+            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
-            BetResultEvent betResultEvent = walletService.processWin(traceId, rawGameSession, dto, body);
+//            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(rawGameSession.getVendorGameCode());
-            responseVo.setCash(betResultEvent.getLastBalance());
+            responseVo.setCurrency(gameSession.getVendorGameCode());
+//            responseVo.setCash(betResultEvent.getLastBalance());
+            responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -81,21 +84,21 @@ public class JackpotAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-            httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
-
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpService.logError(httpRequestLog, betNotFoundException);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+//            httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
+//
+//        } catch (BetNotFoundException betNotFoundException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpService.logError(httpRequestLog, betNotFoundException);
+//
+//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-            
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
@@ -113,18 +116,18 @@ public class JackpotAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, JackpotDto dto, RawGameSession rawGameSession) throws
+    private void doVerification(HttpRequestLog request, JackpotDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
 
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
-        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 4. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);

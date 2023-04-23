@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.joker.api.gameurl;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
@@ -16,18 +16,18 @@ import java.util.Map;
 public class GameUrlService implements GameUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("appID", credentials.get(Credentials.APP_ID));
-        formData.add("token", rawGameSession.getToken());
-        formData.add("gameCode", rawGameSession.getVendorGameCode());
-        formData.add("language", rawGameSession.getVendorLanguageCode());
+        formData.add("token", gameSession.getToken());
+        formData.add("gameCode", gameSession.getVendorGameCode());
+        formData.add("language", gameSession.getVendorLanguageCode());
         return formData;
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException {
         GameUrlVo responseVo = new GameUrlVo();
 

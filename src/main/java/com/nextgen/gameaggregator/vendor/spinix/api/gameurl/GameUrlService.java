@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.gameurl;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -27,7 +27,7 @@ import java.util.Optional;
 @Slf4j
 public class GameUrlService implements GameUrl {
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
         String agent_id = credentials.get(Credentials.AGENT_ID);
@@ -41,13 +41,13 @@ public class GameUrlService implements GameUrl {
 
         Map<String, Object> arrayMap = new HashMap<>();
         arrayMap.put("platform_id", agent_id);
-        arrayMap.put("game_id", rawGameSession.getVendorGameCode());
-        arrayMap.put("user_id", rawGameSession.getVendorPlayerUsername());
-        arrayMap.put("user_token", rawGameSession.getToken());
-        arrayMap.put("currency", rawGameSession.getVendorCurrencyCode());
+        arrayMap.put("game_id", gameSession.getVendorGameCode());
+        arrayMap.put("user_id", gameSession.getVendorPlayerUsername());
+        arrayMap.put("user_token", gameSession.getToken());
+        arrayMap.put("currency", gameSession.getVendorCurrencyCode());
         arrayMap.put("wallet_type", wallet_type);
         HashMap<String, String> settings = new HashMap<>();
-        settings.put("lang", rawGameSession.getLanguage());
+        settings.put("lang", gameSession.getLanguage());
         settings.put("sd", sound);
         arrayMap.put("settings", settings);
         String json = new Gson().toJson(arrayMap);
@@ -61,7 +61,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
         String apiUrl = credentials.get(Credentials.API_URL);

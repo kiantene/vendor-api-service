@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.api.login;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -55,17 +55,17 @@ public class LoginAction {
             this.doValidation(dto);
 
             // Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
+            GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
 
             // Verify data
-            this.doVerification(dto, rawGameSession);
+            this.doVerification(dto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Set Vendor player username + Balance + Currency
-            responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
             // Set data for response vo
@@ -109,7 +109,7 @@ public class LoginAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(LoginDto dto, RawGameSession rawGameSession)
+    private void doVerification(LoginDto dto, GameSession gameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
@@ -118,8 +118,8 @@ public class LoginAction {
             InvalidVendorLineException,
             CredentialNotFoundException {
 
-        String brandId = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.BRAND_ID);
-        String apiKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.API_KEY);
+        String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
         String toVerifySign = VendorService.getSign(brandId + dto.getToken() + apiKey);
 
         // Verify signature
@@ -128,9 +128,9 @@ public class LoginAction {
         }
 
         // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getBrandUid());
+        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
 
         // Verify currency
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }

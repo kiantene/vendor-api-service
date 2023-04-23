@@ -3,8 +3,7 @@ package com.nextgen.gameaggregator.vendor.hacksawgaming.api.wager;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
@@ -19,7 +18,7 @@ import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class WagerDto implements UnsettledResultSettledData {
+public class WagerDto implements BetResultData {
 
     @NotBlank
     @Size(max =7)
@@ -113,16 +112,6 @@ public class WagerDto implements UnsettledResultSettledData {
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.amount;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override
-    public WinType getResultType() {
-        return WinType.LOSE;
     }
 
     @Override

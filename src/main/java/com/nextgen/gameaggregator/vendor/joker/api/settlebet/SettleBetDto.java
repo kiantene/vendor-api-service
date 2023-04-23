@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import lombok.Data;
@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SettleBetDto implements UnsettledResultSettledData {
+public class SettleBetDto implements BetResultData {
 
     @NotBlank(message = ResponseCodes.INVALID_APPID)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
@@ -95,16 +95,6 @@ public class SettleBetDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
         return BigDecimal.valueOf(0);
     }
 

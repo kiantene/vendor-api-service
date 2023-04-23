@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -51,16 +52,16 @@ public class BalanceAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, rawGameSession);
+            this.doVerification(httpRequestLog, dto, gameSession);
 
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            responseVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
@@ -115,22 +116,22 @@ public class BalanceAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, BalanceDto dto, RawGameSession rawGameSession) throws
+    private void doVerification(HttpRequestLog request, BalanceDto dto, GameSession gameSession) throws
             InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, DisabledAgentPlayerException,
             DisabledVendorLineException {
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
-        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 4. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         // 4. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
     }
 }

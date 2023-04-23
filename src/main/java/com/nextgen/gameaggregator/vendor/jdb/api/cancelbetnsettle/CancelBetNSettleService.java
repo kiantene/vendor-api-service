@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
@@ -60,13 +60,13 @@ public class CancelBetNSettleService {
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetNSettleDto.getTransferId(), vendorPlayer.getVendorId());
 
             // 3. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(cancelBetNSettleDto, rawGameSession);
+            this.doVerification(cancelBetNSettleDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetNSettleDto.getTransferId(), rawGameSession, actionDto.getParams());
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetNSettleDto.getTransferId(), gameSession, actionDto.getParams());
 
             vo.setBalance(betRefundEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
@@ -107,9 +107,9 @@ public class CancelBetNSettleService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetNSettleDto dto, RawGameSession rawGameSession) throws DisabledVendorLineException,
+    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException,
     DisabledAgentPlayerException, InvalidPlayerException, DisabledGameException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getUid());
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
     }
 }

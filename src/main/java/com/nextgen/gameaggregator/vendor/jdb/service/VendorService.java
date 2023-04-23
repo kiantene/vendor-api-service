@@ -7,6 +7,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.nextgen.gameaggregator.service.BaseVendorService;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class VendorService {
+public class VendorService extends BaseVendorService {
     public static String encrypt(String data, String key, String iv) throws InvalidEncryptionException {
         try {
             Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
