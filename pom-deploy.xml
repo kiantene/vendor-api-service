@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.boot</groupId>
@@ -17,12 +17,23 @@
 	<description>game aggregator vendor api service</description>
 
 	<properties>
-		<spring-cloud.version>2022.0.1</spring-cloud.version>
+		<spring-doc.version>1.6.9</spring-doc.version>
+		<javax.version>2.0.1.Final</javax.version>
+		<hibernate-validator.version>6.0.13.Final</hibernate-validator.version>
+		<glassfish.version>3.0.0</glassfish.version>
+		<logstash.version>7.3</logstash.version>
+		<nextgen-core.version>2.0.51</nextgen-core.version>
+		<java-client.version>3.4.4</java-client.version>
+		<projectlombok.version>1.18.26</projectlombok.version>
+		<spring-kafka.version>2.9.2</spring-kafka.version>
+		<kafka.version>3.4.0</kafka.version>
+		<commons-codec.version>1.15</commons-codec.version>
+		<netty.version>4.1.86.Final</netty.version>
+		<mariadb.version>3.1.2</mariadb.version>
+
+		<java.version>18</java.version>
 		<maven.compiler.source>18</maven.compiler.source>
 		<maven.compiler.target>18</maven.compiler.target>
-		<java.version>18</java.version>
-		<grpc.version>1.50.0</grpc.version>
-		<spring-doc.version>1.6.9</spring-doc.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<timestamp>${maven.build.timestamp}</timestamp>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
@@ -34,22 +45,23 @@
 			<artifactId>core</artifactId>
 			<version>3.0.0</version>
 		</dependency>
+
 		<dependency>
 			<groupId>javax.xml.bind</groupId>
 			<artifactId>jaxb-api</artifactId>
 			<version>2.3.1</version>
 		</dependency>
 
-		<!--		<dependency>-->
-		<!--			<groupId>com.nextgen.sas</groupId>-->
-		<!--			<artifactId>lib</artifactId>-->
-		<!--			<version>3.0.0</version>-->
-		<!--		</dependency>-->
-		<!--		<dependency>-->
-		<!--			<groupId>com.nextgen.sas</groupId>-->
-		<!--			<artifactId>core-v2</artifactId>-->
-		<!--			<version>3.0.0</version>-->
-		<!--		</dependency>-->
+		<!--        <dependency>-->
+		<!--            <groupId>com.nextgen.sas</groupId>-->
+		<!--            <artifactId>lib</artifactId>-->
+		<!--            <version>3.0.0</version>-->
+		<!--        </dependency>-->
+		<!--        <dependency>-->
+		<!--            <groupId>com.nextgen.sas</groupId>-->
+		<!--            <artifactId>core-v2</artifactId>-->
+		<!--            <version>3.0.0</version>-->
+		<!--        </dependency>-->
 
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
@@ -88,6 +100,7 @@
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
+			<version>${hibernate-validator.version}</version>
 		</dependency>
 
 		<dependency>
@@ -99,14 +112,14 @@
 		<dependency>
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
-			<version>7.3</version>
+			<version>${logstash.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
 			<scope>runtime</scope>
-			<version>3.1.2</version>
+			<version>${mariadb.version}</version>
 		</dependency>
 
 		<dependency>
@@ -117,18 +130,19 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>1.18.26</version>
+			<version>${projectlombok.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
+			<version>${spring-kafka.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
-			<version>3.4.0</version>
+			<version>${kafka.version}</version>
 		</dependency>
 
 		<dependency>
@@ -146,15 +160,7 @@
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.15</version>
-		</dependency>
-
-		<!-- Support for Apple M1 chip -->
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-resolver-dns-native-macos</artifactId>
-			<version>4.1.90.Final</version>
-			<classifier>osx-aarch_64</classifier>
+			<version>${commons-codec.version}</version>
 		</dependency>
 
 		<dependency>
@@ -166,6 +172,12 @@
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.modelmapper</groupId>
+			<artifactId>modelmapper</artifactId>
+			<version>3.1.1</version>
 		</dependency>
 
 	</dependencies>
