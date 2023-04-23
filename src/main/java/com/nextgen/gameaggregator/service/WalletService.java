@@ -103,17 +103,18 @@ public class WalletService {
 
         Integer agentId = gameSession.getAgentId();
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
-
-        // 1. Generate walletBetDto
-        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betResultData);
-
-        // 2. Generate rawUnsettledBet
-        UnsettledBet unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+        UnsettledBet unsettledBet = null;
 
         try {
+            // 2. Generate rawUnsettledBet
+            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+
+            // TODO: check for duplicate bet id
+
             // 3. Prepare callback info
-            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+//            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+//            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+            WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
 
             // 5. Insert into couchbase unsettled_bet table
@@ -891,23 +892,6 @@ public class WalletService {
         return walletBetDto;
     }
 
-    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetResultData betResultData) {
-        WalletBetDto walletBetDto = new WalletBetDto();
-        walletBetDto.setTraceId(traceId);
-        walletBetDto.setTransactionId(traceId);
-        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetDto.setToken(gameSession.getToken());
-        //UPDATE PG : USE VENDORBETID
-        walletBetDto.setExternalTransactionId(betResultData.getVendorBetId());
-        walletBetDto.setAmount(new BigDecimal(betResultData.getBetAmount().stripTrailingZeros().toPlainString()));
-        walletBetDto.setGameCode(gameSession.getGameCode());
-        walletBetDto.setRoundId(betResultData.getRoundId());
-        walletBetDto.setTimestamp(betResultData.getVendorBetTime());
-
-        return walletBetDto;
-    }
-
     private BetHistory newBetHistory(WalletBetDto walletBetDto, com.nextgen.gameaggregator.entity.GameSession
                                 gameSession, String rawData) {
         BetHistory betHistory = new BetHistory();
@@ -1234,7 +1218,8 @@ public class WalletService {
             } else {
                 //else send as lose
                 WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, gameSession, settledBet);
-                balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+//                balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+                balanceVo = null;
             }
         } else {
             //else isFullBet = false, then we will send as wallet/win with winAmount (because bet already deducted)
