@@ -107,8 +107,8 @@ public class EndRoundAction {
 
             } else {
                 //else use new code
-                ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, endRoundDto, ResultType.WIN, vendorService, body);
-                commonVo.setBalance(resultBetEvent.getLastBalance());
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, ResultType.WIN, vendorService, body);
+                commonVo.setBalance(balance);
             }
 
             // Construct VO data

@@ -97,49 +97,65 @@ public class WalletService {
      * @param rawData       Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public UnsettledBetEvent processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
+    public BigDecimal processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException {
 
         Integer agentId = gameSession.getAgentId();
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
         UnsettledBet unsettledBet = null;
+        String vendorBetId = betResultData.getVendorBetId();
+        String roundId = betResultData.getRoundId();
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        boolean isBetExists = true;
+        BigDecimal balance = BigDecimal.ZERO;
 
         try {
-            // 2. Generate rawUnsettledBet
-            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+            UnsettledBet checkExistsUnsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+        } catch (BetNotFoundException betNotFoundException){
+            isBetExists = false;
+        }
 
-            // TODO: check for duplicate bet id
+        // no record in database, will proceed to send as bet request and insert as unsettled_bet data to couchbase
+        if(isBetExists == false){
+            try {
+                // 2. Generate rawUnsettledBet
+                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
 
-            // 3. Prepare callback info
-//            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-//            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
-            WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
-            UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
+                WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
+                UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
+                balance = balanceVo.getData().getBalance();
+                // 5. Insert into couchbase unsettled_bet table
+                betHistoryService.createUnsettledBet(unsettledBet);
 
-            // 5. Insert into couchbase unsettled_bet table
-            betHistoryService.createUnsettledBet(unsettledBet);
+                // TODO: if operator failed
+                //EventDispatcherSystem.emitAsync(unsettledBetEvent);
 
-            // TODO: if operator failed
-            //EventDispatcherSystem.emitAsync(unsettledBetEvent);
+            } catch (InsufficientBalanceException insufficientBalanceException) {
+                unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+                throw insufficientBalanceException;
 
-            return unsettledBetEvent;
+            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+                unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, invalidOperatorResponseException.getOperatorStatus());
+                throw invalidOperatorResponseException;
 
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-            throw insufficientBalanceException;
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, invalidOperatorResponseException.getOperatorStatus());
-            throw invalidOperatorResponseException;
-
-        } finally {
-            boolean isOperatorFailed = unsettledBetOperatorFailEvent != null;
-            if (isOperatorFailed) {
-                // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
-                //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
+            } finally {
+                boolean isOperatorFailed = unsettledBetOperatorFailEvent != null;
+                if (isOperatorFailed) {
+                    // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
+                    //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
+                }
             }
         }
+        else {
+            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+            WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
+            WalletBalanceVo balanceVo = walletBalanceAction.call(agentApiCredential, walletBalanceDto);
+            balance = balanceVo.getData().getBalance();
+        }
+
+        return balance;
     }
 
     /**
@@ -155,7 +171,7 @@ public class WalletService {
      * @throws BetNotFoundException            If no bet record is found
      * @throws CouchbaseDataIntegrityException If anything wrong data inser into couchbase Id is found
      */
-    public ResultBetEvent processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, String rawData)
+    public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, String rawData)
             throws BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException,
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
@@ -176,6 +192,7 @@ public class WalletService {
             BigDecimal winLoss, effectiveTurnover;
             WalletBalanceVo balanceVo;
             BetInformation betInformation;
+            boolean isBetExistsForUnsettledBet = false;
 
             if (isSettled) {
                 switch (resultType) {
@@ -231,7 +248,17 @@ public class WalletService {
                         unsettledBet.setWinLoss(winLoss);
                         unsettledBet.setEffectiveTurnover(effectiveTurnover);
                     }
-                    case BET_WIN, BET_LOSE, BET_JACKPOT -> unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                    case BET_WIN, BET_LOSE, BET_JACKPOT -> {
+
+                        try {
+                            UnsettledBet checkExistsUnsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                            isBetExistsForUnsettledBet = true;
+                        } catch (BetNotFoundException betNotFoundException){
+                            // DO NOTHING
+                        }
+
+                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                    }
 
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
@@ -241,7 +268,14 @@ public class WalletService {
 //                unsettledBetService.update(unsettledBet);
                 // 5. Prepare to send this transaction to operator as win
             }
-            balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betInformation, resultType);
+
+            if(isBetExistsForUnsettledBet == false){
+                balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betInformation, resultType);
+             } else {
+                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+                WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
+                balanceVo = walletBalanceAction.call(agentApiCredential, walletBalanceDto);
+            }
 
             if (isSettled) {
                 // TODO: to change to publish kafka
@@ -262,7 +296,7 @@ public class WalletService {
             // 5. Insert into couchbase unsettled_bet_results table
 //            betResultLogService.create(unsettledBetResult);
 
-            return resultBetEvent;
+            return balanceVo.getData().getBalance();
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //TODO: To discuss if Agent is disable, should we just remove the session of this player and return vendor with invalid bet request?

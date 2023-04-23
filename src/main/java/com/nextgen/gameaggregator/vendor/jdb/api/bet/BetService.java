@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,9 +65,9 @@ public class BetService {
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Request
             //BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto.getParams());
-            UnsettledBetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto.getParams());
+            BigDecimal balance = walletService.processBet(traceId, gameSession, betDto, actionDto.getParams());
 
-            vo.setBalance(betEvent.getLastBalance());
+            vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);   

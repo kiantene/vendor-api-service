@@ -70,12 +70,12 @@ public class CashTransferInOutAction {
 
             // 4. Process full bet data
             ResultType resultType = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-            responseVo.setBalanceAmount(resultBetEvent.getLastBalance());
+            responseVo.setBalanceAmount(balance);
             responseVo.setCurrencyCode(dto.getCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {

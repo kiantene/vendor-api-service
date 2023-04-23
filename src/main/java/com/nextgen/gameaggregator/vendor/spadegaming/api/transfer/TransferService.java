@@ -16,6 +16,8 @@ import com.nextgen.gameaggregator.vendor.spadegaming.constant.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.math.BigDecimal;
+
 
 @Service
 public class TransferService {
@@ -60,8 +62,8 @@ public class TransferService {
             switch(dto.getType()) {
                 case Actions.PLACE_BET:
                     // Place bet action
-                    UnsettledBetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
-                    transferVo.setBalance(betEvent.getLastBalance());
+                    BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
+                    transferVo.setBalance(balance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
