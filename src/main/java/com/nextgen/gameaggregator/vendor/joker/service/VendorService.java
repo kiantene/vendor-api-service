@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.joker.service;
 
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class VendorService {
+public class VendorService extends BaseVendorService {
 
     public static String generateHash(MultiValueMap<String, String> params, String secret) {
         String payload = params.keySet().stream().sorted()
