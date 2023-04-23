@@ -3,10 +3,14 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
@@ -38,19 +42,25 @@ public class WalletBetAction {
     @Autowired
     RequestService requestService;
     @Autowired
+    AgentApiCredentialService agentApiCredentialService;
+    @Autowired
     AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetResultData betResultData)
+            throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
             return requestService.responseOperatorSub();
         }
 
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
+        // 1. Generate walletBetDto
+        WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
 
@@ -128,4 +138,22 @@ public class WalletBetAction {
         return responseVo;
     }
 
+    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetResultData betResultData) {
+        BigDecimal amount = new BigDecimal(betResultData.getBetAmount().stripTrailingZeros().toPlainString());
+
+        WalletBetDto walletBetDto = new WalletBetDto();
+        walletBetDto.setTraceId(traceId);
+        walletBetDto.setTransactionId(traceId);
+        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(gameSession.getCurrencyCode());
+        walletBetDto.setToken(gameSession.getToken());
+        //UPDATE PG : USE VENDORBETID
+        walletBetDto.setExternalTransactionId(betResultData.getVendorBetId());
+        walletBetDto.setAmount(amount);
+        walletBetDto.setGameCode(gameSession.getGameCode());
+        walletBetDto.setRoundId(betResultData.getRoundId());
+        walletBetDto.setTimestamp(betResultData.getVendorBetTime());
+
+        return walletBetDto;
+    }
 }

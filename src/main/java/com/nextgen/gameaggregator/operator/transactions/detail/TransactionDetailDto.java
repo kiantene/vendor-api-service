@@ -22,4 +22,9 @@ public class TransactionDetailDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid transactionId format") // Only alphanumeric allowed
     private String transactionId;
 
+    @NotBlank(message = "2 alphanumeric")
+    @Size(min = 2, max = 2, message = " 2 alphanumeric only")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "2 alphanumeric only") // Only alphanumeric allowed
+    private String displayLanguage = "en";
+
 }

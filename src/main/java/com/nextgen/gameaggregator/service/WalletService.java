@@ -103,17 +103,18 @@ public class WalletService {
 
         Integer agentId = gameSession.getAgentId();
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
-
-        // 1. Generate walletBetDto
-        WalletBetDto walletBetDto = this.newWalletBetDto(traceId, gameSession, betResultData);
-
-        // 2. Generate rawUnsettledBet
-        UnsettledBet unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+        UnsettledBet unsettledBet = null;
 
         try {
+            // 2. Generate rawUnsettledBet
+            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+
+            // TODO: check for duplicate bet id
+
             // 3. Prepare callback info
-            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+//            AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+//            WalletBalanceVo balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+            WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
             UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
 
             // 5. Insert into couchbase unsettled_bet table
@@ -159,7 +160,7 @@ public class WalletService {
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException {
 
         Integer agentId = gameSession.getAgentId();
-        Integer vendorLineId = gameSession.getVendorLineId();
+//        Integer vendorLineId = gameSession.getVendorLineId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
@@ -167,21 +168,9 @@ public class WalletService {
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
 
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
-//        boolean createBetRecord = switch(resultType) {
-//            case BET, BET_WIN, BET_LOSE, BET_JACKPOT -> true;
-//            default -> false;
-//        };
 
         try {
             // 1. Retrieve unsettled bet transaction to prepare for merging with bet result
-
-//            if (createBetRecord) {
-//                unsettledBet = new UnsettledBet();
-//            } else {
-//                unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
-//            }
-
-//            this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
             UnsettledBet unsettledBet = null;
             SettledBet settledBet = null;
             BigDecimal winLoss, effectiveTurnover;
@@ -205,10 +194,6 @@ public class WalletService {
                             effectiveTurnover = vendorService.calculateEffectiveTurnover(settledBet);
                             settledBet.setEffectiveTurnover(effectiveTurnover);
                         }
-
-                        // get bet record, bet result, merge
-                        // insert settled_bets
-                        settledBetService.create(settledBet);
                     }
                     case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
@@ -219,7 +204,6 @@ public class WalletService {
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         settledBet.setWinLoss(winLoss);
                         settledBet.setEffectiveTurnover(effectiveTurnover);
-                        settledBetService.create(settledBet);
                     } // PGS
                     // PGS
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> { // PGS
@@ -230,13 +214,9 @@ public class WalletService {
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(settledBet);
                         settledBet.setWinLoss(winLoss);
                         settledBet.setEffectiveTurnover(effectiveTurnover);
-                        settledBetService.create(settledBet);
                     }
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
-                // publish to kafka
-//                kafkaService.produceBetHistory(betHistory);
-
 //                unsettledBetService.update(unsettledBet);
                 betInformation = settledBet;
             } else { // bets not settled yet
@@ -250,13 +230,8 @@ public class WalletService {
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
                         unsettledBet.setWinLoss(winLoss);
                         unsettledBet.setEffectiveTurnover(effectiveTurnover);
-                        unsettledBetService.update(unsettledBet);
                     }
-                    // insert unsettled_bet_results
-                    case BET_WIN, BET_LOSE, BET_JACKPOT -> { // PGS
-                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
-                        betHistoryService.createUnsettledBet(unsettledBet);
-                    }
+                    case BET_WIN, BET_LOSE, BET_JACKPOT -> unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
 
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
@@ -265,9 +240,21 @@ public class WalletService {
                 // insert into unsettled_bet_result
 //                unsettledBetService.update(unsettledBet);
                 // 5. Prepare to send this transaction to operator as win
-
             }
             balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betInformation, resultType);
+
+            if (isSettled) {
+                // TODO: to change to publish kafka
+                settledBetService.create(settledBet);
+                // publish to kafka
+//                kafkaService.produceBetHistory(settledBet);
+            } else {
+                switch (resultType) {
+                    case WIN -> unsettledBetService.update(unsettledBet);
+                    case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
+                    default -> log.warn("ProcessBetResult.exception -> result not handled");
+                }
+            }
 
             //TODO: refine proper handle for result bet event
             ResultBetEvent resultBetEvent = new ResultBetEvent(betInformation, balanceVo.getData().getBalance());
@@ -891,23 +878,6 @@ public class WalletService {
         return walletBetDto;
     }
 
-    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetResultData betResultData) {
-        WalletBetDto walletBetDto = new WalletBetDto();
-        walletBetDto.setTraceId(traceId);
-        walletBetDto.setTransactionId(traceId);
-        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletBetDto.setCurrency(gameSession.getCurrencyCode());
-        walletBetDto.setToken(gameSession.getToken());
-        //UPDATE PG : USE VENDORBETID
-        walletBetDto.setExternalTransactionId(betResultData.getVendorBetId());
-        walletBetDto.setAmount(new BigDecimal(betResultData.getBetAmount().stripTrailingZeros().toPlainString()));
-        walletBetDto.setGameCode(gameSession.getGameCode());
-        walletBetDto.setRoundId(betResultData.getRoundId());
-        walletBetDto.setTimestamp(betResultData.getVendorBetTime());
-
-        return walletBetDto;
-    }
-
     private BetHistory newBetHistory(WalletBetDto walletBetDto, com.nextgen.gameaggregator.entity.GameSession
                                 gameSession, String rawData) {
         BetHistory betHistory = new BetHistory();
@@ -1234,7 +1204,8 @@ public class WalletService {
             } else {
                 //else send as lose
                 WalletBetDto walletBetDto = this.newWalletBetForFullBetDto(traceId, gameSession, settledBet);
-                balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+//                balanceVo = walletBetAction.call(agentApiCredential, walletBetDto);
+                balanceVo = null;
             }
         } else {
             //else isFullBet = false, then we will send as wallet/win with winAmount (because bet already deducted)

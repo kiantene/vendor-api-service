@@ -1,28 +1,16 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.entity.VendorLine;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
 import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
 import com.nextgen.gameaggregator.repository.*;
 import jakarta.transaction.Transactional;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.repository.RawResultBetRepository;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -37,7 +25,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -311,16 +298,11 @@ public class BetHistoryService {
         return iBetDetailUrlInfo;
     }
 
-    public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData ) throws
+    public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData,
+                                              VendorLine vendorLine, VendorLanguageCode vendorLanguageCode) throws
             InvalidVendorResponseException, DisabledVendorLineException, InvalidVendorLineException {
 
-        //1. get vendor line
-        VendorLine vendorLine = vendorLineRepository.findById(iBetDetailUrlInfo.getVendorLineId()).orElse(null);
-        Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
 
-        if(vendorLine.getStatus().equals(Status.INACTIVE.code)){
-            throw new DisabledVendorLineException();
-        }
         //2. get vendor line credential
         Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine);
 
@@ -329,9 +311,9 @@ public class BetHistoryService {
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
             BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(betDetailUrl);
-            MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo);
+            MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
 
-            BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo);
+            BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
             transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
 
             return transactionDetailData;

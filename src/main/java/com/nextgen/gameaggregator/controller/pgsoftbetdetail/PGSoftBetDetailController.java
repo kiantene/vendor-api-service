@@ -49,7 +49,7 @@ public class PGSoftBetDetailController {
     public String getGameList() {
         try {
 
-            Agent agent = agentRepository.findAgentById(4);
+            Agent agent = agentRepository.findAgentById(2);
             Vendor vendor = vendorRepository.findVendorById(2);
             Currency currency = currencyRepository.findByCode("CNY");
             GameCategory gameCategory = gameCategoryRepository.findByCode("SLOTS");
@@ -57,8 +57,8 @@ public class PGSoftBetDetailController {
             VendorLine vendorLine = vendorLineService.findAgentVendorLine(agent, vendor, currency, gameCategory);
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
-            String parentBetId = "1615259183702659072";
-            String betId = "1615259183702659072";
+            String parentBetId = "1647517517021351936";
+            String betId = "1647517517021351936";
 
             MultiValueMap<String,String> formData = formDataBuilder(parentBetId, betId, lineCredentials);
             String betDetailApi = call(formData, lineCredentials);

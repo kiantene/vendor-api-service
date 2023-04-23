@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.betdetail;
+package com.nextgen.gameaggregator.vendor.pgsoft.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -8,9 +8,9 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -25,9 +25,9 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public class BetDetailService implements BetDetailUrl {
-
     @Autowired
     RequestService requestService;
 
@@ -35,43 +35,66 @@ public class BetDetailService implements BetDetailUrl {
     private String profilesActive;
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
+    public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials,
+                                                         IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
-        String secureLogin = credentials.get(Credentials.SECURE_LOGIN);
-        Optional.ofNullable(secureLogin).orElseThrow(InvalidVendorLineException::new);
 
-        String secret = credentials.get(Credentials.SECRET_KEY);
-        Optional.ofNullable(secret).orElseThrow(InvalidVendorLineException::new);
+        String operatorToken = credentials.get(Credentials.OPERATOR_TOKEN);
+        Optional.ofNullable(operatorToken).orElseThrow(InvalidVendorLineException::new);
+
+        String secretKey = credentials.get(Credentials.SECRET_KEY);
+        Optional.ofNullable(secretKey).orElseThrow(InvalidVendorLineException::new);
+
+        String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN);
+        Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
+
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-
-        formData.add("secureLogin", secureLogin);
-        formData.add("playerId", iBetDetailUrlInfo.getVendorUsername());
-        formData.add("roundId", iBetDetailUrlInfo.getExternalRoundId());
-        String hash = VendorService.generateHash(formData, secret);
-        formData.add("hash", hash);
-
+        formData.add("operator_token", operatorToken);
+        formData.add("secret_key", secretKey);
         return formData;
+
     }
 
     @Override
     public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
                                IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-        String apiUrl = credentials.get(Credentials.REPORT_URL);
+
+        LoginProxyVo loginProxyVo = this.callLoginProxy(formData, credentials);
+        BetDetailUrlVo betDetailUrlVo = new BetDetailUrlVo();
+        if (loginProxyVo.equals(null)) {
+            betDetailUrlVo.setError(loginProxyVo.getError());
+        } else {
+            String UrlBetHistory = credentials.get(Credentials.PUBLIC_DOMAIN)+Endpoints.BET_DETAIL_STEP_TWO+
+                    "?trace_id={0}&t={1}&psid={2}&sid={3}&lang={4}&type=operator";
+
+            String betDetailUrl = VendorService.generateBetDetailUrl(
+                    UrlBetHistory, String.valueOf(UUID.randomUUID()), loginProxyVo.getData().getOperator_session(), iBetDetailUrlInfo.getExternalRoundId(),
+                    iBetDetailUrlInfo.getExternalTransactionId(), vendorLanguageCode.getLanguageCode());
+            betDetailUrlVo.setUrl(betDetailUrl);
+        }
+
+
+        return betDetailUrlVo;
+    }
+
+    public LoginProxyVo callLoginProxy(MultiValueMap<String, String> formData, Map<String, String> credentials) throws InvalidVendorResponseException, InvalidVendorLineException {
+        String apiUrl = credentials.get(Credentials.PGSOFT_API_DOMAIN) ;
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        BetDetailUrlVo responseVo = null;
+        String uri = Endpoints.BET_DETAIL_STEP_ONE+ "?trace_id="+String.valueOf(UUID.randomUUID());
+
+        LoginProxyVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.OPEN_HISTORY )
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
-                // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
@@ -80,14 +103,14 @@ public class BetDetailService implements BetDetailUrl {
 
         long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+                uri, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
-            responseVo = new Gson().fromJson((String) apiResponse.getBody(), BetDetailUrlVo.class);
+            responseVo = new Gson().fromJson((String) apiResponse.getBody(), LoginProxyVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());

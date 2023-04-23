@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.transactions.detail;
 
+import com.nextgen.gameaggregator.entity.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
@@ -10,8 +11,10 @@ import org.springframework.util.MultiValueMap;
 import java.util.Map;
 
 public interface BetDetailUrl {
-    MultiValueMap<String, String> formDataBuilder( Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo)
+    MultiValueMap<String, String> formDataBuilder( Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo,
+                                                   VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException;
-    BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo) throws InvalidVendorResponseException, InvalidVendorLineException;
+    BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo,
+                        VendorLanguageCode vendorLanguageCode) throws InvalidVendorResponseException, InvalidVendorLineException;
 }
 
