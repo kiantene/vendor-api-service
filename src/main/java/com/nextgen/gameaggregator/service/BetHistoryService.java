@@ -1,10 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
-import com.nextgen.gameaggregator.entity.VendorLine;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.Status;
@@ -28,7 +25,6 @@ import org.springframework.util.MultiValueMap;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -135,11 +131,11 @@ public class BetHistoryService {
         entity.setCreateTime(System.currentTimeMillis());
 
         jdbcTemplate.update("INSERT INTO bet_history (id, external_transaction_id, round_id, vendor_game_id, " +
-                "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
-                "game_session_token, master_agent_id, house_id, game_category_id, currency_id, bet_amount, " +
-                "win_amount, win_loss, vendor_win_loss, effective_turnover, result_type, raw_data, status, " +
-                "vendor_bet_time, vendor_settle_time, create_time, result_time) VALUES (?, ?, ?, ?, ?, ?, ?, " +
-                "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
+                        "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
+                        "game_session_token, master_agent_id, house_id, game_category_id, currency_id, bet_amount, " +
+                        "win_amount, win_loss, vendor_win_loss, effective_turnover, result_type, raw_data, status, " +
+                        "vendor_bet_time, vendor_settle_time, create_time, result_time) VALUES (?, ?, ?, ?, ?, ?, ?, " +
+                        "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
                 entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(),
                 entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
                 entity.getGameSessionToken(), entity.getGameCategoryId(),
@@ -189,7 +185,7 @@ public class BetHistoryService {
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorLineId         vendor line id within Game Aggregator System
+     * @param vendorLineId   vendor line id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
@@ -197,11 +193,11 @@ public class BetHistoryService {
     @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
     public RawUnsettledBet getRawUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
+        String mergeId = vendorBetId + '_' + roundId + '_' + vendorLineId + '_' + vendorPlayerId;
         RawUnsettledBet rawUnsettledBet = null;
 
-        try{
-             rawUnsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+        try {
+            rawUnsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
             if (rawUnsettledBet == null) { // No matching bet record for the given round Id
                 throw new BetNotFoundException("Cannot find round Id: " + roundId);
             }
@@ -216,7 +212,7 @@ public class BetHistoryService {
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorGameId         vendor game id within Game Aggregator System
+     * @param vendorGameId   vendor game id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
@@ -226,7 +222,7 @@ public class BetHistoryService {
 
         RawUnsettledBet rawUnsettledBet = null;
 
-        try{
+        try {
             rawUnsettledBet = rawUnsettledBetRepository.findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
             if (rawUnsettledBet == null) { // No matching bet record for the given round Id
                 throw new BetNotFoundException("Cannot find round Id: " + roundId);
@@ -277,14 +273,11 @@ public class BetHistoryService {
         return iBetDetailUrlInfo;
     }
 
-    public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData ) throws
+    public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData,
+                                              VendorLine vendorLine, VendorLanguageCode vendorLanguageCode) throws
             InvalidVendorResponseException, DisabledVendorLineException, InvalidVendorLineException {
 
-        //1. get vendor line
-        VendorLine vendorLine = vendorLineRepository.findById(iBetDetailUrlInfo.getVendorLineId()).orElse(null);
-        Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
-
-        if(vendorLine.getStatus().equals(Status.INACTIVE.code)){
+        if (vendorLine.getStatus().equals(Status.INACTIVE.code)) {
             throw new DisabledVendorLineException();
         }
         //2. get vendor line credential
@@ -295,9 +288,9 @@ public class BetHistoryService {
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
             BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(betDetailUrl);
-            MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo);
+            MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
 
-            BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo);
+            BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
             transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
 
             return transactionDetailData;
@@ -306,7 +299,7 @@ public class BetHistoryService {
                  InvalidFormatException | RecordNotFoundException
                 gameClassException) {
             gameClassException.printStackTrace();
-            log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
+            log.error("GAME CLASS ERROR :" + gameClassException.getStackTrace().toString());
             throw new InvalidVendorResponseException();
         }
     }

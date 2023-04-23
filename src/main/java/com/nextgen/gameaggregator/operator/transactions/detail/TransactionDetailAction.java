@@ -1,16 +1,13 @@
 package com.nextgen.gameaggregator.operator.transactions.detail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.service.BetHistoryService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +28,16 @@ public class TransactionDetailAction {
     private ValidationService validationService;
 
     @Autowired
+    private LanguageService languageService;
+
+    @Autowired
     private BetHistoryService betHistoryService;
+
+    @Autowired
+    private VendorLineService vendorLineService;
+
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = "detail")
     public OperatorResponseVo<TransactionDetailData> detail(HttpServletRequest request) {
@@ -57,12 +63,22 @@ public class TransactionDetailAction {
             String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
+            // 4. check if platform supported
+            Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
+
+            //5. check bet history detail
             IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(apiCredential.getAgent().getId(), dto.getTransactionId());
+
+            //6. check vendor line
+            VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId());
+
+            //7. check if vendor language supported
+            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendor(), language);
 
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);
 
-            transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData);
+            transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
 
             responseVo.setData(transactionDetailData);
 
@@ -94,6 +110,12 @@ public class TransactionDetailAction {
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
+
+        } catch (InvalidLanguageException invalidLanguageException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
+
+        } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
