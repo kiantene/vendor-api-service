@@ -1,30 +1,24 @@
 package com.nextgen.gameaggregator.operator.game.terminate;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.service.HttpService;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 
-@RestController
-@RequestMapping(path = "game/")
-@Slf4j
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TerminateDto {
+    @NotBlank(message = "UUID format only")
+    @Size(min = 36, max = 36, message = "UUID format only")
+    @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
+    private String traceId;
 
-    @Autowired
-    private HttpService httpService;
+    @NotBlank(message = "min 3 and max 20 alphanumeric")
+    @Size(min = 3, max = 20 , message = "min 3 and max 20 alphanumeric")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "min 3 and max 20 alphanumeric only") // Only alphanumeric allowed
+    private String username;
 
-    @PostMapping(path = "terminate")
-    public OperatorResponseVo list(HttpServletRequest request) {
 
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo responseVo = new OperatorResponseVo<>();
-
-        httpService.end(httpRequestLog, responseVo);
-        return responseVo;
-    }
 }

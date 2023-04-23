@@ -181,7 +181,6 @@ public class GameUrlAction {
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
 
-
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
 
