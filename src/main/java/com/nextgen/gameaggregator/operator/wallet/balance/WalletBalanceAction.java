@@ -3,12 +3,11 @@ package com.nextgen.gameaggregator.operator.wallet.balance;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidResponseException;
-import com.nextgen.gameaggregator.exception.ResponseNotMatchRequestException;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
@@ -39,22 +38,26 @@ public class WalletBalanceAction {
     private String profilesActive;
 
     @Autowired
-    RequestService requestService;
-
+    private RequestService requestService;
     @Autowired
-    AuthenticationService authenticationService;
+    private AgentApiCredentialService agentApiCredentialService;
+    @Autowired
+    private AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletBalanceDto dto) throws InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
             return requestService.responseOperatorSub();
         }
 
+        Integer agentId = gameSession.getAgentId();
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
+        WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
@@ -174,5 +177,14 @@ public class WalletBalanceAction {
         return responseVo;
     }
 
+    private WalletBalanceDto newWalletBalanceDto(String traceId, com.nextgen.gameaggregator.entity.GameSession
+            gameSession) {
+        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+        walletBalanceDto.setTraceId(traceId);
+        walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBalanceDto.setCurrency(gameSession.getCurrencyCode());
+        walletBalanceDto.setToken(gameSession.getToken());
 
+        return walletBalanceDto;
+    }
 }

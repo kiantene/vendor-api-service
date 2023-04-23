@@ -6,11 +6,13 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -39,6 +41,9 @@ public class SessionBetAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private VendorService vendorService;
+
     @PostMapping(path = EndPoints.SESSION_BET)
     public SessionBetVo SessionBetAction(HttpServletRequest request) {
 
@@ -46,7 +51,7 @@ public class SessionBetAction {
         SessionBetVo sessionBetVo = new SessionBetVo();
         String traceId = httpRequestLog.getTraceId();
 
-        try{
+        try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             SessionBetDto sessionBetDto = HttpService.convertJsonToDto(body, SessionBetDto.class);
@@ -65,8 +70,8 @@ public class SessionBetAction {
                     sessionBetVo.setBalance(balance);
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
-                    SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, sessionBetDto);
-                    sessionBetVo.setBalance(settledBetEvent.getLastBalance());
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, ResultType.BET_WIN, vendorService, body);
+                    sessionBetVo.setBalance(balance);
                 }
                 default -> throw new InvalidRequestException();
             }
@@ -75,10 +80,10 @@ public class SessionBetAction {
             sessionBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             sessionBetVo.setToken(gameSession.getToken());
 
-        } catch(InvalidRequestException |
-               JsonProcessingException |
-               GameNotSupportedException |
-               CurrencyNotSupportedException invalidRequest){
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 GameNotSupportedException |
+                 CurrencyNotSupportedException invalidRequest) {
             sessionBetVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
 
         } catch (AuthenticationException invalidSessionToken) {
@@ -99,15 +104,17 @@ public class SessionBetAction {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
 
-        }finally {
+        } finally {
             httpService.end(httpRequestLog, sessionBetVo);
         }
         return sessionBetVo;
     }
+
     private void doValidation(SessionBetDto sessionBetDto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(sessionBetDto);
     }
+
     private void doVerification(SessionBetDto sessionBetDto, GameSession gameSession)
             throws
             AuthenticationException,
