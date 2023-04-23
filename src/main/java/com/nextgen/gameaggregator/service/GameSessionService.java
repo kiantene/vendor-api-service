@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Service;
 
@@ -31,8 +32,12 @@ public class GameSessionService {
     @Autowired
     private RedisConnectionFactory connectionFactory;
 
+    @Autowired
+    private Environment environment;
+
     @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
     public GameSession verifyToken(String token) throws AuthenticationException {
+
         GameSession session = rawGameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
@@ -41,7 +46,7 @@ public class GameSessionService {
     }
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
-    @CachePut(value = "GameSessions", key = "#rawGameSession.token", cacheManager = "cacheManager")
+    @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager")
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
                                      String vendorPlatformCode) {
@@ -67,7 +72,7 @@ public class GameSessionService {
 
     }
 
-    @CachePut(value = "GameSessions", key = "#rawGameSession.vendorPlayerUsername", cacheManager = "cacheManager")
+    @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager")
     public GameSession createSessionByVendorPlayer(GameSession gameSession){
         return gameSession;
     }
