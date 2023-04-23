@@ -179,7 +179,6 @@
 			<artifactId>modelmapper</artifactId>
 			<version>3.1.1</version>
 		</dependency>
-
 	</dependencies>
 
 	<build>
@@ -192,17 +191,13 @@
 	</build>
 
 	<repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
 		<repository>
-			<id>gitlab-maven</id>
+			<id>gitlab-maven-sas</id>
 			<url>http://223.25.67.48/api/v4/projects/10/packages/maven</url>
-		</repository>
-		<repository>
-			<id>gitlab-maven-2</id>
-			<url>http://223.25.67.48/api/v4/projects/41/packages/maven</url>
-		</repository>
-		<repository>
-			<id>gitlab-maven-3</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
 		</repository>
 		<repository>
 			<id>confluent</id>
@@ -210,15 +205,4 @@
 			<url>http://packages.confluent.io/maven/</url>
 		</repository>
 	</repositories>
-
-	<distributionManagement>
-		<repository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
-		</repository>
-		<snapshotRepository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>

@@ -167,13 +167,27 @@
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.2</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
 			<version>3.1.1</version>
 		</dependency>
-
+		<!--grpc -->
+		<!--		<dependency>-->
+		<!--			<groupId>com.nextgen.game-aggregator</groupId>-->
+		<!--			<artifactId>game-aggregator-vendor-operator-grpc-proto</artifactId>-->
+		<!--			<version>0.0.1-SNAPSHOT</version>-->
+		<!--		</dependency>-->
+		<!--		<dependency>-->
+		<!--			<groupId>net.devh</groupId>-->
+		<!--			<artifactId>grpc-client-spring-boot-starter</artifactId>-->
+		<!--			<version>2.13.1.RELEASE</version>-->
+		<!--		</dependency>-->
 	</dependencies>
 
 	<build>
@@ -186,17 +200,13 @@
 	</build>
 
 	<repositories>
+        <repository>
+            <id>central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
 		<repository>
-			<id>gitlab-maven</id>
+			<id>gitlab-maven-sas</id>
 			<url>http://223.25.67.48/api/v4/projects/10/packages/maven</url>
-		</repository>
-		<repository>
-			<id>gitlab-maven-2</id>
-			<url>http://223.25.67.48/api/v4/projects/41/packages/maven</url>
-		</repository>
-		<repository>
-			<id>gitlab-maven-3</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
 		</repository>
 		<repository>
 			<id>confluent</id>
@@ -204,15 +214,4 @@
 			<url>http://packages.confluent.io/maven/</url>
 		</repository>
 	</repositories>
-
-	<distributionManagement>
-		<repository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
-		</repository>
-		<snapshotRepository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>

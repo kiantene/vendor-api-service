@@ -27,6 +27,9 @@ variables:
   PT_PORTAINER_NAME: game-aggregator_ga-vendor-api-service
   PT_SERVER: ubuntu@16.163.242.71 # stg2.gasea168.com
 
+  DEVO_POINTING_BRANCH: devo
+  DEVO_DOCKER_REGISTRY: 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service
+  DEVO_DOCKER_TAG: devo
 stages:
   - lint
   - generate_pwd
@@ -65,13 +68,17 @@ stages:
   rules:
     - if: $CI_COMMIT_BRANCH == $PT_POINTING_BRANCH
 
+.devo-deploy-rule:
+  rules:
+    - if: $CI_COMMIT_BRANCH == $DEVO_POINTING_BRANCH
 # general ######################################
 generate_pwd:
   stage: generate_pwd
   rules:
     - if: $CI_COMMIT_BRANCH == $STG_POINTING_BRANCH ||
           $CI_COMMIT_BRANCH == $QA_POINTING_BRANCH ||
-          $CI_COMMIT_BRANCH == $PT_POINTING_BRANCH
+          $CI_COMMIT_BRANCH == $PT_POINTING_BRANCH ||
+          $CI_COMMIT_BRANCH == $DEVO_POINTING_BRANCH
   script:
     - aws configure set aws_access_key_id $ACCESS_KEY_ID
     - aws configure set aws_secret_access_key $SECRET_ACCESS_KEY
@@ -207,3 +214,27 @@ pt-aws-deploy:
     - echo "$CD_AWS_PRIVATE_KEY" > "$(pwd)/pt-key.pem"
     - chmod 400 "$(pwd)/pt-key.pem"
     - ssh -t -oStrictHostKeyChecking=no -i "$(pwd)/pt-key.pem" $PT_SERVER -p 22 "docker login --username=$REGISTRY_USERNAME --password=$REGISTRY_PWD $REGISTRY_URL && docker pull $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG && docker service update --force --image $PT_DOCKER_REGISTRY:$PT_DOCKER_TAG $PT_PORTAINER_NAME"
+
+# devo ######################################
+devo-gitlab-build:
+  stage: build
+  extends: .devo-deploy-rule
+  script:
+    - "mvn clean deploy -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
+  artifacts:
+    paths:
+      - ./target/*.jar
+    expire_in: 2d
+
+devo-push-registry:
+  stage: push-img
+  needs:
+    - job: generate_pwd
+      artifacts: true
+    - job: devo-gitlab-build
+  extends: .devo-deploy-rule
+  script:
+    - export REGISTRY_PWD=$(cat pwd.txt)
+    - docker build -t $DEVO_DOCKER_REGISTRY:$DEVO_DOCKER_TAG .
+    - docker login --username=$REGISTRY_USERNAME --password=$REGISTRY_PWD $REGISTRY_URL
+    - docker push $DEVO_DOCKER_REGISTRY:$DEVO_DOCKER_TAG

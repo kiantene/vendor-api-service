@@ -1,5 +1,14 @@
 <settings xmlns="http://maven.apache.org/SETTINGS/1.1.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd">
+    <mirrors>
+        <mirror>
+            <id>maven-default-http-blocker</id>
+            <mirrorOf>dummy</mirrorOf>
+            <name>Dummy mirror to override default blocking mirror that blocks http</name>
+            <url>http://0.0.0.0/</url>
+        </mirror>
+    </mirrors>
+
     <servers>
         <server>
             <id>gitlab-maven</id>
@@ -12,32 +21,16 @@
                 </httpHeaders>
             </configuration>
         </server>
+        <server>
+            <id>gitlab-maven-sas</id>
+            <configuration>
+                <httpHeaders>
+                    <property>
+                        <name>Private-Token</name>
+                        <value>VnC4Jx25QQRGjyszAyaU</value>
+                    </property>
+                </httpHeaders>
+            </configuration>
+        </server>
     </servers>
-
-    <mirrors>
-        <mirror>
-            <id>gitlab-maven</id>
-            <name>Repo Mirror</name>
-            <url>
-                http://223.25.67.48/api/v4/projects/19/packages/maven
-            </url>
-            <mirrorOf>http://223.25.67.48</mirrorOf>
-        </mirror>
-        <mirror>
-            <id>gitlab-maven-2</id>
-            <name>Repo Mirror</name>
-            <url>
-                http://223.25.67.48/api/v4/projects/41/packages/maven
-            </url>
-            <mirrorOf>http://223.25.67.48</mirrorOf>
-        </mirror>
-        <mirror>
-            <id>gitlab-maven-3</id>
-            <name>Repo Mirror</name>
-            <url>
-                http://223.25.67.48/api/v4/projects/10/packages/maven
-            </url>
-            <mirrorOf>http://223.25.67.48</mirrorOf>
-        </mirror>
-    </mirrors>
 </settings>

@@ -1,6 +1,10 @@
 package com.nextgen.gameaggregator.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.couchbase.core.CouchbaseTemplate;
@@ -9,11 +13,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = "health/")
@@ -55,10 +54,11 @@ public class HealthCheckController {
     @Value("${spring.couchbase.scopeName}")
     private String cbScopeName;
 
+    @Value("${spring.data.redis.mode}")
+    private RedisMode mode;
+
     @GetMapping(path = "status")
     public String status() {
-        // log.info("Health Check OK");
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
         ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, formatter);
         zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Singapore"));
@@ -70,8 +70,12 @@ public class HealthCheckController {
     @GetMapping(path = "info")
     public String info() {
         String output;
+        log.info("Health Check OK");
 
-        output = "Profile:<br>" + profilesActive + "<br><br>" + "DB Info:<br>" + jdbcUrl + "<br>" + dbUsername + "<br><br>" + "Redis Info:<br>" + redisDB + "<br>" + redisHost + "<br><br>" + "Testing Stub:<br>" + stub;
+        output = "Profile:<br>" + profilesActive + "<br><br>" +
+                "DB Info:<br>URL: " + jdbcUrl + "<br>Username: " + dbUsername + "<br><br>" +
+                "Redis Info:<br>DB: " + redisDB + "<br>Host: " + redisHost + "<br>Mode: " + mode + "<br><br>" +
+                "Testing Stub:<br>" + stub;
 
         return output;
     }
@@ -94,7 +98,8 @@ public class HealthCheckController {
         long endTime = System.nanoTime();
         long latency = endTime - startTime;
         long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
-        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
+        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " nanoseconds / "
+                + milliseconds + " milliseconds";
 
         return output;
     }
@@ -108,7 +113,8 @@ public class HealthCheckController {
         long endTime = System.nanoTime();
         long latency = endTime - startTime;
         long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
-        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
+        String output = "DB URL:<br>" + jdbcUrl + "<br><br>" + "Database latency: " + latency + " nanoseconds / "
+                + milliseconds + " milliseconds";
 
         return output;
     }
@@ -126,5 +132,10 @@ public class HealthCheckController {
         String output = "Couchbase latencyxxx: " + latency + " nanoseconds / " + milliseconds + " milliseconds";
 
         return output;
+    }
+
+    public enum RedisMode {
+        CLUSTER,
+        STANDALONE
     }
 }

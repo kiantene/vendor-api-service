@@ -25,6 +25,8 @@ spring:
     scopeName: raw
   data:
     redis:
+      mode: 
+      nodehosts: 
       database: 1
       host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
       port: 6379
