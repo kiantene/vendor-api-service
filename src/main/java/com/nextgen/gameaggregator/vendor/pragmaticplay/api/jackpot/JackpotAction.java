@@ -54,6 +54,8 @@ public class JackpotAction {
 
             // TODO: validate gameId with rawGameSession
 
+            log.info("JackpotDto body = " + body);
+
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 

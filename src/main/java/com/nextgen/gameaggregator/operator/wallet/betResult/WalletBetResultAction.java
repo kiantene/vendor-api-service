@@ -61,7 +61,7 @@ public class WalletBetResultAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-        WalletBetResultDto dto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, betInformation, resultType);
+        WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -142,7 +142,7 @@ public class WalletBetResultAction {
         return responseVo;
     }
 
-    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, GameSession gameSession, BetInformation betInformation, ResultType resultType) {
+    private WalletBetResultDto newWalletBetResultDto(String traceId, GameSession gameSession, BetInformation betInformation, ResultType resultType) {
 
         BigDecimal betAmount = (ObjectUtils.isEmpty(betInformation.getWinLoss())) ? null : new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(betInformation.getEffectiveTurnover())) ? null : new BigDecimal(betInformation.getEffectiveTurnover().stripTrailingZeros().toPlainString());
