@@ -122,10 +122,15 @@ public class VendorLineService {
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
-    public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException {
-        VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, Status.ACTIVE.code);
+    public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException, DisabledVendorLineException {
+
+        //1. get vendor line
+        VendorLine vendorLine = vendorLineRepository.findById(vendorLineId).orElse(null);
         Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
 
+        if (vendorLine.getStatus().equals(Status.INACTIVE.code)) {
+            throw new DisabledVendorLineException();
+        }
         return vendorLine;
     }
 }

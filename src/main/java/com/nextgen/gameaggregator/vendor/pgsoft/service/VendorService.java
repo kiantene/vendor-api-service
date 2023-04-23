@@ -59,6 +59,12 @@ public class VendorService {
         return gameUrl;
     }
 
+    public static String generateBetDetailUrl(String urlTemplate, String traceUd, String operatorToken, String parentId, String betId, String languageCode) {
+        // https://public.pg-redirect.net/history/redirect.html?trace_id={0}&t={1}&psid={2}&sid={3}&lang={4}&type=operator
+        String betDetailUrl = MessageFormat.format(urlTemplate, traceUd, operatorToken, parentId, betId, languageCode);
+        return betDetailUrl;
+    }
+
     public static String generateBetDetailUrl(String apiUrl, MultiValueMap<String, String> parameters) {
         // form query string
         String queryString = "";
