@@ -3,7 +3,8 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -15,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -53,6 +55,8 @@ public class EndRoundAction {
     private VendorPlayerService vendorPlayerService;
     @Autowired
     private Environment environment;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
@@ -80,33 +84,35 @@ public class EndRoundAction {
             // 2. Gather require data
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
-            RawUnsettledBet rawUnsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(endRoundDto.getVendorBetId(),
+            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(endRoundDto.getVendorBetId(),
                     endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             // 3. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(rawUnsettledBet.getGameSessionToken());
+            GameSession gameSession = gameSessionService.verifyToken(unsettledBet.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(endRoundDto, rawGameSession, wToken);
+            this.doVerification(endRoundDto, gameSession, wToken);
 
             // 5. Process extra endRoundDto bet data
-            this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, rawUnsettledBet);
+            this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
             // temporary code to ensure when commit to stg branch will still use old code for new changes
-            SettledBetEvent settledBetEvent;
+            CommonVo commonVo = new CommonVo();
+
             if(environment.getProperty("spring.couchbase.userName") == "stg"){
                 //if env = stg will use old code
-                settledBetEvent = walletService.processResultSettle(traceId, rawGameSession, endRoundDto, body);
+                SettledBetEvent settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
+                commonVo.setBalance(settledBetEvent.getLastBalance());
+
             } else {
                 //else use new code
-                settledBetEvent = walletService.processResultSettlePlus(traceId, rawGameSession, endRoundDto, body);
+                ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, endRoundDto, ResultType.WIN, vendorService, body);
+                commonVo.setBalance(resultBetEvent.getLastBalance());
             }
 
             // Construct VO data
-            CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(settledBetEvent.getLastBalance());
-            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
@@ -171,32 +177,32 @@ public class EndRoundAction {
         dto.setExternalTransactionId(endRoundDataDtoList.get(0).getMtcode());
     }
 
-    private void doVerification(EndRoundDto dto, RawGameSession rawGameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
+    private void doVerification(EndRoundDto dto, GameSession gameSession, String wToken) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAccount(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGamecode(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGamecode(), AuthenticationException::new);
 
         // 3. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 4. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
     }
 
-    private WinType getWinType(EndRoundDto endRoundDto, BigDecimal amount) {
-        WinType winType;
+    private ResultType getWinType(EndRoundDto endRoundDto, BigDecimal amount) {
+        ResultType resultType;
         if (endRoundDto.getJackpot() != null) {
-            winType = WinType.JACKPOT;
+            resultType = ResultType.JACKPOT;
         } else {
-            winType = (amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+            resultType = (amount.compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
         }
 
-        return winType;
+        return resultType;
     }
 
-    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, RawUnsettledBet rawUnsettledBet){
+    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, UnsettledBet unsettledBet){
 
         Instant instant = Instant.parse(endRoundDataDtoList.get(0).getEventtime());
         Long resultTime = instant.toEpochMilli();
@@ -205,9 +211,8 @@ public class EndRoundAction {
         dto.setVendorSettleTime(dto.getResultTime());
 
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
-        dto.setEffectiveTurnover(rawUnsettledBet.getBetAmount());
-        dto.setWinLoss(dto.getWinAmount().subtract(rawUnsettledBet.getBetAmount()));
-        dto.setVendorWinLoss(dto.getWinLoss());
+        dto.setEffectiveTurnover(unsettledBet.getBetAmount());
+        dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
         dto.setResultType(this.getWinType(dto, dto.getWinAmount()));
     }
 }

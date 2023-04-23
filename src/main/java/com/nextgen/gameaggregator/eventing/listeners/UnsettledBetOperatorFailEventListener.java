@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
-import com.nextgen.gameaggregator.eventing.events.BetOperatorFailEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,9 +20,9 @@ public class UnsettledBetOperatorFailEventListener implements EventListener<Unse
 
     @Override
     public void onEvent(UnsettledBetOperatorFailEvent event) {
-        RawUnsettledBet rawUnsettledBet = event.getRawUnsettledBet();
-        rawUnsettledBet.setOperatorStatus(event.getResponseCode());
-        rawUnsettledBetRepository.save(rawUnsettledBet);
-        cachingService.updateUnsettledBetCaching(rawUnsettledBet);
+        UnsettledBet unsettledBet = event.getUnsettledBet();
+        unsettledBet.setOperatorStatus(event.getResponseCode());
+        rawUnsettledBetRepository.save(unsettledBet);
+        cachingService.updateUnsettledBetCaching(unsettledBet);
     }
 }

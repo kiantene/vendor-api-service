@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.spinix.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -59,18 +59,18 @@ public class BalanceAction {
             this.doValidation(dto, sign);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getUserToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-            this.doVerification(dto, rawGameSession, sign, bodyObj);
+            this.doVerification(dto, gameSession, sign, bodyObj);
 
             // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
             BalanceDataWalletVo balanceDataWalletVo = new BalanceDataWalletVo();
 
             // 4. Set Balance and Currency
             balanceDataWalletVo.setBalance(balance);
-            balanceDataWalletVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            balanceDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             // 5. Set BalanceDataWalletVo Object
             balanceDataVo.setWallet(balanceDataWalletVo);
@@ -135,7 +135,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, RawGameSession rawGameSession, String token, Map<String, Object> body)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String token, Map<String, Object> body)
             throws AuthenticationException,
             InvalidPlayerException,
             GameNotSupportedException,
@@ -147,17 +147,17 @@ public class BalanceAction {
             CredentialNotFoundException {
 
         // Verify Signature
-        String signatureKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
+        String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
         if(!VendorService.isSameSignature(token, body, signatureKey)) {
             throw new InvalidVendorLineException();
         }
 
         // Verify vendor username, agent vendor line, player status and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getUserId());
+        validationService.validateIllegibleBet(gameSession, dto.getUserId());
 
         // Verify currency + game code
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
 
     }

@@ -10,8 +10,8 @@ import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import jakarta.validation.constraints.*;
@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WinDataDto implements UnsettledResultSettledData {
+public class WinDataDto implements BetResultData {
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -131,16 +131,6 @@ public class WinDataDto implements UnsettledResultSettledData {
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.effectiveTurnover;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return this.amount.compareTo(BigDecimal.ZERO) > 0 ? WinType.WIN : WinType.LOSE;
     }
 
     @Override

@@ -83,9 +83,9 @@ public class VendorService {
         return dto.getParentBetId().equals(dto.getVendorBetId());
     }
 
-    public static Boolean isRoundEnded(CashTransferInOutDto dto) {
-        return dto.getIsEndRound();
-    }
+//    public static Boolean isRoundEnded(CashTransferInOutDto dto) {
+//        return dto.getIsEndRound();
+//    }
 
     public static Boolean hasWinAmount(CashTransferInOutDto dto) {
         return dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0;

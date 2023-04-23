@@ -2,8 +2,7 @@ package com.nextgen.gameaggregator.vendor.hacksawgaming.api.cancelwager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawGameSession;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -57,10 +56,10 @@ public class CancelWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify data
-            this.doVerification(dto, rawGameSession);
+            this.doVerification(dto, gameSession);
 
             if(dto.wagerType == 1) {
                 /*
@@ -73,11 +72,11 @@ public class CancelWagerAction {
             }
 
             // Set Vendor player username + Balance + Currency
-            responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Set Vendor player username + Balance + Currency
             responseVo.setCode(ResponseCodes.SUCCESS);
@@ -131,7 +130,7 @@ public class CancelWagerAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelWagerDto dto, RawGameSession rawGameSession)
+    private void doVerification(CancelWagerDto dto, GameSession gameSession)
             throws InvalidPlayerException,
             CurrencyNotSupportedException,
             DisabledVendorLineException,
@@ -140,8 +139,8 @@ public class CancelWagerAction {
             InvalidVendorLineException,
             CredentialNotFoundException {
 
-        String brandId = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.BRAND_ID);
-        String apiKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.API_KEY);
+        String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
+        String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
         String toVerifySign = VendorService.getSign(brandId + dto.getWagerId() + apiKey);
 
         // Verify signature
@@ -150,10 +149,10 @@ public class CancelWagerAction {
         }
 
         // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getBrandUid());
+        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
 
         // Verify currency
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
     private ResponseVo getCurrentBalanceResponseVo (HttpServletRequest request, String traceId, String body) {
@@ -163,11 +162,11 @@ public class CancelWagerAction {
 
         try {
             WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
-            responseDataVo.setBrandUid(rawGameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(rawGameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(walletService.getBalance(traceId, rawGameSession));
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession));
             responseVo.setData(responseDataVo);
 
         } catch (InvalidAgentApiCredentialException |

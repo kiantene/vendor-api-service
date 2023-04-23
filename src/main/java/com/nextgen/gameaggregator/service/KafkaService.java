@@ -13,7 +13,7 @@ public class KafkaService {
     @Autowired
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
 
-    public void produceBetHistory(BetHistory betHistory){
+    public void produceBetHistory(BetHistory betHistory) {
         jsonSchemaKafkaTemplate.send("topic_16", betHistory);
     }
 }

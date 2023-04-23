@@ -4,19 +4,19 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CashTransferInOutDto implements UnsettledResultSettledData {
+public class CashTransferInOutDto implements BetResultData {
 
     @Size(min = 1, max = 100)
     @NotBlank
@@ -143,16 +143,6 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return (this.winAmount.compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
-    }
-
-    @Override
     public Long getVendorBetTime() {
         return this.createTime;
     }
@@ -177,11 +167,8 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
         return 0;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return (this.isEndRound.equals(true)) ? BetStatus.SETTLED : BetStatus.UNSETTLED;
     }
 }

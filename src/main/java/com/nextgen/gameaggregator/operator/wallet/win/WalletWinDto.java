@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.win;
 
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -17,6 +17,6 @@ public class WalletWinDto {
     private String token;
     private String gameCode;
     private String roundId;
-    private WinType winType;
+    private ResultType resultType;
     private Long timestamp;
 }

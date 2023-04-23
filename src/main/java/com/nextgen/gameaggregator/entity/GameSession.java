@@ -10,7 +10,7 @@ import org.springframework.data.couchbase.repository.Scope;
 @Scope("raw")
 @Collection("game_session")
 @Data
-public class RawGameSession {
+public class GameSession {
     @Id
     private String id;
     private String token;

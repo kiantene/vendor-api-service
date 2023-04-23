@@ -1,12 +1,9 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
@@ -26,14 +23,14 @@ public class UnsettledBetEventListener implements EventListener<UnsettledBetEven
     @Override
     public void onEvent(UnsettledBetEvent event) {
 
-        RawUnsettledBet rawUnsettledBet = event.getRawUnsettledBet();
+        UnsettledBet unsettledBet = event.getUnsettledBet();
         Integer statusOk = ResponseCodes.Status.SC_OK.code;
 
         // update operator status if previous was failed
-        if (!rawUnsettledBet.getOperatorStatus().equals(statusOk)) {
-            rawUnsettledBet.setOperatorStatus(statusOk);
-            rawUnsettledBetRepository.save(rawUnsettledBet);
-            cachingService.updateUnsettledBetCaching(rawUnsettledBet);
+        if (!unsettledBet.getOperatorStatus().equals(statusOk)) {
+            unsettledBet.setOperatorStatus(statusOk);
+            rawUnsettledBetRepository.save(unsettledBet);
+            cachingService.updateUnsettledBetCaching(unsettledBet);
         }
     }
 }

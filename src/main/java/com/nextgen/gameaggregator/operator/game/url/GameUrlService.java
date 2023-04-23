@@ -44,17 +44,17 @@ public class GameUrlService {
 
     private static final String USERTYPE = "operator-api-service";
 
-    public GameUrlData getGameUrl(VendorGame vendorGame, RawGameSession rawGameSession, Map<String, String> credentials,
+    public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials,
                                   VendorLine vendorLine)
             throws InvalidVendorResponseException {
 
         GameUrlData gameUrlData = new GameUrlData();
-        gameUrlData.setToken(rawGameSession.getToken());
+        gameUrlData.setToken(gameSession.getToken());
         try {
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.gameurl.GameUrlService";
             GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
-            MultiValueMap<String, String> formData = gameUrl.formDataBuilder(vendorGame.getVendorGameCode(), rawGameSession, credentials);
-            GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, rawGameSession);
+            MultiValueMap<String, String> formData = gameUrl.formDataBuilder(vendorGame.getVendorGameCode(), gameSession, credentials);
+            GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, gameSession);
 
             Optional.ofNullable(gameUrlVo).orElseThrow(InvalidVendorResponseException::new);
 
@@ -141,13 +141,13 @@ public class GameUrlService {
     }
 
     public void checkDuplicateRequest(Integer agentId, String traceId) throws DuplicateRequestException {
-        RawGameSession entity = rawGameSessionRepository.findByAgentIdAndTraceId(agentId, traceId);
+        GameSession entity = rawGameSessionRepository.findByAgentIdAndTraceId(agentId, traceId);
         if (entity != null) {
             throw new DuplicateRequestException();
         }
     }
 
-    public RawGameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
+    public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;
         Integer vendorId = vendorLine.getVendor().getId();
@@ -195,8 +195,8 @@ public class GameUrlService {
         return entity;
     }
 
-    private RawGameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
-        RawGameSession entity = new RawGameSession();
+    private GameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
+        GameSession entity = new GameSession();
 
         entity.setToken(UUID.randomUUID().toString());
         entity.setId(entity.getToken());

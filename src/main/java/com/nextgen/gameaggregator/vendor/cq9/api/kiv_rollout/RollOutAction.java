@@ -1,8 +1,7 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.rollout;
+package com.nextgen.gameaggregator.vendor.cq9.api.kiv_rollout;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -21,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -67,20 +68,22 @@ public class RollOutAction {
             this.doValidation(rollOutDto, wToken);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(rollOutDto.getSession());
+            GameSession gameSession = gameSessionService.verifyToken(rollOutDto.getSession());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(rollOutDto, rawGameSession, wToken);
+            this.doVerification(rollOutDto, gameSession, wToken);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BetEvent betEvent = walletService.processBet(traceId, rawGameSession, rollOutDto, body);
+            // TODO: to revisit
+//            BetEvent betEvent = walletService.processBet(traceId, gameSession, rollOutDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(betEvent.getLastBalance());
-            commonVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+//            commonVo.setBalance(betEvent.getLastBalance());
+            commonVo.setBalance(BigDecimal.ZERO);
+            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 
         } catch (AuthenticationException authenticationException) {
@@ -101,19 +104,19 @@ public class RollOutAction {
         } catch (DisabledVendorLineException disabledVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
-
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
-
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
+//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+//
+//        } catch (InsufficientBalanceException insufficientBalanceException) {
+//            statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+//
+//        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+//            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+//
+//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//            statusVo.setCode(ResponseCodes.SERVER_ERROR);
+//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
@@ -153,27 +156,27 @@ public class RollOutAction {
         formatter.parse(rollOutDto.getEventTime());
     }
 
-    private void doVerification(RollOutDto rollOutDto, RawGameSession rawGameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(RollOutDto rollOutDto, GameSession gameSession, String wToken) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // 1. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 2. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
 
         // 3. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), rollOutDto.getAccount(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), rollOutDto.getAccount(), InvalidPlayerException::new);
 
         // 4. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), rollOutDto.getGameId(), AuthenticationException::new);
+//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), rollOutDto.getGameCode(), AuthenticationException::new);
 
         // 5. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 6. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // 7. Verify vendor game is active
-        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 }

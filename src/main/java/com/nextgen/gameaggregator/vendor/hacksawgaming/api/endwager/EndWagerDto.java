@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
@@ -22,7 +21,7 @@ import java.time.Instant;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class EndWagerDto implements UnsettledResultSettledData {
+public class EndWagerDto implements BetResultData {
 
     @NotBlank
     @Size(max =7)
@@ -100,16 +99,6 @@ public class EndWagerDto implements UnsettledResultSettledData {
     @Override
     public BigDecimal getEffectiveTurnover() {
         return BigDecimal.ZERO;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override
-    public WinType getResultType() {
-        return WinType.WIN;
     }
 
     @Override

@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.settled;
 
 import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 
 import java.math.BigDecimal;
 
@@ -11,7 +11,7 @@ public interface SettledData {
     String getRoundId();
     String getGameId();
     Long getTimestamp();
-    WinType getWinType();
+    ResultType getWinType();
     BigDecimal getEffectiveTurnover();
-    RawSettledBet prepareData(RawUnsettledBet rawUnsettledBet, RawResultBet rawResultBet, RawSettledBet rawSettledBet);
+    SettledBet prepareData(UnsettledBet unsettledBet, UnsettledBetResult unsettledBetResult, SettledBet settledBet);
 }

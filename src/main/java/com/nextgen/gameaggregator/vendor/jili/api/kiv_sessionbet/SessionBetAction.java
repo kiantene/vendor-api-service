@@ -1,7 +1,7 @@
-package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.kiv_sessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
@@ -53,25 +53,25 @@ public class SessionBetAction {
             this.doValidation(sessionBetDto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(sessionBetDto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(sessionBetDto.getToken());
 
-            this.doVerification(sessionBetDto, rawGameSession);
+            this.doVerification(sessionBetDto, gameSession);
 
             switch (sessionBetDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
-                    UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, rawGameSession, sessionBetDto, body);
+                    UnsettledBetEvent unsettledBetEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
                     sessionBetVo.setBalance(unsettledBetEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
-                    SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, rawGameSession, sessionBetDto);
+                    SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, sessionBetDto);
                     sessionBetVo.setBalance(settledBetEvent.getLastBalance());
                 }
                 default -> throw new InvalidRequestException();
             }
 
-            sessionBetVo.setUsername(rawGameSession.getVendorPlayerUsername());
-            sessionBetVo.setCurrency(rawGameSession.getVendorCurrencyCode());
-            sessionBetVo.setToken(rawGameSession.getToken());
+            sessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
+            sessionBetVo.setCurrency(gameSession.getVendorCurrencyCode());
+            sessionBetVo.setToken(gameSession.getToken());
 
         } catch(InvalidRequestException |
                JsonProcessingException |
@@ -106,7 +106,7 @@ public class SessionBetAction {
         // General validation
         ValidationUtils.validateRequest(sessionBetDto);
     }
-    private void doVerification(SessionBetDto sessionBetDto, RawGameSession rawGameSession)
+    private void doVerification(SessionBetDto sessionBetDto, GameSession gameSession)
             throws
             AuthenticationException,
             DisabledVendorLineException,
@@ -117,20 +117,20 @@ public class SessionBetAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(rawGameSession.getToken(), sessionBetDto.getToken(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), sessionBetDto.getToken(), AuthenticationException::new);
 
         // Verify vendor gameCode and currency
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), String.valueOf(sessionBetDto.getGame()), GameNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), sessionBetDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(sessionBetDto.getGame()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), sessionBetDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 3. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // 4. Verify vendor game is active
-        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }

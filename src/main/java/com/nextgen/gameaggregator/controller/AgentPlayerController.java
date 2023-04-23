@@ -75,7 +75,7 @@ public class AgentPlayerController {
     public ResponseEntity<Detailvo> gameSession(@RequestBody ObjectNode json){
 
         Detailvo detailvo = new Detailvo();
-        detailvo.setRawGameSession(rawGameSessionRepository.findByToken(json.get("token").asText()));
+        detailvo.setGameSession(rawGameSessionRepository.findByToken(json.get("token").asText()));
 
         return new ResponseEntity<>(
                 detailvo ,
@@ -87,6 +87,6 @@ public class AgentPlayerController {
     @Data
     static class Detailvo{
 
-        public RawGameSession rawGameSession;
+        public GameSession gameSession;
     }
 }

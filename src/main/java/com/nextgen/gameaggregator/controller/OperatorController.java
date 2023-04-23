@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
@@ -52,15 +52,15 @@ public class OperatorController {
         HashMap<String, Object> responseMap = new HashMap<>();
         try {
 
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
-            if (rawGameSession != null) {
-                Integer agentId = rawGameSession.getAgentId();
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
+            if (gameSession != null) {
+                Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
-                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), rawGameSession);
+                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
 
                 responseMap.put("balance", balance);
             }
@@ -80,10 +80,10 @@ public class OperatorController {
         HashMap<String, Object> responseMap = new HashMap<>();
         try {
 
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(json.get("username").asText());
 
-            if (rawGameSession != null) {
-                Integer agentId = rawGameSession.getAgentId();
+            if (gameSession != null) {
+                Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());

@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
@@ -39,6 +39,8 @@ public class EndRoundAction {
     private BetHistoryService betHistoryService;
     @Autowired
     private Environment environment;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.END_ROUND)
     public ResponseVo endRound(HttpServletRequest request) {
@@ -55,22 +57,15 @@ public class EndRoundAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, rawGameSession);
+            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            SettledBetEvent settledBetEvent;
-            // temporary code to ensure when commit to stg branch will still use old code for new changes
-            ResultBetEvent resultBetEvent;
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                settledBetEvent = walletService.processSettledBet(traceId, rawGameSession, dto);
-            }else{
-                settledBetEvent = walletService.processSettledBetPlus(traceId, rawGameSession, dto);
-            }
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, body);
 
-            responseVo.setCash(settledBetEvent.getLastBalance());
+            responseVo.setCash(resultBetEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -127,18 +122,18 @@ public class EndRoundAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, EndRoundDto dto, RawGameSession rawGameSession) throws
+    private void doVerification(HttpRequestLog request, EndRoundDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        if (!rawGameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        if (!gameSession.getVendorGameCode().equals("101")) {
+            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
         }
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
-        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 4. Validate request signature
         VendorService.verifyHash(request.getRequestBody(), secretKey);

@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EndRoundDto implements UnsettledResultSettledData {
+public class EndRoundDto implements BetResultData {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -61,9 +61,8 @@ public class EndRoundDto implements UnsettledResultSettledData {
     private BigDecimal winAmount;
     private Long resultTime;
     private Long vendorSettleTime;
-    private WinType resultType;
+    private ResultType resultType;
     private BigDecimal winLoss;
-    private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
 
     @Override
@@ -117,10 +116,6 @@ public class EndRoundDto implements UnsettledResultSettledData {
         this.winLoss = winLoss;
     }
 
-    public void setVendorWinLoss(BigDecimal vendorWinLoss) {
-        this.vendorWinLoss = vendorWinLoss;
-    }
-
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.effectiveTurnover;
@@ -131,21 +126,11 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return this.resultType;
-    }
-
-    @Override
     public Long getVendorBetTime() {
         return null;
     }
 
-    public void setResultType(WinType resultType) {
+    public void setResultType(ResultType resultType) {
         this.resultType = resultType;
     }
 
@@ -165,7 +150,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override

@@ -51,7 +51,6 @@ public class WalletBetAction {
 
         WalletBalanceVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
-
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
 
@@ -78,6 +77,9 @@ public class WalletBetAction {
         try {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
+
+            System.out.println("apiResponse = " + apiResponse);
+            System.out.println("dto = " + dto);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);

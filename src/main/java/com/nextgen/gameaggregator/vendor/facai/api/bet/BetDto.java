@@ -3,14 +3,15 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,7 +19,7 @@ import java.util.TimeZone;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
 
     @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PARAM_CONTAIN_ERROR)
@@ -143,27 +144,13 @@ public class BetDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public WinType getResultType() {
-        if (this.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0) {
-            return WinType.JACKPOT;
-        } else {
-            return (this.getWinAmount().compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
-        }
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
     public Long getVendorBetTime() {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC-4"));
         try {
             Date date = dateFormat.parse(this.getCreateDate());
             return date.getTime();
-        }catch (Exception exception) {
+        } catch (Exception exception) {
         }
         return Long.valueOf(000000000000);
     }
@@ -175,7 +162,7 @@ public class BetDto implements UnsettledResultSettledData {
         try {
             Date date = dateFormat.parse(this.getGameDate());
             return date.getTime();
-        }catch (Exception exception) {
+        } catch (Exception exception) {
         }
         return Long.valueOf(000000000000);
     }
@@ -187,13 +174,15 @@ public class BetDto implements UnsettledResultSettledData {
         try {
             Date date = dateFormat.parse(this.getGameDate());
             return date.getTime();
-        }catch (Exception exception) {
+        } catch (Exception exception) {
         }
         return Long.valueOf(000000000000);
     }
 
     @Override
-    public BigDecimal getJackpotAmount() { return this.JpPrize;}
+    public BigDecimal getJackpotAmount() {
+        return this.JpPrize;
+    }
 
     @Override
     public Integer getIsFreespin() {

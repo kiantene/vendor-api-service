@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.hacksawgaming.api.gameurl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -24,7 +24,7 @@ import java.util.Optional;
 @Slf4j
 public class GameUrlService implements GameUrl {
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
         String brandId = credentials.get(Credentials.BRAND_ID);
@@ -34,9 +34,9 @@ public class GameUrlService implements GameUrl {
         String countryCode = credentials.get(Credentials.COUNTRY_CODE);
         Optional.ofNullable(countryCode).orElseThrow(InvalidVendorLineException::new);
 
-        String brandUid = rawGameSession.getVendorPlayerUsername();
+        String brandUid = gameSession.getVendorPlayerUsername();
         String platform = "pc";
-        if(!rawGameSession.getPlatformId().equals(2)) {
+        if(!gameSession.getPlatformId().equals(2)) {
             platform = "mobile";
         }
 
@@ -44,10 +44,10 @@ public class GameUrlService implements GameUrl {
         formData.set("brand_id", brandId);
         formData.set("sign", VendorService.getSign(brandId + brandUid + apiKey));
         formData.set("brand_uid", brandUid);
-        formData.set("token", VendorService.removeDashes(rawGameSession.getToken()));
-        formData.set("game_id", rawGameSession.getVendorGameCode());
-        formData.set("currency", rawGameSession.getVendorCurrencyCode());
-        formData.set("language", rawGameSession.getVendorLanguageCode());
+        formData.set("token", VendorService.removeDashes(gameSession.getToken()));
+        formData.set("game_id", gameSession.getVendorGameCode());
+        formData.set("currency", gameSession.getVendorCurrencyCode());
+        formData.set("language", gameSession.getVendorLanguageCode());
         formData.set("channel", platform);
         formData.set("country_code", countryCode);
 
@@ -55,7 +55,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
         String apiUrl = credentials.get(Credentials.API_URL);
