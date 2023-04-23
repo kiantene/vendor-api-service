@@ -48,7 +48,7 @@ public class WalletBetResultAction {
     @Autowired
     AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation)
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
@@ -57,7 +57,7 @@ public class WalletBetResultAction {
         }
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        WalletBetResultDto dto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, betInformation);
+        WalletBetResultDto dto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, betInformation, resultType);
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -171,7 +171,7 @@ public class WalletBetResultAction {
 
     }
 
-    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, GameSession gameSession, BetInformation betInformation) {
+    private WalletBetResultDto newWalletBetResultDtoForFullBetDto(String traceId, GameSession gameSession, BetInformation betInformation, ResultType resultType) {
 
         BigDecimal betAmount = (ObjectUtils.isEmpty(betInformation.getWinLoss())) ? null : new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(betInformation.getEffectiveTurnover())) ? null : new BigDecimal(betInformation.getEffectiveTurnover().stripTrailingZeros().toPlainString());
@@ -190,7 +190,7 @@ public class WalletBetResultAction {
         walletBetResultDto.setEffectiveTurnover(effectiveTurnover);
         walletBetResultDto.setJackpotAmount(jackpotAmount);
         walletBetResultDto.setWinLoss(winLossAmount);
-        walletBetResultDto.setResultType(ResultType.RESULT_TYPE_VALUE.get(betInformation.getResultType()));
+        walletBetResultDto.setResultType(resultType);
         walletBetResultDto.setIsFreespin(betInformation.getIsFreespin());
         walletBetResultDto.setIsEndRound(BetStatus.UNSETTLED.isValueOf(betInformation.getStatus()) ? 0 : 1);
         walletBetResultDto.setCurrency(gameSession.getCurrencyCode());

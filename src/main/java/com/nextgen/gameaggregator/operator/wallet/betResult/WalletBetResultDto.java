@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.betResult;
 
+
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -16,7 +18,7 @@ public class WalletBetResultDto {
     private BigDecimal effectiveTurnover;
     private BigDecimal winLoss;
     private BigDecimal jackpotAmount;
-    private String resultType;
+    private ResultType resultType;
     private Integer isFreespin;
     private Integer isEndRound;
     private String currency;

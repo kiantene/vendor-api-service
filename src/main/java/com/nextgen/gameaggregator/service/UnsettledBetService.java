@@ -22,15 +22,15 @@ public class UnsettledBetService {
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorLineId   vendor line id within Game Aggregator System
+     * @param vendorGameId   vendor game id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
      */
-    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        String mergeId = vendorBetId + '_' + roundId + '_' + vendorLineId + '_' + vendorPlayerId;
+        String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
         UnsettledBet unsettledBet = null;
 
         try {
@@ -45,7 +45,9 @@ public class UnsettledBetService {
         return unsettledBet;
     }
 
-    public void update(UnsettledBet unsettledBet) {
+    @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBet update(UnsettledBet unsettledBet) {
         rawUnsettledBetRepository.save(unsettledBet);
+        return unsettledBet;
     }
 }

@@ -95,7 +95,6 @@ public class BetHistoryService {
     public UnsettledBet createUnsettledBet(UnsettledBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
         entity.setCreateTime(System.currentTimeMillis());
-//        entity.setResettleNum(0);
 
         try {
             rawUnsettledBetRepository.save(entity);

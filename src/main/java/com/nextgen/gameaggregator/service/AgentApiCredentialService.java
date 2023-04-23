@@ -22,10 +22,11 @@ public class AgentApiCredentialService {
 
         AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
         Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
-
-        //TODO by Alex, throw Invalid URL exception
+        //UPDATE PG : TEMP WHITELIST LOCALHOST
         try{
-            ValidationUtils.isValidUrl(credential.getCallbackUrl());
+            if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
+                ValidationUtils.isValidUrl(credential.getCallbackUrl());
+            }
         }catch (InvalidUrlException invalidUrlException){
             throw new InvalidAgentApiCredentialException();
         }

@@ -164,6 +164,7 @@ public class WalletService {
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
+        Integer vendorGameId = gameSession.getVendorGameId();
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
 
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
@@ -191,11 +192,12 @@ public class WalletService {
             if (isSettled) {
                 switch (resultType) {
                     case END -> { // PP END
-                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
+                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         winLoss = settledBet.getWinLoss();
                         effectiveTurnover = settledBet.getEffectiveTurnover();
+
                         if (winLoss == null) {
                             winLoss = vendorService.calculateWinLoss(settledBet);
                             settledBet.setWinLoss(winLoss);
@@ -210,7 +212,8 @@ public class WalletService {
                         settledBetService.create(settledBet);
                     }
                     case WIN -> { // CQ9 Win
-                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
+                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                        this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
                         settledBet = new SettledBet(unsettledBet);
@@ -221,7 +224,9 @@ public class WalletService {
                     } // PGS
                     // PGS
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> { // PGS
-                        settledBet = new SettledBet(betResultData);
+                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                        settledBet = new SettledBet(unsettledBet);
+                        settledBet.setStatus(BetStatus.SETTLED.code);
                         winLoss = vendorService.calculateWinLoss(settledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(settledBet);
                         settledBet.setWinLoss(winLoss);
@@ -240,7 +245,7 @@ public class WalletService {
                 switch (resultType) {
                     case WIN -> { // PP Win
                         // check if bet record exists
-                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
+                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
@@ -250,8 +255,8 @@ public class WalletService {
                     }
                     // insert unsettled_bet_results
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> { // PGS
-                        settledBet = new SettledBet(betResultData);
-                        settledBetService.create(settledBet);
+                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                        betHistoryService.createUnsettledBet(unsettledBet);
                     }
 
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
@@ -263,7 +268,7 @@ public class WalletService {
                 // 5. Prepare to send this transaction to operator as win
 
             }
-            balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betInformation);
+            balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betInformation, resultType);
 
             //TODO: refine proper handle for result bet event
             ResultBetEvent resultBetEvent = new ResultBetEvent(betInformation, balanceVo.getData().getBalance());
@@ -304,7 +309,8 @@ public class WalletService {
         betData.setWinAmount(winAmount.add(betResultData.getWinAmount()));
 
         BigDecimal jackpotAmount = Optional.ofNullable(betData.getJackpotAmount()).orElse(BigDecimal.ZERO);
-        betData.setJackpotAmount(jackpotAmount.add(betResultData.getJackpotAmount()));
+        BigDecimal jackpotAmountLatest = Optional.ofNullable(betResultData.getJackpotAmount()).orElse(BigDecimal.ZERO);
+        betData.setJackpotAmount(jackpotAmount.add(jackpotAmountLatest));
 
         betData.setIsFreespin(betResultData.getIsFreespin());
         betData.setResultTime(betResultData.getResultTime());
@@ -334,7 +340,7 @@ public class WalletService {
 
         try {
             // 2. Prepare to send this transaction to operator, with isFullBet as true
-            WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, settledBet);
+            WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, settledBet, null);
             SettledBetEvent settledBetEvent = new SettledBetEvent(settledBet, balanceVo.getData().getBalance());
 
             // 3. Insert into couchbase settled table (and mariaDB if testing stub is disabled)
@@ -486,7 +492,7 @@ public class WalletService {
 
         try {
             // 5. Prepare to send this transaction to operator
-            WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, settledBet);
+            WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, settledBet, null);
 
             BetHistory betHistory = this.toBetHistory(settledBet);
             kafkaService.produceBetHistory(betHistory);
@@ -893,7 +899,8 @@ public class WalletService {
         walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
-        walletBetDto.setExternalTransactionId(betResultData.getExternalTransactionId());
+        //UPDATE PG : USE VENDORBETID
+        walletBetDto.setExternalTransactionId(betResultData.getVendorBetId());
         walletBetDto.setAmount(new BigDecimal(betResultData.getBetAmount().stripTrailingZeros().toPlainString()));
         walletBetDto.setGameCode(gameSession.getGameCode());
         walletBetDto.setRoundId(betResultData.getRoundId());
@@ -1242,7 +1249,7 @@ public class WalletService {
 
 //        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
 //        WalletBetResultDto walletBetResultDto = this.newWalletBetResultDtoForFullBetDto(traceId, gameSession, rawSettledBet);
-        WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, settledBet);
+        WalletBalanceVo balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, settledBet, null);
 
         return balanceVo;
     }

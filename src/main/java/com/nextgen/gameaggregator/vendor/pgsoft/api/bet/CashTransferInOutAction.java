@@ -2,11 +2,13 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
@@ -44,6 +46,9 @@ public class CashTransferInOutAction {
     @Autowired
     private VendorGameService vendorGameService;
 
+    @Autowired
+    private VendorService vendorService;
+
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -65,12 +70,12 @@ public class CashTransferInOutAction {
 
             // 4. Process full bet data
             ResultType resultType = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-            SettledBetEvent settledBetEvent = walletService.processBetResultPlus(traceId, gameSession, dto, resultType, body);
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-            responseVo.setBalanceAmount(settledBetEvent.getLastBalance());
+            responseVo.setBalanceAmount(resultBetEvent.getLastBalance());
             responseVo.setCurrencyCode(dto.getCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {
