@@ -113,12 +113,12 @@ public class WalletService {
 
         try {
             UnsettledBet checkExistsUnsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-        } catch (BetNotFoundException betNotFoundException){
+        } catch (BetNotFoundException betNotFoundException) {
             isBetExists = false;
         }
 
         // no record in database, will proceed to send as bet request and insert as unsettled_bet data to couchbase
-        if(isBetExists == false){
+        if (isBetExists == false) {
             try {
                 // 2. Generate rawUnsettledBet
                 unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
@@ -147,8 +147,8 @@ public class WalletService {
                     //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
                 }
             }
-        }
-        else {
+        } else {
+            // TODO: add try-catch in case operator fails
             AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
             WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
             WalletBalanceVo balanceVo = walletBalanceAction.call(agentApiCredential, walletBalanceDto);
@@ -249,15 +249,12 @@ public class WalletService {
                         unsettledBet.setEffectiveTurnover(effectiveTurnover);
                     }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> {
-
                         try {
-                            UnsettledBet checkExistsUnsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                            unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                             isBetExistsForUnsettledBet = true;
-                        } catch (BetNotFoundException betNotFoundException){
-                            // DO NOTHING
+                        } catch (BetNotFoundException betNotFoundException) {
+                            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
                         }
-
-                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
                     }
 
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
@@ -269,9 +266,10 @@ public class WalletService {
                 // 5. Prepare to send this transaction to operator as win
             }
 
-            if(isBetExistsForUnsettledBet == false){
+            if (!isBetExistsForUnsettledBet) {
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betInformation, resultType);
-             } else {
+            } else {
+                // TODO: add try-catch in case operator fails
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 WalletBalanceDto walletBalanceDto = this.newWalletBalanceDto(traceId, gameSession);
                 balanceVo = walletBalanceAction.call(agentApiCredential, walletBalanceDto);
@@ -291,7 +289,7 @@ public class WalletService {
             }
 
             //TODO: refine proper handle for result bet event
-            ResultBetEvent resultBetEvent = new ResultBetEvent(betInformation, balanceVo.getData().getBalance());
+//            ResultBetEvent resultBetEvent = new ResultBetEvent(betInformation, balanceVo.getData().getBalance());
 
             // 5. Insert into couchbase unsettled_bet_results table
 //            betResultLogService.create(unsettledBetResult);
@@ -913,7 +911,7 @@ public class WalletService {
     }
 
     private BetHistory newBetHistory(WalletBetDto walletBetDto, com.nextgen.gameaggregator.entity.GameSession
-                                gameSession, String rawData) {
+            gameSession, String rawData) {
         BetHistory betHistory = new BetHistory();
         betHistory.setId(walletBetDto.getTraceId());
         betHistory.setExternalTransactionId(walletBetDto.getExternalTransactionId());
@@ -952,7 +950,7 @@ public class WalletService {
         unsettledBet.setAgentPlayerId(gameSession.getAgentPlayerId());
         unsettledBet.setAgentId(gameSession.getAgentId());
         unsettledBet.setVendorLineId(gameSession.getVendorLineId());
-//        unsettledBet.setGameCategoryId(gameSession.getGameCategoryId());
+        unsettledBet.setGameCategoryId(gameSession.getGameCategoryId());
         unsettledBet.setCurrencyId(gameSession.getCurrencyId());
         unsettledBet.setBetAmount(betResultData.getBetAmount());
         unsettledBet.setGameSessionToken(gameSession.getToken());
@@ -1176,7 +1174,7 @@ public class WalletService {
     }
 
     private WalletRefundDto newWalletRefundDto(String traceId, com.nextgen.gameaggregator.entity.GameSession
-                                                gameSession, Long currentTimestamp, BetHistory betHistory) {
+            gameSession, Long currentTimestamp, BetHistory betHistory) {
         WalletRefundDto walletRefundDto = new WalletRefundDto();
         walletRefundDto.setTraceId(traceId);
         walletRefundDto.setTransactionId(traceId);
@@ -1212,7 +1210,7 @@ public class WalletService {
     }
 
     private WalletBalanceDto newWalletBalanceDto(String traceId, com.nextgen.gameaggregator.entity.GameSession
-                                                gameSession) {
+            gameSession) {
         WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
         walletBalanceDto.setTraceId(traceId);
         walletBalanceDto.setUsername(gameSession.getAgentPlayerUsername());

@@ -28,6 +28,7 @@ public abstract class BetInformation {
     private Integer isFreespin;
     private Integer status;
     private String gameSessionToken;
+    private Integer gameCategoryId;
     private Long vendorBetTime;
     private Long vendorSettleTime;
     private Long createTime;
