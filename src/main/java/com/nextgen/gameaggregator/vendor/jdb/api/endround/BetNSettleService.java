@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -72,9 +73,9 @@ public class BetNSettleService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Result and End Round
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, betNSettleDto, ResultType.BET_WIN, vendorService, actionDto.getParams());
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, ResultType.BET_WIN, vendorService, actionDto.getParams());
 
-            vo.setBalance(resultBetEvent.getLastBalance());
+            vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException |

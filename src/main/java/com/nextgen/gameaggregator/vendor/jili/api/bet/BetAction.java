@@ -68,11 +68,11 @@ public class BetAction {
             // 3. Process bet data
             // 4. Process win data
             ResultType resultType = betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
             betVo.setCurrency(gameSession.getVendorCurrencyCode());
-            betVo.setBalance(resultBetEvent.getLastBalance());
+            betVo.setBalance(balance);
             betVo.setToken(gameSession.getToken());
 
         } catch (InvalidRequestException |

@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -59,8 +61,8 @@ public class SessionBetAction {
 
             switch (sessionBetDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
-                    UnsettledBetEvent unsettledBetEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
-                    sessionBetVo.setBalance(unsettledBetEvent.getLastBalance());
+                    BigDecimal balance = walletService.processBet(traceId, gameSession, sessionBetDto, body);
+                    sessionBetVo.setBalance(balance);
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
                     SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, sessionBetDto);

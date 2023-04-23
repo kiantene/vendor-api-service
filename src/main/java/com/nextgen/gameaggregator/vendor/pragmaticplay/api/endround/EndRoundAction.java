@@ -63,9 +63,9 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, body);
 
-            responseVo.setCash(resultBetEvent.getLastBalance());
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
@@ -85,12 +86,12 @@ public class BetAction {
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
             //Process full bet data
-            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_WIN, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_WIN, vendorService, body);
 
             //set VO data
             //convert bigDecimal balance into double
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(resultBetEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 AuthenticationException |
