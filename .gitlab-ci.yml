@@ -94,7 +94,7 @@ stg-gitlab-build:
   stage: build
   extends: .stg-deploy-rule
   script:
-    - "mvn clean deploy -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
+    - "mvn clean package -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
   artifacts:
     paths:
       - ./target/*.jar
@@ -139,7 +139,7 @@ qa-gitlab-build:
   needs: ["qa-sonarqube-lint"]
   extends: .qa-deploy-rule
   script:
-    - "mvn clean deploy -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
+    - "mvn clean package -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
   artifacts:
     paths:
       - ./target/*.jar
@@ -183,7 +183,7 @@ pt-gitlab-build:
   stage: build
   extends: .pt-deploy-rule
   script:
-    - "mvn clean deploy -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
+    - "mvn clean package -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
   artifacts:
     paths:
       - ./target/*.jar
@@ -220,7 +220,7 @@ devo-gitlab-build:
   stage: build
   extends: .devo-deploy-rule
   script:
-    - "mvn clean deploy -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
+    - "mvn clean package -s ./ci_setting.xml -f ./pom-deploy.xml -DskipTests=true"
   artifacts:
     paths:
       - ./target/*.jar
