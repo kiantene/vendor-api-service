@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import lombok.Data;
 
@@ -17,7 +17,7 @@ public class WinDataDto implements WinData {
     private String roundid;
     private String gamecode;
     private Long timestamp;
-    private WinType winType;
+    private ResultType resultType;
     private BigDecimal effectiveTurnover;
 
     @Override
@@ -46,8 +46,12 @@ public class WinDataDto implements WinData {
     }
 
     @Override
-    public WinType getWinType() {
-        return this.winType;
+    public ResultType getWinType() {
+        return this.resultType;
+    }
+
+    public ResultType getResultType() {
+        return this.resultType;
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.settled;
 
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -17,6 +17,6 @@ public class WalletSettledDto {
     private String token;
     private String gameCode;
     private String roundId;
-    private WinType winType;
+    private ResultType resultType;
     private Long timestamp;
 }

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.jili.api.cancelsessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.kiv_cancelsessionbet;
 
 import com.nextgen.gameaggregator.vendor.jili.vo.ResponseVo;
 import lombok.Data;

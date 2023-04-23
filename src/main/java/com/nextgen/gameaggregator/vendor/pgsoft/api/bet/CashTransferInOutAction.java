@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
@@ -20,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @RestController
@@ -41,6 +46,9 @@ public class CashTransferInOutAction {
     @Autowired
     private VendorGameService vendorGameService;
 
+    @Autowired
+    private VendorService vendorService;
+
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -55,26 +63,19 @@ public class CashTransferInOutAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, rawGameSession);
+            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            // temporary code to ensure when commit to stg branch will still use old code for new changes
-            SettledBetEvent settledBetEvent;
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                //if env = stg will use old code
-                settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, dto, body);
-            } else {
-                //else use new code
-                settledBetEvent = walletService.processUnsettleResultSettlePlus(traceId, rawGameSession, dto, body);
-            }
+            ResultType resultType = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-            responseVo.setBalanceAmount(settledBetEvent.getLastBalance());
+            responseVo.setBalanceAmount(resultBetEvent.getLastBalance());
             responseVo.setCurrencyCode(dto.getCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -143,27 +144,27 @@ public class CashTransferInOutAction {
         ValidationUtils.validateLength(dto.getPlayerName(), 3, 20, InvalidPlayerException::new);
     }
 
-    private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, RawGameSession rawGameSession) throws
+    private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
             CurrencyNotSupportedException, GameNotSupportedException {
 
         // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getPlayerName(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerName(), InvalidPlayerException::new);
 
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
         // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), rawGameSession.getVendorId());
+        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
 
         // 3. Verify vendor currency code is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
 
         // 4. Retrieve vendor line credentials and secretKey to verify with raw request from vendor
-        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
         ValidationUtils.isEquals(secretKey, dto.getSecretKey(), InvalidSignatureException::new);
 
         // 5. Retrieve vendor line credentials and operatorToken to verify with raw request from vendor
-        String operatorToken = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
+        String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
     }
 

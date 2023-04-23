@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -98,7 +98,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(UsersDto usersDto, RawGameSession rawGameSession, String clientId, String clientSecret)
+    private void doVerification(UsersDto usersDto, GameSession gameSession, String clientId, String clientSecret)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -110,18 +110,18 @@ public class BalanceAction {
             InvalidCurrencyException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, usersDto.getUserid());
+        validationService.validateIllegibleBet(gameSession, usersDto.getUserid());
 
         // 2. Validate Credentials
         Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
         Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
-        String CLIENT_ID = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.CLIENT_ID);
-        String CLIENT_SECRET = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
+        String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
+        String CLIENT_SECRET = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
 
         // 3. Validate Vendor Currency Code
-        ValidationUtils.isEquals(usersDto.getCur(), rawGameSession.getVendorCurrencyCode(), InvalidCurrencyException::new);
+        ValidationUtils.isEquals(usersDto.getCur(), gameSession.getVendorCurrencyCode(), InvalidCurrencyException::new);
     }
 
     private UsersVo processData(UsersDto usersDto, String clientId, String clientSecret, String traceId) {
@@ -132,24 +132,24 @@ public class BalanceAction {
             this.doValidation(usersDto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(usersDto.getUserid());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(usersDto.getUserid());
 
             // 3. Verify Credential and Currency
-            this.doVerification(usersDto, rawGameSession, clientId, clientSecret);
+            this.doVerification(usersDto, gameSession, clientId, clientSecret);
 
             // 4. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // 5. Set WalletVo for each user
             WalletsVo walletVo = new WalletsVo();
             walletVo.setCode(Formats.MAIN_WALLET_CODE);
             walletVo.setBal(balance);
-            walletVo.setCur(rawGameSession.getVendorCurrencyCode());
+            walletVo.setCur(gameSession.getVendorCurrencyCode());
             List<WalletsVo> walletsList = new LinkedList<>();
             walletsList.add(walletVo);
 
             // 6. Set UsersVo
-            usersVo.setUserid(rawGameSession.getVendorPlayerUsername());
+            usersVo.setUserid(gameSession.getVendorPlayerUsername());
             usersVo.setWallets(walletsList);
 
         } catch (InvalidRequestException invalidRequestException) {

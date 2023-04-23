@@ -42,9 +42,7 @@ public class HttpService {
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
-            System.out.println("DNHSRTN3-");
             String requestBody = this.getRawRequestBody(request);
-            System.out.println("DNHSRTN4-");
             httpRequestLog.setTraceId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
@@ -55,6 +53,7 @@ public class HttpService {
             httpRequestLog.setStartTime(System.currentTimeMillis());
         } catch (Exception exception) {
             log.error(exception.getMessage());
+            exception.printStackTrace();
         }
 
         return httpRequestLog;
@@ -75,6 +74,7 @@ public class HttpService {
                         httpRequestLogRepository.save(requestLog);
                     } catch (Exception exception) {
                         log.error(exception.getMessage());
+                        exception.printStackTrace();
                     }
                 });
         } else {

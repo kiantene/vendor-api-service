@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
@@ -63,13 +63,13 @@ public class CancelBetService {
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getRefTransferIds().get(0).toString(), vendorPlayer.getVendorId());
 
             // 3. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(cancelBetDto, rawGameSession);
+            this.doVerification(cancelBetDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), rawGameSession, actionDto.getParams());
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
 
             vo.setBalance(betRefundEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
@@ -121,12 +121,12 @@ public class CancelBetService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetDto dto, RawGameSession rawGameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
+    private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
      CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getUid());
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
         // Verify vendor currency
-       ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+       ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }

@@ -32,8 +32,8 @@ public class GameSessionService {
     private RedisConnectionFactory connectionFactory;
 
     @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
-    public RawGameSession verifyToken(String token) throws AuthenticationException {
-        RawGameSession session = rawGameSessionRepository.findByToken(token);
+    public GameSession verifyToken(String token) throws AuthenticationException {
+        GameSession session = rawGameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         //TODO (by Alex), validate gameId param from vendor is match with game_sessions table's vendor_game_id
@@ -42,47 +42,47 @@ public class GameSessionService {
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @CachePut(value = "GameSessions", key = "#rawGameSession.token", cacheManager = "cacheManager")
-    public RawGameSession createSession(RawGameSession rawGameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
-                                        Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
-                                        String vendorPlatformCode) {
+    public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
+                                     Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
+                                     String vendorPlatformCode) {
 
-        rawGameSession.setTraceId(dto.getTraceId());
-        rawGameSession.setLanguage(dto.getLanguage());
-        rawGameSession.setVendorId(vendorGame.getVendor().getId());
-        rawGameSession.setVendorGameId(vendorGame.getId());
-        rawGameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
-        rawGameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
-        rawGameSession.setCurrencyId(currency.getId());
-        rawGameSession.setCurrencyCode(currency.getCode());
-        rawGameSession.setGameCode(vendorGame.getCode());
-        rawGameSession.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
-        rawGameSession.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());
-        rawGameSession.setLanguageId(vendorGameCode.getLanguageId());
-        rawGameSession.setPlatformId(vendorGameCode.getPlatformId());
-        rawGameSession.setVendorPlatformCode(vendorPlatformCode);
+        gameSession.setTraceId(dto.getTraceId());
+        gameSession.setLanguage(dto.getLanguage());
+        gameSession.setVendorId(vendorGame.getVendor().getId());
+        gameSession.setVendorGameId(vendorGame.getId());
+        gameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
+        gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+        gameSession.setCurrencyId(currency.getId());
+        gameSession.setCurrencyCode(currency.getCode());
+        gameSession.setGameCode(vendorGame.getCode());
+        gameSession.setVendorCurrencyCode(vendorCurrency.getVendorCurrencyCode());
+        gameSession.setVendorLanguageCode(vendorLanguageCode.getLanguageCode());
+        gameSession.setLanguageId(vendorGameCode.getLanguageId());
+        gameSession.setPlatformId(vendorGameCode.getPlatformId());
+        gameSession.setVendorPlatformCode(vendorPlatformCode);
 
-        rawGameSessionRepository.save(rawGameSession);
+        rawGameSessionRepository.save(gameSession);
 
-        return rawGameSession;
+        return gameSession;
 
     }
 
     @CachePut(value = "GameSessions", key = "#rawGameSession.vendorPlayerUsername", cacheManager = "cacheManager")
-    public RawGameSession createSessionByVendorPlayer(RawGameSession rawGameSession){
-        return rawGameSession;
+    public GameSession createSessionByVendorPlayer(GameSession gameSession){
+        return gameSession;
     }
 
     @Cacheable(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
-    public RawGameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
-        RawGameSession session = rawGameSessionRepository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(username);
+    public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
+        GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(username);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         return session;
     }
 
     @Cacheable(value = "GameSessions", key = "{#username, #vendorGameCode}", cacheManager = "cacheManager")
-    public RawGameSession getGameSessionByVendorPlayerUsernameAndVendorGameCode(String username, String vendorGameCode) throws AuthenticationException {
-        RawGameSession session = rawGameSessionRepository.findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByCreateTimeDesc(username, vendorGameCode);
+    public GameSession getGameSessionByVendorPlayerUsernameAndVendorGameCode(String username, String vendorGameCode) throws AuthenticationException {
+        GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByCreateTimeDesc(username, vendorGameCode);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         return session;

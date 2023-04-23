@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.balance;
 
 import java.math.BigDecimal;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,18 +73,18 @@ public class BalanceService {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Verify the user token and get the corresponding game session
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
-            String merchantCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
-            this.doVerification(dto, rawGameSession, merchantCode);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+            String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Populate the AcctInfoVo object with user details
-            acctInfoVo.setAcctId(rawGameSession.getVendorPlayerUsername());
+            acctInfoVo.setAcctId(gameSession.getVendorPlayerUsername());
             acctInfoVo.setBalance(balance);
-            acctInfoVo.setUserName(rawGameSession.getVendorPlayerUsername());
-            acctInfoVo.setCurrency(rawGameSession.getVendorCurrencyCode());
-            acctInfoVo.setSiteId(rawGameSession.getAgentId());
+            acctInfoVo.setUserName(gameSession.getVendorPlayerUsername());
+            acctInfoVo.setCurrency(gameSession.getVendorCurrencyCode());
+            acctInfoVo.setSiteId(gameSession.getAgentId());
             
             // Populate the AuthBalanceVo object with response details
             authBalanceVo.setAcctInfo(acctInfoVo);
@@ -142,7 +142,7 @@ public class BalanceService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, RawGameSession rawGameSession, String merchantCode)
+    private void doVerification(BalanceDto dto, GameSession gameSession, String merchantCode)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
             DisabledGameException, UnableToFindCredentialsException, GameNotSupportedException{
 
@@ -150,19 +150,19 @@ public class BalanceService {
         ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
         
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), AuthenticationException::new);
         
         // Verify received game code is the same from vendor game code
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameCode() != null ? dto.getGameCode() : rawGameSession.getVendorGameCode(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameCode() != null ? dto.getGameCode() : gameSession.getVendorGameCode(), GameNotSupportedException::new);
 
         // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // Verify vendor game is active
-        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }

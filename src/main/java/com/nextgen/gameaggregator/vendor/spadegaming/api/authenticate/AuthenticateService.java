@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,18 +75,18 @@ public class AuthenticateService {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Verify the user token and get the corresponding game session
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
-            String merchantCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
-            this.doVerification(dto, rawGameSession, merchantCode);
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // Populate the AcctInfoVo object with user details
-            acctInfoVo.setAcctId(rawGameSession.getVendorPlayerUsername());
+            acctInfoVo.setAcctId(gameSession.getVendorPlayerUsername());
             acctInfoVo.setBalance(balance);
-            acctInfoVo.setUserName(rawGameSession.getVendorPlayerUsername());
-            acctInfoVo.setCurrency(rawGameSession.getVendorCurrencyCode());
-            acctInfoVo.setSiteId(rawGameSession.getAgentId());
+            acctInfoVo.setUserName(gameSession.getVendorPlayerUsername());
+            acctInfoVo.setCurrency(gameSession.getVendorCurrencyCode());
+            acctInfoVo.setSiteId(gameSession.getAgentId());
 
             // Populate the AuthBalanceVo object with response details
             authBalanceVo.setAcctInfo(acctInfoVo);
@@ -148,7 +148,7 @@ public class AuthenticateService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticateDto dto, RawGameSession rawGameSession, String merchantCode)
+    private void doVerification(AuthenticateDto dto, GameSession gameSession, String merchantCode)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
             DisabledGameException, UnableToFindCredentialsException, InvalidPlayerException, CredentialNotFoundException{
 
@@ -156,19 +156,19 @@ public class AuthenticateService {
         ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
 
         // Verify received token is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getToken(), dto.getToken(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
         
         // Verify received acct id is the same from vendor player username
-        ValidationUtils.isEquals(rawGameSession.getVendorPlayerUsername(), dto.getAcctId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getAcctId(), InvalidPlayerException::new);
 
         // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // Verify vendor game is active
-        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
 
     }

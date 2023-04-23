@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
 import java.util.Map;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -58,16 +58,16 @@ public class BetNSettleService {
             this.doValidation(betNSettleDto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betNSettleDto.getUid(), betNSettleDto.getMType().toString());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betNSettleDto.getUid(), betNSettleDto.getMType().toString());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(betNSettleDto, rawGameSession);
+            this.doVerification(betNSettleDto, gameSession);
 
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Result and End Round
-            SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, betNSettleDto, actionDto.getParams());
+            SettledBetEvent betResultEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betNSettleDto, actionDto.getParams());
             vo.setBalance(betResultEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
@@ -151,16 +151,16 @@ public class BetNSettleService {
         }
     }
 
-    private void doVerification(BetNSettleDto dto, RawGameSession rawGameSession) throws DisabledAgentPlayerException,
+    private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
      DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
      VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, dto.getUid());
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
         // Verify vendor gameCode, currency and platform
-        ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
 
         // Verify game category
         if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();

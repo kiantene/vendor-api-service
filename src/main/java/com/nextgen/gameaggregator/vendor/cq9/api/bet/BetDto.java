@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
@@ -13,7 +13,7 @@ import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements UnsettledResultSettledData {
+public class BetDto implements BetResultData {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -80,27 +80,17 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return getBetAmount();
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return WinType.LOSE;
+        return null;
     }
 
     @Override
@@ -115,12 +105,12 @@ public class BetDto implements UnsettledResultSettledData {
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return null;
     }
 
     @Override
@@ -135,6 +125,7 @@ public class BetDto implements UnsettledResultSettledData {
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
     }
+
 
     public Long getTimestamp() {
         Instant instant = Instant.parse(this.getEventTime());

@@ -1,19 +1,17 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.takeall;
+package com.nextgen.gameaggregator.vendor.cq9.api.kiv_rollout;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TakeAllDto implements BetData {
+public class RollOutDto implements BetData {
     @NotBlank
     @Size(min = 1, max = 36)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
@@ -32,9 +30,14 @@ public class TakeAllDto implements BetData {
     private String gamecode;
 
     @NotBlank
-    @Size(min = 1, max = 30)
+    @Size(min = 1, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roundid;
+
+    @NotNull
+    @Positive
+    @Digits(integer = 12, fraction = 10)
+    private BigDecimal amount;
 
     @NotBlank
     @Size(min = 1, max = 70)
@@ -45,16 +48,9 @@ public class TakeAllDto implements BetData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String session;
 
-    private BigDecimal amount;
-
     @Override
     public String getExternalTransactionId() {
         return this.mtcode;
-    }
-
-    @Override
-    public BigDecimal getAmount() {
-        return this.amount;
     }
 
     @Override
@@ -62,10 +58,10 @@ public class TakeAllDto implements BetData {
         return this.roundid;
     }
 
-    @Override
-    public String getGameId() {
-        return this.gamecode;
-    }
+//    @Override
+//    public String getGameCode() {
+//        return this.gamecode;
+//    }
 
     @Override
     public Long getTimestamp() {

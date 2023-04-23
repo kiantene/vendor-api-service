@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.service;
 
+import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +10,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -18,7 +21,7 @@ import java.util.TimeZone;
 @Service
 @Slf4j
 @Data
-public class VendorService {
+public class VendorService extends BaseVendorService {
 
     private String agentId;
     private String agentKey;
@@ -58,5 +61,12 @@ public class VendorService {
 
     public String keyGenerator(MultiValueMap<String, String> params) {
         return randomStringGenerator(Formats.RANDOM_STRING_LENGTH)+md5Generator(urlQueryStringGenerator(params)+gKeyGenerator())+randomStringGenerator(Formats.RANDOM_STRING_LENGTH);
+    }
+
+    @Override
+    public BigDecimal calculateWinLoss(BetInformation betInfo) {
+        // TODO: check for null value
+        BigDecimal betAmount = betInfo.getBetAmount();
+        return betInfo.getWinLoss().subtract(betAmount);
     }
 }

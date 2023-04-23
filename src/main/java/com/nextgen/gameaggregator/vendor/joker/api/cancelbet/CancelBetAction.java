@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.joker.api.cancelbet;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -62,17 +62,17 @@ public class CancelBetAction {
             this.doValidation(cancelBetDto);
 
             //get rawGameSession by player name in lowercase (vendor return in uppercase) and vendor game id
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelBetDto.getUsername().toLowerCase(), cancelBetDto.getGamecode());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelBetDto.getUsername().toLowerCase(), cancelBetDto.getGamecode());
 
             //Gather require data
-            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getUsername() + "_" + cancelBetDto.getBetid(), rawGameSession.getVendorId());
+            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getUsername() + "_" + cancelBetDto.getBetid(), gameSession.getVendorId());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, cancelBetDto, rawGameSession);
+            this.doVerification(httpRequestLog, cancelBetDto, gameSession);
 
             //Send refund to Operator
-            //BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetDto.getBetid(), rawGameSession, body);
-            BigDecimal betRefundEvent = walletService.getBalance(traceId, rawGameSession);
+            //BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getBetid(), rawGameSession, body);
+            BigDecimal betRefundEvent = walletService.getBalance(traceId, gameSession);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -112,14 +112,14 @@ public class CancelBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, CancelBetDto cancelBetDto, RawGameSession rawGameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(HttpRequestLog request, CancelBetDto cancelBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
 
         //Verify received agent code is the same from credential
-        String agentCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.APP_ID);
+        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
         ValidationUtils.isEquals(agentCode, cancelBetDto.getAppid(), NoAvailableLineException::new);
 
         //Verify received hash
-        String secretKey = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.SECRET);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
     }

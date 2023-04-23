@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.vendor.cq9.api.rollin;
+package com.nextgen.gameaggregator.vendor.cq9.api.kiv_rollin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.enums.WinType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -102,8 +102,8 @@ public class RollInDto implements WinData {
     }
 
     @Override
-    public WinType getWinType() {
-        return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
+    public ResultType getWinType() {
+        return (this.amount.compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
     }
 
     @Override

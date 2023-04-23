@@ -1,10 +1,11 @@
 package com.nextgen.gameaggregator.vendor.facai.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.RoundingMode;
 
 @RestController
@@ -77,18 +79,18 @@ public class BetAction {
             this.doDecryptValidation(betDto);
 
             //get rawGameSession by player name and vendor game id
-            RawGameSession rawGameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, betDto, rawGameSession, jsonParam);
+            this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
             //Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, rawGameSession, betDto, body);
+            ResultBetEvent resultBetEvent = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_WIN, vendorService, body);
 
             //set VO data
             //convert bigDecimal balance into double
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(settledBetEvent.getLastBalance().setScale(2,RoundingMode.DOWN).doubleValue());
+            commonVo.setMainPoints(resultBetEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 AuthenticationException |
@@ -120,9 +122,9 @@ public class BetAction {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
+            if (invalidRequestException.getValidation() != null) {
                 commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
-            }else{
+            } else {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
         } catch (Exception exception) {
@@ -143,16 +145,20 @@ public class BetAction {
         // General validation
         ValidationUtils.validateRequest(dto);
         //date format validation
-        if(!vendorService.isValidDateString(dto.getGameDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
-        if(!vendorService.isValidDateString(dto.getCreateDate(), "yyyy-MM-dd HH:mm:ss")) {throw new InvalidDateException();}
+        if (!vendorService.isValidDateString(dto.getGameDate(), "yyyy-MM-dd HH:mm:ss")) {
+            throw new InvalidDateException();
+        }
+        if (!vendorService.isValidDateString(dto.getCreateDate(), "yyyy-MM-dd HH:mm:ss")) {
+            throw new InvalidDateException();
+        }
 
     }
 
-    private void doVerification(CommonDto commonDto, BetDto betDto, RawGameSession rawGameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidEncryptionException {
+    private void doVerification(CommonDto commonDto, BetDto betDto, GameSession gameSession, String jsonParam) throws AuthenticationException, InvalidRequestException, CurrencyNotSupportedException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidEncryptionException {
 
         //Verify received currency is the same from game session
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(rawGameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), commonDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
@@ -160,11 +166,11 @@ public class BetAction {
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
-        String AgentCode = vendorLineService.getCredentialValueByName(rawGameSession.getVendorLineId(), Credentials.AGENT_CODE);
+        String AgentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AGENT_CODE);
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(rawGameSession, betDto.getMemberAccount());
+        validationService.validateIllegibleBet(gameSession, betDto.getMemberAccount());
     }
 
 

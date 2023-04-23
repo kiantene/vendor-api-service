@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.gameurl;
 
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -24,11 +24,11 @@ import java.util.Optional;
 public class GameUrlService implements GameUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = rawGameSession.getVendorGameCode().split("_", 2);
+        String[] parts = gameSession.getVendorGameCode().split("_", 2);
         String gpcode = parts[0];
         String gcode = parts[1];
 
@@ -36,18 +36,18 @@ public class GameUrlService implements GameUrl {
         formData.add("gpcode", gpcode);
         formData.add("gcode", gcode);
         formData.add("token", "");
-        formData.add("lang", rawGameSession.getVendorLanguageCode());
+        formData.add("lang", gameSession.getVendorLanguageCode());
 
         return formData;
     }
 
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
         String gameApiUrl = credentials.get(Credentials.GAME_API_URL);
         Optional.ofNullable(gameApiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        AuthorizeDto authorizeDto = Authorize.getToken(credentials, rawGameSession);
+        AuthorizeDto authorizeDto = Authorize.getToken(credentials, gameSession);
 
         formData.set("token", authorizeDto.getAuthtoken());
 

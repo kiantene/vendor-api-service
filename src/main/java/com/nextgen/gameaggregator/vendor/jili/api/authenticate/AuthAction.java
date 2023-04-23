@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jili.api.authenticate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -52,17 +52,17 @@ public class AuthAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            RawGameSession rawGameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            this.doVerification(dto, rawGameSession);
+            this.doVerification(dto, gameSession);
 
             // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, rawGameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            authVo.setUsername(rawGameSession.getVendorPlayerUsername());
-            authVo.setCurrency(rawGameSession.getVendorCurrencyCode());
+            authVo.setUsername(gameSession.getVendorPlayerUsername());
+            authVo.setCurrency(gameSession.getVendorCurrencyCode());
             authVo.setBalance(balance);
-            authVo.setToken(rawGameSession.getToken());
+            authVo.setToken(gameSession.getToken());
 
         } catch (DisabledGameException |
                  DisabledAgentPlayerException |
@@ -91,21 +91,21 @@ public class AuthAction {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
-    private void doVerification(AuthDto dto, RawGameSession rawGameSession)
+    private void doVerification(AuthDto dto, GameSession gameSession)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(rawGameSession.getToken(), dto.getToken(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
 
         // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(rawGameSession.getVendorLineId());
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 5. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(rawGameSession.getAgentPlayerId());
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // 6. Verify vendor game is active
-        vendorGameService.verifyGameStatus(rawGameSession.getVendorGameId());
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 

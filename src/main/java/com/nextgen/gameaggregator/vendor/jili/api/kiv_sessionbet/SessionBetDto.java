@@ -1,11 +1,9 @@
-package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.kiv_sessionbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
@@ -15,7 +13,7 @@ import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SessionBetDto implements UnsettledResultSettledData {
+public class SessionBetDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 50)
@@ -82,15 +80,7 @@ public class SessionBetDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getEffectiveTurnover() { return this.betAmount; }
-    @Override
-    public BigDecimal getRefundAmount() { return BigDecimal.ZERO;}
-    @Override
-    public WinType getResultType() {
-        if (this.getType() == Formats.SESSION_BET_TYPE_SETTLE) {
-            return (this.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
-        }
-        return WinType.LOSE;
-    }
+
     @Override
     public Long getVendorBetTime() {
         return getTimestamp();

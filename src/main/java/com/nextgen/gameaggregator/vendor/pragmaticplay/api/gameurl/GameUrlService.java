@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.RawGameSession;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -29,7 +29,7 @@ import java.util.Optional;
 public class GameUrlService implements GameUrl {
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, RawGameSession rawGameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
         String secureLogin = credentials.get(Credentials.SECURE_LOGIN);
         Optional.ofNullable(secureLogin).orElseThrow(InvalidVendorLineException::new);
@@ -39,12 +39,12 @@ public class GameUrlService implements GameUrl {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("secureLogin", secureLogin);
-        formData.add("symbol", rawGameSession.getVendorGameCode());
-        formData.add("language", rawGameSession.getVendorLanguageCode());
+        formData.add("symbol", gameSession.getVendorGameCode());
+        formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("technology", "H5");
-        formData.add("token", rawGameSession.getToken());
-        formData.add("platform", rawGameSession.getVendorPlatformCode());
-        formData.add("currency", rawGameSession.getVendorCurrencyCode());
+        formData.add("token", gameSession.getToken());
+        formData.add("platform", gameSession.getVendorPlatformCode());
+        formData.add("currency", gameSession.getVendorCurrencyCode());
         String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
 
@@ -52,7 +52,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, RawGameSession rawGameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
@@ -61,7 +61,7 @@ public class GameUrlService implements GameUrl {
         log.info(formData.toString());
 
         // TODO: need to add error handling
-        String responseString =  WebClient.create(apiUrl)
+        String responseString = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -84,7 +84,7 @@ public class GameUrlService implements GameUrl {
         try {
             responseVo = new Gson().fromJson(responseString, GameUrlVo.class);
         } catch (JsonSyntaxException jsonSyntaxException) {
-            throw new InvalidVendorResponseException( "Invalid vendor response body :"+responseString);
+            throw new InvalidVendorResponseException("Invalid vendor response body :" + responseString);
         }
 
         if (responseVo != null) {

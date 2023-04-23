@@ -9,5 +9,7 @@ public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.G
     private String gameURL;
 
     @Override
-    public String getGameUrl() { return this.gameURL; }
+    public String getGameUrl() {
+        return this.gameURL;
+    }
 }
