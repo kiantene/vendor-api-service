@@ -62,7 +62,7 @@ public class TransactionListService {
         HashMap<String, Integer> hm = (new HashMap<String, Integer>() {{
             put("transactionId", 0);
             put("externalTransactionId", 1);
-            put("externalRoundId", 2);
+            put("roundId", 2);
             put("username", 3);
             put("currencyCode", 4);
             put("gameCode", 5);

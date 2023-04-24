@@ -155,7 +155,7 @@ public class WalletBetResultAction {
         walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
         walletBetResultDto.setTransactionId(betInformation.getInternalTransactionId());
         walletBetResultDto.setExternalTransactionId(betInformation.getVendorBetId());
-        walletBetResultDto.setExternalRoundId(betInformation.getRoundId());
+        walletBetResultDto.setRoundId(betInformation.getRoundId());
         walletBetResultDto.setBetAmount(betAmount);
         walletBetResultDto.setWinAmount(winAmount);
         walletBetResultDto.setEffectiveTurnover(effectiveTurnover);
