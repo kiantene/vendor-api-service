@@ -65,15 +65,15 @@ public class BetResultLogService {
      * Retrieve a result bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorLineId   vendor line id within Game Aggregator System
+     * @param vendorGameId   vendor line id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return result bet entity object containing all information of a single result Bet
      * If no bet record is found, return null (valid scenario)
      */
-    @Cacheable(value = "ResultBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public UnsettledBetResult getRawResultBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) {
+    @Cacheable(value = "ResultBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBetResult getRawResultBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {
 
-        String mergeId = vendorBetId + '_' + roundId + '_' + vendorLineId + '_' + vendorPlayerId;
+        String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
         return rawResultBetRepository.findById(mergeId).orElse(null);
     }
 }

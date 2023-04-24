@@ -189,10 +189,10 @@ public class BetHistoryService {
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
      */
-    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
+        String mergeId = vendorBetId+'_'+roundId+'_'+vendorGameId+'_'+vendorPlayerId;
         UnsettledBet unsettledBet = null;
 
         try{

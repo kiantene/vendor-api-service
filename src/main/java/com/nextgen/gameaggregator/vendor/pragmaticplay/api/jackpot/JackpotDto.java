@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetResultLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -14,7 +16,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JackpotDto implements WinData {
+public class JackpotDto implements BetResultData {
 
     // Hash code of the request
     @NotBlank
@@ -82,17 +84,57 @@ public class JackpotDto implements WinData {
     }
 
     @Override
-    public ResultType getWinType() {
-        return ResultType.JACKPOT;
+    public String getVendorBetId() {
+        return roundId;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.amount;
+        return null;
     }
 
     @Override
-    public BetResultLog prepareData(BetHistory betHistory, BetResultLog betResultLog) {
-        return betResultLog;
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return timestamp;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return timestamp;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return amount;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.UNSETTLED;
     }
 }
