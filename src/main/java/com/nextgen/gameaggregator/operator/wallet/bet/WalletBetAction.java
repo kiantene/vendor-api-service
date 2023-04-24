@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.vo.OperatorLogVo;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
@@ -79,14 +78,11 @@ public class WalletBetAction {
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
-                .retry(3)
                 .block();
         long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 Endpoints.WALLET_BET, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
-
-        OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BET, callbackUrl, dto, apiResponse, signature, profilesActive);
 
         try {
             // 1. validate HTTP Response Code
