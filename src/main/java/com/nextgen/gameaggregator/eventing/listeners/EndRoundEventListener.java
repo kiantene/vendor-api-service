@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
@@ -27,7 +26,7 @@ public class EndRoundEventListener implements EventListener<EndRoundEvent> {
     private CachingService cachingService;
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private KafkaTemplate<String, String> stringKafkaTemplate;
 
     @Override
     public void onEvent(EndRoundEvent event) {
@@ -61,7 +60,7 @@ public class EndRoundEventListener implements EventListener<EndRoundEvent> {
 
             Gson gson = new GsonBuilder().create();
             // TODO - to move topic name into constant
-            kafkaTemplate.send("topic_data_aggregate_new", betHistory.getId(), gson.toJson(betHistory));
+            stringKafkaTemplate.send("topic_data_aggregate_new", betHistory.getId(), gson.toJson(betHistory));
         }
 
     }

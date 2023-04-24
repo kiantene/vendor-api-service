@@ -2,19 +2,28 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorLogVo;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.OperatorService;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.service.AgentApiCredentialService;
+import com.nextgen.gameaggregator.service.AuthenticationService;
+import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -29,159 +38,126 @@ public class WalletBetAction {
 
     @Value("${testing.stub:false}")
     private Boolean useStub;
-
     @Value("${spring.profiles.active}")
     private String profilesActive;
-
     @Autowired
-    OperatorService operatorService;
+    RequestService requestService;
+    @Autowired
+    AgentApiCredentialService agentApiCredentialService;
+    @Autowired
+    AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(String callbackUrl, String signature, WalletBetDto dto) throws InsufficientBalanceException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetResultData betResultData)
+            throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return operatorService.responseOperatorSub();
+            return requestService.responseOperatorSub();
         }
 
-        WalletBalanceVo responseVo = null;
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String apiUrl = agentApiCredential.getCallbackUrl();
 
-        ResponseEntity apiResponse = WebClient.create(callbackUrl)
+        // 1. Generate walletBetDto
+        WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
+        WalletBalanceVo responseVo = null;
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+        headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
+
+        long startTime = System.currentTimeMillis();
+        ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_BET)
+                .headers(requestService.setHeaders(headerMap))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                .onStatus(HttpStatus::isError, response -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
+                .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .retry(3)
                 .block();
+        long endTime = System.currentTimeMillis();
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(
+                Endpoints.WALLET_BET, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                this.getClass().getPackage().getName(), profilesActive);
 
         OperatorLogVo operatorLogVo = operatorService.createOperatorLogVo(Endpoints.WALLET_BET, callbackUrl, dto, apiResponse, signature, profilesActive);
 
         try {
             // 1. validate HTTP Response Code
-            operatorService.validateOperatorHttpStatusResponse(apiResponse);
+            requestService.validateVendorHttpStatusResponse(apiResponse);
+
+            System.out.println("apiResponse = " + apiResponse);
+            System.out.println("dto = " + dto);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-            operatorService.validateResponse(responseVo);
-
-            //temp check response from operator
-            log.info("responseVo bet =" + responseVo);
+            requestService.validateResponse(responseVo);
 
             //3. validate username and currency
-            operatorService.validateResponseUserNameAndCurrency(responseVo, dto.getUsername(), dto.getCurrency());
-
-            //TODO by Alex, to dicuss whether should we validate trace Id matching
+            requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
-            operatorService.operatorStatusException(responseVo.getStatus());
+            requestService.operatorStatusException(responseVo.getStatus());
 
             BigDecimal balance = responseVo.getData().getBalance();
             //TODO to be discuss whether should system pre handle negative if
             boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
             if (isNegativeBalance) {
-                throw new InsufficientBalanceException();
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-            operatorService.successResponseLog(operatorLogVo);
-
-            /**
-             switch (responseVo.getStatus()) {
-             case SC_OK -> {
-             //To validate the username and currency is match with request
-             if ((!responseVo.getData().getUsername().equals(dto.getUsername())) ||
-             (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
-             throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
-             } else {
-             operatorService.operatorResponseLogging(true, Endpoints.WALLET_BET, callbackUrl, dto, (String) apiResponse.getBody(), profilesActive);
-             }
-             BigDecimal balance = responseVo.getData().getBalance();
-             //TODO to be discuss whether should system pre handle negative if
-             boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
-             if (isNegativeBalance) {
-             operatorService.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, (String) apiResponse.getBody(), profilesActive);
-             throw new InsufficientBalanceException(responseVo.toString());
-             }
-             }
-             case SC_INSUFFICIENT_FUNDS -> {
-             operatorService.operatorResponseLogging(false, Endpoints.WALLET_BET, callbackUrl, dto, (String) apiResponse.getBody(), profilesActive);
-             throw new InsufficientBalanceException(responseVo.toString());
-             }
-             default -> {
-             throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
-             }
-             }
-             **/
+            requestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException httpResponseStatusCodeException) {
-            operatorService.failResponseLog(operatorLogVo, httpResponseStatusCodeException.getClass().getName());
+            requestService.failResponseLog(requestLogVo, httpResponseStatusCodeException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (JsonSyntaxException jsonSyntaxException) {
-            operatorService.failResponseLog(operatorLogVo, jsonSyntaxException.getClass().getName());
+            requestService.failResponseLog(requestLogVo, jsonSyntaxException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
-        } catch (InvalidTokenException invalidTokenException) {
-            operatorService.failResponseLog(operatorLogVo, invalidTokenException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_TOKEN.code);
-
-        } catch (InvalidSignatureException invalidSignatureException) {
-            operatorService.failResponseLog(operatorLogVo, invalidSignatureException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_SIGNATURE.code);
-
-        } catch (InvalidPlayerException invalidPlayerException) {
-            operatorService.failResponseLog(operatorLogVo, invalidPlayerException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_USER_NOT_EXISTS.code);
-
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            operatorService.failResponseLog(operatorLogVo, disabledAgentPlayerException.getClass().getName());
+        } catch (InvalidResponseException invalidResponseException) {
+            requestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
-        } catch (GameNotSupportedException gameNotSupportedException) {
-            operatorService.failResponseLog(operatorLogVo, gameNotSupportedException.getClass().getName());
+        } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
+            requestService.failResponseLog(requestLogVo, responseNotMatchRequestException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
-        } catch (InsufficientBalanceException insufficientBalanceException) {
-            operatorService.failResponseLog(operatorLogVo, insufficientBalanceException.getClass().getName());
-            // throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-            //TODO by Alex, to check the response code
-            throw new InsufficientBalanceException();
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            requestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
-        } catch (InvalidRequestException invalidRequestException) {
-            operatorService.failResponseLog(operatorLogVo, invalidRequestException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_REQUEST.code);
-
-        } catch (BetNotFoundException betNotFoundException) {
-            operatorService.failResponseLog(operatorLogVo, betNotFoundException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code);
-
-        } catch (SystemMaintenanceException systemMaintenanceException) {
-            operatorService.failResponseLog(operatorLogVo, systemMaintenanceException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNDER_MAINTENANCE.code);
-
-        } catch (DuplicateTransactionException duplicateTransactionException) {
-            operatorService.failResponseLog(operatorLogVo, duplicateTransactionException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code);
-
-        } catch (DuplicateRequestException duplicateRequestException) {
-            operatorService.failResponseLog(operatorLogVo, duplicateRequestException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code);
-
-        } catch (InvalidCurrencyException invalidCurrencyException) {
-            operatorService.failResponseLog(operatorLogVo, invalidCurrencyException.getClass().getName());
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_WRONG_CURRENCY.code);
-
-        }catch (Exception exception){
-            operatorService.failResponseLog(operatorLogVo, exception.getClass().getName());
+        } catch (Exception exception) {
+            requestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
-
         return responseVo;
     }
 
+    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetResultData betResultData) {
+        BigDecimal amount = new BigDecimal(betResultData.getBetAmount().stripTrailingZeros().toPlainString());
+
+        WalletBetDto walletBetDto = new WalletBetDto();
+        walletBetDto.setTraceId(traceId);
+        walletBetDto.setTransactionId(traceId);
+        walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetDto.setCurrency(gameSession.getCurrencyCode());
+        walletBetDto.setToken(gameSession.getToken());
+        //UPDATE PG : USE VENDORBETID
+        walletBetDto.setExternalTransactionId(betResultData.getVendorBetId());
+        walletBetDto.setAmount(amount);
+        walletBetDto.setGameCode(gameSession.getGameCode());
+        walletBetDto.setRoundId(betResultData.getRoundId());
+        walletBetDto.setTimestamp(betResultData.getVendorBetTime());
+
+        return walletBetDto;
+    }
 }

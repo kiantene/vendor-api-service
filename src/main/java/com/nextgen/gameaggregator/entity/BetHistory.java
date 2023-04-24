@@ -1,49 +1,137 @@
 package com.nextgen.gameaggregator.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Table(name = "bet_history")
 @Data
+@NoArgsConstructor
 public class BetHistory {
     @Id
+    @JsonProperty("id")
     private String id;
+
+    @JsonProperty("external_transaction_id")
     private String externalTransactionId;
+
+    @JsonProperty("vendor_bet_id")
     private String vendorBetId;
+
+    @JsonProperty("round_id")
     private String roundId;
+
+    @JsonProperty("vendor_game_id")
     private Integer vendorGameId;
+
+    @JsonProperty("vendor_player_id")
     private Long vendorPlayerId;
+
+    @JsonProperty("vendor_id")
     private Integer vendorId;
+
+    @JsonProperty("vendor_line_id")
     private Integer vendorLineId;
+
+    @JsonProperty("agent_player_id")
     private Long agentPlayerId;
+
+    @JsonProperty("agent_id")
     private Integer agentId;
+
+    @JsonProperty("operator_status")
     private Integer operatorStatus;
-    private Integer masterAgentId;
-    private Integer houseId;
+
+    @JsonProperty("game_category_id")
     private Integer gameCategoryId;
+
+    @JsonProperty("currency_id")
     private Integer currencyId;
+
+    @JsonProperty("bet_amount")
     private BigDecimal betAmount;
+
+    @JsonProperty("win_amount")
     private BigDecimal winAmount;
+
+    @JsonProperty("win_loss")
     private BigDecimal winLoss;
-    private BigDecimal vendorWinLoss;
+
+    @JsonProperty("effective_turnover")
     private BigDecimal effectiveTurnover;
+
+    @JsonProperty("refund_amount")
     private BigDecimal refundAmount;
+
+    @JsonProperty("jackpot_amount")
     private BigDecimal jackpotAmount;
+
+    @JsonProperty("result_type")
     private Integer resultType;
-    private Integer isCancelled;
+
+    @JsonProperty("is_freespin")
     private Integer isFreespin;
+
+    @JsonProperty("raw_data")
     private String rawData;
+
+    @JsonProperty("resettle_num")
     private Integer resettleNum;
+
+    @JsonProperty("status")
     private Integer status;
+
+    @JsonProperty("game_session_token")
     private String gameSessionToken;
+
+    @JsonProperty("vendor_bet_time")
     private Long vendorBetTime;
+
+    @JsonProperty("vendor_settle_time")
     private Long vendorSettleTime;
+
+    @JsonProperty("create_time")
     private Long createTime;
+
+    @JsonProperty("result_time")
     private Long resultTime;
-    private Long refundTime;
+
+    public BetHistory(SettledBet settledBet) {
+        this.id = settledBet.getInternalTransactionId();
+        this.externalTransactionId = settledBet.getExternalTransactionId();
+        this.vendorBetId = settledBet.getVendorBetId();
+        this.roundId = settledBet.getRoundId();
+        this.vendorGameId = settledBet.getVendorGameId();
+        this.vendorPlayerId = settledBet.getVendorPlayerId();
+        this.vendorId = settledBet.getVendorId();
+        this.vendorLineId = settledBet.getVendorLineId();
+        this.agentPlayerId = settledBet.getAgentPlayerId();
+        this.agentId = settledBet.getAgentId();
+        this.operatorStatus = settledBet.getOperatorStatus();
+        this.gameCategoryId = settledBet.getGameCategoryId();
+        this.currencyId = settledBet.getCurrencyId();
+        this.betAmount = settledBet.getBetAmount();
+        this.winAmount = settledBet.getWinAmount();
+        this.winLoss = settledBet.getWinLoss();
+        this.effectiveTurnover = settledBet.getEffectiveTurnover();
+        this.jackpotAmount = settledBet.getJackpotAmount();
+        this.resultType = settledBet.getResultType();
+        this.isFreespin = settledBet.getIsFreespin();
+        this.status = settledBet.getStatus();
+        this.gameSessionToken = settledBet.getGameSessionToken();
+        this.vendorBetTime = settledBet.getVendorBetTime();
+        this.vendorSettleTime = settledBet.getVendorSettleTime();
+        this.createTime = Instant.now().toEpochMilli();
+        this.resultTime = settledBet.getResultTime();
+        this.rawData = settledBet.getRawData();
+        this.resettleNum = settledBet.getResettleNum();
+    }
 }

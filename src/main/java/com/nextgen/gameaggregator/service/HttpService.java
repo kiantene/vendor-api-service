@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -30,12 +32,13 @@ public class HttpService {
     private static final Integer THREAD_SIZE = 8;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
 
+    @Value("${logging.http-request:true}")
+    private Boolean enableHttpRequestLog;
     @Autowired
     private HttpRequestLogRepository httpRequestLogRepository;
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
-
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
@@ -50,26 +53,30 @@ public class HttpService {
             httpRequestLog.setStartTime(System.currentTimeMillis());
         } catch (Exception exception) {
             log.error(exception.getMessage());
+            exception.printStackTrace();
         }
 
         return httpRequestLog;
     }
 
     public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
+        if (!enableHttpRequestLog) return;
+
         if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
-            THREAD_POOL.submit(() -> {
-                try {
-                    String responseBody = new ObjectMapper().writeValueAsString(responseVo);
-                    requestLog.setResponseBody(responseBody);
-                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                    requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
+                THREAD_POOL.submit(() -> {
+                    try {
+                        String responseBody = new ObjectMapper().writeValueAsString(responseVo);
+                        requestLog.setResponseBody(responseBody);
+                        requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
+                        requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                    httpRequestLogRepository.save(requestLog);
-                } catch (Exception exception) {
-                    log.error(exception.getMessage());
-                }
-            });
+                        httpRequestLogRepository.save(requestLog);
+                    } catch (Exception exception) {
+                        log.error(exception.getMessage());
+                        exception.printStackTrace();
+                    }
+                });
         } else {
             log.warn("HttpService.end: requestLog or responseVo is null");
         }
@@ -195,6 +202,7 @@ public class HttpService {
         while((value = reader.read()) != -1) {
             requestBody.append((char) value);
         }
+
         return requestBody.toString();
     }
 }

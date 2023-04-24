@@ -1,13 +1,10 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawSettledBet;
-import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
-import com.nextgen.gameaggregator.eventing.events.EndRoundEvent;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
@@ -15,14 +12,15 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 
 @RestController
@@ -39,6 +37,10 @@ public class EndRoundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private BetHistoryService betHistoryService;
+    @Autowired
+    private Environment environment;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.END_ROUND)
     public ResponseVo endRound(HttpServletRequest request) {
@@ -61,9 +63,9 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            SettledBetEvent settledBetEvent = walletService.processSettledBet(traceId, gameSession, dto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, body);
 
-            responseVo.setCash(settledBetEvent.getLastBalance());
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -126,7 +128,9 @@ public class EndRoundAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        if (!gameSession.getVendorGameCode().equals("101")) {
+            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        }
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

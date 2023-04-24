@@ -6,25 +6,22 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
-
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WinDataDto implements UnsettledResultSettledData {
+public class WinDataDto implements BetResultData {
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -84,11 +81,14 @@ public class WinDataDto implements UnsettledResultSettledData {
     private String gameFeature;
     
     private String betId;
-    private WinType resultType;
-    private BigDecimal betAmount;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
 
+    public BigDecimal setBetAmount() {
+        // Bet amount is zero when free spin
+        return (getSpecialGame() == null) ? BigDecimal.ZERO : null;
+    }
+    
     public String getAcctId() {
         return this.acctId.toLowerCase();
     }
@@ -98,17 +98,9 @@ public class WinDataDto implements UnsettledResultSettledData {
         return this.transferId;
     }
 
-    public void setExternalTransactionId(String transferId) {
-        this.transferId = transferId;
-    }
-
     @Override
     public String getVendorBetId() {
         return this.referenceId;
-    }
-
-    public void setVendorBetId(String referenceId){
-        this.referenceId = referenceId;
     }
 
     @Override
@@ -123,11 +115,7 @@ public class WinDataDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return betAmount;
-    }
-
-    public void setBetAmount(BigDecimal betAmount) {
-        this.betAmount = betAmount;
+        return null;
     }
 
     @Override
@@ -135,45 +123,14 @@ public class WinDataDto implements UnsettledResultSettledData {
         return this.amount;
     }
 
-    public void setWinAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
     @Override
     public BigDecimal getWinLoss() {
         return this.amount;
     }
 
-    public void setWinLoss(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    @Override
-    public BigDecimal getVendorWinLoss() {
-        return this.vendorWinLoss;
-    }
-
-    public void setVendorWinLoss(BigDecimal vendorWinLoss) {
-        this.vendorWinLoss = vendorWinLoss;
-    }
-
     @Override
     public BigDecimal getEffectiveTurnover() {
         return this.effectiveTurnover;
-    }
-
-    public void setEffectiveTurnover(BigDecimal effectiveTurnover) {
-        this.effectiveTurnover = effectiveTurnover;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return this.resultType;
     }
 
     @Override
@@ -191,23 +148,22 @@ public class WinDataDto implements UnsettledResultSettledData {
         return getTimestamp();
     }
 
-    public void setResultType(WinType resultType) {
-        this.resultType = resultType;
-    }
-
     @Override
     public BigDecimal getJackpotAmount() {
         return BigDecimal.ZERO;
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 
     public Long getTimestamp() {

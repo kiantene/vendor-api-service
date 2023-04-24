@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -85,25 +85,19 @@ public class CancelBetAction {
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
 
-        } catch (InvalidDecryptionException invalidDecryptionException) {
+        } catch (
+                InvalidDecryptionException |
+                InvalidEncryptionException |
+                InvalidPlayerException |
+                InvalidRequestException |
+                BetNotFoundException |
+                CurrencyNotSupportedException |
+                JsonProcessingException |
+                CredentialNotFoundException |
+                DisabledGameException notExistException
+        ) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (InvalidEncryptionException invalidEncryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (InvalidPlayerException invalidPlayerException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (InvalidRequestException invalidRequestException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        }catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        }catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (DisabledGameException disabledGameException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        }catch (Exception exception) {
+        } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);

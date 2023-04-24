@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.entity;
 
 import lombok.Data;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "vendor_game_currencies")
@@ -12,11 +12,9 @@ public class VendorGameCurrency  extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    //private Integer vendorGameId;
     private Integer status;
     @ManyToOne
     private Currency currency;
-
     @ManyToOne
     private VendorGame vendorGame;
 

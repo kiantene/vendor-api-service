@@ -15,12 +15,15 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -45,6 +48,8 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private Environment environment;
 
     @PostMapping(path = EndPoints.BET)
     public ResponseVo<CommonVo> bet(HttpServletRequest request) {
@@ -74,11 +79,11 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, betDto, body);
+            BigDecimal balance = walletService.processBet(traceId, gameSession, betDto, body);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
-            commonVo.setBalance(unsettledBetEvent.getLastBalance());
+            commonVo.setBalance(balance);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 

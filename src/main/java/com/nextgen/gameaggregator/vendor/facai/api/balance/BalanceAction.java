@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -43,7 +44,7 @@ public class BalanceAction {
     private GameSessionService gameSessionService;
 
     @PostMapping(path = EndPoints.BALANCE)
-    public CommonVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getTraceId();
 
@@ -72,7 +73,7 @@ public class BalanceAction {
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(balanceDto);
 
-            //get gameSession by player name and vendor game id
+            //get rawGameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
 
             //Get walletBalance
@@ -85,33 +86,29 @@ public class BalanceAction {
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
-        } catch (InvalidRequestException invalidRequestException) {
-            //return error message according param
-            if(invalidRequestException.getValidation() != null) {
-                commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
-            }else{
-                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-            }
+        } catch (
+                InvalidDecryptionException |
+                InvalidEncryptionException |
+                CredentialNotFoundException |
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                InvalidOperatorResponseException |
+                JsonProcessingException paramException
+        ) {
+            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
-        } catch (InvalidDecryptionException invalidDecryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidEncryptionException invalidEncryptionException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (AuthenticationException authenticationException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-        } catch (JsonProcessingException jsonProcessingException) {
-            commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+        } catch (InvalidRequestException invalidRequestException) {
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
+            } else {
+                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            }
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {

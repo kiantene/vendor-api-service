@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.controller.vendorgame;
 
+import com.nextgen.gameaggregator.controller.vendorgame.service.GameExcelService;
+import com.nextgen.gameaggregator.controller.vendorgame.service.GameExcelValidatorService;
+import com.nextgen.gameaggregator.controller.vendorgame.vo.ImportResponse;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.VendorGameRepository;
@@ -57,9 +60,9 @@ public class GameImportController {
             gameCategoryService.checkVendorSupportGameCategory(vendor, gameCategory);
 
             //5. get vendor supported language
-            HashMap<String, Language> vendorLanguages = vendorService.findVendorSupportedLanguage(vendor.getId());
+            HashMap<String, Language> vendorLanguages = vendorService.findVendorSupportedLanguages(vendor.getId());
             //6. get vendor supported currencies
-            HashMap<String, Currency> vendorCurrencies = vendorService.findVendorSupportedCurrency(vendor.getId());
+            HashMap<String, Currency> vendorCurrencies = vendorService.findVendorSupportedCurrencies(vendor.getId());
 
             HashMap<String, Platform> platforms = gameExcelValidatorService.getSystemSupportedPlatform();
 

@@ -8,9 +8,16 @@ import java.util.List;
 
 @Repository
 public interface AgentVendorLineRepository extends JpaRepository<AgentVendorLine, Integer> {
-    AgentVendorLine findByAgentIdAndVendorIdAndCurrencyIdAndGameCategory_Id
+    List<AgentVendorLine>  findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryId
             (Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId);
 
-    List<AgentVendorLine> findByAgentIdAndVendorIdAndCurrencyIdAndStatus
-            (Integer agentId, Integer vendorId, Integer currencyId, Integer status);
+    List<AgentVendorLine> findByAgentIdAndVendorIdAndCurrencyId
+            (Integer agentId, Integer vendorId, Integer currencyId);
+
+    List<AgentVendorLine> findByVendorLineId(Integer vendorLineId);
+
+    List<AgentVendorLine> findByAgentIdAndVendorLineId(Integer agentId, Integer vendorLineId);
+
+    List<AgentVendorLine>  findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus
+            (Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId, Integer status);
 }

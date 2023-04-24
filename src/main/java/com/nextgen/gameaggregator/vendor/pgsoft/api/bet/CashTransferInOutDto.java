@@ -3,19 +3,20 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CashTransferInOutDto implements UnsettledResultSettledData {
+public class CashTransferInOutDto implements BetResultData {
 
     @Size(min = 1, max = 100)
     @NotBlank
@@ -137,23 +138,8 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return this.getWinLoss();
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return this.betAmount;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return (this.winAmount.compareTo(BigDecimal.ZERO) > 0)?WinType.WIN:WinType.LOSE;
     }
 
     @Override
@@ -177,12 +163,12 @@ public class CashTransferInOutDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return (this.isEndRound.equals(true)) ? BetStatus.SETTLED : BetStatus.UNSETTLED;
     }
 }

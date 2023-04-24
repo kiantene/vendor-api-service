@@ -6,23 +6,24 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
+import com.nextgen.gameaggregator.enums.BetStatus;
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransferDto implements UnsettledResultSettledData{
+public class TransferDto implements BetResultData {
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -121,23 +122,8 @@ public class TransferDto implements UnsettledResultSettledData{
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return getBetAmount().negate();
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
         return getBetAmount();
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return WinType.LOSE;
     }
 
     @Override
@@ -161,13 +147,16 @@ public class TransferDto implements UnsettledResultSettledData{
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 
     public Long getTimestamp() {

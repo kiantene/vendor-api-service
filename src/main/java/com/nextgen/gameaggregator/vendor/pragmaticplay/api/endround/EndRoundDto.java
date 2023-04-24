@@ -1,23 +1,20 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.entity.RawResultBet;
-import com.nextgen.gameaggregator.entity.RawSettledBet;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.SettledData;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class EndRoundDto implements UnsettledResultSettledData {
+public class EndRoundDto implements BetResultData {
 
     // Hash code of the request
     @NotBlank
@@ -81,22 +78,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
-        return null;
-    }
-
-    @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return null;
-    }
-
-    @Override
-    public WinType getResultType() {
         return null;
     }
 
@@ -117,12 +99,7 @@ public class EndRoundDto implements UnsettledResultSettledData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override
-    public Integer getIsCancelled() {
-        return 0;
+        return null;
     }
 
     @Override
@@ -130,5 +107,8 @@ public class EndRoundDto implements UnsettledResultSettledData {
         return 0;
     }
 
-
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
+    }
 }

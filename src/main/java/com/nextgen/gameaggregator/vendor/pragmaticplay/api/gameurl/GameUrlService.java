@@ -18,6 +18,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
@@ -60,19 +61,21 @@ public class GameUrlService implements GameUrl {
         log.info(formData.toString());
 
         // TODO: need to add error handling
-        String responseString =  WebClient.create(apiUrl)
+        String responseString = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
-                .onStatus(HttpStatus::isError,
-                        response -> {
-                            HttpStatus clientResponseStatus = response.statusCode();
-                            return response.bodyToMono(String.class).map(body ->
-                                    new InvalidVendorResponseException
-                                            ("response status :" + clientResponseStatus + ", response body :" + body));
-                        })
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
+//                .onStatus(HttpStatus::isError,
+//                        response -> {
+//                            HttpStatus clientResponseStatus = response.statusCode();
+//                            return response.bodyToMono(String.class).map(body ->
+//                                    new InvalidVendorResponseException
+//                                            ("response status :" + clientResponseStatus + ", response body :" + body));
+//                        })
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
@@ -81,7 +84,7 @@ public class GameUrlService implements GameUrl {
         try {
             responseVo = new Gson().fromJson(responseString, GameUrlVo.class);
         } catch (JsonSyntaxException jsonSyntaxException) {
-            throw new InvalidVendorResponseException( "Invalid vendor response body :"+responseString);
+            throw new InvalidVendorResponseException("Invalid vendor response body :" + responseString);
         }
 
         if (responseVo != null) {

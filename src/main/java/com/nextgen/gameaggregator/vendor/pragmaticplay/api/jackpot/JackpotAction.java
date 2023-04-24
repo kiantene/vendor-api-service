@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -21,7 +22,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -36,6 +38,10 @@ public class JackpotAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+
+    @Autowired
+    private VendorService vendorService;
+
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -50,7 +56,7 @@ public class JackpotAction {
             // 1. Validate request parameters from vendor
             this.doValidation(dto);
 
-            // TODO: validate gameId with gameSession
+            // TODO: validate gameId with rawGameSession
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
@@ -59,11 +65,11 @@ public class JackpotAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
-            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorGameCode());
-            responseVo.setCash(betResultEvent.getLastBalance());
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -81,21 +87,21 @@ public class JackpotAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-            httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
-
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpService.logError(httpRequestLog, betNotFoundException);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+//            httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
+//
+//        } catch (BetNotFoundException betNotFoundException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpService.logError(httpRequestLog, betNotFoundException);
+//
+//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-            
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);

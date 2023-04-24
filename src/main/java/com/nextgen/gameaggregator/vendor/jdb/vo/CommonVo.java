@@ -1,13 +1,16 @@
 package com.nextgen.gameaggregator.vendor.jdb.vo;
 
+import java.math.BigDecimal;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
+
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonVo implements HttpResponse {
     @JsonProperty("status")
     private String status;
@@ -16,13 +19,20 @@ public class CommonVo implements HttpResponse {
     private BigDecimal balance = BigDecimal.ZERO;
 
     @JsonProperty("err_text")
-    private String errText;
+    private String err_text;
 
-    public void setResponseCode(ResponseCode responseCode) {
-        this.setStatus(responseCode.code);
-        this.setErrText(responseCode.description);
+    public CommonVo() {
+        this.setSuccessResponseCode(ResponseCode.SUCCESS);
     }
 
+    public void setSuccessResponseCode(String responseCode) {
+        this.status = responseCode;
+    }
+
+    public void setErrorResponseCode(String responseCode) {
+        this.status = responseCode;
+        this.err_text = ResponseCode.RESPONSE_DESCRIPTION.get(responseCode);
+    }
     @Override
     public boolean hasError() {
         return false;

@@ -1,9 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import java.math.BigDecimal;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,37 +7,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.enums.WinType;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
-import com.nextgen.gameaggregator.exception.DisabledGameException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
-import com.nextgen.gameaggregator.exception.RecordNotFoundException;
-import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
-import com.nextgen.gameaggregator.service.AgentPlayerService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorGameService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Actions;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Channel;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.*;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 
 
 @Service
@@ -76,7 +51,7 @@ public class TransferService {
             transferVo.setSerialNo(traceId);
             this.doValidation(dto);
 
-            // User acctId and gameCode to get gameSession if gameCode is not null
+            // User acctId and gameCode to get rawGameSession if gameCode is not null
             GameSession gameSession = dto.getGameCode() != null
             ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
             : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
@@ -87,14 +62,14 @@ public class TransferService {
             switch(dto.getType()) {
                 case Actions.PLACE_BET:
                     // Place bet action
-                    UnsettledBetEvent betEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
-                    transferVo.setBalance(betEvent.getLastBalance());
+                    BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
+                    transferVo.setBalance(balance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
                 case Actions.CANCEL_BET:
                     // Cancel bet and refund action
-                    BetRefundEvent betRefundEvent = walletService.processRefund(traceId, dto.getTransferId(), gameSession, body);
+                    BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
                     transferVo.setBalance(betRefundEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -102,15 +77,6 @@ public class TransferService {
                 case Actions.PAYOUT:
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    winDataDto.setExternalTransactionId(dto.getTransferId());
-                    winDataDto.setReferenceId(dto.getReferenceId());
-                    winDataDto.setWinAmount(dto.getAmount());
-                    winDataDto.setEffectiveTurnover(dto.getAmount());
-                    winDataDto.setGameCode(dto.getGameCode());
-                    winDataDto.setResultType(getWinType(dto));
-
-                    // Bet amount is zero when free spin
-                    if (dto.getSpecialGame() == null) winDataDto.setBetAmount(BigDecimal.ZERO);
                     transferVo.setBalance(
                         dto.getSpecialGame() == null
                             ? walletService.processResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
@@ -187,10 +153,6 @@ public class TransferService {
         }
     
         return transferVo;
-    }
-
-    private WinType getWinType(TransferDto dto) {
-        return (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? WinType.WIN : WinType.LOSE;
     }
 
     private void doValidation(TransferDto dto) throws InvalidRequestException {

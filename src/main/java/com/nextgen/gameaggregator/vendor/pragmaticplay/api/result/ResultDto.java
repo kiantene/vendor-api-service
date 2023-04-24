@@ -1,20 +1,19 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
-import com.nextgen.gameaggregator.operator.wallet.win.WinData;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
-import javax.validation.constraints.*;
+import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResultDto implements UnsettledResultSettledData {
+public class ResultDto implements BetResultData {
 
     // Hash code of the request
     @NotBlank
@@ -101,23 +100,8 @@ public class ResultDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public BigDecimal getVendorWinLoss() {
+    public BigDecimal getEffectiveTurnover() {
         return null;
-    }
-
-    @Override
-    public BigDecimal getEffectiveTurnover(){
-        return null;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.valueOf(0);
-    }
-
-    @Override
-    public WinType getResultType() {
-        return WinType.WIN;
     }
 
     @Override
@@ -141,13 +125,13 @@ public class ResultDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.UNSETTLED;
     }
 
 

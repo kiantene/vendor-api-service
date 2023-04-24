@@ -24,6 +24,7 @@ public class CommonVo implements HttpResponse {
     public void setResponseCode(String responseCode) {
         this.status = Integer.valueOf(responseCode);
         this.message = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
+        this.balance = Double.valueOf(0);
     }
     @Override
     public boolean hasError() {

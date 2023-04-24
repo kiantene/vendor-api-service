@@ -3,18 +3,26 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.AgentPlayerService;
+import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.service.BetHistoryService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -34,9 +42,7 @@ public class CancelBetNSettleService {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorLineService vendorLineService;
+    private ValidationService validationService;
 
     public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -60,19 +66,37 @@ public class CancelBetNSettleService {
             this.doVerification(cancelBetNSettleDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, cancelBetNSettleDto.getTransferId(), gameSession, actionDto.getParams());
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetNSettleDto.getTransferId(), gameSession, actionDto.getParams());
 
             vo.setBalance(betRefundEvent.getLastBalance());
-            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         
-        } catch (InvalidRequestException InvalidRequestException) {
-            vo.setResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+        } catch (AuthenticationException authenticationException) {
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+        } catch (BetNotFoundException betNotFoundException) {
+            vo.setErrorResponseCode(ResponseCode.FAILED);
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidRequestException invalidRequestException) {
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (JsonProcessingException jsonProcessingException) {
+            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+        } catch (RecordNotFoundException recordNotFoundException) {
+            vo.setErrorResponseCode(ResponseCode.FAILED);
+        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            vo.setErrorResponseCode(ResponseCode.FAILED);
+        } catch (DisabledGameException disabledGameException) {
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (Exception exception) {
-            vo.setResponseCode(ResponseCode.FAILED);
+            vo.setErrorResponseCode(ResponseCode.FAILED);
         }
 
         return vo;
@@ -83,11 +107,9 @@ public class CancelBetNSettleService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException {
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+    private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException,
+    DisabledAgentPlayerException, InvalidPlayerException, DisabledGameException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUid());
     }
 }

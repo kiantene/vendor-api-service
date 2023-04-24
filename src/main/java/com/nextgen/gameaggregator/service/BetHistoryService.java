@@ -1,33 +1,37 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
-import com.nextgen.gameaggregator.entity.BetResultLog;
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.repository.RawResultBetRepository;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.BetResultLogRepository;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
+import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
+import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
+import com.nextgen.gameaggregator.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
-import javax.transaction.Transactional;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 public class BetHistoryService {
+    @Autowired
+    private AutowireCapableBeanFactory autowireCapableBeanFactory;
+
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
     @Autowired
@@ -40,6 +44,11 @@ public class BetHistoryService {
 
     @Autowired
     private MariaDefaultDataSourceConfig mariaDefaultDataSourceConfig;
+
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private VendorLineRepository vendorLineRepository;
 
     @Autowired
     private RawResultBetRepository rawResultBetRepository;
@@ -56,9 +65,8 @@ public class BetHistoryService {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
         entity.setWinLoss(BigDecimal.ZERO);
-        entity.setVendorWinLoss(BigDecimal.ZERO);
         entity.setEffectiveTurnover(BigDecimal.ZERO);
-        entity.setResultType(WinType.LOSE.code);
+        entity.setResultType(ResultType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
 
@@ -92,10 +100,9 @@ public class BetHistoryService {
      * @return RawUnsettledBet entity object after a successful save
      */
     @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public RawUnsettledBet createUnsettledBet(RawUnsettledBet entity) throws CouchbaseDataIntegrityException {
+    public UnsettledBet createUnsettledBet(UnsettledBet entity) throws CouchbaseDataIntegrityException {
         // Set default values
         entity.setCreateTime(System.currentTimeMillis());
-        entity.setResettleNum(0);
 
         try {
             rawUnsettledBetRepository.save(entity);
@@ -116,9 +123,9 @@ public class BetHistoryService {
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);
         entity.setWinLoss(BigDecimal.ZERO);
-        entity.setVendorWinLoss(BigDecimal.ZERO);
+        //entity.setVendorWinLoss(BigDecimal.ZERO);
         entity.setEffectiveTurnover(BigDecimal.ZERO);
-        entity.setResultType(WinType.LOSE.code);
+        entity.setResultType(ResultType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
 
@@ -130,8 +137,8 @@ public class BetHistoryService {
                 "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
                 entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(),
                 entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
-                entity.getGameSessionToken(), entity.getMasterAgentId(), entity.getHouseId(), entity.getGameCategoryId(),
-                entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(), entity.getVendorWinLoss(),
+                entity.getGameSessionToken(), entity.getGameCategoryId(),
+                entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(),
                 entity.getEffectiveTurnover(), entity.getResultType(), entity.getRawData(), entity.getStatus(),
                 entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime());
 
@@ -182,22 +189,48 @@ public class BetHistoryService {
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
      */
-    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawUnsettledBet getRawUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
-        RawUnsettledBet rawUnsettledBet = null;
+        String mergeId = vendorBetId+'_'+roundId+'_'+vendorGameId+'_'+vendorPlayerId;
+        UnsettledBet unsettledBet = null;
 
         try{
-             rawUnsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
-            if (rawUnsettledBet == null) { // No matching bet record for the given round Id
+             unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+            if (unsettledBet == null) { // No matching bet record for the given round Id
                 throw new BetNotFoundException("Cannot find round Id: " + roundId);
             }
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
         }
 
-        return rawUnsettledBet;
+        return unsettledBet;
+    }
+
+    /**
+     * Retrieve all bets within the same rounds and process together to kafka
+     *
+     * @param roundId        Vendor's round Id
+     * @param vendorLineId         vendor line id within Game Aggregator System
+     * @param vendorPlayerId Id of the record in VendorPlayer
+     * @return A list of unsettled bet entity object containing all information
+     */
+    public List<UnsettledBet> getBetDataListByRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId){
+
+        try{
+            List<UnsettledBet> unsettledBetLists = rawUnsettledBetRepository.findByRoundId(roundId, vendorLineId, vendorPlayerId);
+
+            if (unsettledBetLists == null) {
+                return null;
+            }
+
+            return unsettledBetLists;
+
+        } catch (Exception e) {
+            //TODO ERROR HANDLING IF CONNECTION TO COUCHBASE IS FAILED
+            log.error("getBetDataListByRoundId ERROR, details : " + e);
+            return null;
+        }
     }
 
     /**
@@ -210,20 +243,20 @@ public class BetHistoryService {
      * @throws BetNotFoundException If no bet record is found
      */
     @Cacheable(value = "UnsettledBetWithGameId", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawUnsettledBet getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    public UnsettledBet getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
 
-        RawUnsettledBet rawUnsettledBet = null;
+        UnsettledBet unsettledBet = null;
 
         try{
-            rawUnsettledBet = rawUnsettledBetRepository.findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-            if (rawUnsettledBet == null) { // No matching bet record for the given round Id
+            unsettledBet = rawUnsettledBetRepository.findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+            if (unsettledBet == null) { // No matching bet record for the given round Id
                 throw new BetNotFoundException("Cannot find round Id: " + roundId);
             }
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
             throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
         }
 
-        return rawUnsettledBet;
+        return unsettledBet;
     }
 
     /**
@@ -254,5 +287,43 @@ public class BetHistoryService {
     public BetResultLog getBetHistoryByExternalTransaction(String txnId, String roundId, Integer vendorLineId) throws BetResultNotFoundException {
         BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(txnId, roundId, vendorLineId);
         return resultLog;
+    }
+
+    public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String transactionId) throws BetNotFoundException {
+        IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, transactionId);
+
+        if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
+            throw new BetNotFoundException();
+        }
+        return iBetDetailUrlInfo;
+    }
+
+    public TransactionDetailData getDetailUrl(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData,
+                                              VendorLine vendorLine, VendorLanguageCode vendorLanguageCode) throws
+            InvalidVendorResponseException, DisabledVendorLineException, InvalidVendorLineException {
+
+
+        //2. get vendor line credential
+        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine);
+
+
+        try {
+            String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
+            BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
+            autowireCapableBeanFactory.autowireBean(betDetailUrl);
+            MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
+
+            BetDetailUrlVo betDetailUrlVo = betDetailUrl.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
+            transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
+
+            return transactionDetailData;
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException | InvalidVendorLineException |
+                 InvalidFormatException | RecordNotFoundException
+                gameClassException) {
+            gameClassException.printStackTrace();
+            log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
+            throw new InvalidVendorResponseException();
+        }
     }
 }

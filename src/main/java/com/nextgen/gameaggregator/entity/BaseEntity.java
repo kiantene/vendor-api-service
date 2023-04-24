@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.7.5</version>
+		<version>3.0.5</version>
 		<relativePath/>
 		<!-- lookup parent from repository -->
 	</parent>
@@ -17,29 +17,56 @@
 	<description>game aggregator vendor api service</description>
 
 	<properties>
-		<spring-cloud.version>2021.0.5</spring-cloud.version>
-		<java.version>18</java.version>
-		<javax.version>2.0.1.Final</javax.version>
-		<hibernate-validator.version>6.0.13.Final</hibernate-validator.version>
-		<glassfish.version>3.0.0</glassfish.version>
-		<logstash.version>7.2</logstash.version>
-		<nextgen-core.version>2.0.37</nextgen-core.version>
-		<java-client.version>3.4.4</java-client.version>
-		<projectlombok.version>1.18.24</projectlombok.version>
-		<spring-kafka.version>2.9.2</spring-kafka.version>
-		<kafka.version>3.3.1</kafka.version>
-		<commons-codec.version>1.15</commons-codec.version>
-		<netty.version>4.1.86.Final</netty.version>
-		<mariadb.version>3.0.8</mariadb.version>
-		<poi.version>4.1.2</poi.version>
+		<spring-cloud.version>2022.0.1</spring-cloud.version>
 		<maven.compiler.source>18</maven.compiler.source>
 		<maven.compiler.target>18</maven.compiler.target>
+		<java.version>18</java.version>
+		<grpc.version>1.50.0</grpc.version>
+		<spring-doc.version>1.6.9</spring-doc.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<timestamp>${maven.build.timestamp}</timestamp>
 		<maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>com.nextgen.sas</groupId>
+			<artifactId>core</artifactId>
+			<version>3.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+
+		<!--		<dependency>-->
+		<!--			<groupId>com.nextgen.sas</groupId>-->
+		<!--			<artifactId>lib</artifactId>-->
+		<!--			<version>3.0.0</version>-->
+		<!--		</dependency>-->
+		<!--		<dependency>-->
+		<!--			<groupId>com.nextgen.sas</groupId>-->
+		<!--			<artifactId>core-v2</artifactId>-->
+		<!--			<version>3.0.0</version>-->
+		<!--		</dependency>-->
+
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-client</artifactId>
+			<version>2.34</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.core</groupId>
+			<artifactId>jersey-common</artifactId>
+			<version>2.34</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -59,54 +86,27 @@
 		</dependency>
 
 		<dependency>
-			<groupId>javax.validation</groupId>
-			<artifactId>validation-api</artifactId>
-			<version>${javax.version}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>${hibernate-validator.version}</version>
 		</dependency>
 
 		<dependency>
-			<groupId>org.glassfish</groupId>
-			<artifactId>javax.el</artifactId>
-			<version>${glassfish.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-dependencies</artifactId>
-			<version>${spring-cloud.version}</version>
-			<type>pom</type>
-			<scope>import</scope>
+			<groupId>jakarta.xml.bind</groupId>
+			<artifactId>jakarta.xml.bind-api</artifactId>
+			<version>4.0.0</version>
 		</dependency>
 
 		<dependency>
 			<groupId>net.logstash.logback</groupId>
 			<artifactId>logstash-logback-encoder</artifactId>
-			<version>${logstash.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.nextgen.sas</groupId>
-			<artifactId>core</artifactId>
-			<version>${nextgen-core.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-security</artifactId>
-				</exclusion>
-			</exclusions>
+			<version>7.3</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.mariadb.jdbc</groupId>
 			<artifactId>mariadb-java-client</artifactId>
 			<scope>runtime</scope>
-			<version>${mariadb.version}</version>
+			<version>3.1.2</version>
 		</dependency>
 
 		<dependency>
@@ -117,19 +117,18 @@
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
-			<version>${projectlombok.version}</version>
+			<version>1.18.26</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
-			<version>${spring-kafka.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
-			<version>${kafka.version}</version>
+			<version>3.4.0</version>
 		</dependency>
 
 		<dependency>
@@ -139,40 +138,46 @@
 		</dependency>
 
 		<dependency>
+			<groupId>io.confluent</groupId>
+			<artifactId>kafka-json-schema-serializer</artifactId>
+			<version>5.5.1</version>
+		</dependency>
+
+		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>${commons-codec.version}</version>
+			<version>1.15</version>
 		</dependency>
 
 		<!-- Support for Apple M1 chip -->
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-resolver-dns-native-macos</artifactId>
-			<version>${netty.version}</version>
+			<version>4.1.90.Final</version>
 			<classifier>osx-aarch_64</classifier>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
-			<version>${poi.version}</version>
+			<version>5.2.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
-			<version>${poi.version}</version>
+			<version>5.2.2</version>
 		</dependency>
-
-		<!--need remove when go live -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-devtools</artifactId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
-        <!--grpc -->
+
+		<dependency>
+			<groupId>org.modelmapper</groupId>
+			<artifactId>modelmapper</artifactId>
+			<version>3.1.1</version>
+		</dependency>
+		<!--grpc -->
 		<!--		<dependency>-->
 		<!--			<groupId>com.nextgen.game-aggregator</groupId>-->
 		<!--			<artifactId>game-aggregator-vendor-operator-grpc-proto</artifactId>-->
@@ -196,27 +201,17 @@
 
 	<repositories>
 		<repository>
-			<id>gitlab-maven</id>
+			<id>central</id>
+			<url>https://repo1.maven.org/maven2/</url>
+		</repository>
+		<repository>
+			<id>gitlab-maven-sas</id>
 			<url>http://223.25.67.48/api/v4/projects/10/packages/maven</url>
 		</repository>
 		<repository>
-			<id>gitlab-maven-2</id>
-			<url>http://223.25.67.48/api/v4/projects/41/packages/maven</url>
-		</repository>
-		<repository>
-			<id>gitlab-maven-3</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
+			<id>confluent</id>
+			<name>Confluent</name>
+			<url>http://packages.confluent.io/maven/</url>
 		</repository>
 	</repositories>
-
-	<distributionManagement>
-		<repository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
-		</repository>
-		<snapshotRepository>
-			<id>gitlab-maven</id>
-			<url>http://223.25.67.48/api/v4/projects/19/packages/maven</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>

@@ -2,27 +2,22 @@ package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
 import java.math.BigDecimal;
 
-import javax.validation.constraints.Digits;
-import javax.validation.constraints.Negative;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Positive;
-import javax.validation.constraints.Size;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.enums.WinType;
-import com.nextgen.gameaggregator.operator.wallet.settled.UnsettledResultSettledData;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetNSettleDto implements UnsettledResultSettledData {
+public class BetNSettleDto implements BetResultData {
 
-    private WinType resultType;
+    private ResultType resultType;
 
     @NotBlank
     @Pattern(regexp = "^[0-9]+$")
@@ -55,12 +50,14 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
 
-    @NotBlank
-    @Size(max = 10)
+    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
+    @Size(max = 10, message = ResponseCode.WRONG_DATE_FORMAT)
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String reportDate;
 
-    @NotBlank
-    @Size(max = 19)
+    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
+    @Size(max = 19, message = ResponseCode.WRONG_DATE_FORMAT)
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String gameDate;
 
     @NotBlank
@@ -72,17 +69,19 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     private BigDecimal bet;
 
     @NotNull
-    @Positive
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal win;
 
     @NotNull
     private BigDecimal netWin;
 
     @NotNull
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal denom;
 
     @NotBlank
     @Size(max = 50)
+    @Pattern(regexp = "^(([01]?\\d{1,2}|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d{1,2}|2[0-4]\\d|25[0-5])$|^(([a-fA-F\\d]{1,4}:){7}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){1,7}:|([a-fA-F\\d]{1,4}:){6}:([01][a-fA-F\\d]{1,3}:){1,4}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){5}:([01][a-fA-F\\d]{1,3}:){1,5}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){4}:([01][a-fA-F\\d]{1,3}:){1,6}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){3}:([01][a-fA-F\\d]{1,3}:){1,7}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){2}:([01][a-fA-F\\d]{1,3}:){1,8}[a-fA-F\\d]{1,4}|[a-fA-F\\d]:([01][a-fA-F\\d]{1,3}:){1,8}:[a-fA-F\\d]{1,4}|:((:[a-fA-F\\d]{1,4}){1,7}|:)|fe80:(:[a-fA-F\\d]{0,4}){0,4}%[\\w\\d]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)|([a-fA-F\\d]{1,4}:){1,4}:((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?))$")
     private String ipAddress;
 
     @NotBlank
@@ -90,10 +89,13 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     private String clientType;
 
     @NotNull
-    private Boolean systemTakeWin;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer systemTakeWin;
 
-    @NotBlank
-    @Size(max = 19)
+    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
+    @Size(max = 19, message = ResponseCode.WRONG_DATE_FORMAT)
+    @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String lastModifyTime;
 
     @Size(max = 50)
@@ -104,12 +106,15 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
 
     // Slot Only, gType = 0
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal jackpotWin;
 
+    @Negative
     private BigDecimal jackpotContribute;
 
-    @JsonProperty("hasFreegame")
-    private Boolean hasFreeGame;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer hasFreeGame;
 
 
     // Fish Only, gType = 7
@@ -118,11 +123,15 @@ public class BetNSettleDto implements UnsettledResultSettledData {
 
 
     // Slot and Arcade, gType = 0 OR gType = 9
-    private Boolean hasGamble;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer hasGamble;
 
 
     // Arcade and Lottery, gType = 9 OR gType = 12
-    private Boolean hasBonusGame;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer hasBonusGame;
 
     @Override
     public String getExternalTransactionId() {
@@ -175,25 +184,10 @@ public class BetNSettleDto implements UnsettledResultSettledData {
         return netWin;
     }
 
-    @Override
-    public BigDecimal getVendorWinLoss() {
-        return netWin;
-    }
-
 
     @Override
     public BigDecimal getEffectiveTurnover() {
         return bet;
-    }
-
-    @Override
-    public BigDecimal getRefundAmount() {
-        return BigDecimal.ZERO;
-    }
-
-    @Override
-    public WinType getResultType() {
-        return this.netWin.compareTo(BigDecimal.ZERO) > 0 ? WinType.WIN : WinType.LOSE;
     }
 
     @Override
@@ -221,12 +215,15 @@ public class BetNSettleDto implements UnsettledResultSettledData {
     }
 
     @Override
-    public Integer getIsCancelled() {
+    public Integer getIsFreespin() {
         return 0;
     }
 
+    /**
+     * @return
+     */
     @Override
-    public Integer getIsFreespin() {
-        return 0;
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
     }
 }

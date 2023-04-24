@@ -18,5 +18,5 @@ public class EndPoints {
     public static final String GAME_URL = "/gameboy/player/sw/gamelink";
     public static final String GAME_LIST = "/gameboy/game/list/{gamehall}";
     public static final String KICK_PLAYER = "/gameboy/player/logout";
-    public static final String ORDER_RECORD = "/gameboy/order/record";
+    public static final String ORDER_DETAIL_URL = "/gameboy/order/detail/v2";
 }

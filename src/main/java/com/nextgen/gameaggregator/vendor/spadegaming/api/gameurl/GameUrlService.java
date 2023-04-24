@@ -3,11 +3,11 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.gameurl;
 import java.net.URI;
 import java.util.Map;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
@@ -30,7 +30,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) 
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
     throws InvalidVendorLineException, InvalidVendorResponseException {
         // Retrieve the game domain from the credentials map.
         String gameDomain = credentials.getOrDefault(Credentials.GAME_DOMAIN, "");

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -58,7 +58,7 @@ public class CancelBetAction {
 
             // 3. get Bet History for checking
             // TODO : (need change to get by betId)
-//            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelBetDto.getRound()), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+//            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelBetDto.getRound()), rawGameSession.getVendorGameId(), rawGameSession.getVendorPlayerId());
 
 
             this.doVerification(cancelBetDto, gameSession);
@@ -69,7 +69,7 @@ public class CancelBetAction {
             cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             cancelBetVo.setBalance(balance);
-//            cancelBetVo.setToken(gameSession.getToken());
+//            cancelBetVo.setToken(rawGameSession.getToken());
 
 
         } catch (InvalidRequestException |

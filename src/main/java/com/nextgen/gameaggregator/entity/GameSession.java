@@ -1,20 +1,18 @@
 package com.nextgen.gameaggregator.entity;
 
+import jakarta.persistence.Id;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import org.springframework.data.couchbase.core.mapping.Document;
+import org.springframework.data.couchbase.repository.Collection;
+import org.springframework.data.couchbase.repository.Scope;
 
-import javax.persistence.*;
-
-@Entity
-@Table(name = "game_sessions")
+@Document
+@Scope("raw")
+@Collection("game_session")
 @Data
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
-public class GameSession extends BaseEntity {
+public class GameSession {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     private String token;
     private Integer agentId;
     private Long agentPlayerId;
@@ -37,4 +35,6 @@ public class GameSession extends BaseEntity {
     private Integer platformId;
     private String traceId;
     private Integer status;
+    private Long createTime;
+    private Long terminateTime;
 }

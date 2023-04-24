@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.operator.game.vendor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.Language;
 import com.nextgen.gameaggregator.entity.custom.IGameVendor;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
@@ -11,8 +12,8 @@ import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.repository.VendorRepository;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.LanguageService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -34,10 +35,8 @@ public class GameVendorAction {
 
     @Autowired
     private ValidationService validationService;
-
     @Autowired
-    private VendorRepository vendorRepository;
-
+    private LanguageService languageService;
     @Autowired
     private VendorService vendorService;
 
@@ -65,9 +64,10 @@ public class GameVendorAction {
             String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            List<IGameVendor> vendorList = vendorService.findAgentSupportedVendorList(dto, apiCredential.getAgent());
+            // 5. check if platform supported
+            Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
 
-            System.err.println(vendorList);
+            List<IGameVendor> vendorList = vendorService.findAgentSupportedVendors(language, apiCredential.getAgent());
 
             responseVo.setData(vendorList);
 
@@ -77,14 +77,13 @@ public class GameVendorAction {
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 
         } catch (JsonProcessingException jsonProcessingException) {
-            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_REQUEST);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_REQUEST);
             responseVo.setValidation(invalidRequestException.getValidation());
 
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
         } catch (InvalidSignatureException invalidSignatureException) {
@@ -102,7 +101,6 @@ public class GameVendorAction {
         }
         finally {
             responseVo.setMessage(responseVo.getStatus().description);
-
         }
 
         httpService.end(httpRequestLog, responseVo);

@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -105,11 +106,10 @@ public class AuthenticateAction {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
-        }
-        catch (Exception exception) { // any other exception encountered
+        } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
-            
+
         }
 
         httpService.end(httpRequestLog, responseVo);

@@ -1,0 +1,11 @@
+package com.nextgen.gameaggregator.exception;
+
+public class InvalidResponseException  extends Exception{
+
+    public InvalidResponseException() {
+        super();
+    }
+    public InvalidResponseException(String message) {
+        super(message);
+    }
+}

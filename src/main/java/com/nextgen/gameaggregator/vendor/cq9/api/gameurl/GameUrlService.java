@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Platforms;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,6 +15,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +30,7 @@ public class GameUrlService implements GameUrl {
         formData.add("account", gameSession.getVendorPlayerUsername());
         formData.add("gamehall", "CQ9");
         formData.add("gamecode", gameCode);
-        formData.add("gameplat", Platforms.WEB.code);
+        formData.add("gameplat", gameSession.getVendorPlatformCode());
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("session", gameSession.getToken());
 
@@ -56,13 +56,15 @@ public class GameUrlService implements GameUrl {
                 .body(BodyInserters.fromFormData(formData))
                 .header("Authorization", secretKey)
                 .retrieve()
-                .onStatus(HttpStatus::isError,
-                        response -> {
-                            HttpStatus clientResponseStatus = response.statusCode();
-                            return response.bodyToMono(String.class).map(body ->
-                                    new InvalidVendorResponseException
-                                            ("response status :" + clientResponseStatus + ", response body :" + body));
-                        })
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
+//                .onStatus(HttpStatus::isError,
+//                        response -> {
+//                            HttpStatus clientResponseStatus = response.statusCode();
+//                            return response.bodyToMono(String.class).map(body ->
+//                                    new InvalidVendorResponseException
+//                                            ("response status :" + clientResponseStatus + ", response body :" + body));
+//                        })
                 .bodyToMono(GameUrlVendorResponseVo.class)
                 .block();
 

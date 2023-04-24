@@ -6,16 +6,17 @@ import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.service.OperatorRequestService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -27,13 +28,14 @@ public class WalletSettledAction {
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
-
+    @Autowired
+    OperatorRequestService operatorRequestService;
     public WalletBalanceVo call(String callbackUrl, String signature, WalletSettledDto dto) throws InvalidOperatorResponseException {
-//        log.info(dto.toString());
         // Call stub function instead if config file set to use stub
         if (useStub) {
-//            return this.stub();
+            return operatorRequestService.responseOperatorSub();
         }
+
         WalletBalanceVo responseVo = null;
 
         String responseString = WebClient.create(callbackUrl)
@@ -44,15 +46,10 @@ public class WalletSettledAction {
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                .onStatus(HttpStatus::isError,
-                        response -> {
-                            HttpStatus clientResponsestatus = response.statusCode();
-                            return response.bodyToMono(String.class).map(body ->
-                                    new InvalidOperatorResponseException
-                                            ("response status :" + clientResponsestatus + ", response body :" + body, ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-                        })
+                // TODO: to catch more error codes
+                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
                 .bodyToMono(String.class)
-                .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
+                .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
         try {
@@ -60,18 +57,18 @@ public class WalletSettledAction {
             // throw exception if response is null
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 
-            ValidationUtils.validateResponse(responseVo);
+            operatorRequestService.validateResponse(responseVo);
 
             if ((!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ||
                     (!responseVo.getData().getUsername().equals(dto.getUsername())) ||
                     (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
-                ValidationUtils.operatorResponseLogging(true, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
+                operatorRequestService.operatorResponseLogging(true, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            ValidationUtils.operatorResponseLogging(false, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
+            operatorRequestService.operatorResponseLogging(false, Endpoints.WALLET_WIN, callbackUrl, dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
@@ -79,12 +76,4 @@ public class WalletSettledAction {
 
     }
 
-    public WalletBalanceVo stub() throws InvalidOperatorResponseException {
-        WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-        responseData.setBalance(BigDecimal.ONE);
-        WalletBalanceVo balanceVo = new WalletBalanceVo();
-        balanceVo.setData(responseData);
-
-        return balanceVo;
-    }
 }

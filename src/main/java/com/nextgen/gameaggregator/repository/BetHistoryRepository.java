@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.repository;
 
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,22 +20,70 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
     BetHistory findByExternalTransactionIdAndRoundIdAndVendorLineId(String externalTransactionId, String roundId, Integer VendorLineId);
 
 
-    @Query(value=" SELECT "+
-            "bh.id AS transaction_id, bh.round_id AS external_round_id, bh.external_transaction_id, "+
-            "bh.vendor_game_id AS game_id, bh.bet_amount, bh.win_amount, bh.win_loss, bh.effective_turnover, "+
-            "bh.result_type, bh.status, bh.vendor_bet_time, bh.vendor_settle_time, bh.create_time, "+
-            "ap.username, gc.code AS category_code, v.code AS vendor_code, c.code AS currency, vg.code AS game_code "+
-            "FROM bet_history AS bh "+
-            "INNER JOIN agent_players AS ap ON bh.agent_player_id = ap.id "+
-            "INNER JOIN game_categories AS gc ON bh.game_category_id = gc.id "+
-            "INNER JOIN vendors AS v ON bh.vendor_id = v.id "+
-            "INNER JOIN currencies AS c ON bh.currency_id = c.id "+
-            "INNER JOIN vendor_games AS vg ON bh.vendor_game_id = vg.id "+
-            " WHERE bh.agent_id =:agentId AND bh.create_time BETWEEN :fromTime AND :toTime ORDER BY bh.create_time DESC ",
+    @Query(value="SELECT " +
+            "bh.external_transaction_id AS transactionId, " +
+            "bh.round_id AS externalRoundId, " +
+            "bh.vendor_bet_id AS externalTransactionId, " +
+            "ap.username AS username, " +
+            "c.code AS currencyCode, " +
+            "vg.code AS gameCode, " +
+            "v.code AS vendorCode, " +
+            "gc.code AS gameCategoryCode, " +
+            "bh.bet_amount AS betAmount, " +
+            "bh.win_amount AS winAmount, " +
+            "bh.win_loss AS winLoss, " +
+            "bh.effective_turnover AS effectiveTurnover, " +
+            "bh.jackpot_amount AS jackpotAmount, " +
+            "bh.refund_amount AS refundAmount, " +
+            "bh.status AS status, " +
+            "bh.vendor_bet_time AS vendorBetTime, " +
+            "bh.vendor_settle_time AS vendorSettleTime, " +
+            "bh.vendor_line_id AS vendorLineId, " +
+            "IF(bh.is_freespin =0 ,'TRUE','FALSE') AS isFreeSpin "+
+            "FROM bet_history AS bh " +
+            "INNER JOIN agent_players AS ap ON ap.id = bh.agent_player_id " +
+            "INNER JOIN vendor_players AS vp ON vp.id = bh.vendor_player_id " +
+            "INNER JOIN currencies AS c ON c.id = bh.currency_id " +
+            "INNER JOIN vendor_games AS vg ON vg.id = bh.vendor_game_id " +
+            "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
+            "INNER JOIN game_categories AS gc ON gc.id = vg.game_category_id " +
+            " WHERE bh.agent_id =:agentId AND bh.vendor_bet_time BETWEEN :fromTime AND :toTime ORDER BY bh.vendor_bet_time DESC ",
             countQuery =
-                    "SELECT count(*) FROM bet_history WHERE agent_id =:agentId AND create_time BETWEEN :fromTime AND :toTime",
+                    "SELECT count(*) FROM bet_history WHERE agent_id =:agentId AND vendor_bet_time BETWEEN :fromTime AND :toTime",
             nativeQuery=true)
     Page<Object> findByAgentIdAndCreateTimeBetween(
             @Param("agentId") Integer agentId, @Param("fromTime") Long fromTime, @Param("toTime") Long toTime, Pageable pageable);
 
+    @Query(value=" SELECT " +
+            "bh.external_transaction_id AS transactionId, " +
+            "bh.round_id AS externalRoundId, " +
+            "bh.vendor_bet_id AS externalTransactionId, " +
+            "ap.username AS username, " +
+            "c.code AS currencyCode, " +
+            "vg.code AS gameCode, " +
+            "v.code AS vendorCode, " +
+            "gc.code AS gameCategoryCode, " +
+            "bh.bet_amount AS betAmount, " +
+            "bh.win_amount AS winAmount, " +
+            "bh.win_loss AS winLoss, " +
+            "bh.effective_turnover AS effectiveTurnover, " +
+            "bh.jackpot_amount AS jackpotAmount, " +
+            "bh.refund_amount AS refundAmount, " +
+            "bh.status AS status, " +
+            "bh.vendor_bet_time AS vendorBetTime, " +
+            "bh.vendor_settle_time AS vendorSettleTime, " +
+            "bh.vendor_line_id AS vendorLineId, " +
+            "IF(bh.is_freespin =0 ,'TRUE','FALSE') AS isFreeSpin, "+
+            "vp.username AS vendorUsername " +
+            "FROM bet_history AS bh " +
+            "INNER JOIN agent_players AS ap ON ap.id = bh.agent_player_id " +
+            "INNER JOIN vendor_players AS vp ON vp.id = bh.vendor_player_id " +
+            "INNER JOIN currencies AS c ON c.id = bh.currency_id " +
+            "INNER JOIN vendor_games AS vg ON vg.id = bh.vendor_game_id " +
+            "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
+            "INNER JOIN game_categories AS gc ON gc.id = vg.game_category_id " +
+            "WHERE bh.id = :transactionId AND bh.agent_id = :agentId", nativeQuery=true)
+    IBetDetailUrlInfo findByIdAndAgentId (
+            @Param("agentId") int agentId,
+            @Param("transactionId") String transactionId);
 }

@@ -42,7 +42,6 @@ public class BetRefundEventListener implements EventListener<BetRefundEvent> {
         if ( BetStatus.UNSETTLED.isValueOf(betHistory.getStatus()) ) {
             BigDecimal refundAmount = betHistory.getBetAmount();
             betHistory.setRefundAmount(refundAmount);
-            betHistory.setRefundTime(System.currentTimeMillis());
             betHistory.setStatus(BetStatus.REFUNDED.code);
 
             betHistoryRepository.save(betHistory);

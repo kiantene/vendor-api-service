@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -74,7 +74,7 @@ public class RefundAction {
             this.doVerification(refundDto, wToken, betHistory);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRefund(traceId, refundDto.getMtcode(), gameSession, body);
+            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, refundDto.getMtcode(), gameSession, body);
 
             commonVo.setBalance(betRefundEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());

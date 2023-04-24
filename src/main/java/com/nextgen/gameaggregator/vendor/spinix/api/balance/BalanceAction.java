@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -31,17 +31,13 @@ public class BalanceAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
     private WalletService walletService;
+    @Autowired
+    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.BALANCE)
     public BalanceVo balance(HttpServletRequest request) {
@@ -150,32 +146,19 @@ public class BalanceAction {
             InvalidVendorLineException,
             CredentialNotFoundException {
 
-
-        // Verify received username is the same from game session
-        // ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-        if(!gameSession.getVendorPlayerUsername().equals(dto.getUserId())) {
-            throw new InvalidPlayerException();
-        }
-
+        // Verify Signature
         String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
         if(!VendorService.isSameSignature(token, body, signatureKey)) {
             throw new InvalidVendorLineException();
         }
 
-        // Verify received game id is the same from game session
+        // Verify vendor username, agent vendor line, player status and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUserId());
+
+        // Verify currency + game code
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
-        // Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }

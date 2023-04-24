@@ -1,9 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.entity.RawResultBet;
-import com.nextgen.gameaggregator.entity.RawUnsettledBet;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.entity.UnsettledBetResult;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import com.nextgen.gameaggregator.repository.RawResultBetRepository;
@@ -45,13 +44,14 @@ public class BetResultLogService {
      * @param entity RawResultBet entity object containing information of a single result bet
      * @return RawResultBet entity object after a successful save
      */
-    @CachePut(value = "ResultBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public RawResultBet createResultBet(RawResultBet entity) throws CouchbaseDataIntegrityException {
+    @CachePut(value = "BetResult", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBetResult create(UnsettledBetResult entity) throws CouchbaseDataIntegrityException {
         // Set default values
-        entity.setStatus(1); // TODO: refactor, map to constant/enum value
+        entity.setStatus(BetStatus.UNSETTLED.code);
         entity.setCreateTime(System.currentTimeMillis());
 
-        try{
+        // TODO: check if couchbase will throw dataIntegrityViolationException
+        try {
             rawResultBetRepository.save(entity);
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
 
@@ -65,15 +65,15 @@ public class BetResultLogService {
      * Retrieve a result bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorLineId         vendor line id within Game Aggregator System
+     * @param vendorGameId   vendor line id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return result bet entity object containing all information of a single result Bet
      * If no bet record is found, return null (valid scenario)
      */
-    @Cacheable(value = "ResultBet", key = "{#vendorBetId, #roundId, #vendorLineId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawResultBet getRawResultBetByRoundId(String vendorBetId, String roundId, Integer vendorLineId, Long vendorPlayerId){
+    @Cacheable(value = "ResultBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBetResult getRawResultBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {
 
-        String mergeId = vendorBetId+'_'+roundId+'_'+vendorLineId+'_'+vendorPlayerId;
+        String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
         return rawResultBetRepository.findById(mergeId).orElse(null);
     }
 }

@@ -6,6 +6,5 @@ public interface BetData {
     String getExternalTransactionId();
     BigDecimal getAmount();
     String getRoundId();
-    String getGameId();
     Long getTimestamp();
 }

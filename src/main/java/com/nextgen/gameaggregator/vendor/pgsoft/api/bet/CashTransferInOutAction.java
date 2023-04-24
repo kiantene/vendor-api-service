@@ -2,24 +2,30 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -38,7 +44,11 @@ public class CashTransferInOutAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
+    private Environment environment;
+    @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -60,18 +70,13 @@ public class CashTransferInOutAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            // comment sent in full first
-            // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
-            // send as bet first
-            walletService.processUnsettledBet(traceId, gameSession, dto, body);
-            // send as result settled later and regenerate traceId
-            traceId = UUID.randomUUID().toString();
-            SettledBetEvent settledBetEvent = walletService.processResultSettle(traceId, gameSession, dto, body);
+            ResultType resultType = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
-            responseVo.setBalanceAmount(settledBetEvent.getLastBalance());
+            responseVo.setBalanceAmount(balance);
             responseVo.setCurrencyCode(dto.getCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -149,7 +154,7 @@ public class CashTransferInOutAction {
 
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
-        // ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
         vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
 
         // 3. Verify vendor currency code is the same from game session

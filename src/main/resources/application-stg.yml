@@ -23,18 +23,21 @@ spring:
     password: Asdf1234@
     bucketName: stg_game_aggregator
     scopeName: raw
-  redis:
-    database: 1
-    host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
-    port: 6379
-    username: dev
-    password: Asdf1234-
-    jedis:
-      pool:
-        max-idle: 30
-        max-active: 100
-        min-idle: 10
-        max-wait: 2000
+  data:
+    redis:
+      mode: 
+      nodehosts: 
+      database: 1
+      host: r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com
+      port: 6379
+      username: dev
+      password: Asdf1234-
+      jedis:
+        pool:
+          max-idle: 30
+          max-active: 100
+          min-idle: 10
+          max-wait: 2000
   kafka:
     properties:
       security:
@@ -46,16 +49,26 @@ spring:
         mechanism: PLAIN
         jaas:
           config:
-            org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
-            password='J6eK7L9IemczU6LfsFXoHmxq1Gq4mfIBmMK0Y/EOnfIIjFUMBfA5kerKR26KZdye';
+            org.apache.kafka.common.security.plain.PlainLoginModule required username='QWJ5MKVZ7UCBLT2B'
+            password='exLnoeIP42pM7ZD5+1txbgOPGMfR3b2R9R1D/WdrXEeQ/rdgJaXGxzyT+mW1xr/C';
       acks: all
       bootstrap:
-        servers: pkc-817wq.ap-east-1.aws.confluent.cloud:9092
+        servers: pkc-4v1gp.ap-northeast-1.aws.confluent.cloud:9092
       session:
         timeout:
           ms: "45000"
+      basic:
+        auth:
+          credentials:
+            source: "USER_INFO"
+          user:
+            info: "MM5W2HQEZEPAESML:gReou3wimJ53DV0b7ySZ7J9GDIVKgbAuy9LlBdgGkVpstaFzDgpZm5p00ZyZDCJX"
+      schema:
+        registry:
+          url: "https://psrc-10wgj.ap-southeast-2.aws.confluent.cloud"
 logging:
   config: classpath:logback-spring.xml
+  http-request: true
 logstash:
   host: logstash
   port: 5000

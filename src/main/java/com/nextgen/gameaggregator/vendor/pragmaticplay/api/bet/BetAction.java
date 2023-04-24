@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -33,10 +34,9 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    private ValidationService validationService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
@@ -60,11 +60,11 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
-            UnsettledBetEvent unsettledBetEvent = walletService.processUnsettledBet(traceId, gameSession, dto, body);
+            BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setCash(unsettledBetEvent.getLastBalance());
+            responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -76,11 +76,6 @@ public class BetAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-
-        }
-        catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
@@ -132,28 +127,20 @@ public class BetAction {
             InvalidSignatureException, DisabledVendorLineException, DisabledAgentPlayerException,
             DisabledGameException {
 
-        // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
+        //1. validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getUserId());
 
         // 2. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        if (!gameSession.getVendorGameCode().equals("101")) {
+            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        }
 
-        // 3. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
         // 4. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
         // 5. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
-
-        // 6. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 7. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        //TODO (by Alex), should have child game table for save vendor game code by language, platform
     }
 }

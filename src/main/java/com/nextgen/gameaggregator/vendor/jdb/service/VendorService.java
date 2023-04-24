@@ -1,21 +1,25 @@
 package com.nextgen.gameaggregator.vendor.jdb.service;
 
-import com.nextgen.gameaggregator.exception.InvalidDateException;
-import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
-import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Base64;
-import org.springframework.stereotype.Service;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+
+import com.nextgen.gameaggregator.service.BaseVendorService;
+import org.apache.commons.codec.binary.Base64;
+import org.springframework.stereotype.Service;
+
+import com.nextgen.gameaggregator.exception.InvalidDateException;
+import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
+import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class VendorService {
+public class VendorService extends BaseVendorService {
     public static String encrypt(String data, String key, String iv) throws InvalidEncryptionException {
         try {
             Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
