@@ -1,8 +1,11 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +47,8 @@ public class SettleService {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo settle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -65,8 +70,8 @@ public class SettleService {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            SettledBetEvent betResultEvent = walletService.processResultSettle(traceId, gameSession, settleDto, actionDto.getParams());
-            vo.setBalance(betResultEvent.getLastBalance());
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.BET_WIN, vendorService, actionDto.getParams());
+            vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
         } catch (AuthenticationException authenticationException) {

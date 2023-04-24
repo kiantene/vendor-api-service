@@ -99,21 +99,12 @@ public class EndRoundAction {
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
-            // temporary code to ensure when commit to stg branch will still use old code for new changes
-            CommonVo commonVo = new CommonVo();
-
-            if(environment.getProperty("spring.couchbase.userName") == "stg"){
-                //if env = stg will use old code
-                SettledBetEvent settledBetEvent = walletService.processResultSettle(traceId, gameSession, endRoundDto, body);
-                commonVo.setBalance(settledBetEvent.getLastBalance());
-
-            } else {
-                //else use new code
-                BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, ResultType.WIN, vendorService, body);
-                commonVo.setBalance(balance);
-            }
+            ResultType resultType = this.getWinType(endRoundDto, endRoundDto.getWinAmount());
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, body);
 
             // Construct VO data
+            CommonVo commonVo = new CommonVo();
+            commonVo.setBalance(balance);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
 

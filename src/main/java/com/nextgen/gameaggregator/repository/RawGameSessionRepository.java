@@ -6,6 +6,8 @@ import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Scope;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 @Scope("raw")
 @Collection("game_session")
@@ -17,4 +19,6 @@ public interface RawGameSessionRepository extends CouchbaseRepository<GameSessio
     GameSession findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(String vendorPlayerUsername);
 
     GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByCreateTimeDesc(String vendorPlayerUsername, String vendorGameCode);
+
+    List<GameSession> findByAgentPlayerUsernameAndStatus(String userName, Integer status );
 }

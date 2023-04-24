@@ -61,19 +61,23 @@ public class WagerAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
+            throw new AuthenticationException();
+
+            /*
             // Process bet
             // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
-//            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-//            responseDataVo.setBalance(settledBetEvent.getLastBalance());
-            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseDataVo.setBalance(settledBetEvent.getLastBalance());
 
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
+
+             */
 
         } catch (AuthenticationException |
                  InvalidVendorLineException e
@@ -89,15 +93,15 @@ public class WagerAction {
         } catch (DisabledGameException e) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
-//        } catch (InsufficientBalanceException e) {
-//            responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
-//            responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
-//            httpService.logError(httpRequestLog, e);
-//        } catch (BetNotFoundException e) {
-//            responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
-//            responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
-//            httpService.logError(httpRequestLog, e);
-        } catch(DisabledVendorLineException |
+        } /*catch (InsufficientBalanceException e) {
+            responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetNotFoundException e) {
+            responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
+        }*/ catch(DisabledVendorLineException |
                 DisabledAgentPlayerException |
                 CredentialNotFoundException |
                 InvalidRequestException |
