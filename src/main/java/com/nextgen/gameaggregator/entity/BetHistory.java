@@ -103,34 +103,34 @@ public class BetHistory {
     @JsonProperty("result_time")
     private Long resultTime;
 
-    public BetHistory(BetInformation betInformation) {
-        this.id = betInformation.getInternalTransactionId();
-        this.externalTransactionId = betInformation.getExternalTransactionId();
-        this.vendorBetId = betInformation.getVendorBetId();
-        this.roundId = betInformation.getRoundId();
-        this.vendorGameId = betInformation.getVendorGameId();
-        this.vendorPlayerId = betInformation.getVendorPlayerId();
-        this.vendorId = betInformation.getVendorId();
-        this.vendorLineId = betInformation.getVendorLineId();
-        this.agentPlayerId = betInformation.getAgentPlayerId();
-        this.agentId = betInformation.getAgentId();
-        this.operatorStatus = betInformation.getOperatorStatus();
-        this.gameCategoryId = betInformation.getGameCategoryId();
-        this.currencyId = betInformation.getCurrencyId();
-        this.betAmount = betInformation.getBetAmount();
-        this.winAmount = betInformation.getWinAmount();
-        this.winLoss = betInformation.getWinLoss();
-        this.effectiveTurnover = betInformation.getEffectiveTurnover();
-        this.jackpotAmount = betInformation.getJackpotAmount();
-        this.resultType = betInformation.getResultType();
-        this.isFreespin = betInformation.getIsFreespin();
-        this.status = betInformation.getStatus();
-        this.gameSessionToken = betInformation.getGameSessionToken();
-        this.vendorBetTime = betInformation.getVendorBetTime();
-        this.vendorSettleTime = betInformation.getVendorSettleTime();
-        this.createTime = betInformation.getCreateTime();
-        this.resultTime = betInformation.getResultTime();
-        this.rawData = betInformation.getRawData();
-        this.resettleNum = betInformation.getResettleNum();
+    public BetHistory(SettledBet settledBet) {
+        this.id = settledBet.getInternalTransactionId();
+        this.externalTransactionId = settledBet.getExternalTransactionId();
+        this.vendorBetId = settledBet.getVendorBetId();
+        this.roundId = settledBet.getRoundId();
+        this.vendorGameId = settledBet.getVendorGameId();
+        this.vendorPlayerId = settledBet.getVendorPlayerId();
+        this.vendorId = settledBet.getVendorId();
+        this.vendorLineId = settledBet.getVendorLineId();
+        this.agentPlayerId = settledBet.getAgentPlayerId();
+        this.agentId = settledBet.getAgentId();
+        this.operatorStatus = settledBet.getOperatorStatus();
+        this.gameCategoryId = settledBet.getGameCategoryId();
+        this.currencyId = settledBet.getCurrencyId();
+        this.betAmount = settledBet.getBetAmount();
+        this.winAmount = settledBet.getWinAmount();
+        this.winLoss = settledBet.getWinLoss();
+        this.effectiveTurnover = settledBet.getEffectiveTurnover();
+        this.jackpotAmount = settledBet.getJackpotAmount();
+        this.resultType = settledBet.getResultType();
+        this.isFreespin = settledBet.getIsFreespin();
+        this.status = settledBet.getStatus();
+        this.gameSessionToken = settledBet.getGameSessionToken();
+        this.vendorBetTime = settledBet.getVendorBetTime();
+        this.vendorSettleTime = settledBet.getVendorSettleTime();
+        this.createTime = settledBet.getCreateTime();
+        this.resultTime = settledBet.getResultTime();
+        this.rawData = settledBet.getRawData();
+        this.resettleNum = settledBet.getResettleNum();
     }
 }

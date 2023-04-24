@@ -3,13 +3,12 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.eventing.core.EventDispatcherSystem;
 import com.nextgen.gameaggregator.eventing.events.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
@@ -268,8 +267,9 @@ public class WalletService {
             if (isSettled) {
                 // TODO: to change to publish kafka
                 settledBetService.create(settledBet, rawData);
-                // publish to kafka
-//                kafkaService.produceBetHistory(settledBet);
+                BetHistory betHistory = new BetHistory(settledBet);
+                kafkaService.produceBetHistory(betHistory);
+
             } else {
                 switch (resultType) {
                     case WIN -> unsettledBetService.update(unsettledBet);
