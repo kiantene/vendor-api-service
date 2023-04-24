@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -14,6 +15,6 @@ public class KafkaService {
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
 
     public void produceBetHistory(BetHistory betHistory) {
-        jsonSchemaKafkaTemplate.send("topic_16", betHistory);
+        jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
     }
 }
