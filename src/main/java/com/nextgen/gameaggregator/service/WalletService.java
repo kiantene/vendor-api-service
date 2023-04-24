@@ -284,6 +284,7 @@ public class WalletService {
 
             if (isSettled) {
                 // TODO: to change to publish kafka
+                settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
                 settledBetService.create(settledBet, rawData);
                 BetHistory betHistory = new BetHistory(settledBet);
                 kafkaService.produceBetHistory(betHistory);

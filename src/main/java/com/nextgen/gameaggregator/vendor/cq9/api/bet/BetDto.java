@@ -114,13 +114,8 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public Integer getIsFreespin() {
-        return 0;
-    }
+    public Integer getIsFreespin() { return 0; }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
