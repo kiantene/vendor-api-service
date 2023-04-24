@@ -290,7 +290,7 @@ public class WalletService {
 
             } else {
                 switch (resultType) {
-                    case WIN -> unsettledBetService.update(unsettledBet);
+                    case WIN, JACKPOT -> unsettledBetService.update(unsettledBet);
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
