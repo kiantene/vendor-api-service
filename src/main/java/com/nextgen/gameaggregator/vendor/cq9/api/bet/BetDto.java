@@ -2,12 +2,11 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -124,6 +123,6 @@ public class BetDto implements BetResultData {
 
     public Long getTimestamp() {
         Instant instant = Instant.parse(this.getEventTime());
-        return instant.getEpochSecond();
+        return instant.toEpochMilli();
     }
 }
