@@ -213,7 +213,7 @@ public class WalletService {
                             settledBet.setEffectiveTurnover(effectiveTurnover);
                         }
                     }
-                    case WIN, JACKPOT -> { // CQ9 Win
+                    case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
                         winAmount = vendorService.calculateWinAmount(unsettledBet);
@@ -248,7 +248,7 @@ public class WalletService {
             } else { // bets not settled yet
 
                 switch (resultType) {
-                    case WIN, JACKPOT -> { // PP Win
+                    case WIN -> { // PP Win
                         // check if bet record exists
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
@@ -284,13 +284,14 @@ public class WalletService {
 
             if (isSettled) {
                 // TODO: to change to publish kafka
+                settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
                 settledBetService.create(settledBet, rawData);
                 BetHistory betHistory = new BetHistory(settledBet);
                 kafkaService.produceBetHistory(betHistory);
 
             } else {
                 switch (resultType) {
-                    case WIN, JACKPOT -> unsettledBetService.update(unsettledBet);
+                    case WIN -> unsettledBetService.update(unsettledBet);
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }

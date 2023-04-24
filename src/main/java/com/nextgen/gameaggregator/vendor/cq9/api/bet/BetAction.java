@@ -66,8 +66,6 @@ public class BetAction {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
-            log.info("cq9 bet action : " + body);
-
             // Convert original request body into dto
             BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(body, BetDto.class);
 

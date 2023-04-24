@@ -203,7 +203,9 @@ public class EndRoundAction {
         dto.setResultTime(resultTime);
         dto.setVendorSettleTime(dto.getResultTime());
 
-        dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
+        BigDecimal getJackpot = (dto.getJackpot() == null)?BigDecimal.ZERO:dto.getJackpot();
+
+        dto.setWinAmount(endRoundDataDtoList.get(0).getAmount().subtract(getJackpot));
         dto.setEffectiveTurnover(unsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
         dto.setResultType(this.getResultType(dto, dto.getWinAmount()));

@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -86,7 +87,7 @@ public class BetAction {
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
             //Process full bet data
-            ResultType resultType = getResultType(betDto);
+            ResultType resultType = this.getResultType(betDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
 
             //set VO data
@@ -164,7 +165,7 @@ public class BetAction {
 
         //Verify received Sign is the same from param value
         //MD5 encrypt
-        String md5Param = vendorService.md5(jsonParam);
+        String md5Param = VendorService.md5(jsonParam);
         ValidationUtils.isEquals(md5Param, commonDto.getSign(), InvalidRequestException::new);
 
         //Verify received agent code is the same from credential
@@ -177,15 +178,14 @@ public class BetAction {
 
     private ResultType getResultType(BetDto betDto) {
 
-        ResultType resultType = null;
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal winAmount = betDto.getWinAmount();
+        BigDecimal jackpotAmount = Optional.ofNullable(betDto.getJackpotAmount()).orElse(BigDecimal.ZERO);
 
-        if(betDto.getJpPrize().compareTo(BigDecimal.ZERO) > 0){
-             resultType = ResultType.BET_JACKPOT;
-        }else{
-             resultType = betDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+        if (winAmount.compareTo(BigDecimal.ZERO) > 0 || jackpotAmount.compareTo(BigDecimal.ZERO) > 0) {
+            resultType = ResultType.BET_WIN;
         }
 
         return resultType;
     }
-
 }
