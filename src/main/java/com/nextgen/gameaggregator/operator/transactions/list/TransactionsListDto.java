@@ -26,7 +26,7 @@ public class TransactionsListDto {
     private Long toTime;
 
     @NotNull( message = "numeric number only")
-    @Positive
+    @Positive( message = "numeric number only")
     @Range(min= 1, max= Integer.MAX_VALUE, message = "numeric number only")
     private Integer pageNo;
 

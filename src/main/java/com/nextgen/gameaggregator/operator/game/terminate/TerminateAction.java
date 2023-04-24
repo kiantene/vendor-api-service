@@ -79,11 +79,12 @@ public class TerminateAction {
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
-//        } catch (Exception exception) {
-//            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
-//            httpService.logError(httpRequestLog, exception);
-//            exception.printStackTrace();
-//
+
+        } catch (Exception exception) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+            exception.printStackTrace();
+
 
 
         }finally {
