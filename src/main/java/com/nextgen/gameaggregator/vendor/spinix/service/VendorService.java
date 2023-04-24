@@ -1,10 +1,18 @@
 package com.nextgen.gameaggregator.vendor.spinix.service;
 
+import com.nextgen.gameaggregator.service.BaseVendorService;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.stereotype.Service;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class VendorService {
+@Service
+@Slf4j
+@Data
+public class VendorService extends BaseVendorService {
 
     public String getSignature(Map<String, Object> args, String signatureKey) {
         String value = signatureKey;
