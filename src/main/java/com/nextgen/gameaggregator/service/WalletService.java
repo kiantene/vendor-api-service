@@ -246,7 +246,9 @@ public class WalletService {
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
 //                unsettledBetService.update(unsettledBet);
+                settledBet.setVendorSettleTime((ObjectUtils.isEmpty(settledBet.getVendorSettleTime())?betResultData.getVendorSettleTime():settledBet.getVendorSettleTime()));
                 settledBet.setIsFreespin(isFreeSpin);
+
                 betInformation = settledBet;
             } else { // bets not settled yet
 
