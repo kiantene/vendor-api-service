@@ -150,12 +150,13 @@ public class EndRoundDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return null;
+        return this.jackpot;
     }
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        int result = freegame.compareTo(BigDecimal.ZERO);
+        return (result > 0)?1:0;
     }
 
     /**
