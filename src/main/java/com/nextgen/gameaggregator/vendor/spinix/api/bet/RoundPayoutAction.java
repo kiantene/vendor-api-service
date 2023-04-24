@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.eventing.events.*;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spinix.constant.Credentials;
@@ -42,6 +43,8 @@ public class RoundPayoutAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.ROUND)
     public RoundPayoutVo bet(HttpServletRequest request) {
@@ -100,10 +103,16 @@ public class RoundPayoutAction {
                 betWinDto.setGameId(dto.getGameId());
                 betWinDto.setTimestamp(winRecord.getConvertedTimestamp());
 
-                SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betWinDto, body);
+                // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betWinDto, body);
+
+                ResultType resultType = (betWinDto.getBetAmount().compareTo(BigDecimal.ZERO) > 0 &&
+                        betWinDto.getWinAmount().compareTo(BigDecimal.ZERO) == 0)
+                        ? ResultType.BET_LOSE : ResultType.BET_WIN;
+
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, betWinDto, resultType, vendorService, body);
 
                 // Set Balance
-                roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
+                roundPayoutDataWalletVo.setBalance(balance);
 
             } else {
 
@@ -118,10 +127,11 @@ public class RoundPayoutAction {
                     betDto.setGameId(dto.getGameId());
                     betDto.setTimestamp(betRecord.getConvertedTimestamp());
 
-                    SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+                    // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET, vendorService, body);
 
                     // Set Balance
-                    roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
+                    roundPayoutDataWalletVo.setBalance(balance);
                     
                 } else if (winRecord != null && winRecord.getType().equals("win")) {
 
@@ -135,10 +145,11 @@ public class RoundPayoutAction {
                     winDto.setGameId(dto.getGameId());
                     winDto.setTimestamp(winRecord.getConvertedTimestamp());
 
-                    SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDto, body);
+                    // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, winDto, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, ResultType.WIN, vendorService, body);
 
                     // Set Balance
-                    roundPayoutDataWalletVo.setBalance(settledBetEvent.getLastBalance());
+                    roundPayoutDataWalletVo.setBalance(balance);
 
                 } else if(cancelBet != null && cancelBet.getType().equals("cancelBet")) {
                     // Send refund to Operator
