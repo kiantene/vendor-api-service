@@ -180,7 +180,7 @@ public class WalletService {
             // 1. Retrieve unsettled bet transaction to prepare for merging with bet result
             UnsettledBet unsettledBet = null;
             SettledBet settledBet = null;
-            BigDecimal winLoss, effectiveTurnover;
+            BigDecimal winLoss, effectiveTurnover, jackpotAmount, winAmount;
             WalletBalanceVo balanceVo;
             BetInformation betInformation;
             boolean isBetExistsForUnsettledBet = false;
@@ -191,9 +191,19 @@ public class WalletService {
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
+                        winAmount = settledBet.getWinAmount();
+                        jackpotAmount = settledBet.getJackpotAmount();
                         winLoss = settledBet.getWinLoss();
                         effectiveTurnover = settledBet.getEffectiveTurnover();
 
+                        if (winAmount == null) {
+                            winAmount = vendorService.calculateWinAmount(settledBet);
+                            settledBet.setWinAmount(winAmount);
+                        }
+                        if (jackpotAmount == null) {
+                            jackpotAmount = vendorService.calculateJackpotAmount(settledBet);
+                            settledBet.setJackpotAmount(jackpotAmount);
+                        }
                         if (winLoss == null) {
                             winLoss = vendorService.calculateWinLoss(settledBet);
                             settledBet.setWinLoss(winLoss);
@@ -206,22 +216,30 @@ public class WalletService {
                     case WIN, JACKPOT -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
+                        winAmount = vendorService.calculateWinAmount(unsettledBet);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
+                        jackpotAmount = vendorService.calculateJackpotAmount(unsettledBet);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
+                        settledBet.setWinAmount(winAmount);
                         settledBet.setWinLoss(winLoss);
                         settledBet.setEffectiveTurnover(effectiveTurnover);
+                        settledBet.setJackpotAmount(jackpotAmount);
                     } // PGS
                     // PGS
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> { // PGS
                         unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
+                        winAmount = vendorService.calculateWinAmount(unsettledBet);
                         winLoss = vendorService.calculateWinLoss(settledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(settledBet);
+                        jackpotAmount = vendorService.calculateJackpotAmount(unsettledBet);
+                        settledBet.setWinAmount(winAmount);
                         settledBet.setWinLoss(winLoss);
                         settledBet.setEffectiveTurnover(effectiveTurnover);
+                        settledBet.setJackpotAmount(jackpotAmount);
                     }
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
