@@ -207,5 +207,10 @@ public class EndRoundAction {
         dto.setEffectiveTurnover(unsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
         dto.setResultType(this.getResultType(dto, dto.getWinAmount()));
+
+        Integer checkFreeSpin = (dto.getFreegame() == null)?0:dto.getFreegame().intValue();
+        checkFreeSpin = (checkFreeSpin > 0)?1:0;
+
+        dto.setIsFreespin(checkFreeSpin);
     }
 }

@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ObjectUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -175,6 +176,7 @@ public class WalletService {
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
         Integer vendorGameId = gameSession.getVendorGameId();
+        Integer isFreeSpin = (ObjectUtils.isEmpty(betResultData.getIsFreespin())?0:betResultData.getIsFreespin());
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
 
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
@@ -190,7 +192,7 @@ public class WalletService {
 
             if (isSettled) {
                 switch (resultType) {
-                    case END -> { // PP END
+                    case LOSE, END -> { // PP END
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
@@ -247,6 +249,9 @@ public class WalletService {
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
 //                unsettledBetService.update(unsettledBet);
+                settledBet.setVendorSettleTime((ObjectUtils.isEmpty(settledBet.getVendorSettleTime())?betResultData.getVendorSettleTime():settledBet.getVendorSettleTime()));
+                settledBet.setIsFreespin(isFreeSpin);
+
                 betInformation = settledBet;
             } else { // bets not settled yet
 
@@ -271,6 +276,7 @@ public class WalletService {
 
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
+                unsettledBet.setIsFreespin((isFreeSpin));
                 betInformation = unsettledBet;
 
                 // insert into unsettled_bet_result
