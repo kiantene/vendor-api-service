@@ -180,7 +180,7 @@ public class BetAction {
         ResultType resultType = null;
 
         if(betDto.getJpPrize().compareTo(BigDecimal.ZERO) > 0){
-             resultType = ResultType.JACKPOT;
+             resultType = ResultType.BET_JACKPOT;
         }else{
              resultType = betDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
         }
