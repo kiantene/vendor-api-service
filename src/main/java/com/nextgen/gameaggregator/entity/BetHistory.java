@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Table(name = "bet_history")
@@ -128,7 +129,7 @@ public class BetHistory {
         this.gameSessionToken = settledBet.getGameSessionToken();
         this.vendorBetTime = settledBet.getVendorBetTime();
         this.vendorSettleTime = settledBet.getVendorSettleTime();
-        this.createTime = settledBet.getCreateTime();
+        this.createTime = Instant.now().toEpochMilli();
         this.resultTime = settledBet.getResultTime();
         this.rawData = settledBet.getRawData();
         this.resettleNum = settledBet.getResettleNum();
