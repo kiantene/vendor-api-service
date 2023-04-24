@@ -17,12 +17,12 @@ public class TransactionsListDto {
 
     @NotNull(message = "long integer number only")
     @Positive(message = "long integer number only")
-    @Range(min= 1, max= Long.MAX_VALUE)
+    @Range(min= 1659282428477L, max= Long.MAX_VALUE, message = "long integer number only")
     private Long fromTime;
 
     @NotNull(message = "long integer number only")
     @Positive(message = "long integer number only")
-    @Range(min= 1, max= Long.MAX_VALUE)
+    @Range(min= 1659282428477L, max= Long.MAX_VALUE, message = "long integer number only")
     private Long toTime;
 
     @NotNull( message = "numeric number only")
