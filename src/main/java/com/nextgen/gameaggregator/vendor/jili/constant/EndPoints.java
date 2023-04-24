@@ -12,4 +12,5 @@ public class EndPoints {
 
     // API url call to vendor
     public static final String GAME_URL = "/singleWallet/LoginWithoutRedirect";
+    public static final String BET_DETAIL_URL = "/GetGameDetailUrl";
 }

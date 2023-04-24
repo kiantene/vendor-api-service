@@ -12,18 +12,17 @@ import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -60,7 +59,8 @@ public class GameUrlService implements GameUrl {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
-        URI uri = UriComponentsBuilder.fromUriString(apiUrl + EndPoints.GAME_URL)
+        URI uri = UriComponentsBuilder.fromUriString(apiUrl)
+                .path(EndPoints.GAME_URL)
                 .queryParams(formData)
                 .build()
                 .encode()
@@ -69,23 +69,16 @@ public class GameUrlService implements GameUrl {
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info(formData.toString());
 
-        OkHttpClient client = new OkHttpClient();
-
-        Request request = new Request.Builder()
-                .url(uri.toString())
-                .build();
-
-        String responseString = "";
-        try (Response response = client.newCall(request).execute()) {
-            if (response.isSuccessful()) {
-                responseString = Objects.requireNonNull(response.body()).string();
-            } else {
-                throw new InvalidVendorResponseException("Request failed");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        // TODO: need to add error handling
+        String responseString = WebClient.create()
+                .get()
+                .uri(uri)
+                .retrieve()
+                // TODO: to catch more error codes
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                .bodyToMono(String.class)
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                .block();
 
         GameUrlVo responseVo = null;
         try {
