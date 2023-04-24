@@ -64,6 +64,7 @@ public class EndRoundDto implements BetResultData {
     private ResultType resultType;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
+    private Integer IsFreespin;
 
     @Override
     public String getExternalTransactionId() {
@@ -154,14 +155,12 @@ public class EndRoundDto implements BetResultData {
     }
 
     @Override
-    public Integer getIsFreespin() {
-        int result = freegame.compareTo(BigDecimal.ZERO);
-        return (result > 0)?1:0;
+    public Integer getIsFreespin() { return this.IsFreespin;}
+
+    public void setIsFreespin(Integer isFreespin) {
+        this.IsFreespin = isFreespin;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
