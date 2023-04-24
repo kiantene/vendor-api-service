@@ -72,8 +72,6 @@ public class EndRoundAction {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
-            log.info("cq9 end round : " + body);
-
             // Convert original request body into dto
             EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);

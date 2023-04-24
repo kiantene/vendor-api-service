@@ -340,7 +340,8 @@ public class WalletService {
         BigDecimal jackpotAmountLatest = Optional.ofNullable(betResultData.getJackpotAmount()).orElse(BigDecimal.ZERO);
         betData.setJackpotAmount(jackpotAmount.add(jackpotAmountLatest));
 
-        betData.setIsFreespin(betResultData.getIsFreespin());
+        Integer isFreeSpin = Optional.ofNullable(betData.getIsFreespin()).orElse(0);
+        betData.setIsFreespin(isFreeSpin);
         betData.setResultTime(betResultData.getResultTime());
         betData.setVendorSettleTime(betResultData.getVendorSettleTime());
     }
