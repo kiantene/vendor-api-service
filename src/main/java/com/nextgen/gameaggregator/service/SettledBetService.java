@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.entity.UnsettledBetResult;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,7 +38,7 @@ public class SettledBetService {
 
     public void create(SettledBet settledBet, String rawData) {
         settledBet.setResettleNum(Optional.ofNullable(settledBet.getResettleNum()).orElse(0));
-        settledBet.setRawData(Optional.ofNullable(settledBet.getRawData()).orElse(rawData));
+        settledBet.setRawData(Optional.ofNullable(settledBet.getRawData()).orElse(DigestUtils.md5Hex(rawData)));
         rawSettledBetRepository.save(settledBet);
     }
 
