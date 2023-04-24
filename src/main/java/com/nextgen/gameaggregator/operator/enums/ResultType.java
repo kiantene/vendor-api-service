@@ -15,20 +15,20 @@ public enum ResultType {
     //BET will create a bet data, and cash out if betAmount > 0
     BET (0, "Bet"),
 
-    //LOSE will need no actions (no cash in and cash out)
-    LOSE (1, "Lose"),
-
     //WIN will cash in if winAmount > 0
-    WIN (2, "Win"),
+    WIN (1, "Win"),
 
-    //BET_LOSE = combination of BET and LOSE, which will create a bet data, and cash out if betAmount > 0
-    BET_LOSE (3, "Bet and Lose"),
+    //LOSE will need no actions (no cash in and cash out)
+    LOSE (2, "Lose"),
+
+    //JACKPOT will cash in if winAmount > 0
+    JACKPOT (3, "Jackpot"),
 
     //BET_WIN = combination of BET and WIN, which will create a bet data, and cash out if betAmount > 0 + will cash in if winAmount > 0
     BET_WIN (4, "Bet and Win"),
 
-    //JACKPOT will cash in if winAmount > 0
-    JACKPOT (5, "Jackpot"),
+    //BET_LOSE = combination of BET and LOSE, which will create a bet data, and cash out if betAmount > 0
+    BET_LOSE (5, "Bet and Lose"),
 
     //BET_JACKPOT = combination of BET and JACKPOT, which will create a bet data, and cash out if betAmount > 0 + will cash in if winAmount > 0
     BET_JACKPOT (6, "Bet and Jackpot"),
@@ -42,11 +42,11 @@ public enum ResultType {
 
     public static final Map<Integer, String> RESULT_TYPE_VALUE = new HashMap<>() {{
         put(0, "BET");
-        put(1, "LOSE");
-        put(2, "WIN");
-        put(3, "BET_LOSE");
+        put(1, "WIN");
+        put(2, "LOSE");
+        put(3, "JACKPOT");
         put(4, "BET_WIN");
-        put(5, "JACKPOT");
+        put(5, "BET_LOSE");
         put(6, "BET_JACKPOT");
         put(99, "END");
     }};

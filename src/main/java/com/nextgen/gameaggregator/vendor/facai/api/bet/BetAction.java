@@ -86,7 +86,8 @@ public class BetAction {
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_WIN, vendorService, body);
+            ResultType resultType = getResultType(betDto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
 
             //set VO data
             //convert bigDecimal balance into double
@@ -174,5 +175,17 @@ public class BetAction {
         validationService.validateIllegibleBet(gameSession, betDto.getMemberAccount());
     }
 
+    private ResultType getResultType(BetDto betDto) {
+
+        ResultType resultType = null;
+
+        if(betDto.getJpPrize().compareTo(BigDecimal.ZERO) > 0){
+             resultType = ResultType.JACKPOT;
+        }else{
+             resultType = betDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+        }
+
+        return resultType;
+    }
 
 }
