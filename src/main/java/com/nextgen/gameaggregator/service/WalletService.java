@@ -204,7 +204,7 @@ public class WalletService {
                             settledBet.setEffectiveTurnover(effectiveTurnover);
                         }
                     }
-                    case WIN -> { // CQ9 Win
+                    case WIN, JACKPOT -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
@@ -231,7 +231,7 @@ public class WalletService {
             } else { // bets not settled yet
 
                 switch (resultType) {
-                    case WIN -> { // PP Win
+                    case WIN, JACKPOT -> { // PP Win
                         // check if bet record exists
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
@@ -267,7 +267,7 @@ public class WalletService {
 
             if (isSettled) {
                 // TODO: to change to publish kafka
-                settledBetService.create(settledBet);
+                settledBetService.create(settledBet, rawData);
                 // publish to kafka
 //                kafkaService.produceBetHistory(settledBet);
             } else {
@@ -314,7 +314,8 @@ public class WalletService {
         betData.setResultType(resultType.code);
 
         BigDecimal winAmount = Optional.ofNullable(betData.getWinAmount()).orElse(BigDecimal.ZERO);
-        betData.setWinAmount(winAmount.add(betResultData.getWinAmount()));
+        BigDecimal winAmountLatest = Optional.ofNullable(betResultData.getWinAmount()).orElse(BigDecimal.ZERO);
+        betData.setWinAmount(winAmount.add(winAmountLatest));
 
         BigDecimal jackpotAmount = Optional.ofNullable(betData.getJackpotAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmountLatest = Optional.ofNullable(betResultData.getJackpotAmount()).orElse(BigDecimal.ZERO);
@@ -411,10 +412,11 @@ public class WalletService {
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
         SettledBetOperatorFailEvent settledBetOperatorFailEvent = null;
+        Integer vendorGameId = gameSession.getVendorGameId();
         BigDecimal transferAmount = (betResultData.getWinLoss() == null) ? BigDecimal.valueOf(0) : betResultData.getWinLoss();
 
         // 1. Retrieve unsettled bet from couchbase
-        UnsettledBet unsettledBet = betHistoryService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
+        UnsettledBet unsettledBet = betHistoryService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
 
         // 2. Retrieve result bet from couchbase
         UnsettledBetResult unsettledBetResult = betResultLogService.getRawResultBetByRoundId(vendorBetId, roundId, vendorLineId, vendorPlayerId);
@@ -787,7 +789,7 @@ public class WalletService {
         UnsettledBet unsettledBet = new UnsettledBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
 
-        unsettledBet.setId(betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + gameSession.getVendorLineId() + '_' + gameSession.getVendorPlayerId());
+        unsettledBet.setId(betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId());
         unsettledBet.setInternalTransactionId(traceId);
         unsettledBet.setExternalTransactionId(betResultData.getExternalTransactionId());
         unsettledBet.setRoundId(betResultData.getRoundId());

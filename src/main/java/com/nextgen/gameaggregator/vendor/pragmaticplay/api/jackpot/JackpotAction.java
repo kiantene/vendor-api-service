@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -38,6 +39,9 @@ public class JackpotAction {
     @Autowired
     private VendorLineService vendorLineService;
 
+    @Autowired
+    private VendorService vendorService;
+
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -54,8 +58,6 @@ public class JackpotAction {
 
             // TODO: validate gameId with rawGameSession
 
-            log.info("JackpotDto body = " + body);
-
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
@@ -63,12 +65,13 @@ public class JackpotAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.JACKPOT, vendorService, body);
 //            BetResultEvent betResultEvent = walletService.processWin(traceId, gameSession, dto, body);
 
             responseVo.setTransactionId(traceId);
             responseVo.setCurrency(gameSession.getVendorGameCode());
-//            responseVo.setCash(betResultEvent.getLastBalance());
-            responseVo.setCash(BigDecimal.ZERO);
+            responseVo.setCash(balance);
+            //responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

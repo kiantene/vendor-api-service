@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -34,7 +35,9 @@ public class SettledBetService {
     @Autowired
     private BetHistoryService betHistoryService;
 
-    public void create(SettledBet settledBet) {
+    public void create(SettledBet settledBet, String rawData) {
+        settledBet.setResettleNum(Optional.ofNullable(settledBet.getResettleNum()).orElse(0));
+        settledBet.setRawData(Optional.ofNullable(settledBet.getRawData()).orElse(rawData));
         rawSettledBetRepository.save(settledBet);
     }
 
