@@ -3,9 +3,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -26,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -78,7 +77,8 @@ public class EndRoundAction {
             // Convert original request body into dto
             EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);
-            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<List<EndRoundDataDto>>() {});
+            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<List<EndRoundDataDto>>() {
+            });
 
             // 1. Validate request parameters from vendor
             this.doValidation(endRoundDto, endRoundDataDtoList, wToken);
@@ -99,7 +99,7 @@ public class EndRoundAction {
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
-            ResultType resultType = this.getWinType(endRoundDto, endRoundDto.getWinAmount());
+            ResultType resultType = this.getResultType(endRoundDto, endRoundDto.getWinAmount());
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, body);
 
             // Construct VO data
@@ -184,18 +184,18 @@ public class EndRoundAction {
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
     }
 
-    private ResultType getWinType(EndRoundDto endRoundDto, BigDecimal amount) {
-        ResultType resultType;
-        if (endRoundDto.getJackpot() != null) {
-            resultType = ResultType.JACKPOT;
-        } else {
-            resultType = (amount.compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
+    private ResultType getResultType(EndRoundDto dto, BigDecimal amount) {
+        ResultType resultType = ResultType.LOSE;
+        BigDecimal jackpotAmount = Optional.ofNullable(dto.getJackpotAmount()).orElse(BigDecimal.ZERO);
+
+        if (amount.compareTo(BigDecimal.ZERO) > 0 || jackpotAmount.compareTo(BigDecimal.ZERO) > 0) {
+            resultType = ResultType.WIN;
         }
 
         return resultType;
     }
 
-    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, UnsettledBet unsettledBet){
+    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, UnsettledBet unsettledBet) {
 
         Instant instant = Instant.parse(endRoundDataDtoList.get(0).getEventtime());
         Long resultTime = instant.toEpochMilli();
@@ -206,6 +206,6 @@ public class EndRoundAction {
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount());
         dto.setEffectiveTurnover(unsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
-        dto.setResultType(this.getWinType(dto, dto.getWinAmount()));
+        dto.setResultType(this.getResultType(dto, dto.getWinAmount()));
     }
 }
