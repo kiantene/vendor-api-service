@@ -61,9 +61,6 @@ public class WagerAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            throw new AuthenticationException();
-
-            /*
             // Process bet
             // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
             SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
@@ -76,8 +73,6 @@ public class WagerAction {
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
-
-             */
 
         } catch (AuthenticationException |
                  InvalidVendorLineException e
@@ -93,7 +88,7 @@ public class WagerAction {
         } catch (DisabledGameException e) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
-        } /*catch (InsufficientBalanceException e) {
+        } catch (InsufficientBalanceException e) {
             responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
             httpService.logError(httpRequestLog, e);
@@ -101,14 +96,14 @@ public class WagerAction {
             responseVo = this.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
-        }*/ catch(DisabledVendorLineException |
+        } catch(DisabledVendorLineException |
                 DisabledAgentPlayerException |
                 CredentialNotFoundException |
                 InvalidRequestException |
-//                InvalidAgentApiCredentialException |
-//                MergedBetDataIntegrityException |
-//                InvalidOperatorResponseException |
-//                CouchbaseDataIntegrityException |
+                InvalidAgentApiCredentialException |
+                MergedBetDataIntegrityException |
+                InvalidOperatorResponseException |
+                CouchbaseDataIntegrityException |
                 JsonProcessingException e
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

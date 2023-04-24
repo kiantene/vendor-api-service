@@ -81,7 +81,7 @@ public class CancelWagerAction {
             // Set Vendor player username + Balance + Currency
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
-            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseDataVo.setBalance(balance);
 
         } catch (AuthenticationException |
                  InvalidVendorLineException e
