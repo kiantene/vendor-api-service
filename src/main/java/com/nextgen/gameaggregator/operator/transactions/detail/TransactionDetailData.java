@@ -14,7 +14,7 @@ public class TransactionDetailData {
     public static class BetDetail {
         String transactionId;
         String externalTransactionId;
-        String externalRoundId;
+        String roundId;
         String username;
         String currencyCode;
         String gameCode;
@@ -36,7 +36,7 @@ public class TransactionDetailData {
         this.betDetail = new BetDetail();
         this.betDetail.setTransactionId(iBetDetailUrlInfo.getTransactionId());
         this.betDetail.setExternalTransactionId(iBetDetailUrlInfo.getExternalTransactionId());
-        this.betDetail.setExternalRoundId(iBetDetailUrlInfo.getExternalRoundId());
+        this.betDetail.setRoundId(iBetDetailUrlInfo.getExternalRoundId());
         this.betDetail.setUsername(iBetDetailUrlInfo.getUsername());
         this.betDetail.setCurrencyCode(iBetDetailUrlInfo.getCurrencyCode());
         this.betDetail.setGameCode(iBetDetailUrlInfo.getGameCode());

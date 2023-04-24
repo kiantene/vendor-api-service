@@ -12,7 +12,7 @@ public class WalletBetResultDto {
     private String username;
     private String transactionId;
     private String externalTransactionId;
-    private String externalRoundId;
+    private String roundId;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal effectiveTurnover;
