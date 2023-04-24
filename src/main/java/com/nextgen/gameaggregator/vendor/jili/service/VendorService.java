@@ -62,11 +62,4 @@ public class VendorService extends BaseVendorService {
     public String keyGenerator(MultiValueMap<String, String> params) {
         return randomStringGenerator(Formats.RANDOM_STRING_LENGTH)+md5Generator(urlQueryStringGenerator(params)+gKeyGenerator())+randomStringGenerator(Formats.RANDOM_STRING_LENGTH);
     }
-
-    @Override
-    public BigDecimal calculateWinLoss(BetInformation betInfo) {
-        // TODO: check for null value
-        BigDecimal betAmount = betInfo.getBetAmount();
-        return betInfo.getWinLoss().subtract(betAmount);
-    }
 }
