@@ -128,7 +128,7 @@ public class RoundPayoutAction {
                     betDto.setTimestamp(betRecord.getConvertedTimestamp());
 
                     // SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
-                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET, vendorService, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, body);
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(balance);
