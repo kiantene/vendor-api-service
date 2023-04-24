@@ -16,4 +16,14 @@ public abstract class BaseVendorService {
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
         return betInfo.getBetAmount();
     }
+
+    public BigDecimal calculateWinAmount(BetInformation betInfo) {
+        BigDecimal winAmount = ObjectUtils.isEmpty(betInfo.getWinAmount())?BigDecimal.valueOf(0):betInfo.getWinAmount();
+        return winAmount;
+    }
+
+    public BigDecimal calculateJackpotAmount(BetInformation betInfo) {
+        BigDecimal jackpotAmount = ObjectUtils.isEmpty(betInfo.getJackpotAmount())?BigDecimal.valueOf(0):betInfo.getJackpotAmount();
+        return jackpotAmount;
+    }
 }
