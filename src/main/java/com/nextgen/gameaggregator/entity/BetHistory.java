@@ -6,11 +6,14 @@ import lombok.Data;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "bet_history")
 @Data
+@NoArgsConstructor
 public class BetHistory {
     @Id
     @JsonProperty("id")
@@ -99,4 +102,35 @@ public class BetHistory {
 
     @JsonProperty("result_time")
     private Long resultTime;
+
+    public BetHistory(BetInformation betInformation) {
+        this.id = betInformation.getInternalTransactionId();
+        this.externalTransactionId = betInformation.getExternalTransactionId();
+        this.vendorBetId = betInformation.getVendorBetId();
+        this.roundId = betInformation.getRoundId();
+        this.vendorGameId = betInformation.getVendorGameId();
+        this.vendorPlayerId = betInformation.getVendorPlayerId();
+        this.vendorId = betInformation.getVendorId();
+        this.vendorLineId = betInformation.getVendorLineId();
+        this.agentPlayerId = betInformation.getAgentPlayerId();
+        this.agentId = betInformation.getAgentId();
+        this.operatorStatus = betInformation.getOperatorStatus();
+        this.gameCategoryId = betInformation.getGameCategoryId();
+        this.currencyId = betInformation.getCurrencyId();
+        this.betAmount = betInformation.getBetAmount();
+        this.winAmount = betInformation.getWinAmount();
+        this.winLoss = betInformation.getWinLoss();
+        this.effectiveTurnover = betInformation.getEffectiveTurnover();
+        this.jackpotAmount = betInformation.getJackpotAmount();
+        this.resultType = betInformation.getResultType();
+        this.isFreespin = betInformation.getIsFreespin();
+        this.status = betInformation.getStatus();
+        this.gameSessionToken = betInformation.getGameSessionToken();
+        this.vendorBetTime = betInformation.getVendorBetTime();
+        this.vendorSettleTime = betInformation.getVendorSettleTime();
+        this.createTime = betInformation.getCreateTime();
+        this.resultTime = betInformation.getResultTime();
+        this.rawData = betInformation.getRawData();
+        this.resettleNum = betInformation.getResettleNum();
+    }
 }
