@@ -22,7 +22,7 @@ public enum ResultType {
     LOSE (2, "Lose"),
 
     //JACKPOT will cash in if winAmount > 0
-    JACKPOT (3, "Jackpot"),
+//    JACKPOT (3, "Jackpot"),
 
     //BET_WIN = combination of BET and WIN, which will create a bet data, and cash out if betAmount > 0 + will cash in if winAmount > 0
     BET_WIN (4, "Bet and Win"),
