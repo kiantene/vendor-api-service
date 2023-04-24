@@ -11,8 +11,8 @@ import jakarta.validation.constraints.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionsListDto {
     @NotBlank(message = "UUID format only")
-    @Size(min = 36, max = 36)
-    @Pattern(regexp = ValidationUtils.UUID_REGEX,  message = "UUID format only") // Only alphanumeric allowed
+    @Size(min = 36, max = 36, message = "UUID format only")
+    @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
 
     @NotNull(message = "long integer number only")
