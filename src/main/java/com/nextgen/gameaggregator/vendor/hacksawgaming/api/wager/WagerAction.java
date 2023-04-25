@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
@@ -37,6 +38,8 @@ public class WagerAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -63,12 +66,12 @@ public class WagerAction {
 
             // Process bet
             // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_LOSE, vendorService, body);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(settledBetEvent.getLastBalance());
+            responseDataVo.setBalance(balance);
 
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);

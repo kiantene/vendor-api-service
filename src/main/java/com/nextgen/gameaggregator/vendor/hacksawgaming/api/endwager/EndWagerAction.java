@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.api.wager.WagerDto;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -36,6 +39,8 @@ public class EndWagerAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -62,12 +67,12 @@ public class EndWagerAction {
             this.doVerification(dto, gameSession);
 
             // Process bet
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, dto, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_WIN, vendorService, body);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(settledBetEvent.getLastBalance());
+            responseDataVo.setBalance(balance);
 
             // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
