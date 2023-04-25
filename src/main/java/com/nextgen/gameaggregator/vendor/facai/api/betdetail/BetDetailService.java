@@ -134,7 +134,6 @@ public class BetDetailService implements BetDetailUrl {
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
-            //responseVo = new Gson().fromJson((String) apiResponse.getBody(), BetDetailUrlVo.class);
             responseVo = HttpService.convertJsonToDto(String.valueOf(apiResponse.getBody()), BetDetailUrlVo.class);
 
             //2. validate vendor response

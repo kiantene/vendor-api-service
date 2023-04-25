@@ -16,6 +16,8 @@ public class TokenDto {
     @Size(min = 1, max = 64, message = ResponseCodes.INVALID_TOKEN)
     private String token;
 
+    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = "^[a-zA-Z0-9_.:-]+$", message = ResponseCodes.IP_NOT_ALLOWED)
     private String ip;
 
     @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
