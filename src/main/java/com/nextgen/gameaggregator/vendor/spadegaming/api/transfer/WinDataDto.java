@@ -10,7 +10,6 @@ import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
@@ -83,11 +82,6 @@ public class WinDataDto implements BetResultData {
     private String betId;
     private BigDecimal vendorWinLoss;
     private BigDecimal effectiveTurnover;
-
-    public BigDecimal setBetAmount() {
-        // Bet amount is zero when free spin
-        return (getSpecialGame() == null) ? BigDecimal.ZERO : null;
-    }
     
     public String getAcctId() {
         return this.acctId.toLowerCase();
@@ -115,7 +109,8 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        // Bet amount is zero when free spin
+        return (getSpecialGame() != null) ? BigDecimal.ZERO : null;
     }
 
     @Override
@@ -125,7 +120,7 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.amount;
+        return null;
     }
 
     @Override
