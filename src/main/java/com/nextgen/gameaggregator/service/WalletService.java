@@ -21,7 +21,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -286,6 +289,26 @@ public class WalletService {
                 BetHistory betHistory = new BetHistory(settledBet);
                 kafkaService.produceBetHistory(betHistory);
 
+                List<SettledBet> settledBetLists = new ArrayList<>();
+                settledBetLists = settledBetService.getAllUnsettledBetsWithSameRoundId(settledBet.getRoundId(), settledBet.getVendorLineId(),
+                        settledBet.getVendorPlayerId(), settledBet.getVendorSettleTime());
+
+                if (settledBetLists.isEmpty()) {
+                    //which mean dont have any roundId of this bet is still in unsettled_bet table, then do nothing
+                } else {
+                    //then need process all unsettled_bet of this roundId to operator and send to kafka
+                    for (SettledBet settledBetList : settledBetLists) {
+                        betInformation = settledBetList;
+                        traceId = UUID.randomUUID().toString();
+                        walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
+
+                        settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
+                        settledBetService.create(settledBetList, settledBetList.getRawData());
+                        betHistory = new BetHistory(settledBetList);
+                        kafkaService.produceBetHistory(betHistory);
+                    }
+                }
+
             } else {
                 switch (resultType) {
                     case WIN -> unsettledBetService.update(unsettledBet);
@@ -513,7 +536,7 @@ public class WalletService {
                                          BetResultData betResultData, String traceId, Integer resultType) {
 
         UnsettledBet unsettledBet = new UnsettledBet();
-        String md5RawData = DigestUtils.md5Hex(rawData);
+//        String md5RawData = DigestUtils.md5Hex(rawData);
 
         unsettledBet.setId(betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId());
         unsettledBet.setInternalTransactionId(traceId);
@@ -534,7 +557,7 @@ public class WalletService {
         unsettledBet.setVendorBetTime(betResultData.getVendorBetTime());
         unsettledBet.setGameSessionToken(gameSession.getToken());
         unsettledBet.setOperatorStatus(1);
-//        unsettledBet.setMd5RawSettledResult(md5RawData);
+        unsettledBet.setRawData(rawData);
         unsettledBet.setWinAmount(betResultData.getWinAmount());
         unsettledBet.setWinLoss(betResultData.getWinLoss());
         unsettledBet.setEffectiveTurnover(betResultData.getEffectiveTurnover());

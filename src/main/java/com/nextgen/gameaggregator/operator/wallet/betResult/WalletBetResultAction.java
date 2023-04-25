@@ -62,7 +62,6 @@ public class WalletBetResultAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
-        System.out.println("dto = " + dto);
         //dto.setBetId(dto.getTransactionId());
         WalletBalanceVo responseVo = null;
 
