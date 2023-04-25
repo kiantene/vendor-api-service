@@ -87,8 +87,8 @@ public class CancelBetNSettleService {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (RecordNotFoundException recordNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {

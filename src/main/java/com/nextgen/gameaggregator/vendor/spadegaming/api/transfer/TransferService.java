@@ -134,8 +134,8 @@ public class TransferService {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
 
         } catch (BetNotFoundException betNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);

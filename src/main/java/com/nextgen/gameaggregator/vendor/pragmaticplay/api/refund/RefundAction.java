@@ -77,9 +77,9 @@ public class RefundAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+//        } catch (BetNotFoundException betNotFoundException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -94,9 +94,9 @@ public class RefundAction {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
