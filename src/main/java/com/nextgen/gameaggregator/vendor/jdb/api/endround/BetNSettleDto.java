@@ -167,7 +167,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return bet;
+        return bet.abs();
     }
 
     @Override
@@ -181,7 +181,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return netWin;
+        return netWin.abs();
     }
 
 
