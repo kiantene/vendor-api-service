@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.joker.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
@@ -11,13 +11,14 @@ import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.joker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.joker.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
@@ -36,6 +37,8 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.BET)
     public CommonVo balance(HttpServletRequest request) {
@@ -64,11 +67,11 @@ public class BetAction {
             this.doVerification(httpRequestLog, betDto, gameSession);
 
             //Process full bet data
-            SettledBetEvent settledBetEvent = walletService.processUnsettleResultSettle(traceId, gameSession, betDto, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, body);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setBalance(settledBetEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 InvalidAgentApiCredentialException |
