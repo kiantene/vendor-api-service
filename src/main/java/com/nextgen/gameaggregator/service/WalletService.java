@@ -518,7 +518,6 @@ public class WalletService {
             log.warn("processRollback -> BetNotFoundException: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
         }
 
-
 //        BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
 //
 //        BetRollbackEvent betRollbackEvent = null;
