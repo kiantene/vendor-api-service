@@ -9,7 +9,7 @@ spring:
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       # aws rds
-      jdbc-url: jdbc:mariadb://dev-2.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_pt?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
+      jdbc-url: jdbc:mariadb://pt.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_pt?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8
       username: svc_vendor_dev
       password: H2ftnFhNshRJ41
   jpa:
@@ -23,19 +23,18 @@ spring:
     password: Asdf1234@
     bucketName: pt_game_aggregator
     scopeName: raw
-  data:
-    redis:
-      database: 0
-      host: dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com
-      port: 6379
-      username:
-      password:
-      jedis:
-        pool:
-          min-idle: 1000
-          max-idle: 1000
-          max-active: 1000
-          max-wait: 2000
+  redis:
+    database: 0
+    host: dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com
+    port: 6379
+    username:
+    password:
+    jedis:
+      pool:
+        min-idle: 1000
+        max-idle: 1000
+        max-active: 1000
+        max-wait: 2000
   kafka:
     properties:
       security:
@@ -47,24 +46,30 @@ spring:
         mechanism: PLAIN
         jaas:
           config:
-            org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
-            password='J6eK7L9IemczU6LfsFXoHmxq1Gq4mfIBmMK0Y/EOnfIIjFUMBfA5kerKR26KZdye';
-      acks: all
+            org.apache.kafka.common.security.plain.PlainLoginModule required username='W5V5IKKRQJLCCNDR'
+            password='OW5/KES065TWoXSA0T/aaSOa81z5Yw1Ra7CaUt6X1CkYveeKbz1HT9X/u62c8oyz';
       bootstrap:
         servers: pkc-817wq.ap-east-1.aws.confluent.cloud:9092
       session:
         timeout:
-          ms: "45000"
+          ms: 45000
+      basic:
+        auth:
+          credentials:
+            source: USER_INFO
+          user:
+            info: MJO6DSPFHHFZH5TL:qyBcL3y4pUd8cMWTAaMlkCfPhRCyC/+k3j6+gVedGaqPhslKjBXFwsxfXUtUe2ae
+      schema:
+        registry:
+          url: https://psrc-5mn3g.ap-southeast-2.aws.confluent.cloud
 logging:
   config: classpath:logback-spring.xml
-  http-request: false
 logstash:
   host: logstash
   port: 5000
 testing:
   stub: true
-image:
-  gameurl: https://develops-bo-s3.s3.ap-east-1.amazonaws.com
+  kafka: true
 #grpc:
 #  server:
 #    port: 9092
