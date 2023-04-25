@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
+import java.math.BigDecimal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -8,15 +10,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.*;
+import com.nextgen.gameaggregator.vendor.spadegaming.service.VendorService;
 
 import jakarta.servlet.http.HttpServletRequest;
-
-import java.math.BigDecimal;
 
 
 @Service
@@ -38,6 +39,9 @@ public class TransferService {
 
     @Autowired
     private WalletService walletService;
+
+    @Autowired
+    private VendorService vendorService;
     
     public TransferVo transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -74,15 +78,11 @@ public class TransferService {
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
-                case Actions.PAYOUT:
+                 case Actions.PAYOUT:
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    transferVo.setBalance(
-                        dto.getSpecialGame() == null
-                            ? walletService.processResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
-                            : walletService.processUnsettleResultSettle(traceId, gameSession, winDataDto, body).getLastBalance()
-                    );
-
+                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body);
+                    transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
