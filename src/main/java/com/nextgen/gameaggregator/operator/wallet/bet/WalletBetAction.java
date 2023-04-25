@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
@@ -59,6 +58,7 @@ public class WalletBetAction {
 
         // 1. Generate walletBetDto
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
+        dto.setBetId(dto.getBetId());
         WalletBalanceVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
