@@ -111,7 +111,7 @@ public class SettleService {
 
     private void doVerification(SettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
     DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException, 
-    InvalidRequestException, InvalidPlayerException {
+    InvalidRequestException, InvalidPlayerException, AuthenticationException {
        //validate vendor username, agent vendor line, player status, and game status
        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
