@@ -90,11 +90,10 @@ public class BetDetailService implements BetDetailUrl {
                 .toUri();
         
                 long startTime = System.currentTimeMillis();
-                ResponseEntity apiResponse = WebClient.create(apiUrl)
+                ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                         .get()
                         .uri(uri)
                         .retrieve()
-                        // TODO: to catch more error codes
                         .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                         .toEntity(String.class)
                         .retry(3)
@@ -114,12 +113,11 @@ public class BetDetailService implements BetDetailUrl {
         
                     //2. validate vendor response
                     Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-                    requestService.validateResponse(responseVo);
-        
-                    requestService.successResponseLog(requestLogVo);
+                    RequestService.validateResponse(responseVo);
+                    RequestService.successResponseLog(requestLogVo);
         
                 } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-                    requestService.failResponseLog(requestLogVo, invalidException);
+                    RequestService.failResponseLog(requestLogVo, invalidException);
                     throw new InvalidVendorResponseException();
                 }
         
