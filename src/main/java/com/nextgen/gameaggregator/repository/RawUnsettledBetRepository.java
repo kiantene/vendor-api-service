@@ -17,6 +17,7 @@ public interface RawUnsettledBetRepository extends CouchbaseRepository<Unsettled
     void deleteById(String Id);
 
     UnsettledBet findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId);
+    UnsettledBet findByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId);
 
     List<UnsettledBet> findByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId);
 }

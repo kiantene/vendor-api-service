@@ -44,7 +44,7 @@ public class EventConfig {
         EventDispatcherSystem.addListener(BetEvent.class, betEventListener);
         EventDispatcherSystem.addListener(BetResultEvent.class, betResultEventListener);
         EventDispatcherSystem.addListener(EndRoundEvent.class, endRoundEventListener);
-        EventDispatcherSystem.addListener(BetRefundEvent.class, betRefundEventListener);
+        EventDispatcherSystem.addListener(BetRollbackEvent.class, betRefundEventListener);
         EventDispatcherSystem.addListener(BetOperatorFailEvent.class, betOperatorFailEventListener);
         EventDispatcherSystem.addListener(BetResultOperatorFailEvent.class, betResultOperatorFailEventListener);
         EventDispatcherSystem.addListener(BetRefundOperatorFailEvent.class, betRefundOperatorFailEventListener);

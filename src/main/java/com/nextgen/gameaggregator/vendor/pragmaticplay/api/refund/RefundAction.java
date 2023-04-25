@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -56,7 +56,7 @@ public class RefundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getExternalTransactionId(), gameSession, body);
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getExternalTransactionId(), gameSession, body);
 
             responseVo.setTransactionId(traceId);
 
