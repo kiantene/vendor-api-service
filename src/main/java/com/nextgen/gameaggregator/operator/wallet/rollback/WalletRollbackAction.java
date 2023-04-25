@@ -1,12 +1,15 @@
-package com.nextgen.gameaggregator.operator.wallet.refund;
+package com.nextgen.gameaggregator.operator.wallet.rollback;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.Endpoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.OperatorRequestService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,29 +27,36 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class WalletRefundAction {
+public class WalletRollbackAction {
     @Value("${testing.stub:false}")
     private Boolean useStub;
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
     @Autowired
-    OperatorRequestService operatorRequestService;
-
+    private OperatorRequestService operatorRequestService;
     @Autowired
-    AuthenticationService authenticationService;
-    public WalletBalanceVo call(AgentApiCredential agentApiCredential, WalletRefundDto dto) throws InvalidOperatorResponseException {
+    private AuthenticationService authenticationService;
+    @Autowired
+    private AgentApiCredentialService agentApiCredentialService;
+
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId)
+            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         // Call stub function instead if config file set to use stub
         if (useStub) {
             return operatorRequestService.responseOperatorSub();
         }
 
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String apiUrl = agentApiCredential.getCallbackUrl();
+
+        WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, gameSession);
         WalletBalanceVo responseVo = null;
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
 
-        String responseString = WebClient.create(agentApiCredential.getCallbackUrl())
+        String responseString = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.WALLET_REFUND)
+                .uri(Endpoints.WALLET_ROLLBACK)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(Endpoints.HEADER_SIGNATURE, signature)
@@ -65,8 +75,7 @@ public class WalletRefundAction {
 
             operatorRequestService.validateResponse(responseVo);
 
-            if ((!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ||
-                    (!responseVo.getData().getUsername().equals(dto.getUsername()))) {
+            if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
                 operatorRequestService.operatorResponseLogging(true, Endpoints.WALLET_BALANCE, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
@@ -78,5 +87,17 @@ public class WalletRefundAction {
         }
 
         return responseVo;
+    }
+
+    private WalletRollbackDto newWalletRollbackDto(String traceId, String betId, GameSession gameSession) {
+        WalletRollbackDto walletRollbackDto = new WalletRollbackDto();
+        walletRollbackDto.setTraceId(traceId);
+        walletRollbackDto.setTransactionId(traceId);
+        walletRollbackDto.setBetId(betId);
+        walletRollbackDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletRollbackDto.setCurrency(gameSession.getCurrencyCode());
+        walletRollbackDto.setTimestamp(System.currentTimeMillis());
+
+        return walletRollbackDto;
     }
 }

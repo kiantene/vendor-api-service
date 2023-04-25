@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -74,8 +74,8 @@ public class TransferService {
                     break;
                 case Actions.CANCEL_BET:
                     // Cancel bet and refund action
-                    BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
-                    transferVo.setBalance(betRefundEvent.getLastBalance());
+                    BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
+                    transferVo.setBalance(betRollbackEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;

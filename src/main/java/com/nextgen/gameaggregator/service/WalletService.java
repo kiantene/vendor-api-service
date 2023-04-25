@@ -13,8 +13,7 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
-import com.nextgen.gameaggregator.operator.wallet.refund.WalletRefundAction;
-import com.nextgen.gameaggregator.operator.wallet.refund.WalletRefundDto;
+import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinDto;
@@ -30,7 +29,6 @@ import org.springframework.util.ObjectUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -57,7 +55,7 @@ public class WalletService {
     @Autowired
     private WalletWinAction walletWinAction;
     @Autowired
-    private WalletRefundAction walletRefundAction;
+    private WalletRollbackAction walletRollbackAction;
     @Autowired
     private CachingService cachingService;
     @Autowired
@@ -494,72 +492,77 @@ public class WalletService {
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BetRefundEvent processRollback(String traceId, String externalTransactionId, GameSession gameSession, String rawData) throws
-            BetNotFoundException, RecordNotFoundException, InvalidAgentApiCredentialException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException {
+    public BetRollbackEvent processRollback(String traceId, String externalTransactionId, GameSession gameSession, String rawData)
+            throws RecordNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         Integer agentId = gameSession.getAgentId();
         Integer vendorId = gameSession.getVendorId();
-        Long currentTimestamp = System.currentTimeMillis();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        BetRollbackEvent betRollbackEvent = null;
 
-        // 1. Retrieve the bet transaction
-        BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionIdPlayerId(externalTransactionId, vendorId, vendorPlayerId);
-
-        WalletRefundDto walletRefundDto = this.newWalletRefundDto(traceId, gameSession, currentTimestamp, betHistory);
-
-        BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
-
-        BetRefundEvent betRefundEvent = null;
-        Boolean requiredCallOperator = true;
         try {
-            betRefundLogService.create(betRefundLog);
-        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+            UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+            WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, unsettledBet.getId());
+            betRollbackEvent = new BetRollbackEvent(null, unsettledBet, null, balanceVo.getData().getBalance());
 
-            System.err.println(externalTransactionId);
-            System.err.println(betHistory.getRoundId());
-            System.err.println(gameSession.getVendorLineId());
-            BetRefundLog currentBetRefundLog = betRefundLogService.findByExternalTransactionIdAndRoundIdAndVendorLineId(
-                    externalTransactionId, betHistory.getRoundId(), gameSession.getVendorLineId());
-
-
-            if (currentBetRefundLog.getOperatorStatus() == 1) {
-                betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, BigDecimal.ZERO);
-                requiredCallOperator = false;
-            } else {
-                betRefundLog.setId(currentBetRefundLog.getId());
-                betRefundLog.setOperatorStatus(currentBetRefundLog.getOperatorStatus());
-            }
-
+        } catch (BetNotFoundException betNotFoundException) {
+            // TODO: bet not found in unsettled bets table, need to search settled_bets
+            log.warn("processRollback -> BetNotFoundException: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
         }
-        if (requiredCallOperator) {
-            // TODO: ok To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
-            try {
-                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-                WalletBalanceVo balanceVo = walletRefundAction.call(agentApiCredential, walletRefundDto);
 
-                betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, balanceVo.getData().getBalance());
 
-            } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-                betRefundEvent = new BetRefundEvent(betHistory, betRefundLog, BigDecimal.ZERO);
-                //Update bet_refund_log operator status to agent is disable
-                BetRefundOperatorFailEvent betRefundOperatorFailEvent =
-                        new BetRefundOperatorFailEvent(betRefundLog, -1);
-                EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
-
-            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-                //Update bet_result_log operator status based on exception
-                BetRefundOperatorFailEvent betRefundOperatorFailEvent =
-                        new BetRefundOperatorFailEvent(betRefundLog, invalidOperatorResponseException.getOperatorStatus());
-                EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
-                throw invalidOperatorResponseException;
-            }
-            // Emit event for additional asynchronous processing such as publishing data to a kafka topic
-            EventDispatcherSystem.emitAsync(betRefundEvent);
-        }
+//        BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
+//
+//        BetRollbackEvent betRollbackEvent = null;
+//        Boolean requiredCallOperator = true;
+//        try {
+//            betRefundLogService.create(betRefundLog);
+//        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+//
+//            System.err.println(externalTransactionId);
+//            System.err.println(betHistory.getRoundId());
+//            System.err.println(gameSession.getVendorLineId());
+//            BetRefundLog currentBetRefundLog = betRefundLogService.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+//                    externalTransactionId, betHistory.getRoundId(), gameSession.getVendorLineId());
+//
+//
+//            if (currentBetRefundLog.getOperatorStatus() == 1) {
+//                betRollbackEvent = new BetRollbackEvent(betHistory, betRefundLog, BigDecimal.ZERO);
+//                requiredCallOperator = false;
+//            } else {
+//                betRefundLog.setId(currentBetRefundLog.getId());
+//                betRefundLog.setOperatorStatus(currentBetRefundLog.getOperatorStatus());
+//            }
+//
+//        }
+//        if (requiredCallOperator) {
+//            // TODO: ok To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
+//            try {
+//                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+//                WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentApiCredential, walletRollbackDto);
+//
+//                betRollbackEvent = new BetRollbackEvent(betHistory, betRefundLog, balanceVo.getData().getBalance());
+//
+//            } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+//                betRollbackEvent = new BetRollbackEvent(betHistory, betRefundLog, BigDecimal.ZERO);
+//                //Update bet_refund_log operator status to agent is disable
+//                BetRefundOperatorFailEvent betRefundOperatorFailEvent =
+//                        new BetRefundOperatorFailEvent(betRefundLog, -1);
+//                EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
+//
+//            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//                //Update bet_result_log operator status based on exception
+//                BetRefundOperatorFailEvent betRefundOperatorFailEvent =
+//                        new BetRefundOperatorFailEvent(betRefundLog, invalidOperatorResponseException.getOperatorStatus());
+//                EventDispatcherSystem.emitAsync(betRefundOperatorFailEvent);
+//                throw invalidOperatorResponseException;
+//            }
+//            // Emit event for additional asynchronous processing such as publishing data to a kafka topic
+//            EventDispatcherSystem.emitAsync(betRollbackEvent);
+//        }
 
 
         // TODO: to refactor currency
-        return betRefundEvent;
+        return betRollbackEvent;
     }
 
     private UnsettledBet newUnsettledBet(GameSession gameSession, String rawData,
@@ -715,20 +718,6 @@ public class WalletService {
         settledBet.setStatus(betResultData.getBetStatus().code);
 
         return settledBet;
-    }
-
-    private WalletRefundDto newWalletRefundDto(String traceId, com.nextgen.gameaggregator.entity.GameSession
-            gameSession, Long currentTimestamp, BetHistory betHistory) {
-        WalletRefundDto walletRefundDto = new WalletRefundDto();
-        walletRefundDto.setTraceId(traceId);
-        walletRefundDto.setTransactionId(traceId);
-        walletRefundDto.setUsername(gameSession.getAgentPlayerUsername());
-        walletRefundDto.setExternalTransactionId(betHistory.getExternalTransactionId());
-        walletRefundDto.setReferenceTransactionId(betHistory.getId());
-        walletRefundDto.setGameCode(gameSession.getGameCode());
-        walletRefundDto.setRoundId(betHistory.getRoundId());
-        walletRefundDto.setTimestamp(currentTimestamp);
-        return walletRefundDto;
     }
 
     private BetRefundLog newBetRefundLog(BetHistory betHistory, String externalTransactionId, Long currentTimestamp, String rawData) {

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -52,9 +52,9 @@ public class CancelBetService {
             this.doVerification(cancelBetDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
 
-            vo.setBalance(betRefundEvent.getLastBalance());
+            vo.setBalance(betRollbackEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         
         } catch (AuthenticationException authenticationException) {

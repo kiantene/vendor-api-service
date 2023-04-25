@@ -7,7 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
@@ -66,9 +66,9 @@ public class CancelBetNSettleService {
             this.doVerification(cancelBetNSettleDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetNSettleDto.getTransferId(), gameSession, actionDto.getParams());
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelBetNSettleDto.getTransferId(), gameSession, actionDto.getParams());
 
-            vo.setBalance(betRefundEvent.getLastBalance());
+            vo.setBalance(betRollbackEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         
         } catch (AuthenticationException authenticationException) {

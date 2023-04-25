@@ -4,7 +4,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetRefundLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
 import com.nextgen.gameaggregator.service.CachingService;
@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 
 @Component
 @Slf4j
-public class BetRefundEventListener implements EventListener<BetRefundEvent> {
+public class BetRefundEventListener implements EventListener<BetRollbackEvent> {
 
     @Autowired
     private BetHistoryRepository betHistoryRepository;
@@ -28,7 +28,7 @@ public class BetRefundEventListener implements EventListener<BetRefundEvent> {
     private CachingService cachingService;
 
     @Override
-    public void onEvent(BetRefundEvent event) {
+    public void onEvent(BetRollbackEvent event) {
         BetHistory betHistory = event.getBetHistory();
         BetRefundLog betRefundLog = event.getBetRefundLog();
 
