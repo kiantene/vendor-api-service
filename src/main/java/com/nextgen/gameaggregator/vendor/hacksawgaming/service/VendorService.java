@@ -1,8 +1,18 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.service;
 
+import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.service.BaseVendorService;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.stereotype.Service;
 
-public class VendorService {
+import java.math.BigDecimal;
+
+@Service
+@Slf4j
+@Data
+public class VendorService extends BaseVendorService {
 
     public static String getSign(String data) {
         String token = DigestUtils.md5Hex(data);
@@ -29,5 +39,10 @@ public class VendorService {
         sb.insert(23, "-");
 
         return sb.toString();
+    }
+
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+        return betInfo.getEffectiveTurnover();
     }
 }
