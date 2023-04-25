@@ -1,25 +1,24 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
-import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -54,7 +53,8 @@ public class SettleService {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, ResultType.BET_WIN, vendorService, actionDto.getParams());
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, 
+            (settleDto.getNetWin().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, actionDto.getParams());
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
@@ -110,8 +110,8 @@ public class SettleService {
     }
 
     private void doVerification(SettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
-            DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-            InvalidRequestException, InvalidPlayerException, AuthenticationException {
+    DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException, 
+    InvalidRequestException, InvalidPlayerException {
        //validate vendor username, agent vendor line, player status, and game status
        validationService.validateIllegibleBet(gameSession, dto.getUid());
 
