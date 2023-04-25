@@ -108,7 +108,7 @@ public class CancelBetNSettleService {
     }
 
     private void doVerification(CancelBetNSettleDto dto, GameSession gameSession) throws DisabledVendorLineException,
-    DisabledAgentPlayerException, InvalidPlayerException, DisabledGameException {
+            DisabledAgentPlayerException, InvalidPlayerException, DisabledGameException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getUid());
     }

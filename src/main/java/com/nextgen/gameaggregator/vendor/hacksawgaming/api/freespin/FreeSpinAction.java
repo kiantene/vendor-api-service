@@ -104,7 +104,7 @@ public class FreeSpinAction {
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidVendorLineException,
-            CredentialNotFoundException {
+            CredentialNotFoundException, AuthenticationException {
 
             String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
             String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);

@@ -22,8 +22,6 @@ public class ValidationService {
     @Autowired
     private AgentPlayerRepository agentPlayerRepository;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
     private VendorGameCodeRepository vendorGameCodeRepository;
     @Autowired
     private VendorGameCurrencyRepository vendorGameCurrencyRepository;
@@ -56,7 +54,13 @@ public class ValidationService {
     }
 
     public void validateIllegibleBet(GameSession gameSession, String vendorUserName ) throws
-            InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+            InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException,
+            AuthenticationException {
+
+        //1. verify is session terminated
+        if(gameSession.getStatus().equals(0)){
+            throw new AuthenticationException();
+        }
 
         //1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorUserName, InvalidPlayerException::new);

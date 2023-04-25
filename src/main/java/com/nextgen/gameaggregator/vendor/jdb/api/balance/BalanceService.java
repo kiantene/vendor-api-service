@@ -84,7 +84,7 @@ public class BalanceService {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
-    DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getUid());
     }

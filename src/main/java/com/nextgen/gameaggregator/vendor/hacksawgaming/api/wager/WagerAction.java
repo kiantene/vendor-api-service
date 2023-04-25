@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.hacksawgaming.api.wager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -131,7 +130,7 @@ public class WagerAction {
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidVendorLineException,
-            CredentialNotFoundException {
+            CredentialNotFoundException, AuthenticationException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
