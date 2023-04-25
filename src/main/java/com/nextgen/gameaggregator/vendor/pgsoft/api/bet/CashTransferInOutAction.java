@@ -2,10 +2,8 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
@@ -13,16 +11,14 @@ import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -42,12 +38,12 @@ public class CashTransferInOutAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private Environment environment;
-    @Autowired
     private VendorGameService vendorGameService;
-
     @Autowired
     private VendorService vendorService;
+
+    @Autowired
+    private ValidationService validationService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -130,6 +126,18 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
 
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+
+        } catch (DisabledGameException disabledGameException) {
+            parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
@@ -146,10 +154,11 @@ public class CashTransferInOutAction {
 
     private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
-            CurrencyNotSupportedException, GameNotSupportedException {
+            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
 
-        // 1. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerName(), InvalidPlayerException::new);
+        //1. validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, dto.getPlayerName());
+
 
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session

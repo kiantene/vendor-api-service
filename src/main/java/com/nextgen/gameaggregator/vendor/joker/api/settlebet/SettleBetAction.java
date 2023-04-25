@@ -110,7 +110,7 @@ public class SettleBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleBetDto settleBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidSignatureException {
+    private void doVerification(HttpRequestLog request, SettleBetDto settleBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidSignatureException, AuthenticationException {
 
         //Verify received agent code is the same from credential
         String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
