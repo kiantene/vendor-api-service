@@ -97,7 +97,7 @@ public class CreditAction {
             InvalidRequestException,
             CredentialNotFoundException,
             InvalidVendorLineException,
-            InvalidCurrencyException, CurrencyNotSupportedException, GameNotSupportedException {
+            InvalidCurrencyException, CurrencyNotSupportedException, GameNotSupportedException, AuthenticationException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, transactionsDto.getUserid());

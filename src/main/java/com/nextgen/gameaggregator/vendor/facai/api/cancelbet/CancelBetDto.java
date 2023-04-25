@@ -32,4 +32,7 @@ public class CancelBetDto {
     @Digits(integer = 13, fraction = 0, message = ResponseCodes.TRANSACTION_NOT_EXIST)
     public Long Ts;
 
+    public String getExternalTransactionId() {
+        return String.valueOf(this.BankID);
+    }
 }

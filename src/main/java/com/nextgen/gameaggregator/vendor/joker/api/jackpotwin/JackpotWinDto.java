@@ -84,12 +84,12 @@ public class JackpotWinDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.amount;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return (this.amount.subtract(this.getBetAmount()));
+        return BigDecimal.valueOf(0);
     }
 
     @Override
@@ -113,7 +113,7 @@ public class JackpotWinDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
+    public BigDecimal getJackpotAmount() { return this.amount;}
 
     @Override
     public Integer getIsFreespin() {

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -73,15 +74,21 @@ public class TransferService {
                     break;
                 case Actions.CANCEL_BET:
                     // Cancel bet and refund action
-                    BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
-                    transferVo.setBalance(betRefundEvent.getLastBalance());
+                    BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
+                    transferVo.setBalance(betRollbackEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                     break;
-                 case Actions.PAYOUT:
+                case Actions.PAYOUT:
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body);
+                    String type = Optional.ofNullable(dto.getSpecialGame()) // Check type in SpecialGame
+                      .map(SpecialGameDto::getType) // Map with dto
+                      .orElse(null);
+                    BigDecimal payoutBalance = (type != null && type.equals("Free")) // If free spin, use BET_WIN
+                        ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body)
+                        : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or LOSE
+                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -127,8 +134,8 @@ public class TransferService {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
 
         } catch (BetNotFoundException betNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);

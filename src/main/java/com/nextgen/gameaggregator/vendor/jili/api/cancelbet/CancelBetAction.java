@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jili.api.cancelbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -60,17 +61,18 @@ public class CancelBetAction {
             // TODO : (need change to get by betId)
 //            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelBetDto.getRound()), rawGameSession.getVendorGameId(), rawGameSession.getVendorPlayerId());
 
-
             this.doVerification(cancelBetDto, gameSession);
 
-            // 4. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // 4. Send refund to Operator
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelBetDto.getExternalTransactionId(), gameSession, body);
+
+            // 5. Retrieve the latest wallet balance from Operator
+            BigDecimal balance = betRollbackEvent.getLastBalance();
 
             cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             cancelBetVo.setBalance(balance);
 //            cancelBetVo.setToken(rawGameSession.getToken());
-
 
         } catch (InvalidRequestException |
                  JsonProcessingException |

@@ -1,26 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
-import java.math.BigDecimal;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
-import com.nextgen.gameaggregator.exception.DisabledGameException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
@@ -29,8 +11,12 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -118,8 +104,8 @@ public class BetService {
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws DisabledVendorLineException,
-    DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-    InvalidPlayerException{
+            DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
+            InvalidPlayerException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getUid());
 

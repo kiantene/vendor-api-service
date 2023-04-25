@@ -1,37 +1,20 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbet;
 
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
-import com.nextgen.gameaggregator.exception.DisabledGameException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.RecordNotFoundException;
-import com.nextgen.gameaggregator.service.BetHistoryService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.VendorPlayerService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 public class CancelBetService {
@@ -69,9 +52,9 @@ public class CancelBetService {
             this.doVerification(cancelBetDto, gameSession);
 
             // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelBetDto.getRefTransferIds().get(0).toString(), gameSession, actionDto.getParams());
 
-            vo.setBalance(betRefundEvent.getLastBalance());
+            vo.setBalance(betRollbackEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         
         } catch (AuthenticationException authenticationException) {
@@ -100,8 +83,8 @@ public class CancelBetService {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (RecordNotFoundException recordNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledVendorLineException disabledVendorLineException) {
@@ -122,7 +105,7 @@ public class CancelBetService {
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
-     CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException {
+            CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getUid());
 

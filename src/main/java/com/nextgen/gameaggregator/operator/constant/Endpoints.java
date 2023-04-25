@@ -8,7 +8,8 @@ public class Endpoints {
     public static final String GAME_URL = "/game/url";
     public static final String WALLET_BALANCE = "/wallet/balance";
     public static final String WALLET_BET = "/wallet/bet";
-    public static final String WALLET_WIN = "/wallet/win";
-    public static final String WALLET_REFUND = "/wallet/refund";
     public static final String WALLET_BET_RESULT = "/wallet/bet_result";
+    public static final String WALLET_WIN = "/wallet/win"; // TODO: deprecated
+    public static final String WALLET_ROLLBACK = "/wallet/rollback";
+
 }

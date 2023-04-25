@@ -31,11 +31,13 @@ public class LoginAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
+    private VendorLineService vendorLineService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.LOGIN)
     public ResponseVo balance(HttpServletRequest request) {
@@ -116,7 +118,7 @@ public class LoginAction {
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidVendorLineException,
-            CredentialNotFoundException {
+            CredentialNotFoundException, AuthenticationException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -127,8 +129,14 @@ public class LoginAction {
             throw new InvalidVendorLineException();
         }
 
-        // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);

@@ -154,10 +154,10 @@ public class RoundPayoutAction {
                 } else if(cancelBet != null && cancelBet.getType().equals("cancelBet")) {
                     // Send refund to Operator
                     // TODO: to confirm whether to use id or round id for cancel bet
-                    BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getRoundId(), gameSession, body);
+                    BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getRoundId(), gameSession, body);
 
                     // Set Balance
-                    roundPayoutDataWalletVo.setBalance(betRefundEvent.getLastBalance());
+                    roundPayoutDataWalletVo.setBalance(betRollbackEvent.getLastBalance());
                 }
 
             }
@@ -169,7 +169,7 @@ public class RoundPayoutAction {
             roundPayoutVo.setReqId(dto.getReqId());
 
         } catch(BetNotFoundException |
-                DuplicateExternalTransactionIdException |
+//                DuplicateExternalTransactionIdException |
                 RecordNotFoundException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);

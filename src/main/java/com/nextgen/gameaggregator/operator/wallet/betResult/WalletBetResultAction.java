@@ -62,7 +62,7 @@ public class WalletBetResultAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
-        dto.setBetId(dto.getTransactionId());
+        //dto.setBetId(dto.getTransactionId());
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -116,20 +116,12 @@ public class WalletBetResultAction {
 
             requestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException httpResponseStatusCodeException) {
-            requestService.failResponseLog(requestLogVo, httpResponseStatusCodeException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+        } catch (HttpResponseStatusCodeException |
+                 JsonSyntaxException |
+                 InvalidResponseException |
+                 ResponseNotMatchRequestException invalidResponseException) {
 
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            requestService.failResponseLog(requestLogVo, jsonSyntaxException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (InvalidResponseException invalidResponseException) {
             requestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
-            requestService.failResponseLog(requestLogVo, responseNotMatchRequestException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
@@ -154,6 +146,7 @@ public class WalletBetResultAction {
         WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
         walletBetResultDto.setTraceId(traceId);
         walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetResultDto.setBetId(betInformation.getBetId());
         walletBetResultDto.setTransactionId(betInformation.getInternalTransactionId());
         walletBetResultDto.setExternalTransactionId(betInformation.getVendorBetId());
         walletBetResultDto.setRoundId(betInformation.getRoundId());

@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRefundEvent;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -55,8 +55,8 @@ public class RefundAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 5. Send refund to Operator
-            BetRefundEvent betRefundEvent = walletService.processRollback(traceId, dto.getExternalTransactionId(), gameSession, body);
+            // 4. Send refund to Operator
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getExternalTransactionId(), gameSession, body);
 
             responseVo.setTransactionId(traceId);
 
@@ -77,9 +77,9 @@ public class RefundAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+//        } catch (BetNotFoundException betNotFoundException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -94,9 +94,9 @@ public class RefundAction {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
+//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

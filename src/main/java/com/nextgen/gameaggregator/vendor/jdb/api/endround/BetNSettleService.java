@@ -3,38 +3,19 @@ package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
-import com.nextgen.gameaggregator.exception.DisabledGameException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
-import com.nextgen.gameaggregator.exception.VendorPlatformNotSupportedException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
 
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +54,8 @@ public class BetNSettleService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Result and End Round
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, ResultType.BET_WIN, vendorService, actionDto.getParams());
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, 
+            ((betNSettleDto.getWinAmount().subtract(betNSettleDto.getBetAmount())).compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE, vendorService, actionDto.getParams());
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
@@ -145,8 +127,8 @@ public class BetNSettleService {
     }
 
     private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
-     DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-     VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException {
+            DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
+            VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateIllegibleBet(gameSession, dto.getUid());
 
