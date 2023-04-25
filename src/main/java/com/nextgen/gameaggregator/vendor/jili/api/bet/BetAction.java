@@ -3,22 +3,22 @@ package com.nextgen.gameaggregator.vendor.jili.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 
@@ -29,30 +29,22 @@ public class BetAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
     private VendorService vendorService;
+    @Autowired
+    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.BET)
-    public BetVo betRequest (HttpServletRequest request) {
+    public BetVo betRequest(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         BetVo betVo = new BetVo();
         String traceId = httpRequestLog.getTraceId();
 
-        try{
+        try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
@@ -88,26 +80,29 @@ public class BetAction {
             betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
 
         } catch (DisabledVendorLineException |
-                  DisabledGameException |
-                  DisabledAgentPlayerException |
-                  BetNotFoundException |
-                  InvalidOperatorResponseException |
-                  InvalidAgentApiCredentialException e) {
+                 DisabledGameException |
+                 DisabledAgentPlayerException |
+                 BetNotFoundException |
+                 InvalidOperatorResponseException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException e) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
 
         } catch (Exception exception) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
 
-        } finally{
+        } finally {
             httpService.end(httpRequestLog, betVo);
         }
         return betVo;
     }
+
     private void doValidation(BetDto betDto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(betDto);
     }
+
     private void doVerification(BetDto betDto, GameSession gameSession)
             throws
             AuthenticationException,
@@ -115,24 +110,19 @@ public class BetAction {
             DisabledAgentPlayerException,
             DisabledGameException,
             GameNotSupportedException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException,
+            InvalidPlayerException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
 
+        // 2. validate vendor username, agent vendor line, player status, and game status
+        validationService.validateIllegibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // 3. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 4. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }
