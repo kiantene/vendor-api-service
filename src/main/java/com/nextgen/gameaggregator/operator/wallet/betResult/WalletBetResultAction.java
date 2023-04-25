@@ -116,20 +116,12 @@ public class WalletBetResultAction {
 
             requestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException httpResponseStatusCodeException) {
-            requestService.failResponseLog(requestLogVo, httpResponseStatusCodeException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+        } catch (HttpResponseStatusCodeException |
+                 JsonSyntaxException |
+                 InvalidResponseException |
+                 ResponseNotMatchRequestException invalidResponseException) {
 
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            requestService.failResponseLog(requestLogVo, jsonSyntaxException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (InvalidResponseException invalidResponseException) {
             requestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
-            requestService.failResponseLog(requestLogVo, responseNotMatchRequestException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {

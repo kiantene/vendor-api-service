@@ -80,6 +80,7 @@ public class WalletBetAction {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
         long endTime = System.currentTimeMillis();
+
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 Endpoints.WALLET_BET, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
@@ -87,9 +88,6 @@ public class WalletBetAction {
         try {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
-
-            System.out.println("apiResponse = " + apiResponse);
-            System.out.println("dto = " + dto);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
@@ -111,20 +109,12 @@ public class WalletBetAction {
 
             requestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException httpResponseStatusCodeException) {
-            requestService.failResponseLog(requestLogVo, httpResponseStatusCodeException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+        } catch (HttpResponseStatusCodeException |
+                 JsonSyntaxException |
+                 InvalidResponseException |
+                ResponseNotMatchRequestException invalidResponseException) {
 
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            requestService.failResponseLog(requestLogVo, jsonSyntaxException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (InvalidResponseException invalidResponseException) {
             requestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (ResponseNotMatchRequestException responseNotMatchRequestException) {
-            requestService.failResponseLog(requestLogVo, responseNotMatchRequestException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
