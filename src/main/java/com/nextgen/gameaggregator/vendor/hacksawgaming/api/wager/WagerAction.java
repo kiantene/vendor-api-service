@@ -110,6 +110,9 @@ public class WagerAction {
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
+        } catch(Exception e) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
