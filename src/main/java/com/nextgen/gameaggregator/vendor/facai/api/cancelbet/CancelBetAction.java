@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -81,6 +82,8 @@ public class CancelBetAction {
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
+
+            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelbetDto.getExternalTransactionId(), gameSession, body);
 
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
