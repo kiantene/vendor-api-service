@@ -58,7 +58,7 @@ public class WalletBetAction {
 
         // 1. Generate walletBetDto
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
-        dto.setBetId(dto.getBetId());
+        dto.setBetId(dto.getTransactionId());
         WalletBalanceVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
