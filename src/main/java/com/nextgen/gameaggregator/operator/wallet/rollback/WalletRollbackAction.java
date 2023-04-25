@@ -15,7 +15,7 @@ import com.nextgen.gameaggregator.service.OperatorRequestService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -62,8 +62,7 @@ public class WalletRollbackAction {
                 .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
-                // TODO: to catch more error codes
-                .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .bodyToMono(String.class)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
                 .block();

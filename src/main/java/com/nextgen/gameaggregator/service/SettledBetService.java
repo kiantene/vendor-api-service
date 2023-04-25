@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import org.apache.commons.beanutils.BeanUtils;
@@ -124,6 +125,37 @@ public class SettledBetService {
         } catch (IllegalAccessException e) {
             //TODO ERROR HANDLING IF CONVERSION BETWEEN UNSETTLEDBET TO SETTLEDBET IS FAILED
             log.error("getBetResultListData IllegalAccessException ERROR, details : " + e);
+        }
+
+        return settledBetLists;
+
+    }
+
+    /**
+     * Process .
+     * This function will also populate default values of certain fields.
+     *
+     * @param roundId, vendorLineId, vendorPlayerId entity object containing information of a single result bet
+     * @return RawResultBet entity object after a successful save
+     */
+    public List<SettledBet> getAllUnsettledBetsWithSameRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId, Long vendorSettledTime) {
+
+        //prepare RawSettledBet arrayList
+        List<SettledBet> settledBetLists = new ArrayList<>();
+
+        //try to find are there any unsettled bet with the same roundId + vendorLineId + vendorPlayerId?
+        List<UnsettledBet> unsettledBetLists = betHistoryService.getBetDataListByRoundId(roundId, vendorLineId, vendorPlayerId);
+
+        //if found any unsettled bet for with this roundId
+        if (unsettledBetLists != null) {
+            //then loop thru all unsettled bet list to update the status to settled then add to the rawSettledBet arrayList
+            for (UnsettledBet unsettledBetList : unsettledBetLists) {
+                unsettledBetList.setStatus(BetStatus.SETTLED.code);
+                unsettledBetList.setVendorSettleTime(vendorSettledTime);
+                unsettledBetList.setResultType(ResultType.END.code);
+                SettledBet settledBet = new SettledBet(unsettledBetList);
+                settledBetLists.add(settledBet);
+            }
         }
 
         return settledBetLists;
