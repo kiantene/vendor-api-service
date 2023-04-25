@@ -105,7 +105,7 @@ public class BetHistory {
     private Long resultTime;
 
     public BetHistory(SettledBet settledBet) {
-        this.id = settledBet.getInternalTransactionId();
+        this.id = settledBet.getBetId();
         this.externalTransactionId = settledBet.getExternalTransactionId();
         this.vendorBetId = settledBet.getVendorBetId();
         this.roundId = settledBet.getRoundId();

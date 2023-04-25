@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 public class UnsettledBetResult {
     @Id
     private String id;
+    private String betId;
     private String internalTransactionId;
     private String externalTransactionId;
     private String vendorBetId;
