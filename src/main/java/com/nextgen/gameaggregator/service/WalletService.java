@@ -113,7 +113,7 @@ public class WalletService {
         if (!isBetExists) {
             try {
                 // 2. Generate rawUnsettledBet
-                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
 
                 WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
                 UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
@@ -194,6 +194,7 @@ public class WalletService {
                         jackpotAmount = settledBet.getJackpotAmount();
                         winLoss = settledBet.getWinLoss();
                         effectiveTurnover = settledBet.getEffectiveTurnover();
+                        settledBet.setInternalTransactionId(traceId);
 
                         if (winAmount == null) {
                             winAmount = vendorService.calculateWinAmount(settledBet);
@@ -214,11 +215,12 @@ public class WalletService {
                     }
                     case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-                        this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
+                        this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                         winAmount = vendorService.calculateWinAmount(unsettledBet);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
                         jackpotAmount = vendorService.calculateJackpotAmount(unsettledBet);
+
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         settledBet.setWinAmount(winAmount);
@@ -228,7 +230,7 @@ public class WalletService {
                     } // PGS
                     // PGS
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> { // PGS
-                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         winAmount = vendorService.calculateWinAmount(unsettledBet);
@@ -250,21 +252,22 @@ public class WalletService {
             } else { // bets not settled yet
 
                 switch (resultType) {
-                    case WIN -> { // PP Win
+                    case WIN, LOSE -> { // PP Win
                         // check if bet record exists
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-                        this.mergeResultIntoBetData(unsettledBet, betResultData, resultType);
+                        this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
                         unsettledBet.setWinLoss(winLoss);
                         unsettledBet.setEffectiveTurnover(effectiveTurnover);
+
                     }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> {
                         try {
                             unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                             isBetExistsForUnsettledBet = true;
                         } catch (BetNotFoundException betNotFoundException) {
-                            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId);
+                            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
                         }
                     }
 
@@ -330,17 +333,23 @@ public class WalletService {
         }
     }
 
-    private void mergeResultIntoBetData(BetInformation betData, BetResultData betResultData, ResultType resultType) {
-        // TODO: need to validate original bet data is in sync with betResult's bet data
+    private void mergeResultIntoBetData(BetInformation betData, BetResultData betResultData, ResultType resultType, String traceId) {
+        // TODO: NEED INCLUDE WINAMOUNT AND JACKPOTAMOUNT TO CONSIDER THE INTERNALTRANSACTIONID?
+        if(!betData.getResultType().toString().equals(resultType.code.toString())){
+            betData.setInternalTransactionId(traceId);
+        }
+        // else remain with same transactionId;
         betData.setResultType(resultType.code);
 
         BigDecimal winAmount = Optional.ofNullable(betData.getWinAmount()).orElse(BigDecimal.ZERO);
         BigDecimal winAmountLatest = Optional.ofNullable(betResultData.getWinAmount()).orElse(BigDecimal.ZERO);
-        betData.setWinAmount(winAmount.add(winAmountLatest));
+        BigDecimal finalWinAmount = winAmount.stripTrailingZeros().toPlainString().equals(winAmountLatest.stripTrailingZeros().toPlainString())?winAmount:winAmount.add(winAmountLatest);
+        betData.setWinAmount(finalWinAmount);
 
         BigDecimal jackpotAmount = Optional.ofNullable(betData.getJackpotAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmountLatest = Optional.ofNullable(betResultData.getJackpotAmount()).orElse(BigDecimal.ZERO);
-        betData.setJackpotAmount(jackpotAmount.add(jackpotAmountLatest));
+        BigDecimal finalJackpotAmount = jackpotAmount.stripTrailingZeros().toPlainString().equals(jackpotAmountLatest.stripTrailingZeros().toPlainString())?jackpotAmount:jackpotAmount.add(jackpotAmountLatest);
+        betData.setJackpotAmount(finalJackpotAmount);
 
         Integer isFreeSpin = Optional.ofNullable(betData.getIsFreespin()).orElse(0);
         betData.setIsFreespin(isFreeSpin);
@@ -566,13 +575,14 @@ public class WalletService {
     }
 
     private UnsettledBet newUnsettledBet(GameSession gameSession, String rawData,
-                                         BetResultData betResultData, String traceId) {
+                                         BetResultData betResultData, String traceId, Integer resultType) {
 
         UnsettledBet unsettledBet = new UnsettledBet();
         String md5RawData = DigestUtils.md5Hex(rawData);
 
         unsettledBet.setId(betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId());
         unsettledBet.setInternalTransactionId(traceId);
+        unsettledBet.setBetId(traceId);
         unsettledBet.setExternalTransactionId(betResultData.getExternalTransactionId());
         unsettledBet.setRoundId(betResultData.getRoundId());
         unsettledBet.setVendorGameId(gameSession.getVendorGameId());
@@ -585,7 +595,7 @@ public class WalletService {
         unsettledBet.setCurrencyId(gameSession.getCurrencyId());
         unsettledBet.setBetAmount(betResultData.getBetAmount());
         unsettledBet.setGameSessionToken(gameSession.getToken());
-        unsettledBet.setResultType(BetResultType.BET.code);
+        unsettledBet.setResultType(resultType);
         unsettledBet.setVendorBetTime(betResultData.getVendorBetTime());
         unsettledBet.setGameSessionToken(gameSession.getToken());
         unsettledBet.setOperatorStatus(1);

@@ -37,4 +37,8 @@ public class CancelBetDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 50)
     private String token;
+
+    public String getExternalTransactionId() {
+        return String.valueOf(this.round);
+    }
 }

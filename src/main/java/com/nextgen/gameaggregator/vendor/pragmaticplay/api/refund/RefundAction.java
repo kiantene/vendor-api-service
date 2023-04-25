@@ -55,7 +55,7 @@ public class RefundAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 5. Send refund to Operator
+            // 4. Send refund to Operator
             BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getExternalTransactionId(), gameSession, body);
 
             responseVo.setTransactionId(traceId);

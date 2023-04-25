@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 @Data
 public abstract class BetInformation {
     private String id;
+    private String betId;
     private String internalTransactionId;
     private String externalTransactionId;
     private String vendorBetId;

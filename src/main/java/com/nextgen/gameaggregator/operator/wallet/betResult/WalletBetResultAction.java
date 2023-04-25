@@ -62,7 +62,8 @@ public class WalletBetResultAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
-        dto.setBetId(dto.getTransactionId());
+        System.out.println("dto = " + dto);
+        //dto.setBetId(dto.getTransactionId());
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -146,6 +147,7 @@ public class WalletBetResultAction {
         WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
         walletBetResultDto.setTraceId(traceId);
         walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
+        walletBetResultDto.setBetId(betInformation.getBetId());
         walletBetResultDto.setTransactionId(betInformation.getInternalTransactionId());
         walletBetResultDto.setExternalTransactionId(betInformation.getVendorBetId());
         walletBetResultDto.setRoundId(betInformation.getRoundId());
