@@ -169,7 +169,7 @@ public class RoundPayoutAction {
             roundPayoutVo.setReqId(dto.getReqId());
 
         } catch(BetNotFoundException |
-                DuplicateExternalTransactionIdException |
+//                DuplicateExternalTransactionIdException |
                 RecordNotFoundException e
         ) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
