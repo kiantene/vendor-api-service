@@ -9,6 +9,7 @@ public class WalletBetDto {
     private String traceId;
     private String username;
     private String transactionId;
+    private String betId;
     private String externalTransactionId;
     private BigDecimal amount;
     private String currency;

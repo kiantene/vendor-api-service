@@ -11,6 +11,7 @@ public class WalletBetResultDto {
     private String traceId;
     private String username;
     private String transactionId;
+    private String betId;
     private String externalTransactionId;
     private String roundId;
     private BigDecimal betAmount;
