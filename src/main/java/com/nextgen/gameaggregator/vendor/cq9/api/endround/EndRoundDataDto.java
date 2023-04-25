@@ -26,6 +26,6 @@ public class EndRoundDataDto {
 
     public Long getTimestamp(){
         Instant instant = Instant.parse(this.getEventtime());
-        return instant.getEpochSecond();
+        return instant.toEpochMilli();
     }
 }

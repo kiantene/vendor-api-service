@@ -27,7 +27,7 @@ import java.util.Optional;
 public class BetDetailService implements BetDetailUrl {
 
     @Autowired
-    RequestService requestService;
+    private RequestService requestService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -38,7 +38,7 @@ public class BetDetailService implements BetDetailUrl {
 
         formData.add("roundid", iBetDetailUrlInfo.getExternalRoundId());
         formData.add("account", iBetDetailUrlInfo.getVendorUsername());
-        formData.add("lang", "en");
+        formData.add("lang", vendorLanguageCode.getLanguageCode());
 
         return formData;
     }
