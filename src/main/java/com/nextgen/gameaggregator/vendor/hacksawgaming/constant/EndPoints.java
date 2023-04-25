@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.constant;
 
 public class EndPoints {
+
+    public static final Integer TIMEOUT = 10000;
+
     public static final String PATH = "api/v1/hacksaw";
     public static final String BALANCE = "/getBalance";
     public static final String LOGIN = "/login";
@@ -12,4 +15,5 @@ public class EndPoints {
 
     // API url call to vendor
     public static final String GAME_URL = "/dcs/loginGame";
+    public static final String GAME_RESULT = "/dcs/getReplay";
 }
