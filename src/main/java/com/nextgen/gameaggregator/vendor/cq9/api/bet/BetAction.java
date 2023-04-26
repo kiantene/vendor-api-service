@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -13,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -20,8 +20,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -39,17 +37,19 @@ public class BetAction {
     @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
+    private Environment environment;
+    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private ValidationService validationService;
     @Autowired
     private VendorGameService vendorGameService;
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    private Environment environment;
 
     @PostMapping(path = EndPoints.BET)
     public ResponseVo<CommonVo> bet(HttpServletRequest request) {
@@ -160,20 +160,11 @@ public class BetAction {
         // 2. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);
 
-        // 3. Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), betDto.getAccount(), InvalidPlayerException::new);
-
-        // 4. Verify received game id is the same from game session
+        // 3. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), betDto.getGameId(), AuthenticationException::new);
 
-        // 5. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // 6. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 7. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        //4.. validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, betDto.getAccount());
     }
 }
