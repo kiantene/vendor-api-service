@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.eventing.events.*;
+import com.nextgen.gameaggregator.eventing.events.ResultBetOperatorFailEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -15,7 +17,6 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -412,7 +413,8 @@ public class WalletService {
 
         try {
             UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
-            WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, unsettledBet.getId());
+            WalletBalanceVo balanceVo = walletRollbackAction.call(
+                    traceId, agentId, gameSession, unsettledBet.getId(), unsettledBet.getRoundId(), externalTransactionId);
             balance = balanceVo.getData().getBalance();
 
         } catch (BetNotFoundException betNotFoundException) {

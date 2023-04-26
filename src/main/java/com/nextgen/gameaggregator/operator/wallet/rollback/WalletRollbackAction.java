@@ -40,7 +40,7 @@ public class WalletRollbackAction {
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId)
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String externalTransactionId)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -50,7 +50,7 @@ public class WalletRollbackAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, gameSession);
+        WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, externalTransactionId, roundId, gameSession);
         WalletBalanceVo responseVo = null;
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
 
@@ -88,11 +88,15 @@ public class WalletRollbackAction {
         return responseVo;
     }
 
-    private WalletRollbackDto newWalletRollbackDto(String traceId, String betId, GameSession gameSession) {
+    private WalletRollbackDto newWalletRollbackDto(
+            String traceId, String betId, String externalTransactionId, String roundId, GameSession gameSession) {
         WalletRollbackDto walletRollbackDto = new WalletRollbackDto();
         walletRollbackDto.setTraceId(traceId);
         walletRollbackDto.setTransactionId(traceId);
         walletRollbackDto.setBetId(betId);
+        walletRollbackDto.setExternalTransactionId(externalTransactionId);
+        walletRollbackDto.setRoundId(roundId);
+        walletRollbackDto.setGameCode(gameSession.getGameCode());
         walletRollbackDto.setUsername(gameSession.getAgentPlayerUsername());
         walletRollbackDto.setCurrency(gameSession.getCurrencyCode());
         walletRollbackDto.setTimestamp(System.currentTimeMillis());
