@@ -104,7 +104,7 @@ public class GameUrlAction {
             gameSession = gameSessionService.createSession(
                     gameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(), vendorCurrency, vendorLanguageCode, vendorPlatformCode);
 
-            gameSessionService.createSessionByVendorPlayer(gameSession);
+//            gameSessionService.createSessionByVendorPlayer(gameSession);
 
             // 16. Request game url from vendor
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
