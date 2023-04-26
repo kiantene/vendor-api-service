@@ -293,9 +293,9 @@ public class WalletService {
 
                 BetHistory betHistory = new BetHistory(settledBet);
                 kafkaService.produceBetHistory(betHistory);
-
-                UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBet);
-                betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
+//
+//                UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBet);
+//                betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
 
                 List<SettledBet> settledBetLists = new ArrayList<>();
                 settledBetLists = settledBetService.getAllUnsettledBetsWithSameRoundId(settledBet.getRoundId(), settledBet.getVendorLineId(),
@@ -315,7 +315,7 @@ public class WalletService {
                         betHistory = new BetHistory(settledBetList);
                         kafkaService.produceBetHistory(betHistory);
 
-                        deleteUnsettledBet = new UnsettledBet(settledBetList);
+                        UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBetList);
                         betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
                     }
                 }
