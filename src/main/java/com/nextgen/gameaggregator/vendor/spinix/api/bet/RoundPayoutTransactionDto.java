@@ -44,7 +44,7 @@ public class RoundPayoutTransactionDto {
 
     public Long getConvertedTimestamp() {
         Instant instant = Instant.parse(this.timestamp);
-        return instant.getEpochSecond();
+        return instant.toEpochMilli();
     }
 
 }

@@ -117,19 +117,19 @@ public class WagerDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
         Instant instant = Instant.now();
-        return instant.getEpochSecond();
+        return instant.toEpochMilli();
     }
 
     @Override
     public Long getResultTime() {
         Instant instant = Instant.now();
-        return instant.getEpochSecond();
+        return instant.toEpochMilli();
     }
 
     @Override
     public Long getVendorSettleTime() {
         Instant instant = Instant.now();
-        return instant.getEpochSecond();
+        return instant.toEpochMilli();
     }
 
     @Override

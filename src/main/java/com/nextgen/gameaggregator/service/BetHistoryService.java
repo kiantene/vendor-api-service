@@ -14,6 +14,7 @@ import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -106,6 +107,26 @@ public class BetHistoryService {
 
         try {
             rawUnsettledBetRepository.save(entity);
+
+        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
+
+            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
+        }
+
+        return entity;
+    }
+
+    /**
+     * Creates a unsettled bet record of the given RawUnsettledBet entity object.
+     * This function will also populate default values of certain fields.
+     *
+     * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
+     * @return RawUnsettledBet entity object after a successful save
+     */
+    @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    public UnsettledBet deleteUnsettledBet(UnsettledBet entity) throws CouchbaseDataIntegrityException {
+        try {
+            rawUnsettledBetRepository.delete(entity);
 
         } catch (DataIntegrityViolationException dataIntegrityViolationException) {
 
