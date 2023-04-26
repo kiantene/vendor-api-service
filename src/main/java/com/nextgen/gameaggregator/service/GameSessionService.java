@@ -56,12 +56,11 @@ public class GameSessionService {
     @Caching( put = {
             @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
-            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
                                      String vendorPlatformCode) throws AuthenticationException {
-
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendor().getId());
