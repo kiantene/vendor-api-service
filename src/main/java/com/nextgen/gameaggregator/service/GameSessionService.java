@@ -105,7 +105,7 @@ public class GameSessionService {
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername());
         cacheManager.getCache("GameSessions").evict(username);
-        cacheManager.getCache("GameSessions").evict(username+","+vendorGameCode);
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername()+","+gameSession.getVendorGameCode());
         gameSession.setStatus(0);
         gameSession.setTerminateTime(System.currentTimeMillis());
         rawGameSessionRepository.save(gameSession);
