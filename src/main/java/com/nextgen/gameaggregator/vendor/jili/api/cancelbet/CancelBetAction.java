@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -39,14 +41,14 @@ public class CancelBetAction {
     private BetHistoryService betHistoryService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
-    public CancelBetVo CancelBetAction (HttpServletRequest request) {
+    public CancelBetVo CancelBetAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         CancelBetVo cancelBetVo = new CancelBetVo();
         String traceId = httpRequestLog.getTraceId();
 
 
-        try{
+        try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             CancelBetDto cancelBetDto = HttpService.convertJsonToDto(body, CancelBetDto.class);
@@ -64,10 +66,7 @@ public class CancelBetAction {
             this.doVerification(cancelBetDto, gameSession);
 
             // 4. Send refund to Operator
-            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelBetDto.getExternalTransactionId(), gameSession, body);
-
-            // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = betRollbackEvent.getLastBalance();
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession);
 
             cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -94,7 +93,7 @@ public class CancelBetAction {
             cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
 
-        } finally{
+        } finally {
             httpService.end(httpRequestLog, cancelBetVo);
         }
         return cancelBetVo;
@@ -104,6 +103,7 @@ public class CancelBetAction {
         // General validation
         ValidationUtils.validateRequest(cancelBetDto);
     }
+
     private void doVerification(CancelBetDto cancelBetDto, GameSession gameSession)
             throws
             AuthenticationException,

@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -22,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -65,6 +66,7 @@ public class RefundAction {
             this.doValidation(refundDto, wToken);
 
             // 2. Gather require data
+            // TODO: get vendor id by vendor code
             BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(refundDto.getMtcode(), 3);
 
             // 3. Verify session token
@@ -74,36 +76,28 @@ public class RefundAction {
             this.doVerification(refundDto, wToken, betHistory);
 
             // 5. Send refund to Operator
-            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, refundDto.getMtcode(), gameSession, body);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession);
 
-            commonVo.setBalance(betRollbackEvent.getLastBalance());
+            commonVo.setBalance(balance);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
 
             responseVo.setData(commonVo);
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (AuthenticationException |
+                 CredentialNotFoundException |
+                 InvalidAgentApiCredentialException |
+                 InvalidVendorLineException playerNotFoundException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (BetNotFoundException betNotFoundException) {
+        } catch (BetNotFoundException |
+                 RecordNotFoundException transactionRecordNotException) {
             statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
-
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
-
-        } catch (InvalidVendorLineException invalidVendorLineException) {
-            statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
-        } catch (RecordNotFoundException recordNotFoundException) {
-            statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 
@@ -14,7 +15,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CancelBetDto {
+public class CancelBetDto implements RollbackData {
     @NotBlank
     @Pattern(regexp = "^[0-9]+$")
     private String action;
@@ -48,4 +49,10 @@ public class CancelBetDto {
     @NotNull
     @Positive
     private Long gameRoundSeqNo;
+
+    @Override
+    public String getRollbackId() {
+        // TODO: will throw null pointer if get(0) does not exists
+        return getRefTransferIds().get(0).toString();
+    }
 }

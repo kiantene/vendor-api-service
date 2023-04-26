@@ -125,7 +125,7 @@ public class BonusWinAction {
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, bonusWinDto.getUsername());
+        validationService.validateEligibleBet(gameSession, bonusWinDto.getUsername());
     }
 
 }

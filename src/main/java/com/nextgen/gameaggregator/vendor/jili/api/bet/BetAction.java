@@ -118,7 +118,7 @@ public class BetAction {
         ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
 
         // 2. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, gameSession.getVendorPlayerUsername());
+        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), GameNotSupportedException::new);

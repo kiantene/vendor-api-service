@@ -20,7 +20,6 @@ import com.nextgen.gameaggregator.vendor.spadegaming.service.VendorService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-
 @Service
 public class TransferService {
     @Autowired
@@ -43,13 +42,13 @@ public class TransferService {
 
     @Autowired
     private VendorService vendorService;
-    
+
     public TransferVo transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getTraceId();
         TransferVo transferVo = new TransferVo();
-    
+
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
             transferVo.setMerchantCode(dto.getMerchantCode());
@@ -58,61 +57,57 @@ public class TransferService {
 
             // User acctId and gameCode to get rawGameSession if gameCode is not null
             GameSession gameSession = dto.getGameCode() != null
-            ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
-            : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
+                    ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
+                    : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
 
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
-    
-            switch(dto.getType()) {
-                case Actions.PLACE_BET:
+
+            switch (dto.getType()) {
+                case Actions.PLACE_BET -> {
                     // Place bet action
                     BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
                     transferVo.setBalance(balance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
-                    break;
-                case Actions.CANCEL_BET:
+                }
+                case Actions.CANCEL_BET -> {
                     // Cancel bet and refund action
-                    BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getTransferId(), gameSession, body);
-                    transferVo.setBalance(betRollbackEvent.getLastBalance());
+                    BigDecimal rollbackBalance = walletService.processRollback(traceId, dto, gameSession);
+                    transferVo.setBalance(rollbackBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
-                    break;
-                case Actions.PAYOUT:
+                }
+                case Actions.PAYOUT -> {
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     String type = Optional.ofNullable(dto.getSpecialGame()) // Check type in SpecialGame
-                      .map(SpecialGameDto::getType) // Map with dto
-                      .orElse(null);
+                            .map(SpecialGameDto::getType) // Map with dto
+                            .orElse(null);
                     BigDecimal payoutBalance = (type != null && type.equals("Free")) // If free spin, use BET_WIN
-                        ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body)
-                        : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or LOSE
+                            ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body)
+                            : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or LOSE
                             (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
-                    break;
-                case Actions.BONUS:
-                    transferVo.setResponseCode(ResponseCode.SUCCESS);
-                    break;
-                default:
-                    transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-                    break;
+                }
+                case Actions.BONUS -> transferVo.setResponseCode(ResponseCode.SUCCESS);
+                default -> transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             }
-    
+
             transferVo.setTransferId(dto.getTransferId());
             transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setMerchantTxId(gameSession.getToken());
             transferVo.setAcctId(gameSession.getVendorPlayerUsername());
             transferVo.setSerialNo(traceId);
-        
-        } catch (InvalidRequestException| 
-            GameNotSupportedException|
-            InvalidAgentApiCredentialException|
-            InvalidOperatorResponseException invalidException ) {
+
+        } catch (InvalidRequestException |
+                 GameNotSupportedException |
+                 InvalidAgentApiCredentialException |
+                 InvalidOperatorResponseException invalidException) {
             transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-        
+
         } catch (DisabledVendorLineException disabledVendorLineException) {
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
@@ -134,9 +129,6 @@ public class TransferService {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
-//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-//            transferVo.setResponseCode(ResponseCode.RELATED_ID_NOT_FOUND);
-
         } catch (BetNotFoundException betNotFoundException) {
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
 
@@ -155,10 +147,10 @@ public class TransferService {
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
-        }finally {
+        } finally {
             httpService.end(httpRequestLog, transferVo);
         }
-    
+
         return transferVo;
     }
 
@@ -177,7 +169,7 @@ public class TransferService {
             GameNotSupportedException,
             CurrencyNotSupportedException,
             InvalidRequestException {
-        
+
         // Verify received merchant code is same from Credentials merchant code 
         ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
 
@@ -199,6 +191,6 @@ public class TransferService {
 
         // Verify channel
         if (!Channel.list.contains(dto.getChannel())) throw new InvalidRequestException();
-        
+
     }
 }

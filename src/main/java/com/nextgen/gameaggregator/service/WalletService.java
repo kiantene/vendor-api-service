@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
@@ -165,7 +166,7 @@ public class WalletService {
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
         Integer vendorGameId = gameSession.getVendorGameId();
-        Integer isFreeSpin = (ObjectUtils.isEmpty(betResultData.getIsFreespin())?0:betResultData.getIsFreespin());
+        Integer isFreeSpin = (ObjectUtils.isEmpty(betResultData.getIsFreespin()) ? 0 : betResultData.getIsFreespin());
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
 
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
@@ -240,7 +241,7 @@ public class WalletService {
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
 //                unsettledBetService.update(unsettledBet);
-                settledBet.setVendorSettleTime((ObjectUtils.isEmpty(settledBet.getVendorSettleTime())?betResultData.getVendorSettleTime():settledBet.getVendorSettleTime()));
+                settledBet.setVendorSettleTime((ObjectUtils.isEmpty(settledBet.getVendorSettleTime()) ? betResultData.getVendorSettleTime() : settledBet.getVendorSettleTime()));
                 settledBet.setIsFreespin(isFreeSpin);
 
                 betInformation = settledBet;
@@ -350,7 +351,7 @@ public class WalletService {
 
     private void mergeResultIntoBetData(BetInformation betData, BetResultData betResultData, ResultType resultType, String traceId) {
         // TODO: NEED INCLUDE WINAMOUNT AND JACKPOTAMOUNT TO CONSIDER THE INTERNALTRANSACTIONID?
-        if(!betData.getResultType().toString().equals(resultType.code.toString())){
+        if (!betData.getResultType().toString().equals(resultType.code.toString())) {
             betData.setInternalTransactionId(traceId);
         }
         // else remain with same transactionId;
@@ -358,12 +359,12 @@ public class WalletService {
 
         BigDecimal winAmount = Optional.ofNullable(betData.getWinAmount()).orElse(BigDecimal.ZERO);
         BigDecimal winAmountLatest = Optional.ofNullable(betResultData.getWinAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal finalWinAmount = winAmount.stripTrailingZeros().toPlainString().equals(winAmountLatest.stripTrailingZeros().toPlainString())?winAmount:winAmount.add(winAmountLatest);
+        BigDecimal finalWinAmount = winAmount.stripTrailingZeros().toPlainString().equals(winAmountLatest.stripTrailingZeros().toPlainString()) ? winAmount : winAmount.add(winAmountLatest);
         betData.setWinAmount(finalWinAmount);
 
         BigDecimal jackpotAmount = Optional.ofNullable(betData.getJackpotAmount()).orElse(BigDecimal.ZERO);
         BigDecimal jackpotAmountLatest = Optional.ofNullable(betResultData.getJackpotAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal finalJackpotAmount = jackpotAmount.stripTrailingZeros().toPlainString().equals(jackpotAmountLatest.stripTrailingZeros().toPlainString())?jackpotAmount:jackpotAmount.add(jackpotAmountLatest);
+        BigDecimal finalJackpotAmount = jackpotAmount.stripTrailingZeros().toPlainString().equals(jackpotAmountLatest.stripTrailingZeros().toPlainString()) ? jackpotAmount : jackpotAmount.add(jackpotAmountLatest);
         betData.setJackpotAmount(finalJackpotAmount);
 
         Integer isFreeSpin = Optional.ofNullable(betData.getIsFreespin()).orElse(0);
@@ -376,25 +377,25 @@ public class WalletService {
      * To process the reversal of a bet by sending the rollback instruction to Operator so that the Operator can perform
      * a reversal and return the updated balance of the player.
      *
-     * @param traceId               A unique Id for this request
-     * @param externalTransactionId Vendor's bet transaction Id of a previous bet record
-     * @param gameSession           gameSession object containing information of the vendor, game, player
-     * @param rawData               Raw data sent by vendor containing information of the Refund
+     * @param traceId      A unique Id for this request
+     * @param rollbackData Vendor's bet transaction Id of a previous bet record
+     * @param gameSession  gameSession object containing information of the vendor, game, player
      * @return BetRefundEvent An event object containing Bet and Refund information to be used for further processing, if required
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BetRollbackEvent processRollback(String traceId, String externalTransactionId, GameSession gameSession, String rawData)
+    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession)
             throws RecordNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         Integer agentId = gameSession.getAgentId();
         Integer vendorId = gameSession.getVendorId();
-        BetRollbackEvent betRollbackEvent = null;
+        BigDecimal balance = BigDecimal.ZERO;
+        String externalTransactionId = rollbackData.getRollbackId();
 
         try {
             UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
             WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, unsettledBet.getId());
-            betRollbackEvent = new BetRollbackEvent(null, unsettledBet, null, balanceVo.getData().getBalance());
+            balance = balanceVo.getData().getBalance();
 
         } catch (BetNotFoundException betNotFoundException) {
             // TODO: bet not found in unsettled bets table, need to search settled_bets
@@ -451,9 +452,7 @@ public class WalletService {
 //            EventDispatcherSystem.emitAsync(betRollbackEvent);
 //        }
 
-
-        // TODO: to refactor currency
-        return betRollbackEvent;
+        return balance;
     }
 
     private UnsettledBet newUnsettledBet(GameSession gameSession, String rawData,

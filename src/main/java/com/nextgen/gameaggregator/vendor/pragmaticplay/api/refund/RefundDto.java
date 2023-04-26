@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 
@@ -10,7 +11,7 @@ import jakarta.validation.constraints.Size;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RefundDto {
+public class RefundDto implements RollbackData {
 
     // Hash code of the request
     @NotBlank
@@ -42,7 +43,8 @@ public class RefundDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String token;
 
-    public String getExternalTransactionId() {
+    @Override
+    public String getRollbackId() {
         return this.reference;
     }
 }

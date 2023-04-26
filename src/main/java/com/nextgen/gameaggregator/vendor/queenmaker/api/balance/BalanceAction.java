@@ -110,7 +110,7 @@ public class BalanceAction {
             InvalidCurrencyException, AuthenticationException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, usersDto.getUserid());
+        validationService.validateEligibleBet(gameSession, usersDto.getUserid());
 
         // 2. Validate Credentials
         Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import lombok.Data;
@@ -9,7 +10,7 @@ import jakarta.validation.constraints.*;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CancelBetDto {
+public class CancelBetDto implements RollbackData {
 
     @NotNull(message = ResponseCodes.TRANSACTION_NOT_EXIST)
     public Long BankID;
@@ -32,7 +33,8 @@ public class CancelBetDto {
     @Digits(integer = 13, fraction = 0, message = ResponseCodes.TRANSACTION_NOT_EXIST)
     public Long Ts;
 
-    public String getExternalTransactionId() {
+    @Override
+    public String getRollbackId() {
         return String.valueOf(this.BankID);
     }
 }
