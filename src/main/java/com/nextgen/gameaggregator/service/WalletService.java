@@ -373,82 +373,6 @@ public class WalletService {
     }
 
     /**
-     * To process the result of a bet by sending the bet result data to Operator so that the Operator can update
-     * the player's balance.
-     *
-     * @param traceId     A unique Id for this request
-     * @param gameSession gameSession object containing information of the vendor, game, player
-     * @param winData     SettledData object containing information of the bet result
-     * @param rawData     Raw data sent by vendor containing information of the bet result
-     * @return BetResultEvent An event object containing Bet and Bet Result information as well as the last balance
-     * that can be used for further processing, if required
-     * @throws BetNotFoundException                    If no bet record is found
-     * @throws DuplicateExternalTransactionIdException If vendor's transaction Id is found
-     */
-//    public BetResultEvent processWin(String traceId, com.nextgen.gameaggregator.entity.GameSession gameSession, WinData winData, String rawData) throws
-//            BetNotFoundException, DuplicateExternalTransactionIdException, InvalidOperatorResponseException, BetResultNotFoundException {
-//
-//        Integer agentId = gameSession.getAgentId();
-//        Integer vendorGameId = gameSession.getVendorGameId();
-//        Long vendorPlayerId = gameSession.getVendorPlayerId();
-//        String roundId = winData.getRoundId();
-//
-//        // 1. Retrieve the bet transaction
-//        BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(roundId, vendorGameId, vendorPlayerId);
-//
-//        WalletWinDto walletWinDto = this.newWalletWinDto(traceId, gameSession, winData, betHistory.getId());
-//
-//        BetResultLog betResultLog = this.newBetResultLog(traceId, gameSession, winData, betHistory, walletWinDto, rawData);
-//        BetResultEvent betResultEvent = null;
-//        Boolean requiredCallOperator = true;
-//
-//        try {
-//            betResultLog = winData.prepareData(betHistory, betResultLog);
-//            betResultLogService.create(betResultLog);
-//        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-//
-//            Integer getOperatorStatus = betHistoryService.getBetHistoryByExternalTransaction(betResultLog.getExternalTransactionId(), betResultLog.getRoundId(),
-//                    betResultLog.getVendorLineId()).getOperatorStatus();
-//
-//            if (betResultLog.getOperatorStatus() == 1) {
-//                betResultEvent = new BetResultEvent(betHistory, betResultLog, BigDecimal.ZERO);
-//                requiredCallOperator = false;
-//            } else {
-//                betResultLog.setOperatorStatus(getOperatorStatus);
-//            }
-//        }
-//
-//        //IF the bet ID is duplicated and not error, will return as 0 to vendor
-//        if (requiredCallOperator) {
-//            // TODO: To discuss if Agent is disable, should system ignore callback and just insert to bet_result_log
-//            try {
-//                AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-//                WalletBalanceVo balanceVo = walletWinAction.call(agentApiCredential, walletWinDto);
-//                betResultEvent = new BetResultEvent(betHistory, betResultLog, balanceVo.getData().getBalance());
-//
-//            } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-//                betResultEvent = new BetResultEvent(betHistory, betResultLog, BigDecimal.ZERO);
-//                //Update bet_result_log operator status to agent is disable
-//                BetResultOperatorFailEvent betResultOperatorFailEvent =
-//                        new BetResultOperatorFailEvent(betResultLog, -1);
-//                EventDispatcherSystem.emitAsync(betResultOperatorFailEvent);
-//
-//            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//                //Update bet_result_log operator status based on exception
-//                BetResultOperatorFailEvent betResultOperatorFailEvent =
-//                        new BetResultOperatorFailEvent(betResultLog, invalidOperatorResponseException.getOperatorStatus());
-//                EventDispatcherSystem.emitAsync(betResultOperatorFailEvent);
-//                throw invalidOperatorResponseException;
-//            }
-//
-//            EventDispatcherSystem.emitAsync(betResultEvent);
-//        }
-//
-//        return betResultEvent;
-//
-//    }
-
-    /**
      * To process the reversal of a bet by sending the rollback instruction to Operator so that the Operator can perform
      * a reversal and return the updated balance of the player.
      *
@@ -561,7 +485,6 @@ public class WalletService {
         unsettledBet.setWinAmount(betResultData.getWinAmount());
         unsettledBet.setWinLoss(betResultData.getWinLoss());
         unsettledBet.setEffectiveTurnover(betResultData.getEffectiveTurnover());
-//        unsettledBet.setRefundAmount(betResultData.getRefundAmount());
         unsettledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
         unsettledBet.setResultTime(betResultData.getResultTime());
         unsettledBet.setVendorBetId(betResultData.getVendorBetId());
@@ -571,48 +494,6 @@ public class WalletService {
 
         return unsettledBet;
     }
-
-//    private WalletWinDto newWalletWinDto(String traceId, com.nextgen.gameaggregator.entity.GameSession gameSession, WinData winData, String referenceTransactionId) {
-//        WalletWinDto walletWinDto = new WalletWinDto();
-//        walletWinDto.setTraceId(traceId);
-//        walletWinDto.setTransactionId(traceId);
-//        walletWinDto.setUsername(gameSession.getAgentPlayerUsername());
-//        walletWinDto.setCurrency(gameSession.getCurrencyCode());
-//        walletWinDto.setToken(gameSession.getToken());
-//        walletWinDto.setExternalTransactionId(winData.getExternalTransactionId());
-//        walletWinDto.setReferenceTransactionId(referenceTransactionId);
-//        walletWinDto.setAmount(winData.getAmount());
-//        walletWinDto.setGameCode(gameSession.getGameCode());
-//        walletWinDto.setRoundId(winData.getRoundId());
-//        walletWinDto.setResultType(winData.getWinType());
-//        walletWinDto.setTimestamp(winData.getTimestamp());
-//        return walletWinDto;
-//    }
-
-//    private BetResultLog newBetResultLog(String traceId, com.nextgen.gameaggregator.entity.GameSession gameSession, WinData winData, BetHistory betHistory, WalletWinDto walletWinDto, String rawData) {
-//        BetResultLog betResultLog = new BetResultLog();
-//
-//        betResultLog.setId(traceId);
-//        betResultLog.setBetHistoryId(walletWinDto.getReferenceTransactionId());
-//        betResultLog.setExternalTransactionId(walletWinDto.getExternalTransactionId());
-//        betResultLog.setRoundId(betHistory.getRoundId());
-//        betResultLog.setVendorGameId(gameSession.getVendorGameId());
-//        betResultLog.setVendorPlayerId(gameSession.getVendorPlayerId());
-//        betResultLog.setAgentPlayerId(gameSession.getAgentPlayerId());
-//        betResultLog.setAgentId(gameSession.getAgentId());
-//        betResultLog.setVendorLineId(gameSession.getVendorLineId());
-//        betResultLog.setCurrencyId(gameSession.getCurrencyId());
-//        betResultLog.setOperatorStatus(1);
-//        betResultLog.setWinAmount(walletWinDto.getAmount());
-//        betResultLog.setEffectiveTurnover(winData.getEffectiveTurnover());
-//        betResultLog.setResultType(winData.getWinType().code);
-//        //TODO remove the balance column from bet_result_log table
-//        betResultLog.setBalance(BigDecimal.ZERO);
-//        betResultLog.setRawData(rawData);
-//        betResultLog.setVendorTime(walletWinDto.getTimestamp());
-//
-//        return betResultLog;
-//    }
 
     private BetRefundLog newBetRefundLog(BetHistory betHistory, String externalTransactionId, Long currentTimestamp, String rawData) {
         BetRefundLog betRefundLog = new BetRefundLog();
