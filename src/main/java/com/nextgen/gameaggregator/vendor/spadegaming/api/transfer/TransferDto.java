@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -23,7 +24,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransferDto implements BetResultData {
+public class TransferDto implements BetResultData, RollbackData {
     @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -163,5 +164,10 @@ public class TransferDto implements BetResultData {
         Instant instant = LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant();
         long epochSecond = instant.getEpochSecond();
         return epochSecond;
+    }
+
+    @Override
+    public String getRollbackId() {
+        return this.transferId;
     }
 }

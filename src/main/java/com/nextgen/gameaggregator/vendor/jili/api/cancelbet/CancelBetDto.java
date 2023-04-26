@@ -1,17 +1,19 @@
 package com.nextgen.gameaggregator.vendor.jili.api.cancelbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CancelBetDto {
+public class CancelBetDto implements RollbackData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 1, max = 50)
@@ -38,7 +40,8 @@ public class CancelBetDto {
     @Size(min = 1, max = 50)
     private String token;
 
-    public String getExternalTransactionId() {
+    @Override
+    public String getRollbackId() {
         return String.valueOf(this.round);
     }
 }

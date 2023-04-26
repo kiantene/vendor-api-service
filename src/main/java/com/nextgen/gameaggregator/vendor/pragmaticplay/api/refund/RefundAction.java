@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -56,7 +55,7 @@ public class RefundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send refund to Operator
-            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, dto.getExternalTransactionId(), gameSession, body);
+            walletService.processRollback(traceId, dto, gameSession);
 
             responseVo.setTransactionId(traceId);
 
@@ -84,19 +83,12 @@ public class RefundAction {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (InvalidAgentApiCredentialException e) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-
-        } catch (RecordNotFoundException recordNotFoundException) {
+        } catch (InvalidAgentApiCredentialException | RecordNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-
-//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(duplicateExternalTransactionIdException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

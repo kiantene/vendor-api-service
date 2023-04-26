@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -173,7 +172,7 @@ public class BetAction {
         ValidationUtils.isEquals(AgentCode, commonDto.getAgentCode(), InvalidRequestException::new);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, betDto.getMemberAccount());
+        validationService.validateEligibleBet(gameSession, betDto.getMemberAccount());
     }
 
     private ResultType getResultType(BetDto betDto) {

@@ -107,7 +107,7 @@ public class BetService {
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
             InvalidPlayerException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getUid());
+        validationService.validateEligibleBet(gameSession, dto.getUid());
 
         // Verify vendor gameCode, currency and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);

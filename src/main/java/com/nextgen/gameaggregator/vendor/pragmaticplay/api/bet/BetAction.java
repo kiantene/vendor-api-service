@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -128,7 +127,7 @@ public class BetAction {
             DisabledGameException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getUserId());
+        validationService.validateEligibleBet(gameSession, dto.getUserId());
 
         // 2. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException

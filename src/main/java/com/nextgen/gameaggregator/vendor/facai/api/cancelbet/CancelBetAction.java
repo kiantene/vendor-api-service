@@ -83,7 +83,7 @@ public class CancelBetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
 
-            BetRollbackEvent betRollbackEvent = walletService.processRollback(traceId, cancelbetDto.getExternalTransactionId(), gameSession, body);
+            walletService.processRollback(traceId, cancelbetDto, gameSession);
 
             //revert the cancel bet if found transaction id
             commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);

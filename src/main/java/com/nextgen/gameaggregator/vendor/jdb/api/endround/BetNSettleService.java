@@ -130,7 +130,7 @@ public class BetNSettleService {
             DisabledVendorLineException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
             VendorPlatformNotSupportedException, InvalidRequestException, InvalidPlayerException, AuthenticationException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getUid());
+        validationService.validateEligibleBet(gameSession, dto.getUid());
 
         // Verify vendor gameCode, currency and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);

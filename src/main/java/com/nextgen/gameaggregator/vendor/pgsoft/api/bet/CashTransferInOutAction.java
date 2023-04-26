@@ -158,7 +158,7 @@ public class CashTransferInOutAction {
             CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getPlayerName());
+        validationService.validateEligibleBet(gameSession, dto.getPlayerName());
 
 
         // GA-119 PGSoft may enter game with different session
