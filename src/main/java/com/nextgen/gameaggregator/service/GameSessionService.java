@@ -56,6 +56,7 @@ public class GameSessionService {
     @Caching( put = {
             @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
@@ -81,10 +82,10 @@ public class GameSessionService {
 
     }
 
-    @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager")
-    public GameSession createSessionByVendorPlayer(GameSession gameSession){
-        return gameSession;
-    }
+//    @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager")
+//    public GameSession createSessionByVendorPlayer(GameSession gameSession){
+//        return gameSession;
+//    }
 
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
@@ -105,7 +106,7 @@ public class GameSessionService {
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername());
         cacheManager.getCache("GameSessions").evict(username);
-        cacheManager.getCache("GameSessions").evict(username+","+vendorGameCode);
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername()+","+gameSession.getVendorGameCode());
         gameSession.setStatus(0);
         gameSession.setTerminateTime(System.currentTimeMillis());
         rawGameSessionRepository.save(gameSession);
