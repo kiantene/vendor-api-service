@@ -125,7 +125,7 @@ public class SettleBetAction {
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, settleBetDto.getUsername());
+        validationService.validateEligibleBet(gameSession, settleBetDto.getUsername());
     }
 
 }

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 public abstract class BaseVendorService {
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
-        BigDecimal winAmount = ObjectUtils.isEmpty(betInfo.getWinAmount())?BigDecimal.valueOf(0):betInfo.getWinAmount();
+        BigDecimal winAmount = ObjectUtils.isEmpty(betInfo.getWinAmount()) ? BigDecimal.valueOf(0) : betInfo.getWinAmount();
 
         return winAmount.subtract(betAmount);
     }
@@ -19,13 +19,11 @@ public abstract class BaseVendorService {
     }
 
     public BigDecimal calculateWinAmount(BetInformation betInfo) {
-        BigDecimal winAmount = ObjectUtils.isEmpty(betInfo.getWinAmount())?BigDecimal.valueOf(0):betInfo.getWinAmount();
-        return winAmount;
+        return ObjectUtils.isEmpty(betInfo.getWinAmount()) ? BigDecimal.valueOf(0) : betInfo.getWinAmount();
     }
 
     public BigDecimal calculateJackpotAmount(BetInformation betInfo) {
-        BigDecimal jackpotAmount = ObjectUtils.isEmpty(betInfo.getJackpotAmount())?BigDecimal.valueOf(0):betInfo.getJackpotAmount();
-        return jackpotAmount;
+        return ObjectUtils.isEmpty(betInfo.getJackpotAmount()) ? BigDecimal.valueOf(0) : betInfo.getJackpotAmount();
     }
 
     public Integer calculateBetResultType(BetInformation betInfo) {
@@ -34,7 +32,7 @@ public abstract class BaseVendorService {
         int checkJackpotAmount = betInfo.getJackpotAmount().compareTo(BigDecimal.ZERO);
         Integer betResultType = BetResultType.LOSE.code;
 
-        if (checkWinAmount >= 0 || checkJackpotAmount >= 0){
+        if (checkWinAmount >= 0 || checkJackpotAmount >= 0) {
             betResultType = BetResultType.WIN.code;
         }
         return betResultType;

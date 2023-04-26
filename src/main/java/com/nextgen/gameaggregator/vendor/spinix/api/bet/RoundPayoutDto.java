@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class RoundPayoutDto {
+public class RoundPayoutDto implements RollbackData {
 
     @NotBlank
     @Size(min = 3, max = 50)
@@ -71,4 +72,8 @@ public class RoundPayoutDto {
         return null;
     }
 
+    @Override
+    public String getRollbackId() {
+        return this.roundId;
+    }
 }

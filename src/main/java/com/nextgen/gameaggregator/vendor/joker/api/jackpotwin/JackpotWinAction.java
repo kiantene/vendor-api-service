@@ -125,7 +125,7 @@ public class JackpotWinAction {
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, jackpotWinDto.getUsername());
+        validationService.validateEligibleBet(gameSession, jackpotWinDto.getUsername());
     }
 
 }

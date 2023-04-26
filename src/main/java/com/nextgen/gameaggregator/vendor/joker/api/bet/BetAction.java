@@ -124,7 +124,7 @@ public class BetAction {
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, betDto.getUsername());
+        validationService.validateEligibleBet(gameSession, betDto.getUsername());
     }
 
 }

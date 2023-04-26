@@ -149,7 +149,7 @@ public class CancelWagerAction {
         }
 
         // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateIllegibleBet(gameSession, dto.getBrandUid());
+        validationService.validateEligibleBet(gameSession, dto.getBrandUid());
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
