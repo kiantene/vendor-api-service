@@ -208,6 +208,10 @@ public class WalletService {
                             effectiveTurnover = vendorService.calculateEffectiveTurnover(settledBet);
                             settledBet.setEffectiveTurnover(effectiveTurnover);
                         }
+
+                        //handle PP END resultType but should be LOSE while winAmount less than equal to zero
+                        int winAmountChecker = settledBet.getWinAmount().compareTo(BigDecimal.ZERO);
+                        resultType = (winAmountChecker > 0)?ResultType.END:ResultType.LOSE;
                     }
                     case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
@@ -303,15 +307,22 @@ public class WalletService {
                 } else {
                     //then need process all unsettled_bet of this roundId to operator and send to kafka
                     for (SettledBet settledBetList : settledBetLists) {
-                        betInformation = settledBetList;
-                        traceId = UUID.randomUUID().toString();
-                        walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
-                        settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
+                        String existingMetaId = settledBet.getVendorBetId()+settledBet.getRoundId()+settledBet.getVendorPlayerId();
+                        String historyMetaId = settledBetList.getVendorBetId()+settledBetList.getRoundId()+settledBetList.getVendorPlayerId();
 
-                        settledBetService.create(settledBetList, settledBetList.getRawData());
-                        betHistory = new BetHistory(settledBetList);
-                        kafkaService.produceBetHistory(betHistory);
+                        //if the unsettled meta id (historyMetaId) is not match with settled meta id (existingMetaId) then perform convert to settle and send to operator
+                        if(!existingMetaId.equals(historyMetaId)) {
+                            betInformation = settledBetList;
+                            traceId = UUID.randomUUID().toString();
+                            walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
+                            settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
 
+                            settledBetService.create(settledBetList, settledBetList.getRawData());
+                            betHistory = new BetHistory(settledBetList);
+                            kafkaService.produceBetHistory(betHistory);
+                        }
+
+                        //no matter match or not, will perform delete unsettled bet data with same round Id
                         UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBetList);
                         betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
                     }
