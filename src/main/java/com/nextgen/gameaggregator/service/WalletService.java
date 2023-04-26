@@ -287,8 +287,12 @@ public class WalletService {
             if (isSettled) {
                 settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
                 settledBetService.create(settledBet, rawData);
+
                 BetHistory betHistory = new BetHistory(settledBet);
                 kafkaService.produceBetHistory(betHistory);
+
+                UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBet);
+                betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
 
                 List<SettledBet> settledBetLists = new ArrayList<>();
                 settledBetLists = settledBetService.getAllUnsettledBetsWithSameRoundId(settledBet.getRoundId(), settledBet.getVendorLineId(),
@@ -302,11 +306,14 @@ public class WalletService {
                         betInformation = settledBetList;
                         traceId = UUID.randomUUID().toString();
                         walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
-
                         settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
+
                         settledBetService.create(settledBetList, settledBetList.getRawData());
                         betHistory = new BetHistory(settledBetList);
                         kafkaService.produceBetHistory(betHistory);
+
+                        deleteUnsettledBet = new UnsettledBet(settledBetList);
+                        betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
                     }
                 }
 
