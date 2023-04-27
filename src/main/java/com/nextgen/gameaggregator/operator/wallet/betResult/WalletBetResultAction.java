@@ -72,7 +72,7 @@ public class WalletBetResultAction {
         ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_BET_RESULT)
-                .headers(requestService.setHeaders(headerMap))
+                .headers(h -> h.addAll(headerMap))
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))
