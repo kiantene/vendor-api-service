@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.enums.BetResultType;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
@@ -30,11 +31,35 @@ public abstract class BaseVendorService {
 
         int checkWinAmount = betInfo.getWinAmount().compareTo(BigDecimal.ZERO);
         int checkJackpotAmount = betInfo.getJackpotAmount().compareTo(BigDecimal.ZERO);
+        int checkBetAmount = betInfo.getBetAmount().compareTo(BigDecimal.ZERO);
         Integer betResultType = BetResultType.LOSE.code;
 
-        if (checkWinAmount >= 0 || checkJackpotAmount >= 0) {
+        if(checkBetAmount == 0){
+            betResultType = BetResultType.WIN.code;
+        } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
             betResultType = BetResultType.WIN.code;
         }
+
         return betResultType;
+    }
+
+    //calculate ResultType for sending to operator
+    public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, Integer isBet) {
+
+        BigDecimal getWinAmount = ObjectUtils.isEmpty(winAmount)?BigDecimal.valueOf(0):winAmount;
+        BigDecimal getJackpotAmount = ObjectUtils.isEmpty(jackpotAmount)?BigDecimal.valueOf(0):jackpotAmount;
+
+        int checkWinAmount = getWinAmount.compareTo(BigDecimal.ZERO);
+        int checkJackpotAmount = getJackpotAmount.compareTo(BigDecimal.ZERO);
+        int checkBetAmount = betAmount.compareTo(BigDecimal.ZERO);
+        ResultType resultType = (isBet == 1)?ResultType.BET_LOSE:ResultType.LOSE;
+
+        if(checkBetAmount == 0){
+            resultType = (isBet == 1)?ResultType.BET_WIN:ResultType.WIN;
+        } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
+            resultType = (isBet == 1)?ResultType.BET_WIN:ResultType.WIN;
+        }
+
+        return resultType;
     }
 }

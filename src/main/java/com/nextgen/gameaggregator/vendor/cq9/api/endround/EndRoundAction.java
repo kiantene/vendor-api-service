@@ -97,7 +97,8 @@ public class EndRoundAction {
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
-            ResultType resultType = this.getResultType(endRoundDto, endRoundDto.getWinAmount());
+            Integer isBet = 0;
+            ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), isBet);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, body);
 
             // Construct VO data
