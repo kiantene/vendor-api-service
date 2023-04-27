@@ -1,10 +1,9 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.gameurl;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -17,7 +16,6 @@ public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.G
     @Size(min = 4, max = 4)
     private String status;
 
-    @NotBlank
     @Size(min = 1, max = 255)
     private String err_text;
 
