@@ -26,4 +26,6 @@ public class EndPoints {
 
     // API url call to vendor
     public static final String GAME_URL = "/playGame";
+
+    public static final String BET_DETAIL_URL = "/game-history-url";
 }

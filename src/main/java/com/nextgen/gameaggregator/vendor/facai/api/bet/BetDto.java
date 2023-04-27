@@ -3,19 +3,18 @@ package com.nextgen.gameaggregator.vendor.facai.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.*;
-
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -145,38 +144,32 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC-4"));
-        try {
-            Date date = dateFormat.parse(this.getCreateDate());
-            return date.getTime();
-        } catch (Exception exception) {
-        }
-        return Long.valueOf(000000000000);
+        //convert date time string to timestamp
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime localDateTime = LocalDateTime.parse(this.getCreateDate(), formatter);
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC-4"));
+        long timestamp = zonedDateTime.toInstant().toEpochMilli();
+        return timestamp;
     }
 
     @Override
     public Long getResultTime() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC-4"));
-        try {
-            Date date = dateFormat.parse(this.getGameDate());
-            return date.getTime();
-        } catch (Exception exception) {
-        }
-        return Long.valueOf(000000000000);
+        //convert date time string to timestamp
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime localDateTime = LocalDateTime.parse(this.getGameDate(), formatter);
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC-4"));
+        long timestamp = zonedDateTime.toInstant().toEpochMilli();
+        return timestamp;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC-4"));
-        try {
-            Date date = dateFormat.parse(this.getGameDate());
-            return date.getTime();
-        } catch (Exception exception) {
-        }
-        return Long.valueOf(000000000000);
+        //convert date time string to timestamp
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime localDateTime = LocalDateTime.parse(this.getGameDate(), formatter);
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC-4"));
+        long timestamp = zonedDateTime.toInstant().toEpochMilli();
+        return timestamp;
     }
 
     @Override
