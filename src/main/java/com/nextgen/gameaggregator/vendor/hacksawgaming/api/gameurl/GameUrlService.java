@@ -1,21 +1,27 @@
 package com.nextgen.gameaggregator.vendor.hacksawgaming.api.gameurl;
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.hacksawgaming.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
+
+import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
@@ -23,6 +29,13 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
+
+    @Autowired
+    RequestService requestService;
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
+
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
@@ -65,37 +78,44 @@ public class GameUrlService implements GameUrl {
         log.info("Calling " + apiUrl + EndPoints.GAME_URL);
         log.info("HSG GameUrlService: " + json);
 
-        // create OkHttpClient instance
-        OkHttpClient client = new OkHttpClient();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        GameUrlVendorResponseVo responseVo = null;
 
-        // create request body
-        MediaType mediaType = MediaType.parse("application/json");
-        RequestBody body = RequestBody.create(mediaType, json);
+        long startTime = System.currentTimeMillis();
+        ResponseEntity apiResponse = WebClient.create(apiUrl)
+                .post()
+                .uri(EndPoints.GAME_URL)
+                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .bodyValue(json)
+                .retrieve()
+                // TODO: to catch more error codes
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                .toEntity(String.class)
+                .retry(3)
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                .block();
 
-        // create request
-        Request request = new Request.Builder()
-                .url(apiUrl + EndPoints.GAME_URL)
-                .post(body)
-                .build();
+        long endTime = System.currentTimeMillis();
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(EndPoints.GAME_URL, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+                this.getClass().getPackage().getName(), profilesActive);
 
-        try{
-            // execute request
-            Response response = client.newCall(request).execute();
-            String responseBody = response.body().string();
-            response.close();
+        try {
 
-            // log response data
-            log.info(responseBody);
+            // 1. validate HTTP Response Code
+            requestService.validateVendorHttpStatusResponse(apiResponse);
+            responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVendorResponseVo.class);
 
-            // deserialize response body to DTO using Jackson
-            ObjectMapper mapper = new ObjectMapper();
-            GameUrlVendorResponseVo responseVo = mapper.readValue(responseBody, GameUrlVendorResponseVo.class);
+            //2. validate vendor response
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
+            requestService.validateResponse(responseVo);
 
-            return responseVo.getData();
+            requestService.successResponseLog(requestLogVo);
 
-        } catch (Exception e) {
-            throw new InvalidVendorResponseException("Invalid Response : " + e.getMessage());
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
+            requestService.failResponseLog(requestLogVo, invalidException);
+            throw new InvalidVendorResponseException();
         }
 
+        return responseVo.getData();
     }
 }
