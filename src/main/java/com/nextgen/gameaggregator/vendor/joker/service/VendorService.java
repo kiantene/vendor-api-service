@@ -19,7 +19,7 @@ public class VendorService extends BaseVendorService {
 
     public static String generateHash(MultiValueMap<String, String> params, String secret) {
         String payload = params.keySet().stream().sorted()
-                .map(key -> key + "=" + params.get(key).get(0))
+                .map(key -> key.toLowerCase() + "=" + params.get(key).get(0))
                 .collect(Collectors.joining("&"));
 
         return generateHash(payload, secret);
@@ -27,7 +27,7 @@ public class VendorService extends BaseVendorService {
 
     public static String generateHash(Map<String, String> params, String secret) {
         String payload = params.keySet().stream().sorted()
-                .map(key -> key + "=" + params.get(key))
+                .map(key -> key.toLowerCase() + "=" + params.get(key))
                 .collect(Collectors.joining("&"));
 
         return generateHash(payload, secret);
