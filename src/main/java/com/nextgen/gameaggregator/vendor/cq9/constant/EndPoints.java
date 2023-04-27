@@ -1,7 +1,13 @@
 package com.nextgen.gameaggregator.vendor.cq9.constant;
 
 public class EndPoints {
+    // Header
+    public static final String HEADER_AUTHORIZATION = "Authorization";
+
+    // Vendor Path
     public static final String PATH = "api/v1/cq9";
+
+    // API url call from vendor
     public static final String AUTHENTICATE = "/player/check/{account}";
     public static final String BALANCE = "/transaction/balance/{account}";
     public static final String BET = "/transaction/game/bet";
