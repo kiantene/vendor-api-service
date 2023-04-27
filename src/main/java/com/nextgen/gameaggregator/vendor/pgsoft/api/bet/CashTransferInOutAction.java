@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
+import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -65,7 +66,8 @@ public class CashTransferInOutAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            ResultType resultType = dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            Integer isBet = 1;
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
