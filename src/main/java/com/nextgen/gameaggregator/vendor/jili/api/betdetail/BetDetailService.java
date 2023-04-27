@@ -78,7 +78,7 @@ public class BetDetailService implements BetDetailUrl {
                 // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
-                .retry(3)
+                .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
 

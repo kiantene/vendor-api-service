@@ -3,16 +3,18 @@ package com.nextgen.gameaggregator.vendor.jili.api.gameurl;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.jili.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -28,6 +30,11 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
+    @Autowired
+    RequestService requestService;
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
@@ -53,6 +60,7 @@ public class GameUrlService implements GameUrl {
         return formData;
     }
 
+    @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
@@ -66,29 +74,41 @@ public class GameUrlService implements GameUrl {
                 .encode()
                 .toUri();
 
-        log.info("Calling " + apiUrl + EndPoints.GAME_URL);
-        log.info(formData.toString());
+        GameUrlVo responseVo = null;
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
-        // TODO: need to add error handling
-        String responseString = WebClient.create()
+        long startTime = System.currentTimeMillis();
+        ResponseEntity apiResponse = WebClient.create()
                 .get()
                 .uri(uri)
                 .retrieve()
                 // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .bodyToMono(String.class)
+                .toEntity(String.class)
+                .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
 
-        GameUrlVo responseVo = null;
-        try {
-            responseVo = new Gson().fromJson(responseString, GameUrlVo.class);
-        } catch (JsonSyntaxException jsonSyntaxException) {
-            throw new InvalidVendorResponseException( "Invalid vendor response body :"+responseString);
-        }
+        long endTime = System.currentTimeMillis();
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(
+                EndPoints.GAME_URL, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+                this.getClass().getPackage().getName(), profilesActive);
 
-        if (responseVo.getErrorCode() != ResponseCode.SUCCESS.errorCode) {
-            throw new InvalidVendorResponseException( "Invalid vendor response" );
+        try {
+
+            // 1. validate HTTP Response Code
+            requestService.validateVendorHttpStatusResponse(apiResponse);
+            responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
+
+            //2. validate vendor response
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
+            requestService.validateResponse(responseVo);
+
+            requestService.successResponseLog(requestLogVo);
+
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
+            requestService.failResponseLog(requestLogVo, invalidException);
+            throw new InvalidVendorResponseException();
         }
 
         return responseVo;
