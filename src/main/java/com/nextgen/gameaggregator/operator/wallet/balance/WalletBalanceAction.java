@@ -66,7 +66,7 @@ public class WalletBalanceAction {
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.WALLET_BALANCE)
-                .headers(h -> h.addAll(headerMap))
+                .header(Endpoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))
