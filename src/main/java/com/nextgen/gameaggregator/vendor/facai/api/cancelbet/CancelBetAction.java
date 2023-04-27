@@ -5,7 +5,6 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -15,13 +14,12 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -85,8 +83,8 @@ public class CancelBetAction {
 
             walletService.processRollback(traceId, cancelbetDto, gameSession);
 
-            //revert the cancel bet if found transaction id
-            commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
+            //confirm cancel bet if found transaction id
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
 
         } catch (
                 InvalidDecryptionException |
