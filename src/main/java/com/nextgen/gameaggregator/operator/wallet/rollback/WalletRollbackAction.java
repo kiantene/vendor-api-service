@@ -55,7 +55,7 @@ public class WalletRollbackAction {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
         WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, externalTransactionId, roundId, gameSession);
         WalletBalanceVo responseVo = null;
 

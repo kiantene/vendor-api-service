@@ -57,7 +57,7 @@ public class WalletBalanceAction {
 
         WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
