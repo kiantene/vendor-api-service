@@ -1,9 +1,8 @@
-package com.nextgen.gameaggregator.vendor.pragmaticplay.api.result;
+package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bonus;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -27,7 +26,7 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
 @Slf4j
-public class ResultAction {
+public class BonusAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -39,32 +38,32 @@ public class ResultAction {
     @Autowired
     private VendorService vendorService;
 
-    @PostMapping(path = Endpoints.RESULT)
-    public ResponseVo betResult(HttpServletRequest request) {
+    @PostMapping(path = Endpoints.BONUS)
+    public ResponseVo bonusWin(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        ResultVo responseVo = new ResultVo();
+        BonusVo responseVo = new BonusVo();
         String traceId = httpRequestLog.getTraceId();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             //TODO: refine dto
-            ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);
+            BonusDto dto = HttpService.convertQueryStringToDto(body, BonusDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+//            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+//            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            BigDecimal balance = BigDecimal.ZERO; //walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
 
             responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode()); // TODO: vendor currency map
+            responseVo.setCurrency("CNY"); // TODO: vendor currency map
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
@@ -73,32 +72,28 @@ public class ResultAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+//        } catch (CredentialNotFoundException credentialNotFoundException) {
+//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+//        } catch (AuthenticationException authenticationException) {
+//            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidSignatureException invalidSignatureException) {
-            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+//        } catch (InvalidSignatureException invalidSignatureException) {
+//            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
-
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+//        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//
+//        } catch (BetNotFoundException betNotFoundException) {
+//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -109,7 +104,7 @@ public class ResultAction {
         return responseVo;
     }
 
-    private void doValidation(ResultDto dto) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(BonusDto dto) throws InvalidRequestException, InvalidPlayerException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
@@ -118,17 +113,11 @@ public class ResultAction {
         ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
     }
 
-    private void doVerification(HttpRequestLog request, ResultDto dto, GameSession gameSession) throws
+    private void doVerification(HttpRequestLog request, BonusDto dto, GameSession gameSession) throws
             InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException {
 
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-
-        // 2. Verify received game id is the same from game session
-        //TODO: review this exception
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
