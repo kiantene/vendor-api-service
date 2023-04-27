@@ -57,7 +57,7 @@ public class WalletBalanceAction {
 
         WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
@@ -66,10 +66,9 @@ public class WalletBalanceAction {
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.WALLET_BALANCE)
-                .headers(requestService.setHeaders(headerMap))
+                .header(Endpoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(Endpoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())

@@ -215,7 +215,8 @@ public class WalletService {
 
                         //handle PP END resultType but should be LOSE while winAmount less than equal to zero
                         int winAmountChecker = settledBet.getWinAmount().compareTo(BigDecimal.ZERO);
-                        resultType = (winAmountChecker > 0)?ResultType.END:ResultType.LOSE;
+                        int jackpotAmountChecker = settledBet.getJackpotAmount().compareTo(BigDecimal.ZERO);
+                        resultType = (winAmountChecker > 0 || jackpotAmountChecker > 0)?ResultType.END:ResultType.LOSE;
                     }
                     case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);

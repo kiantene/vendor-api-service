@@ -59,7 +59,7 @@ public class BetAction {
 
             // 3. Process bet data
             // 4. Process win data
-            ResultType resultType = betDto.getWinloseAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            ResultType resultType = getResultType(betDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
@@ -124,5 +124,20 @@ public class BetAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(betDto.getGame()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), betDto.getCurrency(), CurrencyNotSupportedException::new);
 
+    }
+
+    private ResultType getResultType(BetDto dto) {
+
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        if (dto.getWinloseAmount().compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
+            resultType = ResultType.BET_WIN;
+        }
+        if (dto.getWinloseAmount().compareTo(zero) == 0 && dto.getBetAmount().compareTo(zero) == 0) { // Win Amount == 0 and Bet Amount == 0 ~ BET_WIN
+            resultType = ResultType.BET_WIN;
+        }
+
+        return resultType;
     }
 }

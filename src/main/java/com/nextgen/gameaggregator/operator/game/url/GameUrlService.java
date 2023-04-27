@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.repository.*;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -21,6 +22,8 @@ import java.util.UUID;
 @Slf4j
 public class GameUrlService {
 
+    @Autowired
+    private AutowireCapableBeanFactory autowireCapableBeanFactory;
     @Autowired
     private VendorGameRepository vendorGameRepository;
     @Autowired
@@ -53,6 +56,7 @@ public class GameUrlService {
         try {
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.gameurl.GameUrlService";
             GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
+            autowireCapableBeanFactory.autowireBean(gameUrl);
             MultiValueMap<String, String> formData = gameUrl.formDataBuilder(vendorGame.getVendorGameCode(), gameSession, credentials);
             GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, gameSession);
 

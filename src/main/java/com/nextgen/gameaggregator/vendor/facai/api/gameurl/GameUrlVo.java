@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.gameurl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
@@ -11,6 +12,7 @@ public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.G
     @JsonProperty("Result")
     private Integer result;
     @JsonProperty("Url")
+    @NotBlank(message = "url can not be blank")
     private String url;
 
     @Override
