@@ -60,7 +60,7 @@ public class WalletBetAction {
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
 //        dto.setBetId(dto.getTransactionId());
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
 
