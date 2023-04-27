@@ -1,17 +1,23 @@
 package com.nextgen.gameaggregator.vendor.facai.api.gameurl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.vendor.facai.constant.GameType;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.facai.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.facai.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.facai.constant.GameType;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -25,6 +31,12 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
+
+    @Autowired
+    RequestService requestService;
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
@@ -100,20 +112,41 @@ public class GameUrlService implements GameUrl {
             throw new InvalidVendorLineException("Json Convert Failed");
         }
 
+        GameUrlVo responseVo = null;
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+
         //post request to vendor API with JSON string
-        GameUrlVo responseVo = WebClient.create(apiUrl)
+        long startTime = System.currentTimeMillis();
+        ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(EndPoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
                 .body(BodyInserters.fromObject(jsonFormString))
                 .retrieve()
-                .bodyToMono(GameUrlVo.class)
+                .toEntity(String.class)
                 .block();
 
-        if (responseVo.getUrl() != null) {
-            log.info(responseVo.toString());
-        } else {
-            throw new InvalidVendorResponseException("Invalid Response : " + responseVo.toString());
+        long endTime = System.currentTimeMillis();
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(
+                EndPoints.GAME_URL, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+                this.getClass().getPackage().getName(), profilesActive);
+
+        try {
+
+            // 1. validate HTTP Response Code
+            requestService.validateVendorHttpStatusResponse(apiResponse);
+            responseVo = HttpService.convertJsonToDto(String.valueOf(apiResponse.getBody()), GameUrlVo.class);
+
+            //2. validate vendor response
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
+            requestService.validateResponse(responseVo);
+
+            requestService.successResponseLog(requestLogVo);
+
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 JsonProcessingException invalidException) {
+            requestService.failResponseLog(requestLogVo, invalidException);
+            throw new InvalidVendorResponseException();
         }
 
         return responseVo;
