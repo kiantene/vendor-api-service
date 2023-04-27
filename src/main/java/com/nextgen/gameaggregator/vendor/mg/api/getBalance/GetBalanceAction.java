@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.mg.api.login;
+package com.nextgen.gameaggregator.vendor.mg.api.getBalance;
 
 import java.math.BigDecimal;
 
@@ -12,18 +12,16 @@ import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
-public class LoginAction {
-    @PostMapping(path = Endpoints.LOGIN)
-    public ResponseEntity<LoginVo> login() {
+public class GetBalanceAction {
+    @PostMapping(path = Endpoints.GET_BALANCE)
+    public ResponseEntity<GetBalanceVo> getBalance() {
         String currency = "USD";
         BigDecimal balance = new BigDecimal("1000");
-        String extOperatorToken = "ABCDEFG123456";
         
-        LoginVo loginVo = new LoginVo();
-        loginVo.setCurrency(currency);
-        loginVo.setBalance(balance);
-        loginVo.setExtOperatorToken(extOperatorToken);
+        GetBalanceVo getBalanceVo = new GetBalanceVo();
+        getBalanceVo.setCurrency(currency);
+        getBalanceVo.setBalance(balance);
         
-        return new ResponseEntity<>(loginVo, HttpStatus.OK);
+        return new ResponseEntity<>(getBalanceVo, HttpStatus.OK);
     }
 }
