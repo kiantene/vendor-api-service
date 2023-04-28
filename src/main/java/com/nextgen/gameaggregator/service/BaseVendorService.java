@@ -6,11 +6,15 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 public abstract class BaseVendorService {
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
-        BigDecimal winAmount = ObjectUtils.isEmpty(betInfo.getWinAmount()) ? BigDecimal.valueOf(0) : betInfo.getWinAmount();
+        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
+
+        // According to Justin, we will not add jackpotAmount into winloss as game vendor does not include jackpotAmount in GGR calculations
+        // BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
 
         return winAmount.subtract(betAmount);
     }
