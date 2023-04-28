@@ -32,14 +32,6 @@ import java.util.UUID;
 @Slf4j
 public class WalletService {
     @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
     private BetResultLogService betResultLogService;
@@ -50,19 +42,13 @@ public class WalletService {
     @Autowired
     private WalletBetAction walletBetAction;
     @Autowired
-    private WalletWinAction walletWinAction;
+    private WalletBetResultAction walletBetResultAction;
     @Autowired
     private WalletRollbackAction walletRollbackAction;
-    @Autowired
-    private CachingService cachingService;
     @Autowired
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
-    @Autowired
-    private Environment environment;
-    @Autowired
-    private WalletBetResultAction walletBetResultAction;
     @Autowired
     private KafkaService kafkaService;
 
@@ -264,6 +250,10 @@ public class WalletService {
 
                 switch (resultType) {
                     case WIN, LOSE -> { // PP Win
+                        // Idempotent checks
+                        RawBetResultLog rawBetResultLog = this.idempotentCheckForBetResult(gameSession, betResultData);
+
+
                         // check if bet record exists
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
@@ -309,7 +299,7 @@ public class WalletService {
 //                UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBet);
 //                betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
 
-                List<SettledBet> settledBetLists = new ArrayList<>();
+                List<SettledBet> settledBetLists;
                 settledBetLists = settledBetService.getAllUnsettledBetsWithSameRoundId(settledBet.getRoundId(), settledBet.getVendorLineId(),
                         settledBet.getVendorPlayerId(), settledBet.getVendorSettleTime());
 
@@ -339,10 +329,14 @@ public class WalletService {
                         betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
                     }
                 }
-
-            } else {
+            } else { // Unsettled
                 switch (resultType) {
-                    case WIN -> unsettledBetService.update(unsettledBet);
+                    case WIN -> { // PP WIN
+                        unsettledBetService.update(unsettledBet);
+
+                        // Create result_log record in couchbase for idempotent checks
+                        betResultLogService.create(unsettledBet.getInternalTransactionId(), betResultData, gameSession, balanceVo.getData().getBalance());
+                    }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
@@ -377,6 +371,15 @@ public class WalletService {
                 //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
             }
         }
+    }
+
+    private RawBetResultLog idempotentCheckForBetResult(GameSession gameSession, BetResultData betResultData) {
+        String transactionId = betResultData.getExternalTransactionId();
+        String roundId = betResultData.getRoundId();
+        String vendorGameId = gameSession.getVendorGameId().toString();
+        String vendorPlayerId = gameSession.getVendorPlayerId().toString();
+
+        return betResultLogService.checkExists(transactionId, roundId, vendorGameId, vendorPlayerId);
     }
 
     private void mergeResultIntoBetData(BetInformation betData, BetResultData betResultData, ResultType resultType, String traceId) {
