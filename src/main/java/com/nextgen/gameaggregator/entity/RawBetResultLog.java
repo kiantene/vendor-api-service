@@ -18,6 +18,7 @@ public class RawBetResultLog {
     @Id
     private String id;
     private String betHistoryId;
+    private String resultLogId;
     private String externalTransactionId;
     private String roundId;
     private Integer vendorGameId;

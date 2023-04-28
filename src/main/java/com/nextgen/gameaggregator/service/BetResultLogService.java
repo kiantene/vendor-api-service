@@ -94,18 +94,27 @@ public class BetResultLogService {
     }
 
     public RawBetResultLog checkExists(String transactionId, String roundId, String vendorGameId, String vendorPlayerId) {
-        String delimiter = "_";
-        List<String> list = Arrays.asList(transactionId, roundId, vendorGameId, vendorPlayerId);
-        String id = String.join(delimiter, list);
+        String id = this.generateId(transactionId, roundId, vendorGameId, vendorPlayerId);
 
         return rawBetResultLogRepository.findById(id).orElse(null);
     }
 
+    private String generateId(String transactionId, String roundId, String vendorGameId, String vendorPlayerId) {
+        String delimiter = "_";
+        List<String> list = Arrays.asList(transactionId, roundId, vendorGameId, vendorPlayerId);
+
+        return String.join(delimiter, list);
+    }
+
     private RawBetResultLog newRawBetResultLog(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
         RawBetResultLog entity = new RawBetResultLog();
+        String vendorGameId = gameSession.getVendorGameId().toString();
+        String vendorPlayerId = gameSession.getVendorPlayerId().toString();
+        String id = this.generateId(betResultData.getExternalTransactionId(), betResultData.getRoundId(), vendorGameId, vendorPlayerId);
 
-        entity.setId(traceId);
+        entity.setId(id);
         entity.setBetHistoryId(betId);
+        entity.setResultLogId(traceId);
         entity.setExternalTransactionId(betResultData.getExternalTransactionId());
         entity.setRoundId(betResultData.getRoundId());
         entity.setVendorGameId(gameSession.getVendorGameId());
