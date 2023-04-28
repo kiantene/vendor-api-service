@@ -140,6 +140,8 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
 
+        } catch (BetResultIdempotentViolationException e) {
+            // TODO: add handling logic
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }

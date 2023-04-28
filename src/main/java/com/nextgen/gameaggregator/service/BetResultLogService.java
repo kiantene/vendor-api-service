@@ -87,8 +87,8 @@ public class BetResultLogService {
         return rawResultBetRepository.findById(mergeId).orElse(null);
     }
 
-    public RawBetResultLog create(String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
-        RawBetResultLog entity = this.newRawBetResultLog(betId, betResultData, gameSession, balance);
+    public RawBetResultLog create(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
+        RawBetResultLog entity = this.newRawBetResultLog(traceId, betId, betResultData, gameSession, balance);
         rawBetResultLogRepository.save(entity);
         return entity;
     }
@@ -101,9 +101,10 @@ public class BetResultLogService {
         return rawBetResultLogRepository.findById(id).orElse(null);
     }
 
-    private RawBetResultLog newRawBetResultLog(String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
+    private RawBetResultLog newRawBetResultLog(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
         RawBetResultLog entity = new RawBetResultLog();
 
+        entity.setId(traceId);
         entity.setBetHistoryId(betId);
         entity.setExternalTransactionId(betResultData.getExternalTransactionId());
         entity.setRoundId(betResultData.getRoundId());
