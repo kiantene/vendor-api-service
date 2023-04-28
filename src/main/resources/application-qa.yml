@@ -48,8 +48,9 @@ spring:
       sasl:
         mechanism: PLAIN
         jaas:
-          config: org.apache.kafka.common.security.plain.PlainLoginModule required username='JYE3Y3BG6AWD6JVQ'
-            password='J6eK7L9IemczU6LfsFXoHmxq1Gq4mfIBmMK0Y/EOnfIIjFUMBfA5kerKR26KZdye';
+          config:
+            org.apache.kafka.common.security.plain.PlainLoginModule required username='KEFHEWK4Z27NQN7H'
+            password='Etj001J0tJWo2GFn8rUITTpr7txyuWtV8RmrK4EAxoAfnZs1EQ2iy3KkjJX39h5n';
       bootstrap:
         servers: pkc-817wq.ap-east-1.aws.confluent.cloud:9092
       session:

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.eventing.events.BetResultEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -61,6 +62,9 @@ public class JackpotAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setBonus(BigDecimal.ZERO);
+
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
@@ -69,9 +73,13 @@ public class JackpotAction {
 
             String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
-            responseVo.setCurrency(gameSession.getVendorGameCode());
             responseVo.setCash(balance);
-            responseVo.setBonus(BigDecimal.ZERO);
+
+        } catch (BetResultIdempotentViolationException idempotentViolationException) {
+            // duplicate bet result received, do not process but return original transaction id back to vendor
+            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
+            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
+            responseVo.setCash(rawBetResultLog.getBalance());
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
