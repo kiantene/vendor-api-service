@@ -34,7 +34,7 @@ public abstract class BaseVendorService {
         int checkBetAmount = betInfo.getBetAmount().compareTo(BigDecimal.ZERO);
         Integer betResultType = BetResultType.LOSE.code;
 
-        if(checkBetAmount == 0){
+        if (checkBetAmount == 0) {
             betResultType = BetResultType.WIN.code;
         } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
             betResultType = BetResultType.WIN.code;
@@ -46,18 +46,18 @@ public abstract class BaseVendorService {
     //calculate ResultType for sending to operator
     public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, Integer isBet) {
 
-        BigDecimal getWinAmount = ObjectUtils.isEmpty(winAmount)?BigDecimal.valueOf(0):winAmount;
-        BigDecimal getJackpotAmount = ObjectUtils.isEmpty(jackpotAmount)?BigDecimal.valueOf(0):jackpotAmount;
+        BigDecimal getWinAmount = ObjectUtils.isEmpty(winAmount) ? BigDecimal.valueOf(0) : winAmount;
+        BigDecimal getJackpotAmount = ObjectUtils.isEmpty(jackpotAmount) ? BigDecimal.valueOf(0) : jackpotAmount;
 
         int checkWinAmount = getWinAmount.compareTo(BigDecimal.ZERO);
         int checkJackpotAmount = getJackpotAmount.compareTo(BigDecimal.ZERO);
         int checkBetAmount = betAmount.compareTo(BigDecimal.ZERO);
-        ResultType resultType = (isBet == 1)?ResultType.BET_LOSE:ResultType.LOSE;
+        ResultType resultType = (isBet == 1) ? ResultType.BET_LOSE : ResultType.LOSE;
 
-        if(checkBetAmount == 0){
-            resultType = (isBet == 1)?ResultType.BET_WIN:ResultType.WIN;
+        if (checkBetAmount == 0) {
+            resultType = (isBet == 1) ? ResultType.BET_WIN : ResultType.WIN;
         } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
-            resultType = (isBet == 1)?ResultType.BET_WIN:ResultType.WIN;
+            resultType = (isBet == 1) ? ResultType.BET_WIN : ResultType.WIN;
         }
 
         return resultType;
