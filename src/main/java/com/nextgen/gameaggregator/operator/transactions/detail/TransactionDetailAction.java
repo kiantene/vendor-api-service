@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping(path = "transactions/")
+@RequestMapping(path = "transaction/")
 @Slf4j
 public class TransactionDetailAction {
 
@@ -67,7 +67,7 @@ public class TransactionDetailAction {
             Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
 
             //5. check bet history detail
-            IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(apiCredential.getAgent().getId(), dto.getTransactionId());
+            IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(apiCredential.getAgent().getId(), dto.getBetId());
 
             //6. check vendor line
             VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId());

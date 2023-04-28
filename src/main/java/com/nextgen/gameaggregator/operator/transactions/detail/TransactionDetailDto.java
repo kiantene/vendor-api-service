@@ -17,10 +17,10 @@ public class TransactionDetailDto {
     @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
 
-    @NotBlank(message = "transactionId required")
-    @Size(min = 36, max = 36, message = "Invalid transactionId format")
+    @NotBlank(message = "betId required")
+    @Size(min = 36, max = 36, message = "Invalid betId format")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = "Invalid transactionId format") // Only alphanumeric allowed
-    private String transactionId;
+    private String betId;
 
     @NotBlank(message = "2 alphanumeric")
     @Size(min = 2, max = 2, message = " 2 alphanumeric only")
