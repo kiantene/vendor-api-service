@@ -68,8 +68,7 @@ pipeline {
 
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
                             sh """
-                                ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker login --username=AWS --password=${password} 634937900606.dkr.ecr.ap-east-1.amazonaws.com' &&
-                                docker pull 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa
+                                ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker login --username=AWS --password=${password} 634937900606.dkr.ecr.ap-east-1.amazonaws.com && docker pull 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa'
                             """
                             sh 'ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 docker service update --force --image 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'
                         }
