@@ -6,13 +6,15 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 public abstract class BaseVendorService {
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
-        BigDecimal winAmount = ObjectUtils.isEmpty(betInfo.getWinAmount()) ? BigDecimal.valueOf(0) : betInfo.getWinAmount();
+        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
 
-        return winAmount.subtract(betAmount);
+        return winAmount.add(jackpotAmount).subtract(betAmount);
     }
 
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
