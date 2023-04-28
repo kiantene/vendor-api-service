@@ -48,7 +48,6 @@ public class ResultAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            //TODO: refine dto
             ResultDto dto = HttpService.convertQueryStringToDto(body, ResultDto.class);
 
             // 1. Validate request parameters (Non-database calls)
@@ -63,8 +62,9 @@ public class ResultAction {
             // 4. Send win result to Operator
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
 
-            responseVo.setTransactionId(traceId);
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode()); // TODO: vendor currency map
+            String transactionId = VendorService.getTransactionId(gameSession.getVendorPlayerId(), dto.getTimestamp().toString());
+            responseVo.setTransactionId(transactionId);
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 

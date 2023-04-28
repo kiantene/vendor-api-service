@@ -133,6 +133,4 @@ public class ResultDto implements BetResultData {
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
     }
-
-
 }

@@ -60,10 +60,11 @@ public class BonusAction {
 //            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            BigDecimal balance = BigDecimal.ZERO; //walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            BigDecimal balance = dto.getAmount(); //walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
 
-            responseVo.setTransactionId(traceId);
-            responseVo.setCurrency("CNY"); // TODO: vendor currency map
+            String transactionId = dto.getUserId() + '-' + dto.getTimestamp();
+            responseVo.setTransactionId(transactionId);
+            responseVo.setCurrency("CNY");
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 

@@ -61,7 +61,8 @@ public class BetAction {
             // 4. Process unsettled bet process
             BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
 
-            responseVo.setTransactionId(traceId);
+            String transactionId = VendorService.getTransactionId(gameSession.getVendorPlayerId(), dto.getTimestamp().toString());
+            responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
