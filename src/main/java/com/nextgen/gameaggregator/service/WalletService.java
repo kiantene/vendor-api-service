@@ -186,7 +186,14 @@ public class WalletService {
             if (isSettled) {
                 switch (resultType) {
                     case LOSE, END -> { // PP END
-                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, gameSession.getVendorLineId(), vendorPlayerId);
+
+                        if (unsettledBetList.isEmpty()) {
+                            throw new BetNotFoundException();
+                        }
+
+                        // TODO: to handle more than 1 bet record in the list
+                        unsettledBet = unsettledBetList.get(0);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         winAmount = settledBet.getWinAmount();

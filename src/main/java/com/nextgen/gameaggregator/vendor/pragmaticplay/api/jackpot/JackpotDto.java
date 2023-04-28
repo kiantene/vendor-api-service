@@ -85,7 +85,7 @@ public class JackpotDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return roundId;
+        return this.reference;
     }
 
     @Override
