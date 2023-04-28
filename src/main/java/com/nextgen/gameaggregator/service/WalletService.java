@@ -316,6 +316,7 @@ public class WalletService {
                         if (!existingMetaId.equals(historyMetaId)) {
                             betInformation = settledBetList;
                             traceId = UUID.randomUUID().toString();
+                            betInformation.setInternalTransactionId(traceId);
                             walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
                             settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
 
