@@ -12,9 +12,11 @@ public abstract class BaseVendorService {
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
         BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
 
-        return winAmount.add(jackpotAmount).subtract(betAmount);
+        // According to Justin, we will not add jackpotAmount into winloss as game vendor does not include jackpotAmount in GGR calculations
+        // BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
+
+        return winAmount.subtract(betAmount);
     }
 
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
