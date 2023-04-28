@@ -1,10 +1,14 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetResultLog;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.entity.UnsettledBetResult;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
+import com.nextgen.gameaggregator.repository.RawBetResultLogRepository;
 import com.nextgen.gameaggregator.repository.RawResultBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,10 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+
 @Service
 @Slf4j
 public class BetResultLogService {
@@ -20,6 +28,8 @@ public class BetResultLogService {
     private BetResultLogRepository betResultLogRepository;
     @Autowired
     private RawResultBetRepository rawResultBetRepository;
+    @Autowired
+    private RawBetResultLogRepository rawBetResultLogRepository;
 
     /**
      * Creates a database record of the given BetResultLog entity object.
@@ -75,5 +85,43 @@ public class BetResultLogService {
 
         String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
         return rawResultBetRepository.findById(mergeId).orElse(null);
+    }
+
+    public RawBetResultLog create(String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
+        RawBetResultLog entity = this.newRawBetResultLog(betId, betResultData, gameSession, balance);
+        rawBetResultLogRepository.save(entity);
+        return entity;
+    }
+
+    public RawBetResultLog checkExists(String transactionId, String roundId, String vendorGameId, String vendorPlayerId) {
+        String delimiter = "_";
+        List<String> list = Arrays.asList(transactionId, roundId, vendorGameId, vendorPlayerId);
+        String id = String.join(delimiter, list);
+
+        return rawBetResultLogRepository.findById(id).orElse(null);
+    }
+
+    private RawBetResultLog newRawBetResultLog(String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
+        RawBetResultLog entity = new RawBetResultLog();
+
+        entity.setBetHistoryId(betId);
+        entity.setExternalTransactionId(betResultData.getExternalTransactionId());
+        entity.setRoundId(betResultData.getRoundId());
+        entity.setVendorGameId(gameSession.getVendorGameId());
+        entity.setVendorPlayerId(gameSession.getVendorPlayerId());
+        entity.setAgentPlayerId(gameSession.getAgentPlayerId());
+        entity.setAgentId(gameSession.getAgentId());
+        entity.setOperatorStatus(0);
+        entity.setVendorLineId(gameSession.getVendorLineId());
+        entity.setCurrencyId(gameSession.getCurrencyId());
+        entity.setWinAmount(betResultData.getWinAmount());
+        entity.setEffectiveTurnover(BigDecimal.ZERO); // TODO: update accordingly
+        entity.setBalance(balance);
+        entity.setResultType(1); // TODO: change to enum
+        entity.setStatus(1); // TODO: change to enum
+        entity.setVendorTime(betResultData.getVendorSettleTime());
+        entity.setCreateTime(System.currentTimeMillis());
+
+        return entity;
     }
 }

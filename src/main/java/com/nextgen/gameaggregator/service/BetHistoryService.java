@@ -175,12 +175,12 @@ public class BetHistoryService {
      * @throws DuplicateExternalTransactionIdException If a matching external_transaction_id is found.
      */
     // TODO: performance tuning, read from cache
-    public void checkDuplicateExternalTransaction(String txnId, Integer gameId, Long vendorPlayerId) throws DuplicateExternalTransactionIdException {
-        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndVendorGameIdAndVendorPlayerId(txnId, gameId, vendorPlayerId);
-        if (resultLog != null) { // Found a matching external transaction Id
-            throw new DuplicateExternalTransactionIdException("Duplicate external transaction Id: " + txnId);
-        }
-    }
+//    public void checkDuplicateExternalTransaction(String txnId, Integer gameId, Long vendorPlayerId) throws DuplicateExternalTransactionIdException {
+//        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndVendorGameIdAndVendorPlayerId(txnId, gameId, vendorPlayerId);
+//        if (resultLog != null) { // Found a matching external transaction Id
+//            throw new DuplicateExternalTransactionIdException("Duplicate external transaction Id: " + txnId);
+//        }
+//    }
 
     /**
      * Retrieve a bet transaction record based on vendor's round Id
@@ -305,10 +305,10 @@ public class BetHistoryService {
         return betHistory;
     }
 
-    public BetResultLog getBetHistoryByExternalTransaction(String txnId, String roundId, Integer vendorLineId) throws BetResultNotFoundException {
-        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(txnId, roundId, vendorLineId);
-        return resultLog;
-    }
+//    public BetResultLog getBetHistoryByExternalTransaction(String txnId, String roundId, Integer vendorLineId) throws BetResultNotFoundException {
+//        BetResultLog resultLog = betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(txnId, roundId, vendorLineId);
+//        return resultLog;
+//    }
 
     public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String transactionId) throws BetNotFoundException {
         IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, transactionId);

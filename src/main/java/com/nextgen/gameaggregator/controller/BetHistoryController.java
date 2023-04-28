@@ -41,8 +41,8 @@ public class BetHistoryController {
                 betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
                         json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
 
-        detailvo.setBetResultLog(betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
-                json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
+//        detailvo.setBetResultLog(betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+//                json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
 //
 //        detailvo.setBetRefundLog(betRefundLogRepository.findByExternalTransactionIdAndRoundIdAndVendorPlayerId(
 //                json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
