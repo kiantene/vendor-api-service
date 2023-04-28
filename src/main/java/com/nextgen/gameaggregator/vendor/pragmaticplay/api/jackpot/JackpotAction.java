@@ -67,7 +67,8 @@ public class JackpotAction {
             // 5. Send win result to Operator
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
 
-            responseVo.setTransactionId(traceId);
+            String transactionId = VendorService.getTransactionId(traceId);
+            responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(gameSession.getVendorGameCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);

@@ -68,12 +68,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return reference;
+        return this.reference;
     }
 
     @Override
     public String getVendorBetId() {
-        return roundId;
+        return this.roundId;
     }
 
     @Override

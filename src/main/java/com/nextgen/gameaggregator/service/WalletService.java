@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.ResultBetOperatorFailEvent;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -16,15 +16,12 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -34,14 +31,6 @@ import static java.util.UUID.randomUUID;
 @Service
 @Slf4j
 public class WalletService {
-    @Autowired
-    private AuthenticationService authenticationService;
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
     @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
@@ -53,19 +42,13 @@ public class WalletService {
     @Autowired
     private WalletBetAction walletBetAction;
     @Autowired
-    private WalletWinAction walletWinAction;
+    private WalletBetResultAction walletBetResultAction;
     @Autowired
     private WalletRollbackAction walletRollbackAction;
-    @Autowired
-    private CachingService cachingService;
     @Autowired
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
-    @Autowired
-    private Environment environment;
-    @Autowired
-    private WalletBetResultAction walletBetResultAction;
     @Autowired
     private KafkaService kafkaService;
 
@@ -89,7 +72,7 @@ public class WalletService {
      * @param rawData       Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BigDecimal processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
+    public BetEvent processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException {
 
@@ -101,28 +84,33 @@ public class WalletService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         boolean isBetExists = true;
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
+        BetEvent betEvent = new BetEvent(null, BigDecimal.ZERO);
 
         try {
-            unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-        } catch (BetNotFoundException betNotFoundException) {
+            // checking if unsettled_bets table contains duplicate
+            unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+
+            // Existing bet transaction found (idempotent), do not process again but get the latest balance from operator
+            // TODO: add try-catch in case operator fails
+            balance = this.getBalance(traceId, gameSession);
+            betEvent = new BetEvent(unsettledBet, balance);
+
+        } catch (BetNotFoundException betNotFoundException) { // no bets found, can proceed to process this bet transaction
             isBetExists = false;
         }
 
         // no record in database, will proceed to send as bet request and insert as unsettled_bet data to couchbase
         if (!isBetExists) {
             try {
-                // 2. Generate rawUnsettledBet
-                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
-
+                // Send bet transaction to Operator to update player wallet
                 WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
-                UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
                 balance = balanceVo.getData().getBalance();
-                // 5. Insert into couchbase unsettled_bet table
-                betHistoryService.createUnsettledBet(unsettledBet);
 
-                // TODO: if operator failed
-                //EventDispatcherSystem.emitAsync(unsettledBetEvent);
+                // Generate rawUnsettledBet and insert into couchbase unsettled_bets table
+                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
+                betHistoryService.createUnsettledBet(unsettledBet);
+                betEvent = new BetEvent(unsettledBet, balance);
 
             } catch (InsufficientBalanceException insufficientBalanceException) {
                 unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
@@ -139,12 +127,9 @@ public class WalletService {
                     //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
                 }
             }
-        } else {
-            // TODO: add try-catch in case operator fails
-            balance = this.getBalance(traceId, gameSession);
         }
 
-        return balance;
+        return betEvent;
     }
 
     /**
@@ -162,7 +147,8 @@ public class WalletService {
      */
     public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, String rawData)
             throws BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException,
-            InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException {
+            InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
+            BetResultIdempotentViolationException {
 
         Integer agentId = gameSession.getAgentId();
 //        Integer vendorLineId = gameSession.getVendorLineId();
@@ -187,7 +173,14 @@ public class WalletService {
             if (isSettled) {
                 switch (resultType) {
                     case LOSE, END -> { // PP END
-                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, gameSession.getVendorLineId(), vendorPlayerId);
+
+                        if (unsettledBetList.isEmpty()) {
+                            throw new BetNotFoundException();
+                        }
+
+                        // TODO: to handle more than 1 bet record in the list
+                        unsettledBet = unsettledBetList.get(0);
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         winAmount = settledBet.getWinAmount();
@@ -216,7 +209,7 @@ public class WalletService {
                         //handle PP END resultType but should be LOSE while winAmount less than equal to zero
                         int winAmountChecker = settledBet.getWinAmount().compareTo(BigDecimal.ZERO);
                         int jackpotAmountChecker = settledBet.getJackpotAmount().compareTo(BigDecimal.ZERO);
-                        resultType = (winAmountChecker > 0 || jackpotAmountChecker > 0)?ResultType.END:ResultType.LOSE;
+                        resultType = (winAmountChecker > 0 || jackpotAmountChecker > 0) ? ResultType.END : ResultType.LOSE;
                     }
                     case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
@@ -258,6 +251,9 @@ public class WalletService {
 
                 switch (resultType) {
                     case WIN, LOSE -> { // PP Win
+                        // Idempotent checks
+                        this.idempotentCheckForBetResult(gameSession, betResultData);
+
                         // check if bet record exists
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
@@ -303,7 +299,7 @@ public class WalletService {
 //                UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBet);
 //                betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
 
-                List<SettledBet> settledBetLists = new ArrayList<>();
+                List<SettledBet> settledBetLists;
                 settledBetLists = settledBetService.getAllUnsettledBetsWithSameRoundId(settledBet.getRoundId(), settledBet.getVendorLineId(),
                         settledBet.getVendorPlayerId(), settledBet.getVendorSettleTime());
 
@@ -312,13 +308,14 @@ public class WalletService {
                 } else {
                     //then need process all unsettled_bet of this roundId to operator and send to kafka
                     for (SettledBet settledBetList : settledBetLists) {
-                        String existingMetaId = settledBet.getVendorBetId()+settledBet.getRoundId()+settledBet.getVendorPlayerId();
-                        String historyMetaId = settledBetList.getVendorBetId()+settledBetList.getRoundId()+settledBetList.getVendorPlayerId();
+                        String existingMetaId = settledBet.getVendorBetId() + settledBet.getRoundId() + settledBet.getVendorPlayerId();
+                        String historyMetaId = settledBetList.getVendorBetId() + settledBetList.getRoundId() + settledBetList.getVendorPlayerId();
 
                         //if the unsettled meta id (historyMetaId) is not match with settled meta id (existingMetaId) then perform convert to settle and send to operator
-                        if(!existingMetaId.equals(historyMetaId)) {
+                        if (!existingMetaId.equals(historyMetaId)) {
                             betInformation = settledBetList;
                             traceId = UUID.randomUUID().toString();
+                            betInformation.setInternalTransactionId(traceId);
                             walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
                             settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
 
@@ -332,10 +329,14 @@ public class WalletService {
                         betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
                     }
                 }
-
-            } else {
+            } else { // Unsettled
                 switch (resultType) {
-                    case WIN -> unsettledBetService.update(unsettledBet);
+                    case WIN -> { // PP WIN
+                        unsettledBetService.update(unsettledBet);
+
+                        // Create result_log record in couchbase for idempotent checks
+                        betResultLogService.create(traceId, unsettledBet.getBetId(), betResultData, gameSession, balanceVo.getData().getBalance());
+                    }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
@@ -369,6 +370,21 @@ public class WalletService {
                 // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
                 //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
             }
+        }
+    }
+
+    private void idempotentCheckForBetResult(GameSession gameSession, BetResultData betResultData) throws BetResultIdempotentViolationException {
+        String transactionId = betResultData.getExternalTransactionId();
+        String roundId = betResultData.getRoundId();
+        String vendorGameId = gameSession.getVendorGameId().toString();
+        String vendorPlayerId = gameSession.getVendorPlayerId().toString();
+
+        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(transactionId, roundId, vendorGameId, vendorPlayerId);
+
+        if (rawBetResultLog != null) {
+            BetResultIdempotentViolationException idempotentViolationException = new BetResultIdempotentViolationException();
+            idempotentViolationException.setBetResultLog(rawBetResultLog);
+            throw idempotentViolationException;
         }
     }
 

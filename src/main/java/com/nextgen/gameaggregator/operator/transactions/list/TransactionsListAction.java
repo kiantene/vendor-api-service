@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping(path = "transactions/")
+@RequestMapping(path = "transaction/")
 @Slf4j
 public class TransactionsListAction {
     @Autowired

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -59,11 +60,16 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
-            BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
 
-            responseVo.setTransactionId(traceId);
+            String transactionId = traceId.replace("-", "");
+            if (betEvent.getBetInformation() != null) {
+                transactionId = VendorService.getTransactionId(betEvent.getBetInformation().getBetId());
+            }
+
+            responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setCash(balance);
+            responseVo.setCash(betEvent.getLastBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 

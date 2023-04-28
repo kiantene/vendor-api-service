@@ -81,7 +81,7 @@ public class ResultDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return roundId;
+        return this.roundId;
     }
 
     @Override
@@ -133,6 +133,4 @@ public class ResultDto implements BetResultData {
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
     }
-
-
 }

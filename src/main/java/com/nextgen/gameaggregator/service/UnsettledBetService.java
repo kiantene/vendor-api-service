@@ -12,6 +12,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Slf4j
 public class UnsettledBetService {
@@ -58,5 +60,18 @@ public class UnsettledBetService {
         }
 
         return unsettledBet;
+    }
+
+    public List<UnsettledBet> getByRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId) {
+        List<UnsettledBet> unsettledBetLists = null;
+
+        try {
+            unsettledBetLists = rawUnsettledBetRepository.findByRoundId(roundId, vendorLineId, vendorPlayerId);
+
+        } catch (Exception e) {
+            //TODO ERROR HANDLING IF CONNECTION TO COUCHBASE IS FAILED
+            log.error("getBetDataListByRoundId ERROR, details : " + e);
+        }
+        return unsettledBetLists;
     }
 }
