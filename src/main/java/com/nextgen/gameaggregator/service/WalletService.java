@@ -98,7 +98,7 @@ public class WalletService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         boolean isBetExists = true;
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance;
 
         try {
             unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
@@ -113,7 +113,7 @@ public class WalletService {
                 unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
 
                 WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
-                UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
+//                UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
                 balance = balanceVo.getData().getBalance();
                 // 5. Insert into couchbase unsettled_bet table
                 betHistoryService.createUnsettledBet(unsettledBet);
@@ -213,7 +213,7 @@ public class WalletService {
                         //handle PP END resultType but should be LOSE while winAmount less than equal to zero
                         int winAmountChecker = settledBet.getWinAmount().compareTo(BigDecimal.ZERO);
                         int jackpotAmountChecker = settledBet.getJackpotAmount().compareTo(BigDecimal.ZERO);
-                        resultType = (winAmountChecker > 0 || jackpotAmountChecker > 0)?ResultType.END:ResultType.LOSE;
+                        resultType = (winAmountChecker > 0 || jackpotAmountChecker > 0) ? ResultType.END : ResultType.LOSE;
                     }
                     case WIN -> { // CQ9 Win
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
@@ -309,11 +309,11 @@ public class WalletService {
                 } else {
                     //then need process all unsettled_bet of this roundId to operator and send to kafka
                     for (SettledBet settledBetList : settledBetLists) {
-                        String existingMetaId = settledBet.getVendorBetId()+settledBet.getRoundId()+settledBet.getVendorPlayerId();
-                        String historyMetaId = settledBetList.getVendorBetId()+settledBetList.getRoundId()+settledBetList.getVendorPlayerId();
+                        String existingMetaId = settledBet.getVendorBetId() + settledBet.getRoundId() + settledBet.getVendorPlayerId();
+                        String historyMetaId = settledBetList.getVendorBetId() + settledBetList.getRoundId() + settledBetList.getVendorPlayerId();
 
                         //if the unsettled meta id (historyMetaId) is not match with settled meta id (existingMetaId) then perform convert to settle and send to operator
-                        if(!existingMetaId.equals(historyMetaId)) {
+                        if (!existingMetaId.equals(historyMetaId)) {
                             betInformation = settledBetList;
                             traceId = UUID.randomUUID().toString();
                             walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);

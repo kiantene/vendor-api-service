@@ -57,7 +57,8 @@ public class RefundAction {
             // 4. Send refund to Operator
             walletService.processRollback(traceId, dto, gameSession);
 
-            responseVo.setTransactionId(traceId);
+            String transactionId = VendorService.getTransactionId(gameSession.getVendorPlayerId(), dto.getRollbackId());
+            responseVo.setTransactionId(transactionId);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
