@@ -15,15 +15,12 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackAction;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.operator.wallet.win.WalletWinAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -335,7 +332,7 @@ public class WalletService {
                         unsettledBetService.update(unsettledBet);
 
                         // Create result_log record in couchbase for idempotent checks
-                        betResultLogService.create(traceId, unsettledBet.getInternalTransactionId(), betResultData, gameSession, balanceVo.getData().getBalance());
+                        betResultLogService.create(traceId, unsettledBet.getBetId(), betResultData, gameSession, balanceVo.getData().getBalance());
                     }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
