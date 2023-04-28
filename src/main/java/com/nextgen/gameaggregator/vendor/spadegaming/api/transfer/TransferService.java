@@ -148,6 +148,9 @@ public class TransferService {
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
 
+        } catch (BetResultIdempotentViolationException e) {
+            // TODO: add handling logic
+
         } finally {
             httpService.end(httpRequestLog, transferVo);
         }

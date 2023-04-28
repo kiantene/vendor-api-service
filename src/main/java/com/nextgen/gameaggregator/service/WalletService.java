@@ -147,7 +147,8 @@ public class WalletService {
      */
     public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, String rawData)
             throws BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException,
-            InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException {
+            InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
+            BetResultIdempotentViolationException {
 
         Integer agentId = gameSession.getAgentId();
 //        Integer vendorLineId = gameSession.getVendorLineId();
@@ -251,8 +252,7 @@ public class WalletService {
                 switch (resultType) {
                     case WIN, LOSE -> { // PP Win
                         // Idempotent checks
-                        RawBetResultLog rawBetResultLog = this.idempotentCheckForBetResult(gameSession, betResultData);
-
+                        this.idempotentCheckForBetResult(gameSession, betResultData);
 
                         // check if bet record exists
                         unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
@@ -335,7 +335,7 @@ public class WalletService {
                         unsettledBetService.update(unsettledBet);
 
                         // Create result_log record in couchbase for idempotent checks
-                        betResultLogService.create(unsettledBet.getInternalTransactionId(), betResultData, gameSession, balanceVo.getData().getBalance());
+                        betResultLogService.create(traceId, unsettledBet.getInternalTransactionId(), betResultData, gameSession, balanceVo.getData().getBalance());
                     }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> betHistoryService.createUnsettledBet(unsettledBet);
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
@@ -373,13 +373,19 @@ public class WalletService {
         }
     }
 
-    private RawBetResultLog idempotentCheckForBetResult(GameSession gameSession, BetResultData betResultData) {
+    private void idempotentCheckForBetResult(GameSession gameSession, BetResultData betResultData) throws BetResultIdempotentViolationException {
         String transactionId = betResultData.getExternalTransactionId();
         String roundId = betResultData.getRoundId();
         String vendorGameId = gameSession.getVendorGameId().toString();
         String vendorPlayerId = gameSession.getVendorPlayerId().toString();
 
-        return betResultLogService.checkExists(transactionId, roundId, vendorGameId, vendorPlayerId);
+        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(transactionId, roundId, vendorGameId, vendorPlayerId);
+
+        if (rawBetResultLog != null) {
+            BetResultIdempotentViolationException idempotentViolationException = new BetResultIdempotentViolationException();
+            idempotentViolationException.setBetResultLog(rawBetResultLog);
+            throw idempotentViolationException;
+        }
     }
 
     private void mergeResultIntoBetData(BetInformation betData, BetResultData betResultData, ResultType resultType, String traceId) {
