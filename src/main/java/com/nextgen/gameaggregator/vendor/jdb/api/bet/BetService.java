@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -50,10 +51,9 @@ public class BetService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Request
-            //BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto.getParams());
-            BigDecimal balance = walletService.processBet(traceId, gameSession, betDto, actionDto.getParams());
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, actionDto.getParams());
 
-            vo.setBalance(balance);
+            vo.setBalance(betEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);   

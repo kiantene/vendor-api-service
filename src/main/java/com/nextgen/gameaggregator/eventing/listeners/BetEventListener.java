@@ -22,15 +22,14 @@ public class BetEventListener implements EventListener<BetEvent> {
 
     @Override
     public void onEvent(BetEvent event) {
-
-        BetHistory betHistory = event.getBetHistory();
-        Integer statusOk = ResponseCodes.Status.SC_OK.code;
-
-        // update operator status if previous was failed
-        if (!betHistory.getOperatorStatus().equals(statusOk)) {
-            betHistory.setOperatorStatus(statusOk);
-            betHistoryRepository.save(betHistory);
-            cachingService.updateBetHistoriesCaching(betHistory);
-        }
+//        BetHistory betHistory = event.getBetHistory();
+//        Integer statusOk = ResponseCodes.Status.SC_OK.code;
+//
+//        // update operator status if previous was failed
+//        if (!betHistory.getOperatorStatus().equals(statusOk)) {
+//            betHistory.setOperatorStatus(statusOk);
+//            betHistoryRepository.save(betHistory);
+//            cachingService.updateBetHistoriesCaching(betHistory);
+//        }
     }
 }

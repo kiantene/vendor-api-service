@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 import java.math.BigDecimal;
 import java.util.Optional;
 
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -66,8 +67,8 @@ public class TransferService {
             switch (dto.getType()) {
                 case Actions.PLACE_BET -> {
                     // Place bet action
-                    BigDecimal balance = walletService.processBet(traceId, gameSession, dto, body);
-                    transferVo.setBalance(balance);
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+                    transferVo.setBalance(betEvent.getLastBalance());
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                 }
