@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.ResultBetOperatorFailEvent;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -86,7 +86,7 @@ public class WalletService {
      * @param rawData       Raw data sent by vendor containing information of the bet
      * @return The player's current wallet balance after deducting the bet amount
      */
-    public BigDecimal processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
+    public BetEvent processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException {
 
@@ -99,27 +99,32 @@ public class WalletService {
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         boolean isBetExists = true;
         BigDecimal balance;
+        BetEvent betEvent = new BetEvent(null, BigDecimal.ZERO);
 
         try {
-            unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-        } catch (BetNotFoundException betNotFoundException) {
+            // checking if unsettled_bets table contains duplicate
+            unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+
+            // Existing bet transaction found (idempotent), do not process again but get the latest balance from operator
+            // TODO: add try-catch in case operator fails
+            balance = this.getBalance(traceId, gameSession);
+            betEvent = new BetEvent(unsettledBet, balance);
+
+        } catch (BetNotFoundException betNotFoundException) { // no bets found, can proceed to process this bet transaction
             isBetExists = false;
         }
 
         // no record in database, will proceed to send as bet request and insert as unsettled_bet data to couchbase
         if (!isBetExists) {
             try {
-                // 2. Generate rawUnsettledBet
-                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
-
+                // Send bet transaction to Operator to update player wallet
                 WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
-//                UnsettledBetEvent unsettledBetEvent = new UnsettledBetEvent(unsettledBet, balanceVo.getData().getBalance());
                 balance = balanceVo.getData().getBalance();
-                // 5. Insert into couchbase unsettled_bet table
-                betHistoryService.createUnsettledBet(unsettledBet);
 
-                // TODO: if operator failed
-                //EventDispatcherSystem.emitAsync(unsettledBetEvent);
+                // Generate rawUnsettledBet and insert into couchbase unsettled_bets table
+                unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
+                betHistoryService.createUnsettledBet(unsettledBet);
+                betEvent = new BetEvent(unsettledBet, balance);
 
             } catch (InsufficientBalanceException insufficientBalanceException) {
                 unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
@@ -136,12 +141,9 @@ public class WalletService {
                     //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
                 }
             }
-        } else {
-            // TODO: add try-catch in case operator fails
-            balance = this.getBalance(traceId, gameSession);
         }
 
-        return balance;
+        return betEvent;
     }
 
     /**

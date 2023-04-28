@@ -14,8 +14,8 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
-    public static String getTransactionId(Long userId, String reference) {
-        return userId + "-" + reference;
+    public static String getTransactionId(String transactionId) {
+        return transactionId.replace("-", "");
     }
 
     public static String generateHash(MultiValueMap<String, String> params, String secret) {

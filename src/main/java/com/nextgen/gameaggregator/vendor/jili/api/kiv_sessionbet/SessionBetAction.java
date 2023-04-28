@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jili.api.kiv_sessionbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
 import com.nextgen.gameaggregator.eventing.events.UnsettledBetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -66,8 +67,8 @@ public class SessionBetAction {
 
             switch (sessionBetDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
-                    BigDecimal balance = walletService.processBet(traceId, gameSession, sessionBetDto, body);
-                    sessionBetVo.setBalance(balance);
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
+                    sessionBetVo.setBalance(betEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, ResultType.BET_WIN, vendorService, body);
