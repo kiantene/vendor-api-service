@@ -67,8 +67,7 @@ public class SettleBetAction {
             this.doVerification(httpRequestLog, settleBetDto, gameSession);
 
             //Process full bet data
-            ResultType resultType = settleBetDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, ResultType.BET_WIN, vendorService, body);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);

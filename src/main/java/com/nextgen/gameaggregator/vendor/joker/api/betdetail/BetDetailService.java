@@ -50,7 +50,7 @@ public class BetDetailService implements BetDetailUrl {
             roundID = iBetDetailUrlInfo.getExternalRoundId().substring(iBetDetailUrlInfo.getVendorUsername().length() + 1);
         }
 
-        //convert gamecode into vendor format (round id in db is in "username_roundId" format)
+        //convert game code into vendor format
         String gameCode = "";
         if (iBetDetailUrlInfo.getGameCode().startsWith("joker_")) {
             gameCode = iBetDetailUrlInfo.getGameCode().substring("joker_".length());
