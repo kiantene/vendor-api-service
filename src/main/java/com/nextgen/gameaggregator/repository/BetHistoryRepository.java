@@ -82,8 +82,8 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "INNER JOIN vendor_games AS vg ON vg.id = bh.vendor_game_id " +
             "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
             "INNER JOIN game_categories AS gc ON gc.id = vg.game_category_id " +
-            "WHERE bh.id = :transactionId AND bh.agent_id = :agentId", nativeQuery=true)
+            "WHERE bh.id = :betId AND bh.agent_id = :agentId", nativeQuery=true)
     IBetDetailUrlInfo findByIdAndAgentId (
             @Param("agentId") int agentId,
-            @Param("transactionId") String transactionId);
+            @Param("betId") String betId);
 }
