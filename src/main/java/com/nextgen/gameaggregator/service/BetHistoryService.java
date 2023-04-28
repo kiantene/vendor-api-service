@@ -310,8 +310,8 @@ public class BetHistoryService {
 //        return resultLog;
 //    }
 
-    public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String transactionId) throws BetNotFoundException {
-        IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, transactionId);
+    public IBetDetailUrlInfo getBetHistoryDetail(Integer agentId, String betId) throws BetNotFoundException {
+        IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryRepository.findByIdAndAgentId(agentId, betId);
 
         if (iBetDetailUrlInfo == null) { // No matching bet record for the given transaction Id
             throw new BetNotFoundException();
