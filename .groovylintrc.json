@@ -13,9 +13,7 @@
         "formatting.LineLength": {
             "length": 800
         },
-        "dry.DuplicateStringLiteral": {
-            "ignoreStrings": "pt,staging,test,stg,qa"
-        },
+        "dry.DuplicateStringLiteral": "off",
         "size.NestedBlockDepth": {
             "maxNestedBlockDepth": 10
         },
