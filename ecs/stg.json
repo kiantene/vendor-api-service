@@ -15,7 +15,11 @@
         "environment": [
             {
                 "name": "SPRING_REDIS_DATABASE",
-                "value": "0"
+                "value": "1"
+            },
+            {
+                "name": "SPRING_REDIS_PASSWORD",
+                "value": ""
             },
             {
                 "name": "LOGSTASH_HOST",
@@ -23,11 +27,11 @@
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_JDBC-URL",
-                "value": "jdbc:mariadb://pt-2.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_pt?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8"
+                "value": "jdbc:mariadb://stg.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8"
             },
             {
                 "name": "SPRING_REDIS_HOST",
-                "value": "dev-001.rpmetr.0001.apne1.cache.amazonaws.com"
+                "value": "dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com"
             },
             {
                 "name": "LOGSTASH_PORT",
@@ -35,15 +39,15 @@
             },
             {
                 "name": "SPRING_PROFILES_ACTIVE",
-                "value": "pt"
+                "value": "stg"
             },
             {
-                "name": "SPRING_DATASOURCE_HIKARI_MINIMUM-IDLE",
-                "value": "25"
+                "name": "IMAGE_GAMEURL",
+                "value": "https://cdn-dev.gasea168.com"
             },
             {
-                "name": "SPRING_DATASOURCE_HIKARI_MAXIMUM-POOL-SIZE",
-                "value": "50"
+                "name": "SPRING_REDIS_USERNAME",
+                "value": ""
             }
         ],
         "mountPoints": [],
@@ -51,8 +55,8 @@
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "/ecs/game_aggregator",
-                "awslogs-region": "ap-northeast-1",
+                "awslogs-group": "/ecs/stg-ga_vendor_api-td",
+                "awslogs-region": "ap-east-1",
                 "awslogs-stream-prefix": "ecs"
             }
         }

@@ -25,30 +25,58 @@ pipeline {
 
     environment {
         // Set environment variables used in the pipeline
+        JAVA_HOME = '/opt/jdk-18' // JDK 18 for build
         JENKINS_CREDENTIALS = 'GA-AWS'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
-        AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
-        AWS_ECS_REGION = 'ap-northeast-1' // Tokyo
-        AWS_ECS_SERVICE = 'vendor-service'
-        AWS_ECS_TASK_DEFINITION = 'ga_vendor_td'
+        AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-bo-sas-service'
+        AWS_ECS_REGION = 'ap-east-1' // Hong Kong
         AWS_ECS_COMPATIBILITY = 'FARGATE'
         AWS_ECS_NETWORK_MODE = 'awsvpc'
         AWS_ECS_CPU = '4096'
         AWS_ECS_MEMORY = '8192'
-        AWS_ECS_CLUSTER = 'nextgen_game_aggregator-dev-ecs-fargate'
-        AWS_ECS_TASK_DEFINITION_PATH = './ecs/container-definition-update-image.json'
         AWS_ECS_EXECUTION_ROL = 'arn:aws:iam::634937900606:role/devops_ecs_cicd'
+        AWS_ECS_TASK_DEFINITION = ''
+        AWS_ECS_CLUSTER = ''
+        AWS_ECS_SERVICE = ''
+
+        SONAR_PROJECTKEY = 'game-aggregator'
+        SONAR_HOST_URL = 'http://223.25.67.48:9000'
+        SONAR_LOGIN = credentials('sonar_token')
     }
 
     stages {
-        // Define the stages of the pipeline
+        stage('SonarCube') {
+            when {
+                branch 'qa'
+            }
+            steps {
+                sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -DskipTests=true'
+            }
+        }
+
+        stage('Build Project') {
+            String couchabse_cert_file = getCouchbaseCert(env.BRANCH_NAME)
+
+            steps {
+                sh "cp -rf ${couchabse_cert_file} ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests"
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    String packageVersion = getRepoTag(env.BRANCH_NAME)
+                    docker.build("${AWS_ECR_URL}:${packageVersion}", ' .')
+                }
+            }
+        }
+
         stage('Push Docker Image') {
             steps {
                 // Build and push a Docker image to Amazon ECR
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
                         String packageVersion = getRepoTag(env.BRANCH_NAME)
-                        docker.build("${AWS_ECR_URL}:${packageVersion}", ' .')
                         String login = ecrLogin()
                         sh("#!/bin/sh -e\n${login}") // hide logging
                         docker.image("${AWS_ECR_URL}:${packageVersion}").push()
@@ -67,10 +95,7 @@ pipeline {
                         String password = sh(script: 'aws ecr get-login-password --region ap-east-1', returnStdout: true).trim()
 
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                            sh """
-                                ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker login --username=AWS --password=${password} 634937900606.dkr.ecr.ap-east-1.amazonaws.com && docker pull 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa'
-                            """
-                            sh 'ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 docker service update --force --image 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'
+                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker login --username=AWS --password=${password} 634937900606.dkr.ecr.ap-east-1.amazonaws.com && docker pull ${AWS_ECR_URL}:qa && docker service update --force --image 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
                         }
                     }
                 }
@@ -82,24 +107,24 @@ pipeline {
                 not {
                     branch 'qa'
                 }
-            }
-            // Use the Amazon AWS CLI Docker image as the build agent
-            agent {
-                docker {
-                    image 'amazon/aws-cli'
-                    args '--entrypoint=""'
+                not {
+                    branch 'main'
                 }
             }
             steps {
                 // Update a task definition with a new Docker image and deploy it to Amazon ECS
                 withAWS(region: "${AWS_ECS_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
-                        String packageVersion = getRepoTag(env.BRANCH_NAME)
+                        String branchName = env.BRANCH_NAME
+                        String packageVersion = getRepoTag(branchName)
+                        String taskDefinitionPath = "./ecs/${branchName}.json"
 
-                        updateContainerDefinitionJsonWithImageVersion(packageVersion)
-                        sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${AWS_ECS_TASK_DEFINITION_PATH}")
-                        String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
-                        sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                        withEnv(getECSConfig(branchName)) {
+                            updateContainerDefinitionJsonWithImageVersion(packageVersion, taskDefinitionPath)
+                            sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
+                            String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
+                            sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                        }
                     }
                 }
             }
@@ -114,18 +139,21 @@ pipeline {
 }
 
 // A function to update the container definition JSON file with the new Docker image version
-void updateContainerDefinitionJsonWithImageVersion(String packageVersion) {
-    List containerDefinitionJson = readJSON file: AWS_ECS_TASK_DEFINITION_PATH, returnPojo: true
+void updateContainerDefinitionJsonWithImageVersion(String packageVersion, String taskDefinitionPath) {
+    List containerDefinitionJson = readJSON file: taskDefinitionPath, returnPojo: true
     containerDefinitionJson[0]['image'] = "${AWS_ECR_URL}:${packageVersion}".inspect()
     echo "task definition JSON: ${containerDefinitionJson}"
-    writeJSON file: AWS_ECS_TASK_DEFINITION_PATH, json: containerDefinitionJson
+    writeJSON file: taskDefinitionPath, json: containerDefinitionJson
 }
 
 String getRepoTag(String branchName) {
     String packageVersion = 'dev'
 
     switch (branchName) {
-        case 'staging':
+        case 'main':
+            packageVersion = 'latest'
+            break
+        case 'stg':
             packageVersion = 'stg'
             break
         case 'qa':
@@ -135,10 +163,63 @@ String getRepoTag(String branchName) {
             packageVersion = 'pt'
             break
         case 'devops':
-            packageVersion = 'pt'
+            packageVersion = 'devo'
             break
     }
 
     // String packageVersion = sh(script: "git describe --tags --always --dirty", returnStdout: true)
     return packageVersion
+}
+
+def getECSConfig(String branchName) {
+    def config = []
+    switch (branchName) {
+        case 'stg':
+            config = [
+                'AWS_ECS_CLUSTER=stg',
+                'AWS_ECS_SERVICE=vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
+            ]
+            break
+        case 'qa':
+            config = [
+                'AWS_ECS_CLUSTER=qa',
+                'AWS_ECS_SERVICE=vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=qa-vendor-api-service-td'
+            ]
+            break
+        case 'pt':
+            config = [
+                'AWS_ECS_CLUSTER=pt',
+                'AWS_ECS_SERVICE=vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=pt-vendor-api-service-td'
+            ]
+            break
+        case 'devops':
+            config = [
+                'AWS_ECS_CLUSTER=ga-ecs-cluster',
+                'AWS_ECS_SERVICE=vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=devo-vendor-api-service-td'
+            ]
+            break
+    }
+    return config
+}
+
+String getCouchbaseCert(String branchName) {
+    String file = ''
+
+    switch (branchName) {
+        case 'main':
+            packageVersion = credentials('prd_couchabse_cert_file')
+            break
+        case 'stg':
+        case 'qa':
+        case 'pt':
+        case 'devops':
+            packageVersion = credentials('couchabse_cert_file')
+            break
+    }
+
+    return file
 }
