@@ -55,10 +55,12 @@ pipeline {
         }
 
         stage('Build Project') {
-            String couchabse_cert_file = getCouchbaseCert(env.BRANCH_NAME)
-
             steps {
-                sh "cp -rf ${couchabse_cert_file} ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests"
+                script {
+                    String couchabse_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
+                    def couchabse_cert_file = credentials(couchabse_cert_file_id)
+                    sh "cp -rf ${couchabse_cert_file} ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests"
+                }
             }
         }
 
@@ -206,18 +208,18 @@ def getECSConfig(String branchName) {
     return config
 }
 
-String getCouchbaseCert(String branchName) {
+String getCouchbaseCertId(String branchName) {
     String file = ''
 
     switch (branchName) {
         case 'main':
-            packageVersion = credentials('prd_couchabse_cert_file')
+            file = 'prd_couchabse_cert_file'
             break
         case 'stg':
         case 'qa':
         case 'pt':
         case 'devops':
-            packageVersion = credentials('couchabse_cert_file')
+            file = 'couchabse_cert_file'
             break
     }
 
