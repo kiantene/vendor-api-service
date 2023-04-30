@@ -28,7 +28,7 @@ pipeline {
         JAVA_HOME = '/opt/jdk-18' // JDK 18 for build
         JENKINS_CREDENTIALS = 'GA-AWS'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
-        AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-bo-sas-service'
+        AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
         AWS_ECS_REGION = 'ap-east-1' // Hong Kong
         AWS_ECS_COMPATIBILITY = 'FARGATE'
         AWS_ECS_NETWORK_MODE = 'awsvpc'
