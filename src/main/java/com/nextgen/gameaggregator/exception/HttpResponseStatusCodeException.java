@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.exception;
 
-public class HttpResponseStatusCodeException  extends Exception {
-
+public class HttpResponseStatusCodeException extends Exception {
     public HttpResponseStatusCodeException() {
         super();
     }
@@ -9,6 +8,4 @@ public class HttpResponseStatusCodeException  extends Exception {
     public HttpResponseStatusCodeException(String message) {
         super(message);
     }
-
-
 }

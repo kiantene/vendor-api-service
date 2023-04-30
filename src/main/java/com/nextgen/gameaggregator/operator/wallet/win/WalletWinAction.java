@@ -61,6 +61,9 @@ public class WalletWinAction {
                 .block();
         try {
             responseVo = new Gson().fromJson(responseString, WalletBalanceVo.class);
+
+            //temp checking
+            log.info("responseVo win = " + responseVo);
             // throw exception if response is null
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
 

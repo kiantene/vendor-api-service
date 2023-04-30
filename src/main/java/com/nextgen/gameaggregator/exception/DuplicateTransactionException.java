@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.exception;
 
-public class DuplicateTransactionException  extends Exception {
+public class DuplicateTransactionException extends Exception {
     public DuplicateTransactionException() {
         super();
     }

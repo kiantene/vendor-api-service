@@ -75,6 +75,7 @@ public class WalletBalanceAction {
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                .retry(3)
                 .block();
         long endTime = System.currentTimeMillis();
 

@@ -9,4 +9,3 @@ public class InvalidCurrencyException  extends Exception {
         super(message);
     }
 }
-

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -24,6 +25,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.UUID.randomUUID;
 
 @Service
 @Slf4j

@@ -23,6 +23,7 @@ import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @RestController
 @RequestScope

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.exception;
 
-public class SystemMaintenanceException  extends Exception {
+public class SystemMaintenanceException extends Exception {
     public SystemMaintenanceException() {
         super();
     }
