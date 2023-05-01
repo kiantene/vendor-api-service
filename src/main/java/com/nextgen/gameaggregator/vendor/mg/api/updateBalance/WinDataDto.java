@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
 import java.math.BigDecimal;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
 import com.nextgen.gameaggregator.vendor.mg.constant.EventType;
@@ -13,7 +12,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
-public class UpdateBalanceDto implements BetResultData, RollbackData {
+public class WinDataDto implements BetResultData  {
     @NotBlank
     @Size(max = 6)
     private TxnType txnType;
@@ -55,7 +54,9 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
 
     private String platformType;
 
-    private Boolean completed;
+    @Min(value = 0)
+    @Max(value = 1)
+    private Integer completed;
 
     @Size(max = 50)
     private String channel;
@@ -66,11 +67,6 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
     @Size(max = 50)
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
-
-    @Override
-    public String getRollbackId() {
-        return roundId;
-    }
 
     @Override
     public String getExternalTransactionId() {
@@ -89,12 +85,12 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return amount;
+        return null;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return null;
+        return amount;
     }
 
     @Override
@@ -134,6 +130,6 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }

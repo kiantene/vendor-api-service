@@ -239,7 +239,7 @@ public class BetHistoryService {
     public List<UnsettledBet> getBetDataListByRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId){
 
         try{
-            List<UnsettledBet> unsettledBetLists = rawUnsettledBetRepository.findByRoundId(roundId, vendorLineId, vendorPlayerId);
+            List<UnsettledBet> unsettledBetLists = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorLineId, vendorPlayerId);
 
             if (unsettledBetLists == null) {
                 return null;

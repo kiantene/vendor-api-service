@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
@@ -62,11 +61,11 @@ public class UnsettledBetService {
         return unsettledBet;
     }
 
-    public List<UnsettledBet> getByRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId) {
+    public List<UnsettledBet> getByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) {
         List<UnsettledBet> unsettledBetLists = null;
 
         try {
-            unsettledBetLists = rawUnsettledBetRepository.findByRoundId(roundId, vendorLineId, vendorPlayerId);
+            unsettledBetLists = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
 
         } catch (Exception e) {
             //TODO ERROR HANDLING IF CONNECTION TO COUCHBASE IS FAILED
