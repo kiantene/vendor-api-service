@@ -306,7 +306,11 @@ public class WalletService {
 
             if (isSettled) {
                 settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
-                settledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
+                long settledTime = System.currentTimeMillis();
+                if (betResultData.getVendorSettleTime() != null) {
+                    settledTime = betResultData.getVendorSettleTime();
+                }
+                settledBet.setVendorSettleTime(settledTime);
                 settledBetService.create(settledBet, rawData);
 
                 BetHistory betHistory = new BetHistory(settledBet);
@@ -325,7 +329,7 @@ public class WalletService {
                                 newSettledBet.setJackpotAmount(BigDecimal.ZERO);
                             }
                             newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
-                            newSettledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
+                            newSettledBet.setVendorSettleTime(settledTime);
 
                             winLoss = vendorService.calculateWinLoss(newSettledBet);
                             effectiveTurnover = vendorService.calculateEffectiveTurnover(newSettledBet);
