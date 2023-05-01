@@ -168,9 +168,11 @@ public class WalletService {
             List<UnsettledBet> unsettledBetList = null;
 
             if (isSettled) {
+                unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+
                 switch (resultType) {
                     case LOSE, END -> { // PP END
-                        unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+//                        unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
 
                         if (unsettledBetList.isEmpty()) {
                             throw new BetNotFoundException("resultType: " + resultType + " Cannot find round Id: " + roundId);
@@ -326,6 +328,12 @@ public class WalletService {
                             if (newSettledBet.getVendorSettleTime() == null) {
                                 newSettledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
                             }
+
+                            winLoss = vendorService.calculateWinLoss(newSettledBet);
+                            effectiveTurnover = vendorService.calculateEffectiveTurnover(newSettledBet);
+
+                            newSettledBet.setWinLoss(winLoss);
+                            newSettledBet.setEffectiveTurnover(effectiveTurnover);
 
                             walletBetResultAction.call(newTraceId, agentId, gameSession, newSettledBet, ResultType.END);
                             newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
