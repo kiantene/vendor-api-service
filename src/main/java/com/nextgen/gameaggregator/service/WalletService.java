@@ -93,7 +93,7 @@ public class WalletService {
             balance = this.getBalance(traceId, gameSession);
             betEvent = new BetEvent(unsettledBet, balance);
 
-        } catch (BetNotFoundException betNotFoundException) { // no bets found, can proceed to process this bet transaction
+        } catch (BetNotFoundException betNotFoundException) { // no bets found, can proceed to process this bet txn
             isBetExists = false;
         }
 
@@ -315,6 +315,12 @@ public class WalletService {
                             SettledBet newSettledBet = new SettledBet(betRecord);
                             String newTraceId = UUID.randomUUID().toString();
                             newSettledBet.setInternalTransactionId(newTraceId);
+                            if (newSettledBet.getWinAmount() == null) {
+                                newSettledBet.setWinAmount(BigDecimal.ZERO);
+                            }
+                            if (newSettledBet.getJackpotAmount() == null) {
+                                newSettledBet.setJackpotAmount(BigDecimal.ZERO);
+                            }
                             newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
 
                             if (newSettledBet.getVendorSettleTime() == null) {

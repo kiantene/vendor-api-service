@@ -32,7 +32,6 @@ public abstract class BaseVendorService {
     }
 
     public Integer calculateBetResultType(BetInformation betInfo) {
-
         int checkWinAmount = betInfo.getWinAmount().compareTo(BigDecimal.ZERO);
         int checkJackpotAmount = betInfo.getJackpotAmount().compareTo(BigDecimal.ZERO);
         int checkBetAmount = betInfo.getBetAmount().compareTo(BigDecimal.ZERO);
