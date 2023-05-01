@@ -434,7 +434,7 @@ public class WalletService {
         try {
             UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
             WalletBalanceVo balanceVo = walletRollbackAction.call(
-                    traceId, agentId, gameSession, unsettledBet.getId(), unsettledBet.getRoundId(), externalTransactionId);
+                    traceId, agentId, gameSession, unsettledBet.getBetId(), unsettledBet.getRoundId(), externalTransactionId);
             balance = balanceVo.getData().getBalance();
 
         } catch (BetNotFoundException betNotFoundException) {
