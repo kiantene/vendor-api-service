@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.repository;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
@@ -19,5 +18,5 @@ public interface RawUnsettledBetRepository extends CouchbaseRepository<Unsettled
     UnsettledBet findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId);
     UnsettledBet findByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId);
 
-    List<UnsettledBet> findByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId);
+    List<UnsettledBet> findByRoundIdAndVendorGameIdAndVendorPlayerId(String roundId, Integer vendorGameId, Long vendorPlayerId);
 }
