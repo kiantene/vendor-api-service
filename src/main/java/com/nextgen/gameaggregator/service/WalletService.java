@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.service;
 
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -25,8 +24,6 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import static java.util.UUID.randomUUID;
 
 @Service
 @Slf4j
@@ -151,7 +148,6 @@ public class WalletService {
             BetResultIdempotentViolationException {
 
         Integer agentId = gameSession.getAgentId();
-//        Integer vendorLineId = gameSession.getVendorLineId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
@@ -169,18 +165,24 @@ public class WalletService {
             WalletBalanceVo balanceVo;
             BetInformation betInformation;
             boolean isBetExistsForUnsettledBet = false;
+            List<UnsettledBet> unsettledBetList = null;
 
             if (isSettled) {
                 switch (resultType) {
                     case LOSE, END -> { // PP END
-                        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, gameSession.getVendorLineId(), vendorPlayerId);
+                        unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
 
                         if (unsettledBetList.isEmpty()) {
-                            throw new BetNotFoundException();
+                            throw new BetNotFoundException("resultType: " + resultType + " Cannot find round Id: " + roundId);
                         }
 
-                        // TODO: to handle more than 1 bet record in the list
-                        unsettledBet = unsettledBetList.get(0);
+                        boolean isMultipleBetsInSameRound = unsettledBetList.size() > 1;
+                        if (isMultipleBetsInSameRound) {
+                            unsettledBet = unsettledBetList.get(unsettledBetList.size() - 1);
+                        } else {
+                            unsettledBet = unsettledBetList.get(0);
+                        }
+
                         settledBet = new SettledBet(unsettledBet);
                         settledBet.setStatus(BetStatus.SETTLED.code);
                         winAmount = settledBet.getWinAmount();
@@ -255,13 +257,24 @@ public class WalletService {
                         this.idempotentCheckForBetResult(gameSession, betResultData);
 
                         // check if bet record exists
-                        unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                        unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+
+                        if (unsettledBetList.isEmpty()) {
+                            throw new BetNotFoundException("resultType: " + resultType + " Cannot find round Id: " + roundId);
+                        }
+
+                        if (unsettledBetList.size() == 1) { // only single bet
+                            unsettledBet = unsettledBetList.get(0);
+                        } else { // multiple bets
+                            // if multiple bets, the result will be updated on the last bet
+                            unsettledBet = unsettledBetList.get(unsettledBetList.size() - 1);
+                        }
+
                         this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                         winLoss = vendorService.calculateWinLoss(unsettledBet);
                         effectiveTurnover = vendorService.calculateEffectiveTurnover(unsettledBet);
                         unsettledBet.setWinLoss(winLoss);
                         unsettledBet.setEffectiveTurnover(effectiveTurnover);
-
                     }
                     case BET_WIN, BET_LOSE, BET_JACKPOT -> {
                         try {
@@ -295,38 +308,29 @@ public class WalletService {
 
                 BetHistory betHistory = new BetHistory(settledBet);
                 kafkaService.produceBetHistory(betHistory);
-//
-//                UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBet);
-//                betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
 
-                List<SettledBet> settledBetLists;
-                settledBetLists = settledBetService.getAllUnsettledBetsWithSameRoundId(settledBet.getRoundId(), settledBet.getVendorLineId(),
-                        settledBet.getVendorPlayerId(), settledBet.getVendorSettleTime());
+                if (unsettledBetList != null && unsettledBetList.size() > 1) { // multiple bets within same round
+                    for (UnsettledBet betRecord : unsettledBetList) {
+                        if (!settledBet.getId().equals(betRecord.getId())) {
+                            SettledBet newSettledBet = new SettledBet(betRecord);
+                            String newTraceId = UUID.randomUUID().toString();
+                            newSettledBet.setInternalTransactionId(newTraceId);
+                            newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
 
-                if (settledBetLists.isEmpty()) {
-                    //which mean dont have any roundId of this bet is still in unsettled_bet table, then do nothing
-                } else {
-                    //then need process all unsettled_bet of this roundId to operator and send to kafka
-                    for (SettledBet settledBetList : settledBetLists) {
-                        String existingMetaId = settledBet.getVendorBetId() + settledBet.getRoundId() + settledBet.getVendorPlayerId();
-                        String historyMetaId = settledBetList.getVendorBetId() + settledBetList.getRoundId() + settledBetList.getVendorPlayerId();
+                            if (newSettledBet.getVendorSettleTime() == null) {
+                                newSettledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
+                            }
 
-                        //if the unsettled meta id (historyMetaId) is not match with settled meta id (existingMetaId) then perform convert to settle and send to operator
-                        if (!existingMetaId.equals(historyMetaId)) {
-                            betInformation = settledBetList;
-                            traceId = UUID.randomUUID().toString();
-                            betInformation.setInternalTransactionId(traceId);
-                            walletBetResultAction.call(traceId, agentId, gameSession, betInformation, ResultType.END);
-                            settledBetList.setResultType(vendorService.calculateBetResultType(settledBetList));
+                            walletBetResultAction.call(newTraceId, agentId, gameSession, newSettledBet, ResultType.END);
+                            newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
 
-                            settledBetService.create(settledBetList, settledBetList.getRawData());
-                            betHistory = new BetHistory(settledBetList);
+                            settledBetService.create(newSettledBet, newSettledBet.getRawData());
+                            betHistory = new BetHistory(newSettledBet);
                             kafkaService.produceBetHistory(betHistory);
                         }
 
                         //no matter match or not, will perform delete unsettled bet data with same round Id
-                        UnsettledBet deleteUnsettledBet = new UnsettledBet(settledBetList);
-                        betHistoryService.deleteUnsettledBet(deleteUnsettledBet);
+                        betHistoryService.deleteUnsettledBet(betRecord);
                     }
                 }
             } else { // Unsettled
