@@ -23,15 +23,15 @@
             },
             {
                 "name": "SPRING_DATA_REDIS_HOST",
-                "value": "dev.1q8pc8.ng.0001.ape1.cache.amazonaws.com"
+                "value": "r-zf8hs75jbvx4wb17gjpd.redis.kualalumpur.rds.aliyuncs.com"
             },
             {
                 "name": "SPRING_DATA_REDIS_USERNAME",
-                "value": ""
+                "value": "dev"
             },
             {
                 "name": "SPRING_DATA_REDIS_PASSWORD",
-                "value": ""
+                "value": "Asdf1234-"
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_JDBC-URL",
@@ -39,19 +39,11 @@
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_USERNAME",
-                "value": "user_dev"
+                "value": "ga_admin"
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_PASSWORD",
-                "value": "Newfuture!23"
-            },
-            {
-                "name": "SPRING_DATASOURCE_MARIA-DEFAULT_USERNAME",
-                "value": ""
-            },
-            {
-                "name": "SPRING_DATASOURCE_MARIA-DEFAULT_PASSWORD",
-                "value": ""
+                "value": "Asdf1234-"
             },
             {
                 "name": "SPRING_DATASOURCE_COUCHBASE_CONNECTIONSTRING",
@@ -59,7 +51,7 @@
             },
             {
                 "name": "SPRING_DATASOURCE_COUCHBASE_USERNAME",
-                "value": "stg"
+                "value": "qa"
             },
             {
                 "name": "SPRING_DATASOURCE_COUCHBASE_PASSWORD",
@@ -67,7 +59,7 @@
             },
             {
                 "name": "SPRING_DATASOURCE_COUCHBASE_BUCKETNAME",
-                "value": "stg_game_aggregator"
+                "value": "qa_game_aggregator"
             },
             {
                 "name": "SPRING_DATASOURCE_COUCHBASE_SCOPENAME",
@@ -79,15 +71,15 @@
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_BOOTSTRAP_SERVERS",
-                "value": "pkc-4v1gp.ap-northeast-1.aws.confluent.cloud:9092"
+                "value": "pkc-817wq.ap-east-1.aws.confluent.cloud:9092"
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG",
-                "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username='QWJ5MKVZ7UCBLT2B' password='exLnoeIP42pM7ZD5+1txbgOPGMfR3b2R9R1D/WdrXEeQ/rdgJaXGxzyT+mW1xr/C';"
+                "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username='KEFHEWK4Z27NQN7H' password='Etj001J0tJWo2GFn8rUITTpr7txyuWtV8RmrK4EAxoAfnZs1EQ2iy3KkjJX39h5n';"
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_BASIC_AUTH_USER_INFO",
-                "value": "MM5W2HQEZEPAESML:gReou3wimJ53DV0b7ySZ7J9GDIVKgbAuy9LlBdgGkVpstaFzDgpZm5p00ZyZDCJX"
+                "value": "VSUSBSIXSWS77SLP:y8DquVxz9PVCrVM91JG2QlG7hsvzq7j0ijiRAqw/ebDtv88cL3afcm7PZnCBODJ4"
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL",
