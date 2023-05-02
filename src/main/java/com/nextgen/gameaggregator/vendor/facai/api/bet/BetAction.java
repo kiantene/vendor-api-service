@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Optional;
 
 @RestController
@@ -89,9 +90,9 @@ public class BetAction {
 
             //set VO data
             //convert bigDecimal balance into double
-            //commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            //commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (
                 AuthenticationException |
@@ -107,12 +108,13 @@ public class BetAction {
         } catch (
                 MergedBetDataIntegrityException |
                 CouchbaseDataIntegrityException |
-                InsufficientBalanceException |
                 InvalidOperatorResponseException |
                 InvalidAgentApiCredentialException |
                 BetNotFoundException cancelException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (InvalidPlayerException invalidPlayerException) {
