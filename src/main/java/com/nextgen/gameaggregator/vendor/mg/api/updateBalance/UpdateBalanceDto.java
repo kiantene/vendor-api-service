@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
 import java.math.BigDecimal;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
 import com.nextgen.gameaggregator.vendor.mg.constant.EventType;
@@ -13,13 +12,11 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
-public class UpdateBalanceDto implements BetResultData, RollbackData {
-    @NotBlank
-    @Size(max = 6)
+public class UpdateBalanceDto implements BetResultData {
+    @NotNull
     private TxnType txnType;
 
-    @NotBlank
-    @Size(max = 50)
+    @NotNull
     private EventType txnEventType;
 
     @NotBlank
@@ -50,11 +47,11 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
 
     private String metaData;
 
-    @Size(max = 7)
     private DeviceType deviceType;
 
     private String platformType;
 
+    @NotNull
     private Boolean completed;
 
     @Size(max = 50)
@@ -66,11 +63,6 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
     @Size(max = 50)
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
-
-    @Override
-    public String getRollbackId() {
-        return roundId;
-    }
 
     @Override
     public String getExternalTransactionId() {

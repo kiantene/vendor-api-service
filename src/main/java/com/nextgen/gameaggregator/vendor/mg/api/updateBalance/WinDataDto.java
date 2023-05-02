@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
@@ -12,13 +13,12 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class WinDataDto implements BetResultData  {
-    @NotBlank
-    @Size(max = 6)
+    @NotNull
     private TxnType txnType;
 
-    @NotBlank
-    @Size(max = 50)
+    @NotNull
     private EventType txnEventType;
 
     @NotBlank
@@ -49,14 +49,12 @@ public class WinDataDto implements BetResultData  {
 
     private String metaData;
 
-    @Size(max = 7)
     private DeviceType deviceType;
 
     private String platformType;
 
-    @Min(value = 0)
-    @Max(value = 1)
-    private Integer completed;
+    @NotNull
+    private Boolean completed;
 
     @Size(max = 50)
     private String channel;
@@ -130,6 +128,6 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return getCompleted() ? BetStatus.SETTLED : BetStatus.UNSETTLED;
     }
 }

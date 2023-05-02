@@ -71,18 +71,25 @@ public class UpdateBalanceAction {
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+                    updateBalanceVo.setExtTxnId(betEvent.getBetInformation().getExternalTransactionId());
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(betEvent.getLastBalance());
+                    updateBalanceVo.setExtCreationTimeMs(betEvent.getBetInformation().getCreateTime());
                     break;
                 }
                 case CREDIT -> {
+                    BigDecimal balance = null;
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     if (dto.getCompleted() == false) {
-                        walletService.processBetResult(traceId, gameSession, winDataDto,
+                        balance = walletService.processBetResult(traceId, gameSession, winDataDto,
                             (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
                     } else {
-                        walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.END, vendorService, body);
+                        balance = walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.END, vendorService, body);
                     }
+                    updateBalanceVo.setExtTxnId(dto.getTxnId());
+                    updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
+                    updateBalanceVo.setBalance(balance);
+                    updateBalanceVo.setExtCreationTimeMs(startTime);
                     break;
                 }
                 default -> {
