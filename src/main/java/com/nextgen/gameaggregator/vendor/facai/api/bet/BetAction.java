@@ -131,7 +131,8 @@ public class BetAction {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
         } catch (Exception exception) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
