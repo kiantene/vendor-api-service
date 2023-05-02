@@ -14,6 +14,10 @@
         "essential": true,
         "environment": [
             {
+                "name": "SPRING_PROFILES_ACTIVE",
+                "value": "qa"
+            },
+            {
                 "name": "SERVER_SERVLET_CONTEXT-PATH",
                 "value": "/vendor"
             },
@@ -35,7 +39,7 @@
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_JDBC-URL",
-                "value": "jdbc:mariadb://stg.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8"
+                "value": "jdbc:mariadb://rm-gs5ghwkvepn004p4k1o.mariadb.singapore.rds.aliyuncs.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8"
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_USERNAME",
