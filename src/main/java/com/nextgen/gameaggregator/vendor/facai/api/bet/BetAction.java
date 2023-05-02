@@ -13,16 +13,14 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Optional;
 
 @RestController
@@ -91,8 +89,9 @@ public class BetAction {
 
             //set VO data
             //convert bigDecimal balance into double
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            //commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            //commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (
                 AuthenticationException |

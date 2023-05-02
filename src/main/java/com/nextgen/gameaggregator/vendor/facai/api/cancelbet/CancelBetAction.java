@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -81,10 +84,12 @@ public class CancelBetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
 
-            walletService.processRollback(traceId, cancelbetDto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession);
 
             //confirm cancel bet if found transaction id
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            //commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 InvalidDecryptionException |
@@ -97,9 +102,7 @@ public class CancelBetAction {
                 CredentialNotFoundException |
                 DisabledGameException notExistException
         ) {
-            //commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints((double) 1000);
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
