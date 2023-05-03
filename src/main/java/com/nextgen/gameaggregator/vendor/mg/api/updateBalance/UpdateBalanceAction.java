@@ -15,9 +15,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorGameService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
@@ -55,7 +71,6 @@ public class UpdateBalanceAction {
         HttpStatus status;
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
-        status = HttpStatus.OK;
 
         try {
             // Convert the request body to a UpdateBalanceDto object
@@ -80,7 +95,7 @@ public class UpdateBalanceAction {
                 case CREDIT -> {
                     BigDecimal balance = null;
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    if (dto.getCompleted() == false) {
+                    if (!dto.getCompleted()) {
                         balance = walletService.processBetResult(traceId, gameSession, winDataDto,
                             (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
                     } else {

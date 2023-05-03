@@ -13,8 +13,19 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorGameService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
@@ -71,7 +82,10 @@ public class LoginAction {
             status = HttpStatus.BAD_REQUEST;
         } catch (AuthenticationException e) {
             status = HttpStatus.NOT_FOUND;
-        }
+        } finally {
+            // End the HTTP request logging and return the AuthBalanceVo object
+            httpService.end(httpRequestLog, loginVo);
+         }
 
         // Calculate response time and add it to the headers
         long endTime = System.currentTimeMillis();

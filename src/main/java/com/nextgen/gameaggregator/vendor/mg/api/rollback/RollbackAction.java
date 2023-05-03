@@ -13,8 +13,20 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
+import com.nextgen.gameaggregator.exception.DisabledGameException;
+import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.RecordNotFoundException;
+import com.nextgen.gameaggregator.service.AgentPlayerService;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorGameService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
@@ -49,7 +61,6 @@ public class RollbackAction {
         HttpStatus status;
         RollbackVo rollbackVo = new RollbackVo();
         HttpHeaders headers = new HttpHeaders();
-        status = HttpStatus.OK;
 
         try {
             // Convert the request body to a UpdateBalanceDto object
@@ -60,12 +71,12 @@ public class RollbackAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
-            status = HttpStatus.OK;
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession);
             rollbackVo.setExtTxnId(dto.getTxnId());
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
             rollbackVo.setExtCreationTimeMs(startTime);
+            status = HttpStatus.OK;
             
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
