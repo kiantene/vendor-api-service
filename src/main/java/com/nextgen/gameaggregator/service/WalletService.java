@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -314,6 +315,7 @@ public class WalletService {
                 settledBetService.create(settledBet, rawData);
 
                 BetHistory betHistory = new BetHistory(settledBet);
+                log.info(new Gson().toJson(betHistory));
                 kafkaService.produceBetHistory(betHistory);
 
                 if (unsettledBetList != null && unsettledBetList.size() > 1) { // multiple bets within same round
@@ -342,6 +344,7 @@ public class WalletService {
 
                             settledBetService.create(newSettledBet, newSettledBet.getRawData());
                             betHistory = new BetHistory(newSettledBet);
+                            log.info(new Gson().toJson(betHistory));
                             kafkaService.produceBetHistory(betHistory);
                         }
 
