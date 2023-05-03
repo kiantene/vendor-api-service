@@ -50,23 +50,23 @@
                 "value": "H2ftnFhNshRJ41"
             },
             {
-                "name": "SPRING_DATASOURCE_COUCHBASE_CONNECTIONSTRING",
+                "name": "SPRING_COUCHBASE_CONNECTIONSTRING",
                 "value": "couchbases://cb.mjm2txymbqasuope.cloud.couchbase.com"
             },
             {
-                "name": "SPRING_DATASOURCE_COUCHBASE_USERNAME",
+                "name": "SPRING_COUCHBASE_USERNAME",
                 "value": "pt"
             },
             {
-                "name": "SPRING_DATASOURCE_COUCHBASE_PASSWORD",
+                "name": "SPRING_COUCHBASE_PASSWORD",
                 "value": "Asdf1234@"
             },
             {
-                "name": "SPRING_DATASOURCE_COUCHBASE_BUCKETNAME",
+                "name": "SPRING_COUCHBASE_BUCKETNAME",
                 "value": "pt_game_aggregator"
             },
             {
-                "name": "SPRING_DATASOURCE_COUCHBASE_SCOPENAME",
+                "name": "SPRING_COUCHBASE_SCOPENAME",
                 "value": "raw"
             },
             {
@@ -96,6 +96,10 @@
             {
                 "name": "LOGSTASH_PORT",
                 "value": "5000"
+            },
+            {
+                "name": "TESTING_STUB",
+                "value": "false"
             }
         ],
         "mountPoints": [],
