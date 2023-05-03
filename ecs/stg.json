@@ -50,14 +50,6 @@
                 "value": "Newfuture!23"
             },
             {
-                "name": "SPRING_DATASOURCE_MARIA-DEFAULT_USERNAME",
-                "value": ""
-            },
-            {
-                "name": "SPRING_DATASOURCE_MARIA-DEFAULT_PASSWORD",
-                "value": ""
-            },
-            {
                 "name": "SPRING_DATASOURCE_COUCHBASE_CONNECTIONSTRING",
                 "value": "couchbases://cb.mjm2txymbqasuope.cloud.couchbase.com"
             },
@@ -104,6 +96,10 @@
             {
                 "name": "LOGSTASH_PORT",
                 "value": "5000"
+            },
+            {
+                "name": "TESTING_STUB",
+                "value": "false"
             }
         ],
         "mountPoints": [],

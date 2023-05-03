@@ -96,6 +96,10 @@
             {
                 "name": "LOGSTASH_PORT",
                 "value": "5000"
+            },
+            {
+                "name": "TESTING_STUB",
+                "value": "false"
             }
         ],
         "mountPoints": [],
