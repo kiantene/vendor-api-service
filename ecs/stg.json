@@ -87,7 +87,7 @@
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL",
-                "value": "https://psrc-l6oz3.us-east-2.aws.confluent.cloud"
+                "value": "https://psrc-10wgj.ap-southeast-2.aws.confluent.cloud"
             },
             {
                 "name": "LOGSTASH_HOST",
