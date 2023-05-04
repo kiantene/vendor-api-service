@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -15,10 +17,14 @@ import org.springframework.data.couchbase.repository.Scope;
 @NoArgsConstructor
 public class UnsettledBet extends BetInformation {
 
+    public UnsettledBet(BetResultData betResultData) {
+        super(betResultData);
+        this.setStatus(BetStatus.UNSETTLED.code);
+    }
+
     public UnsettledBet(SettledBet settledBet) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(settledBet, this);
     }
-
 }
