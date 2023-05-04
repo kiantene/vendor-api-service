@@ -58,7 +58,7 @@ public class RollbackAction {
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getTraceId();
-        HttpStatus status;
+        HttpStatus status = HttpStatus.OK;
         RollbackVo rollbackVo = new RollbackVo();
         HttpHeaders headers = new HttpHeaders();
 
@@ -76,14 +76,14 @@ public class RollbackAction {
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
             rollbackVo.setExtCreationTimeMs(startTime);
-            status = HttpStatus.OK;
-            
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
             DisabledGameException e){
             status = HttpStatus.BAD_REQUEST;
         } catch (AuthenticationException| RecordNotFoundException e) {
             status = HttpStatus.NOT_FOUND;
+        } finally {
+            httpService.end(httpRequestLog, rollbackVo);
         }
 
         // Calculate response time and add it to the headers

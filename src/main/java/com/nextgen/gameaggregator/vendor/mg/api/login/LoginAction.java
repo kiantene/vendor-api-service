@@ -57,10 +57,10 @@ public class LoginAction {
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getTraceId();
-        HttpStatus status;
+        HttpStatus status = HttpStatus.OK;
         LoginVo loginVo = new LoginVo();
         HttpHeaders headers = new HttpHeaders();
-
+        
         try {
             // Convert the request body to a LoginDto object
             LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
@@ -75,7 +75,6 @@ public class LoginAction {
             loginVo.setCurrency(gameSession.getVendorCurrencyCode());
             loginVo.setBalance(balance);
             loginVo.setExtOperatorToken(gameSession.getId());
-            status = HttpStatus.OK;
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
             DisabledGameException e){
@@ -83,9 +82,8 @@ public class LoginAction {
         } catch (AuthenticationException e) {
             status = HttpStatus.NOT_FOUND;
         } finally {
-            // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, loginVo);
-         }
+        }
 
         // Calculate response time and add it to the headers
         long endTime = System.currentTimeMillis();

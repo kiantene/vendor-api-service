@@ -68,7 +68,7 @@ public class UpdateBalanceAction {
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getTraceId();
-        HttpStatus status;
+        HttpStatus status = HttpStatus.OK;
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 
@@ -81,8 +81,6 @@ public class UpdateBalanceAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
-            status = HttpStatus.OK;
-            
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
@@ -122,6 +120,8 @@ public class UpdateBalanceAction {
             status = HttpStatus.NOT_FOUND;
         } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException e) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
+        } finally {
+            httpService.end(httpRequestLog, updateBalanceVo);
         }
 
         // Calculate response time and add it to the headers
