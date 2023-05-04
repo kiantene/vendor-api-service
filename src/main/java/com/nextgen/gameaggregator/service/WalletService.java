@@ -397,6 +397,7 @@ public class WalletService {
 
         betData.setResultTime(betResultData.getResultTime());
         betData.setVendorSettleTime(betResultData.getVendorSettleTime());
+        betData.setIsFreespin(Optional.ofNullable(betResultData.getIsFreespin()).orElse(0));
     }
 
     /**
