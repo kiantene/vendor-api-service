@@ -286,7 +286,7 @@ public class WalletService {
                 // TODO: add try-catch on KafkaException
                 kafkaService.produceBetHistory(betHistory);
 
-                if (unsettledBetList != null && unsettledBetList.size() > 1) { // multiple bets within same round
+                if (unsettledBetList != null && unsettledBetList.size() > 0) { // multiple bets within same round
                     for (UnsettledBet betRecord : unsettledBetList) {
                         if (!settledBet.getId().equals(betRecord.getId())) {
                             SettledBet newSettledBet = new SettledBet(betRecord, vendorService);
