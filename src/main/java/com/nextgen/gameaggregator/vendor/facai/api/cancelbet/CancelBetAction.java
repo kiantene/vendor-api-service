@@ -1,10 +1,8 @@
 package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -77,9 +75,7 @@ public class CancelBetAction {
             this.doDecryptValidation(cancelbetDto);
 
             //Gather require data
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(cancelbetDto.getMemberAccount());
-            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(Long.toString(cancelbetDto.getBankID()), vendorPlayer.getVendorId());
-            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelbetDto.getMemberAccount(), Integer.toString(cancelbetDto.getGameID()));
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
@@ -96,7 +92,6 @@ public class CancelBetAction {
                 InvalidEncryptionException |
                 InvalidPlayerException |
                 InvalidRequestException |
-                BetNotFoundException |
                 CurrencyNotSupportedException |
                 JsonProcessingException |
                 CredentialNotFoundException |
