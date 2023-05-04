@@ -417,6 +417,7 @@ public class WalletService {
         Integer vendorId = gameSession.getVendorId();
         BigDecimal balance = BigDecimal.ZERO;
         String externalTransactionId = rollbackData.getRollbackId();
+        boolean betNotFoundInUnsettled = false;
 
         try {
             UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
@@ -424,9 +425,24 @@ public class WalletService {
                     traceId, agentId, gameSession, unsettledBet.getBetId(), unsettledBet.getRoundId(), externalTransactionId);
             balance = balanceVo.getData().getBalance();
 
+            // TODO: send to kafka on successful refund to insert into bet_refund_log
+
         } catch (BetNotFoundException betNotFoundException) {
-            // TODO: bet not found in unsettled bets table, need to search settled_bets
-            log.warn("processRollback -> BetNotFoundException: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
+            log.warn("processRollback -> BetNotFoundException in unsettled_bets: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
+            betNotFoundInUnsettled = true;
+        }
+
+        if (betNotFoundInUnsettled) {
+            try {
+                SettledBet settledBet = settledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+                WalletBalanceVo balanceVo = walletRollbackAction.call(
+                        traceId, agentId, gameSession, settledBet.getBetId(), settledBet.getRoundId(), externalTransactionId);
+                balance = balanceVo.getData().getBalance();
+
+                // TODO: send to kafka to update MariaDB bet status
+            } catch (BetNotFoundException betNotFoundException) {
+                log.warn("processRollback -> BetNotFoundException in settled_bets: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
+            }
         }
 
 //        BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
