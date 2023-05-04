@@ -1,10 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import org.apache.commons.beanutils.BeanUtils;
@@ -132,76 +130,6 @@ public class SettledBetService {
     }
 
     /**
-     * Process .
-     * This function will also populate default values of certain fields.
-     *
-     * @param roundId, vendorLineId, vendorPlayerId entity object containing information of a single result bet
-     * @return RawResultBet entity object after a successful save
-     */
-    public List<SettledBet> getAllUnsettledBetsWithSameRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId, Long vendorSettledTime) {
-
-        //prepare RawSettledBet arrayList
-        List<SettledBet> settledBetLists = new ArrayList<>();
-
-        //try to find are there any unsettled bet with the same roundId + vendorLineId + vendorPlayerId?
-        List<UnsettledBet> unsettledBetLists = betHistoryService.getBetDataListByRoundId(roundId, vendorLineId, vendorPlayerId);
-
-        //if found any unsettled bet for with this roundId
-        if (unsettledBetLists != null) {
-            //then loop thru all unsettled bet list to update the status to settled then add to the rawSettledBet arrayList
-            for (UnsettledBet unsettledBetList : unsettledBetLists) {
-                unsettledBetList.setStatus(BetStatus.SETTLED.code);
-                unsettledBetList.setVendorSettleTime(vendorSettledTime);
-                unsettledBetList.setResultType(ResultType.END.code);
-                SettledBet settledBet = new SettledBet(unsettledBetList);
-                settledBetLists.add(settledBet);
-            }
-        }
-
-        return settledBetLists;
-
-    }
-
-    /**
-     * Creates a Result bet record of the given RawResultBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param unsettledBet, rawResultBet, rawSettledBet entity object containing information of a single result bet
-     * @return RawResultBet entity object after a successful save
-     */
-    public SettledBet updateRawResultBet(UnsettledBet unsettledBet, UnsettledBetResult unsettledBetResult)
-            throws MergedBetDataIntegrityException {
-
-        try {
-            SettledBet unsettledData = new SettledBet();
-            BeanUtils.copyProperties(unsettledData, unsettledBet);
-
-            //resultData could be null if the bet is lose
-            SettledBet resultData = new SettledBet();
-            BeanUtils.copyProperties(resultData, unsettledBetResult);
-
-            for (Field field : SettledBet.class.getDeclaredFields()) {
-                field.setAccessible(true);
-                Object value = getValueFromObject(resultData, field.getName());
-                if (value == null) {
-                    value = getValueFromObject(unsettledData, field.getName());
-                }
-                if (value != null) {
-                    field.set(resultData, value);
-                }
-            }
-
-            return resultData;
-
-        } catch (IllegalAccessException illegalAccessException) {
-            throw new MergedBetDataIntegrityException("getValueFromObject invalid : " + illegalAccessException.getMessage());
-
-        } catch (InvocationTargetException invocationTargetException) {
-            throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
-        }
-    }
-
-    /**
      * Reprocess betData if winAmount, winLoss, effectiveTurnover, vendorSettleTime, and resultTime is not returned from vendor
      *
      * @param rawBetData entity object containing information of a single result bet
@@ -240,30 +168,6 @@ public class SettledBetService {
         }
 
         return rawBetData;
-    }
-
-    /**
-     * Creates a Result bet record of the given RawResultBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param unsettledBet, rawResultBet, rawSettledBet entity object containing information of a single result bet
-     * @return RawResultBet entity object after a successful save
-     */
-    public SettledBet convertRawUnsettledBetForWalletTransaction(UnsettledBet unsettledBet)
-            throws MergedBetDataIntegrityException {
-
-        try {
-            SettledBet unsettledData = new SettledBet();
-            BeanUtils.copyProperties(unsettledData, unsettledBet);
-
-            return unsettledData;
-
-        } catch (IllegalAccessException illegalAccessException) {
-            throw new MergedBetDataIntegrityException("getValueFromObject invalid : " + illegalAccessException.getMessage());
-
-        } catch (InvocationTargetException invocationTargetException) {
-            throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
-        }
     }
 
     /**

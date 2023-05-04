@@ -60,9 +60,8 @@ public class WalletBetResultAction {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
-        //dto.setBetId(dto.getTransactionId());
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -137,18 +136,18 @@ public class WalletBetResultAction {
 
     private WalletBetResultDto newWalletBetResultDto(String traceId, GameSession gameSession, BetInformation betInformation, ResultType resultType) {
 
-        BigDecimal betAmount = (ObjectUtils.isEmpty(betInformation.getWinLoss())) ? null : new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
-        BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(betInformation.getEffectiveTurnover())) ? null : new BigDecimal(betInformation.getEffectiveTurnover().stripTrailingZeros().toPlainString());
-        BigDecimal winAmount = (ObjectUtils.isEmpty(betInformation.getWinAmount())) ? null : new BigDecimal(betInformation.getWinAmount().stripTrailingZeros().toPlainString());
-        BigDecimal winLossAmount = (ObjectUtils.isEmpty(betInformation.getWinLoss())) ? null : new BigDecimal(betInformation.getWinLoss().stripTrailingZeros().toPlainString());
-        BigDecimal jackpotAmount = (ObjectUtils.isEmpty(betInformation.getJackpotAmount())) ? null : new BigDecimal(betInformation.getJackpotAmount().stripTrailingZeros().toPlainString());
+        BigDecimal betAmount = (ObjectUtils.isEmpty(betInformation.getBetAmount())) ? null : this.stripZeroToString(betInformation.getBetAmount());
+        BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(betInformation.getEffectiveTurnover())) ? null : this.stripZeroToString(betInformation.getEffectiveTurnover());
+        BigDecimal winAmount = (ObjectUtils.isEmpty(betInformation.getWinAmount())) ? null : this.stripZeroToString(betInformation.getWinAmount());
+        BigDecimal winLossAmount = (ObjectUtils.isEmpty(betInformation.getWinLoss())) ? null : this.stripZeroToString(betInformation.getWinLoss());
+        BigDecimal jackpotAmount = (ObjectUtils.isEmpty(betInformation.getJackpotAmount())) ? null : this.stripZeroToString(betInformation.getJackpotAmount());
 
         WalletBetResultDto walletBetResultDto = new WalletBetResultDto();
         walletBetResultDto.setTraceId(traceId);
         walletBetResultDto.setUsername(gameSession.getAgentPlayerUsername());
         walletBetResultDto.setBetId(betInformation.getBetId());
         walletBetResultDto.setTransactionId(betInformation.getInternalTransactionId());
-        walletBetResultDto.setExternalTransactionId(betInformation.getVendorBetId());
+        walletBetResultDto.setExternalTransactionId(betInformation.getExternalTransactionId());
         walletBetResultDto.setRoundId(betInformation.getRoundId());
         walletBetResultDto.setBetAmount(betAmount);
         walletBetResultDto.setWinAmount(winAmount);
@@ -165,5 +164,9 @@ public class WalletBetResultAction {
         walletBetResultDto.setSettledTime(betInformation.getVendorSettleTime());
 
         return walletBetResultDto;
+    }
+
+    private BigDecimal stripZeroToString(BigDecimal value) {
+        return new BigDecimal(value.stripTrailingZeros().toPlainString());
     }
 }

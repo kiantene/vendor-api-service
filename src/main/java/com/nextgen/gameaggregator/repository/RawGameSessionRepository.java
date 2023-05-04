@@ -20,5 +20,5 @@ public interface RawGameSessionRepository extends CouchbaseRepository<GameSessio
 
     GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByCreateTimeDesc(String vendorPlayerUsername, String vendorGameCode);
 
-    List<GameSession> findByAgentPlayerUsernameAndStatus(String userName, Integer status );
+    List<GameSession> findByAgentPlayerUsernameAndStatus(String userName, Integer status);
 }
