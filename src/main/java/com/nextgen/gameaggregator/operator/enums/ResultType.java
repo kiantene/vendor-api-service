@@ -31,7 +31,7 @@ public enum ResultType {
     BET_LOSE (5, "Bet and Lose"),
 
     //BET_JACKPOT = combination of BET and JACKPOT, which will create a bet data, and cash out if betAmount > 0 + will cash in if winAmount > 0
-    BET_JACKPOT (6, "Bet and Jackpot"),
+//    BET_JACKPOT (6, "Bet and Jackpot"),
 
     //END will need no actions (no cash in and cash out)
     END (99, "End round")
