@@ -15,7 +15,7 @@
         "environment": [
             {
                 "name": "SPRING_PROFILES_ACTIVE",
-                "value": "stg"
+                "value": "pt"
             },
             {
                 "name": "SERVER_SERVLET_CONTEXT-PATH",
@@ -39,15 +39,15 @@
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_JDBC-URL",
-                "value": "jdbc:mariadb://stg.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_staging?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8"
+                "value": "jdbc:mariadb://pt-2.c2q9vzndalx6.ap-east-1.rds.amazonaws.com:3306/game_aggregator_pt?useUnicode=true&characterEncoding=utf-8&serverTimezone=GMT%2B8"
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_USERNAME",
-                "value": "user_dev"
+                "value": "svc_vendor_dev"
             },
             {
                 "name": "SPRING_DATASOURCE_MARIA-DEFAULT_PASSWORD",
-                "value": "Newfuture!23"
+                "value": "H2ftnFhNshRJ41"
             },
             {
                 "name": "SPRING_COUCHBASE_CONNECTIONSTRING",
@@ -55,7 +55,7 @@
             },
             {
                 "name": "SPRING_COUCHBASE_USERNAME",
-                "value": "stg"
+                "value": "pt"
             },
             {
                 "name": "SPRING_COUCHBASE_PASSWORD",
@@ -63,7 +63,7 @@
             },
             {
                 "name": "SPRING_COUCHBASE_BUCKETNAME",
-                "value": "stg_game_aggregator"
+                "value": "pt_game_aggregator"
             },
             {
                 "name": "SPRING_COUCHBASE_SCOPENAME",
@@ -75,19 +75,19 @@
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_BOOTSTRAP_SERVERS",
-                "value": "pkc-4v1gp.ap-northeast-1.aws.confluent.cloud:9092"
+                "value": "pkc-817wq.ap-east-1.aws.confluent.cloud:9092"
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_SASL_JAAS_CONFIG",
-                "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username='QWJ5MKVZ7UCBLT2B' password='exLnoeIP42pM7ZD5+1txbgOPGMfR3b2R9R1D/WdrXEeQ/rdgJaXGxzyT+mW1xr/C';"
+                "value": "org.apache.kafka.common.security.plain.PlainLoginModule required username='W5V5IKKRQJLCCNDR' password='OW5/KES065TWoXSA0T/aaSOa81z5Yw1Ra7CaUt6X1CkYveeKbz1HT9X/u62c8oyz';"
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_BASIC_AUTH_USER_INFO",
-                "value": "MM5W2HQEZEPAESML:gReou3wimJ53DV0b7ySZ7J9GDIVKgbAuy9LlBdgGkVpstaFzDgpZm5p00ZyZDCJX"
+                "value": "MJO6DSPFHHFZH5TL:qyBcL3y4pUd8cMWTAaMlkCfPhRCyC/+k3j6+gVedGaqPhslKjBXFwsxfXUtUe2ae"
             },
             {
                 "name": "SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL",
-                "value": "https://psrc-10wgj.ap-southeast-2.aws.confluent.cloud"
+                "value": "https://psrc-5mn3g.ap-southeast-2.aws.confluent.cloud"
             },
             {
                 "name": "LOGSTASH_HOST",

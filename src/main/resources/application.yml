@@ -8,22 +8,21 @@ server:
       enabled: true
     accept-count: 2500 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
     max-connections: 16384 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
-#    max-threads: 4000
-#    min-spare-threads: 4000
+    #    max-threads: 4000
+    #    min-spare-threads: 4000
     threads:
-      min-spare: 150  # Default: 10 (Minimum amount of worker threads.)
-      max: 150        # Default: 200 (Maximum amount of worker threads.)
-
+      min-spare: 150 # Default: 10 (Minimum amount of worker threads.)
+      max: 150 # Default: 200 (Maximum amount of worker threads.)
 mavenTimestamp: @timestamp@
 sas:
   enabled: false
 spring:
+  profiles:
+    active: dev
   liquibase:
     enabled: false
   application:
     name: vendor-api-service
-  profiles:
-    active: dev
   main:
     allow-bean-definition-overriding: true
   servlet:
@@ -31,10 +30,66 @@ spring:
       max-file-size: 1000MB
       max-request-size: 1000MB
       resolve-lazily: true
-#  mvc:
-#    hiddenmethod:
-#      filter:
-#        enabled: true
+  datasource:
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 50
+    maria-default:
+      driver-class-name: org.mariadb.jdbc.Driver
+      jdbc-url:
+      username:
+      password:
+  jpa:
+    properties:
+      hibernate:
+        maria-dialect: org.hibernate.dialect.MariaDB103Dialect
+        format_sql: false
+  couchbase:
+    connectionString: 
+    userName: 
+    password: 
+    bucketName: 
+    scopeName: 
+  data:
+    redis:
+      mode:
+      nodehosts:
+      database:
+      host:
+      port: 6379
+      username:
+      password:
+      jedis:
+        pool:
+          max-idle: 30
+          max-active: 100
+          min-idle: 10
+          max-wait: 2000
+  kafka:
+    properties:
+      security:
+        protocol: SASL_SSL
+      client:
+        dns:
+          lookup: use_all_dns_ips
+      sasl:
+        mechanism: PLAIN
+        jaas:
+          config:
+      bootstrap:
+        servers: 
+      session:
+        timeout:
+          ms: 45000
+      basic:
+        auth:
+          credentials:
+            source: "USER_INFO"
+          user:
+            info: 
+      schema:
+        registry:
+          url:
 springdoc:
   api-docs:
     path: /${spring.application.name}/v3/api-docs
@@ -42,4 +97,13 @@ springdoc:
     path: /${spring.application.name}/swagger-ui.html
     tryItOutEnabled: true
   paths-to-match: /**
-
+logging:
+  config: classpath:logback-spring.xml
+  http-request: true
+logstash:
+  host: 
+  port: 
+image:
+  gameurl:
+testing:
+  stub: false
