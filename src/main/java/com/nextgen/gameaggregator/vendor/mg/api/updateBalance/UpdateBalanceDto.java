@@ -4,9 +4,7 @@ import java.math.BigDecimal;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
-import com.nextgen.gameaggregator.vendor.mg.constant.EventType;
-import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
+import com.nextgen.gameaggregator.vendor.mg.constant.*;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -49,7 +47,7 @@ public class UpdateBalanceDto implements BetResultData {
 
     private DeviceType deviceType;
 
-    private String platformType;
+    private PlatformType platformType;
 
     @NotNull
     private Boolean completed;
@@ -59,6 +57,8 @@ public class UpdateBalanceDto implements BetResultData {
 
     @NotNull
     private Long creationTimeMs;
+
+    private Long creationTime;
 
     @Size(max = 50)
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
