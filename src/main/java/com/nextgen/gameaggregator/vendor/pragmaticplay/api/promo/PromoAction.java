@@ -55,17 +55,18 @@ public class PromoAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-//            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            BigDecimal balance = dto.getAmount(); //walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            BigDecimal balance = walletService.processPromo(traceId, gameSession, dto, body);
 
-            String transactionId = dto.getUserId() + '-' + dto.getTimestamp();
+            String transactionId = traceId.replace("-", "");
+
             responseVo.setTransactionId(transactionId);
-            responseVo.setCurrency("CNY");
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
