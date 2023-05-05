@@ -62,6 +62,8 @@ public class WinDataDto implements BetResultData  {
     @NotNull
     private Long creationTimeMs;
 
+    private Long creationTime;
+
     @Size(max = 50)
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
@@ -74,6 +76,11 @@ public class WinDataDto implements BetResultData  {
     @Override
     public String getVendorBetId() {
         return betId;
+    }
+
+    @Override
+    public String getRoundId() {
+        return roundId == null ? betId : roundId;
     }
 
     @Override
