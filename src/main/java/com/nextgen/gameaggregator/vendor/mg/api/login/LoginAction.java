@@ -80,8 +80,6 @@ public class LoginAction {
         headers.add(Headers.RESPONSE_TIMESTAMP, String.valueOf(responseTime));
         // Add back the requestId to the response headers
         headers.add(Headers.REQUEST_ID, request.getHeader(Headers.REQUEST_ID));
-        // Test
-        headers.add("zzz", request.getHeader(Headers.REQUEST_ID));
         // Return ResponseEntity with LoginVo object, headers, and HTTP status code
         return new ResponseEntity<>(loginVo, headers, status);
     }
