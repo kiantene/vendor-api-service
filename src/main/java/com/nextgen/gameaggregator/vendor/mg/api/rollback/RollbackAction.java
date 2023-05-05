@@ -64,6 +64,9 @@ public class RollbackAction {
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
             rollbackVo.setExtCreationTimeMs(startTime);
+        } catch (BetRefundIdempotentViolationException idempotentViolationException) {
+            // TODO: set to correct status
+
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
             DisabledGameException e){
