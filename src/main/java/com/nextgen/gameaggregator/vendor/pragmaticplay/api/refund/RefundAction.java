@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetRefundLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -59,6 +60,10 @@ public class RefundAction {
 
             String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
+
+        } catch (BetRefundIdempotentViolationException idempotentViolationException) {
+            RawBetRefundLog rawBetRefundLog = idempotentViolationException.getBetRefundLog();
+            responseVo.setTransactionId(VendorService.getTransactionId(rawBetRefundLog.getBetRefundLogId()));
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);

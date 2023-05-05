@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
@@ -41,150 +42,13 @@ public class SettledBetService {
         rawSettledBetRepository.save(settledBet);
     }
 
-    /**
-     * Creates a Result bet record of the given RawResultBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param unsettledBet, rawResultBet, rawSettledBet entity object containing information of a single result bet
-     * @return RawResultBet entity object after a successful save
-     */
-    public SettledBet updateRawSettledBet(UnsettledBet unsettledBet, UnsettledBetResult unsettledBetResult, SettledBet settledBet)
-            throws MergedBetDataIntegrityException {
-
-        try {
-            SettledBet unsettledData = new SettledBet();
-            BeanUtils.copyProperties(unsettledData, unsettledBet);
-
-            //resultData could be null if the bet is lose
-            SettledBet resultData = new SettledBet();
-            if (unsettledBetResult != null) {
-                BeanUtils.copyProperties(resultData, unsettledBetResult);
-            }
-
-            for (Field field : SettledBet.class.getDeclaredFields()) {
-                field.setAccessible(true);
-                Object value = getValueFromObject(settledBet, field.getName());
-                if (value == null) {
-                    value = getValueFromObject(resultData, field.getName());
-                }
-                if (value == null) {
-                    value = getValueFromObject(unsettledData, field.getName());
-                }
-                if (value != null) {
-                    field.set(settledBet, value);
-                }
-            }
-
-        } catch (IllegalAccessException illegalAccessException) {
-            throw new MergedBetDataIntegrityException("getValueFromObject invalid : " + illegalAccessException.getMessage());
-
-        } catch (InvocationTargetException invocationTargetException) {
-            throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
+    public SettledBet getByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId) throws BetNotFoundException {
+        SettledBet settledBet = rawSettledBetRepository.findByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+        if (settledBet == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("Cannot find vendor Id: " + vendorId + ", externalTransactionId: " + externalTransactionId);
         }
 
         return settledBet;
-    }
-
-    /**
-     * Process .
-     * This function will also populate default values of certain fields.
-     *
-     * @param settledBet, entity object containing information of a single result bet
-     * @return RawResultBet entity object after a successful save
-     */
-    public List<SettledBet> getBetResultListData(SettledBet settledBet) {
-
-        //prepare RawSettledBet arrayList
-        List<SettledBet> settledBetLists = new ArrayList<>();
-
-        //insert the rawSettledBet into arrayList
-        settledBetLists.add(settledBet);
-
-        //try to find are there any unsettled bet with the same roundId + vendorLineId + vendorPlayerId?
-        List<UnsettledBet> unsettledBetLists = betHistoryService.getBetDataListByRoundId(settledBet.getRoundId(),
-                settledBet.getVendorLineId(), settledBet.getVendorPlayerId());
-
-        try {
-            //if found any unsettled bet for with this roundId
-            if (unsettledBetLists != null) {
-                //then loop thru all unsettled bet list to update the status to settled then add to the rawSettledBet arrayList
-                for (UnsettledBet unsettledBetList : unsettledBetLists) {
-                    unsettledBetList.setStatus(BetStatus.SETTLED.code);
-
-                    SettledBet settledBetData = new SettledBet();
-                    BeanUtils.copyProperties(settledBetData, unsettledBetList);
-
-                    settledBetLists.add(settledBetData);
-                }
-            }
-        } catch (InvocationTargetException e) {
-            //TODO ERROR HANDLING IF CONVERSION BETWEEN UNSETTLEDBET TO SETTLEDBET IS FAILED
-            log.error("getBetResultListData InvocationTargetException ERROR, details : " + e);
-        } catch (IllegalAccessException e) {
-            //TODO ERROR HANDLING IF CONVERSION BETWEEN UNSETTLEDBET TO SETTLEDBET IS FAILED
-            log.error("getBetResultListData IllegalAccessException ERROR, details : " + e);
-        }
-
-        return settledBetLists;
-
-    }
-
-    /**
-     * Reprocess betData if winAmount, winLoss, effectiveTurnover, vendorSettleTime, and resultTime is not returned from vendor
-     *
-     * @param rawBetData entity object containing information of a single result bet
-     * @return RawResultBet entity object after a successful recalculation
-     */
-    public SettledBet processBetData(SettledBet rawBetData) {
-
-        //winLoss will be re-process if empty return from vendor
-        if (ObjectUtils.isEmpty(rawBetData.getWinAmount())) {
-            //winLoss = 0
-            rawBetData.setWinAmount(BigDecimal.valueOf(0));
-        }
-
-        //winLoss will be re-process if empty return from vendor
-        if (ObjectUtils.isEmpty(rawBetData.getWinLoss())) {
-            //winLoss = winAmount - betAmount
-            rawBetData.setWinLoss(rawBetData.getWinAmount().subtract(rawBetData.getBetAmount()));
-        }
-
-        //effectiveTurnover will be re-process if empty return from vendor
-        if (ObjectUtils.isEmpty(rawBetData.getEffectiveTurnover())) {
-            //effectiveTurnover = betAmount
-            rawBetData.setEffectiveTurnover(rawBetData.getBetAmount());
-        }
-
-        //vendorSettleTime will be re-process if empty return from vendor
-        if (ObjectUtils.isEmpty(rawBetData.getVendorSettleTime())) {
-            //vendorSettleTime = vendorBetTime
-            rawBetData.setVendorSettleTime(rawBetData.getVendorBetTime());
-        }
-
-        //resultTime will be re-process if empty return from vendor
-        if (ObjectUtils.isEmpty(rawBetData.getResultTime())) {
-            //resultTime = vendorSettleTime
-            rawBetData.setResultTime(rawBetData.getVendorSettleTime());
-        }
-
-        return rawBetData;
-    }
-
-    /**
-     * Get values that is not null from the object.
-     *
-     * @param object, fieldName, entity object containing information of a single bet
-     * @return Object entity after getting all the non-null properties
-     */
-    private Object getValueFromObject(SettledBet object, String fieldName) throws IllegalAccessException {
-        Field field;
-        try {
-            field = object.getClass().getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
-            return null;
-        }
-        field.setAccessible(true);
-        return field.get(object);
     }
 
     /**
