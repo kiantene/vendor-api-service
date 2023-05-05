@@ -23,14 +23,18 @@ public abstract class BaseVendorService {
     }
 
     public Integer calculateBetResultType(BetInformation betInfo) {
-        int checkWinAmount = betInfo.getWinAmount().compareTo(BigDecimal.ZERO);
-        int checkJackpotAmount = betInfo.getJackpotAmount().compareTo(BigDecimal.ZERO);
-        int checkBetAmount = betInfo.getBetAmount().compareTo(BigDecimal.ZERO);
+
+        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
+
+        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
+        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
+
         Integer betResultType = BetResultType.LOSE.code;
 
-        if (checkBetAmount == 0) {
-            betResultType = BetResultType.WIN.code;
-        } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
+        if (isJackpotAmountMoreThanZero) {
+            betResultType = BetResultType.JACKPOT.code;
+        } else if (isWinAmountMoreThanZero){
             betResultType = BetResultType.WIN.code;
         }
 
