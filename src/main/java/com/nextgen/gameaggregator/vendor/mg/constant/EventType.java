@@ -5,5 +5,10 @@ public enum EventType {
     Tournament,
     Promotion,
     Achievenment,
-    Store
+    Store,
+    game,
+    tournament,
+    promotion,
+    achievenment,
+    store
 }
