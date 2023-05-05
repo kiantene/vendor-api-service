@@ -65,8 +65,7 @@ public class RollbackAction {
             rollbackVo.setBalance(balance);
             rollbackVo.setExtCreationTimeMs(startTime);
         } catch (BetRefundIdempotentViolationException idempotentViolationException) {
-            // TODO: set to correct status
-
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
             DisabledGameException e){
