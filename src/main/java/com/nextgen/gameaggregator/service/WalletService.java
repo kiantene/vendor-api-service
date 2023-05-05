@@ -410,39 +410,42 @@ public class WalletService {
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession)
-            throws RecordNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession) throws
+            RecordNotFoundException, InvalidAgentApiCredentialException,
+            InvalidOperatorResponseException, BetRefundIdempotentViolationException {
 
-        Integer agentId = gameSession.getAgentId();
         Integer vendorId = gameSession.getVendorId();
         BigDecimal balance = BigDecimal.ZERO;
         String externalTransactionId = rollbackData.getRollbackId();
-        boolean betNotFoundInUnsettled = false;
+        BetInformation betInformation = null;
+
+        // check idempotent
+        this.betRefundLogService.idempotentCheck(gameSession.getVendorPlayerId(), gameSession.getVendorGameId(), externalTransactionId);
 
         try {
-            UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
-            WalletBalanceVo balanceVo = walletRollbackAction.call(
-                    traceId, agentId, gameSession, unsettledBet.getBetId(), unsettledBet.getRoundId(), externalTransactionId);
-            balance = balanceVo.getData().getBalance();
-
-            // TODO: send to kafka on successful refund to insert into bet_refund_log
-
-        } catch (BetNotFoundException betNotFoundException) {
+            betInformation = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+        } catch (BetNotFoundException unsettledBetNotFoundException) {
             log.warn("processRollback -> BetNotFoundException in unsettled_bets: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
-            betNotFoundInUnsettled = true;
-        }
-
-        if (betNotFoundInUnsettled) {
             try {
-                SettledBet settledBet = settledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
-                WalletBalanceVo balanceVo = walletRollbackAction.call(
-                        traceId, agentId, gameSession, settledBet.getBetId(), settledBet.getRoundId(), externalTransactionId);
-                balance = balanceVo.getData().getBalance();
-
-                // TODO: send to kafka to update MariaDB bet status
-            } catch (BetNotFoundException betNotFoundException) {
+                betInformation = settledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+            } catch (BetNotFoundException settledBetNotFoundException) {
                 log.warn("processRollback -> BetNotFoundException in settled_bets: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
             }
+        }
+
+        if (betInformation != null) {
+            String betId = betInformation.getBetId();
+            String roundId = betInformation.getRoundId();
+            Integer agentId = gameSession.getAgentId();
+            // TODO: add try-catch
+            WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, externalTransactionId);
+            balance = balanceVo.getData().getBalance();
+
+            RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
+            betRefundLogService.create(rawBetRefundLog);
+
+            // TODO: for unsettled bets, send to kafka on successful refund to insert into bet_refund_log
+            // TODO: for settled bets, send to kafka to update MariaDB bet status
         }
 
 //        BetRefundLog betRefundLog = this.newBetRefundLog(betHistory, externalTransactionId, currentTimestamp, rawData);
