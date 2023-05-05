@@ -75,6 +75,11 @@ public class UpdateBalanceDto implements BetResultData {
     }
 
     @Override
+    public String getRoundId() {
+        return roundId == null ? betId : roundId;
+    }
+
+    @Override
     public String getGameId() {
         return contentCode;
     }
