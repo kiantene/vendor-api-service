@@ -1,12 +1,11 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.UnsettledBetResult;
-import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -51,6 +50,16 @@ public class CachingService {
     @CacheEvict(value = "BetHistories", key = "{#betHistory.roundId, #betHistory.vendorGameId, #betHistory.vendorPlayerId}", cacheManager = "cacheManager")
     public BetHistory deleteBetHistoriesCaching(BetHistory betHistory) {
         return betHistory;
+    }
+
+    @Cacheable(value = "promoData", key = "{#vendorPlayerId, #vendorBetId, #vendorRoundId}", cacheManager = "cacheManager")
+    public UnsettledBet storeProcessPromoToRedis(Long vendorPlayerId, String vendorBetId, String vendorRoundId, String traceId) {
+        UnsettledBet unsettledBet = new UnsettledBet();
+        unsettledBet.setVendorBetId(vendorBetId);
+        unsettledBet.setRoundId(vendorRoundId);
+        unsettledBet.setInternalTransactionId(traceId);
+        unsettledBet.setVendorPlayerId(vendorPlayerId);
+        return unsettledBet;
     }
 
 }

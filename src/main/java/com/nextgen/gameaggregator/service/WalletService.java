@@ -357,7 +357,7 @@ public class WalletService {
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
         BigDecimal balance = this.getBalance(traceId, gameSession);
-        this.idempotentCheckForBetResult(gameSession, betResultData);
+//        this.idempotentCheckForBetResult(gameSession, betResultData);
         betResultLogService.create(traceId, betResultData.getVendorBetId(), betResultData, gameSession, balance);
 
         return balance.add(betResultData.getWinAmount());
