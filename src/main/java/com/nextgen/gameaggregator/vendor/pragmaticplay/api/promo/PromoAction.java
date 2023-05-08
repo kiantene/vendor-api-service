@@ -75,6 +75,8 @@ public class PromoAction {
             RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
             responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
             responseVo.setCash(rawBetResultLog.getBalance());
+            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);

@@ -124,6 +124,7 @@ public class BetResultLogService {
         entity.setOperatorStatus(0);
         entity.setVendorLineId(gameSession.getVendorLineId());
         entity.setCurrencyId(gameSession.getCurrencyId());
+        entity.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
         entity.setWinAmount(betResultData.getWinAmount());
         entity.setEffectiveTurnover(BigDecimal.ZERO); // TODO: update accordingly
         entity.setBalance(balance);
