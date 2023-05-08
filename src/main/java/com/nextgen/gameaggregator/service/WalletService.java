@@ -48,6 +48,8 @@ public class WalletService {
     private SettledBetService settledBetService;
     @Autowired
     private KafkaService kafkaService;
+    @Autowired
+    private CachingService cachingService;
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         WalletBalanceVo balanceVo = walletBalanceAction.call(traceId, gameSession);
@@ -267,6 +269,7 @@ public class WalletService {
 
             if (!isBetExistsForUnsettledBet) {
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betResultDataForOperator, resultType);
+                cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
             } else {
                 // TODO: add try-catch in case operator fails
                 balanceVo = walletBalanceAction.call(traceId, gameSession);
@@ -373,6 +376,10 @@ public class WalletService {
         RawBetResultLog rawBetResultLog = betResultLogService.checkExists(transactionId, roundId, vendorGameId, vendorPlayerId);
 
         if (rawBetResultLog != null) {
+
+            BigDecimal newBalance = cachingService.getPlayerLatestBalanceFromRedis(gameSession).getBalance();
+            rawBetResultLog.setBalance(Optional.ofNullable(newBalance).orElse(rawBetResultLog.getBalance()));
+
             BetResultIdempotentViolationException idempotentViolationException = new BetResultIdempotentViolationException();
             idempotentViolationException.setBetResultLog(rawBetResultLog);
             throw idempotentViolationException;
