@@ -84,7 +84,8 @@ public class BonusDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.amount;
+        //will return as 0 is because, bonusWin end point figure will be included in the result endpoint, so we are not going to double process the winAmount again
+        return BigDecimal.ZERO;
     }
 
     @Override

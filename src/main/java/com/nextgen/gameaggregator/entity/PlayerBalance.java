@@ -10,33 +10,17 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
-@Collection("game_session")
+@Collection("player_balance")
 @Data
-public class GameSession {
+public class PlayerBalance {
     @Id
     private String id;
-    private String token;
     private Integer agentId;
     private Long agentPlayerId;
     private String agentPlayerUsername;
     private String vendorPlayerUsername;
     private Long vendorPlayerId;
-    private Integer vendorId;
-    private Integer vendorLineId;
-    private String gameCode;
-    private Integer vendorGameId;
-    private String vendorGameCode;
-    private String vendorCurrencyCode;
-    private Integer gameCategoryId;
-    private Integer languageId;
-    private String language;
-    private String vendorLanguageCode;
-    private Integer currencyId;
     private String currencyCode;
-    private String vendorPlatformCode;
-    private Integer platformId;
-    private String traceId;
-    private Integer status;
+    private BigDecimal balance;
     private Long createTime;
-    private Long terminateTime;
 }
