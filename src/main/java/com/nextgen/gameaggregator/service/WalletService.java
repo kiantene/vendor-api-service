@@ -356,11 +356,12 @@ public class WalletService {
     public BigDecimal processPromo(String traceId, GameSession gameSession, BetResultData betResultData, String rawData)
             throws InvalidAgentApiCredentialException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
+        this.idempotentCheckForBetResult(gameSession, betResultData);
         BigDecimal balance = this.getBalance(traceId, gameSession);
-//        this.idempotentCheckForBetResult(gameSession, betResultData);
+        balance = balance.add(betResultData.getWinAmount());
         betResultLogService.create(traceId, betResultData.getVendorBetId(), betResultData, gameSession, balance);
 
-        return balance.add(betResultData.getWinAmount());
+        return balance;
     }
 
     private void idempotentCheckForBetResult(GameSession gameSession, BetResultData betResultData) throws BetResultIdempotentViolationException {
