@@ -8,6 +8,9 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Service
 @Slf4j
 public class CachingService {
@@ -60,6 +63,33 @@ public class CachingService {
         unsettledBet.setInternalTransactionId(traceId);
         unsettledBet.setVendorPlayerId(vendorPlayerId);
         return unsettledBet;
+    }
+
+    @CachePut(value = "playerBalance", key = "{#gameSession.vendorPlayerId, #gameSession.agentId}", cacheManager = "cacheManager")
+    public PlayerBalance storePlayerLatestBalanceToRedis(GameSession gameSession, BigDecimal balance) {
+        PlayerBalance playerBalance = new PlayerBalance();
+        playerBalance.setAgentId(gameSession.getAgentId());
+        playerBalance.setAgentPlayerId(gameSession.getAgentPlayerId());
+        playerBalance.setAgentPlayerUsername(gameSession.getAgentPlayerUsername());
+        playerBalance.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        playerBalance.setVendorPlayerId(gameSession.getVendorPlayerId());
+        playerBalance.setCurrencyCode(gameSession.getCurrencyCode());
+        playerBalance.setCreateTime(Instant.now().toEpochMilli());
+        playerBalance.setBalance(balance);
+        return playerBalance;
+    }
+
+    @Cacheable(value = "playerBalance", key = "{#gameSession.vendorPlayerId, #gameSession.agentId}", cacheManager = "cacheManager")
+    public PlayerBalance getPlayerLatestBalanceFromRedis(GameSession gameSession) {
+        PlayerBalance playerBalance = new PlayerBalance();
+        playerBalance.setAgentId(gameSession.getAgentId());
+        playerBalance.setAgentPlayerId(gameSession.getAgentPlayerId());
+        playerBalance.setAgentPlayerUsername(gameSession.getAgentPlayerUsername());
+        playerBalance.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+        playerBalance.setVendorPlayerId(gameSession.getVendorPlayerId());
+        playerBalance.setCurrencyCode(gameSession.getCurrencyCode());
+        playerBalance.setCreateTime(Instant.now().toEpochMilli());
+        return playerBalance;
     }
 
 }
