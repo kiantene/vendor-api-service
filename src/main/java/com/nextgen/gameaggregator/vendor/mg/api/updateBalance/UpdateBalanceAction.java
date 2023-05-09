@@ -35,11 +35,7 @@ public class UpdateBalanceAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
     
@@ -95,7 +91,7 @@ public class UpdateBalanceAction {
             status = HttpStatus.BAD_REQUEST;
         } catch (InsufficientBalanceException e) {
             status = HttpStatus.PAYMENT_REQUIRED;
-        } catch (AuthenticationException| BetNotFoundException e) {
+        } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException e) {
             status = HttpStatus.NOT_FOUND;
         } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException e) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -119,15 +115,9 @@ public class UpdateBalanceAction {
     }
 
     private void doVerification(UpdateBalanceDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
-        // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException{
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getPlayerId());
     }
 
     private ResultType determineResultType(UpdateBalanceDto dto) {

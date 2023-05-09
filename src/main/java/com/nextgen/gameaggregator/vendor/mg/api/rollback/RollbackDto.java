@@ -13,11 +13,9 @@ public class RollbackDto implements RollbackData {
     @Size(max = 50)
     private String playerId;
     
-    @NotNull
-    @Positive
+    @PositiveOrZero
     private BigDecimal amount;
 
-    @NotBlank
     @Size(max = 3)
     private String currency;
 
