@@ -28,6 +28,7 @@ public class RawBetResultLog {
     private Integer operatorStatus;
     private Integer vendorLineId;
     private Integer currencyId;
+    private String vendorCurrencyCode;
     private BigDecimal winAmount;
     private BigDecimal effectiveTurnover;
     private Integer resultType;
