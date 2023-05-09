@@ -90,6 +90,10 @@
                 "value": "https://psrc-5mn3g.ap-southeast-2.aws.confluent.cloud"
             },
             {
+                "name": "LOGGING_CONFIG",
+                "value": "classpath:logback-dev.xml"
+            },
+            {
                 "name": "LOGSTASH_HOST",
                 "value": "18.167.50.121"
             },

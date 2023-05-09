@@ -47,7 +47,7 @@ pipeline {
     stages {
         stage('SonarCube') {
             when {
-                branch 'qa'
+                branch 'stg'
             }
             steps {
                 sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.login=$SONAR_LOGIN -DskipTests=true'
@@ -55,11 +55,30 @@ pipeline {
         }
 
         stage('Build Project') {
+            when {
+                not {
+                    branch 'main'
+                }
+            }
             steps {
                 script {
-                    String couchabse_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
-                    withCredentials([file(credentialsId: "${couchabse_cert_file_id}", variable: 'SECRET_FILE')]) {
+                    String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
+                    withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests'
+                    }
+                }
+            }
+        }
+
+        stage('Build Prod Project') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
+                    withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
+                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
                     }
                 }
             }
@@ -214,13 +233,13 @@ String getCouchbaseCertId(String branchName) {
 
     switch (branchName) {
         case 'main':
-            file = 'prd_couchabse_cert_file'
+            file = 'prd_couchbase_cert_file'
             break
         case 'stg':
         case 'qa':
         case 'pt':
         case 'devops':
-            file = 'couchabse_cert_file'
+            file = 'couchbase_cert_file'
             break
     }
 
