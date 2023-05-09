@@ -65,10 +65,8 @@ public class GetBalanceAction {
             getBalanceVo.setBalance(balance);
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException e){
-            status = HttpStatus.BAD_REQUEST;
-        } catch (AuthenticationException e) {
-            status = HttpStatus.NOT_FOUND;
+            DisabledGameException| AuthenticationException e){
+            status = HttpStatus.UNAUTHORIZED;
         } finally {
             httpService.end(httpRequestLog, getBalanceVo);
         }

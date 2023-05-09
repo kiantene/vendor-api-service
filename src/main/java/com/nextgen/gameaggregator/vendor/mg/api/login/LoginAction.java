@@ -67,7 +67,7 @@ public class LoginAction {
         } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
             DisabledGameException e){
-            status = HttpStatus.BAD_REQUEST;
+            status = HttpStatus.UNAUTHORIZED;
         } catch (AuthenticationException e) {
             status = HttpStatus.NOT_FOUND;
         } finally {

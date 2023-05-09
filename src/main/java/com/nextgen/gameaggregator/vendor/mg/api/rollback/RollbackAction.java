@@ -64,14 +64,10 @@ public class RollbackAction {
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
             rollbackVo.setExtCreationTimeMs(startTime);
-        } catch (BetRefundIdempotentViolationException idempotentViolationException) {
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
+        } catch (BetRefundIdempotentViolationException| JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException e){
-            status = HttpStatus.BAD_REQUEST;
-        } catch (AuthenticationException| RecordNotFoundException e) {
-            status = HttpStatus.NOT_FOUND;
+            DisabledGameException| AuthenticationException| RecordNotFoundException e){
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             httpService.end(httpRequestLog, rollbackVo);
         }

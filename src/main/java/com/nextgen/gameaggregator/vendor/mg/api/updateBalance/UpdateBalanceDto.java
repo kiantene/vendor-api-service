@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.mg.constant.*;
+import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
+import com.nextgen.gameaggregator.vendor.mg.constant.PlatformType;
+import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -14,8 +16,9 @@ public class UpdateBalanceDto implements BetResultData {
     @NotNull
     private TxnType txnType;
 
-    @NotNull
-    private EventType txnEventType;
+    @NotBlank
+    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$") //checks whether the input matches one of the given types(case-insensitive)
+    private String txnEventType;
 
     @NotBlank
     @Size(max = 50)
