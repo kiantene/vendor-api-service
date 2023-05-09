@@ -95,12 +95,21 @@ public class CancelBetAction {
                 CurrencyNotSupportedException |
                 JsonProcessingException |
                 CredentialNotFoundException |
-                DisabledGameException notExistException
+                DisabledGameException |
+                InvalidAgentApiCredentialException |
+                AuthenticationException |
+                InvalidOperatorResponseException notExistException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+        } catch (
+                RecordNotFoundException |
+                BetRefundIdempotentViolationException successException
+        ) {
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints((double) 0);
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
-        } finally {
+        }finally {
             httpService.end(httpRequestLog, commonVo);
         }
 
