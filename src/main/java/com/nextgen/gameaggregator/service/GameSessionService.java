@@ -60,7 +60,7 @@ public class GameSessionService {
     })
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
-                                     String vendorPlatformCode) throws AuthenticationException {
+                                     String vendorPlatformCode, String lobbyUrl, String ipAddress) throws AuthenticationException {
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendor().getId());
@@ -75,6 +75,8 @@ public class GameSessionService {
         gameSession.setLanguageId(vendorGameCode.getLanguageId());
         gameSession.setPlatformId(vendorGameCode.getPlatformId());
         gameSession.setVendorPlatformCode(vendorPlatformCode);
+        gameSession.setLobbyUrl(Optional.ofNullable(lobbyUrl).orElse(""));
+        gameSession.setIpAddress(Optional.ofNullable(ipAddress).orElse(""));
 
         rawGameSessionRepository.save(gameSession);
         return gameSession;

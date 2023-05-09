@@ -39,4 +39,13 @@ public class GameUrlDto {
     @NotBlank( message = "min 3 and max 10  characters")
     @Size(min = 3, max = 10, message = "min 3 and max 10  characters")
     private String currency;
+
+//    @NotBlank( message = "website URL required")
+//    @Size(min = 3, max = 2048, message = "min 3 and max 2048  characters")
+    private String lobbyUrl;
+
+//    @NotBlank( message = "IPv4 or IPv6 required")
+    //https://www.techdreams.org/microsoft/sql-server/maximum-length-of-ip-address-15-ipv4-39ipv6/5467-20110127
+//    @Size(min = 15, max = 39, message = "min 15 and max 39  characters")
+    private String ipAddress;
 }

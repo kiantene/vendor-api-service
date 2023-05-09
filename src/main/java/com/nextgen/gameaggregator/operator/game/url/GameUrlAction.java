@@ -99,10 +99,12 @@ public class GameUrlAction {
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
 
             // 15. Check if vendor player account exists
-            GameSession gameSession = gameUrlService.checkPlayer(apiCredential.getAgent(), dto.getUsername(), vendorLine, apiCredential.getAgent().getCurrency());
+            GameSession gameSession = gameUrlService.checkPlayer(apiCredential.getAgent(),
+                    dto.getUsername(), vendorLine, apiCredential.getAgent().getCurrency());
 
             gameSession = gameSessionService.createSession(
-                    gameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(), vendorCurrency, vendorLanguageCode, vendorPlatformCode);
+                    gameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(),
+                    vendorCurrency, vendorLanguageCode, vendorPlatformCode, dto.getLobbyUrl(), dto.getIpAddress());
 
 //            gameSessionService.createSessionByVendorPlayer(gameSession);
 
