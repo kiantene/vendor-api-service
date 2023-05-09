@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bonus;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -67,6 +68,14 @@ public class BonusAction {
             responseVo.setTransactionId(transactionId);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
+            responseVo.setBonus(BigDecimal.ZERO);
+
+        } catch (BetResultIdempotentViolationException idempotentViolationException) {
+            // duplicate bet result received, do not process but return original transaction id back to vendor
+            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
+            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
+            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            responseVo.setCash(rawBetResultLog.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
