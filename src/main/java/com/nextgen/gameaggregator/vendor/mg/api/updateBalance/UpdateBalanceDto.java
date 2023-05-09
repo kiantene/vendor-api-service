@@ -25,7 +25,7 @@ public class UpdateBalanceDto implements BetResultData {
     private String playerId;
     
     @NotNull
-    @Positive
+    @PositiveOrZero
     private BigDecimal amount;
 
     @NotBlank
@@ -54,6 +54,8 @@ public class UpdateBalanceDto implements BetResultData {
 
     @NotNull
     private Boolean completed;
+
+    private String transNum;
 
     @Size(max = 50)
     private String channel;

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
-import com.nextgen.gameaggregator.vendor.mg.constant.EventType;
 import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
 
 import jakarta.validation.constraints.*;
@@ -18,15 +17,16 @@ public class WinDataDto implements BetResultData  {
     @NotNull
     private TxnType txnType;
 
-    @NotNull
-    private EventType txnEventType;
+    @NotBlank
+    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$") //checks whether the input matches one of the given types(case-insensitive)
+    private String txnEventType;
 
     @NotBlank
     @Size(max = 50)
     private String playerId;
     
     @NotNull
-    @Positive
+    @PositiveOrZero
     private BigDecimal amount;
 
     @NotBlank
@@ -55,6 +55,8 @@ public class WinDataDto implements BetResultData  {
 
     @NotNull
     private Boolean completed;
+
+    private String transNum;
 
     @Size(max = 50)
     private String channel;

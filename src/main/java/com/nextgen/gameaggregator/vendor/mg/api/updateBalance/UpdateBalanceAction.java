@@ -75,14 +75,9 @@ public class UpdateBalanceAction {
                     break;
                 }
                 case CREDIT -> {
-                    BigDecimal balance = null;
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    if (!dto.getCompleted()) {
-                        balance = walletService.processBetResult(traceId, gameSession, winDataDto,
-                            (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
-                    } else {
-                        balance = walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.END, vendorService, body);
-                    }
+                    ResultType resultType = determineResultType(dto);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, body);
                     updateBalanceVo.setExtTxnId(dto.getTxnId());
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
@@ -133,5 +128,9 @@ public class UpdateBalanceAction {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+    }
+
+    private ResultType determineResultType(UpdateBalanceDto dto) {
+        return dto.getCompleted() ? ResultType.END : (dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE);
     }
 }
