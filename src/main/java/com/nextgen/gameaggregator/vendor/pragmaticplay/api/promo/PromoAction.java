@@ -2,12 +2,10 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.promo;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -38,6 +36,8 @@ public class PromoAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private CachingService cachingService;
 
     @PostMapping(path = Endpoints.PROMO)
     public ResponseVo betResult(HttpServletRequest request) {
@@ -55,18 +55,27 @@ public class PromoAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-//            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-            BigDecimal balance = dto.getAmount(); //walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            BigDecimal balance = walletService.processPromo(traceId, gameSession, dto, body);
 
-            String transactionId = dto.getUserId() + '-' + dto.getTimestamp();
+            String transactionId = traceId.replace("-", "");
+
             responseVo.setTransactionId(transactionId);
-            responseVo.setCurrency("CNY");
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
+            responseVo.setBonus(BigDecimal.ZERO);
+
+        } catch (BetResultIdempotentViolationException idempotentViolationException) {
+            // duplicate bet result received, do not process but return original transaction id back to vendor
+            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
+            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
+            responseVo.setCash(rawBetResultLog.getBalance());
+            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

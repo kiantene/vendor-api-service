@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bonus;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
@@ -37,6 +35,8 @@ public class BonusAction {
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private CachingService cachingService;
 
     @PostMapping(path = Endpoints.BONUS)
     public ResponseVo bonusWin(HttpServletRequest request) {
@@ -47,25 +47,35 @@ public class BonusAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            //TODO: refine dto
             BonusDto dto = HttpService.convertQueryStringToDto(body, BonusDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // 2. Verify session token
-//            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 4. Send win result to Operator
-            BigDecimal balance = dto.getAmount(); //walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            // 3. save sample bet data to redis, to support return same traceId if duplicated call.
+            traceId = cachingService.storeProcessPromoToRedis(gameSession.getVendorPlayerId(), dto.getVendorBetId(), dto.getRoundId(), traceId).getInternalTransactionId();
 
-            String transactionId = dto.getUserId() + '-' + dto.getTimestamp();
+            // 4. Send win result to Operator
+            BigDecimal balance = walletService.processPromo(traceId, gameSession, dto, body);
+
+            String transactionId = traceId.replace("-", "");
             responseVo.setTransactionId(transactionId);
-            responseVo.setCurrency("CNY");
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
+            responseVo.setBonus(BigDecimal.ZERO);
+
+        } catch (BetResultIdempotentViolationException idempotentViolationException) {
+            // duplicate bet result received, do not process but return original transaction id back to vendor
+            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
+            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
+            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            responseVo.setCash(rawBetResultLog.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {

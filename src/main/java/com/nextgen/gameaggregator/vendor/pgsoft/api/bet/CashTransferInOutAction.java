@@ -1,16 +1,15 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.pgsoft.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.annotation.RequestScope;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.UUID;
 
 @RestController
 @RequestScope
@@ -73,7 +70,7 @@ public class CashTransferInOutAction {
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);
-            responseVo.setUpdatedTime(Instant.now().toEpochMilli());
+            responseVo.setUpdatedTime(dto.getVendorSettleTime());
             responseVo.setBalanceAmount(balance);
             responseVo.setCurrencyCode(dto.getCurrencyCode());
 

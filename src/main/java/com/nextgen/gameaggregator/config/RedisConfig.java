@@ -120,6 +120,10 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentApiCredentials", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("promoData", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("playerBalance", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofSeconds(10)).serializeValuesWith(pair));
 
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
                 RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)),

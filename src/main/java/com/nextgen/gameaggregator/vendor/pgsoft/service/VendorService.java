@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
 import com.nextgen.gameaggregator.exception.NoAvailableLineException;
+import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.vendor.pgsoft.api.bet.CashTransferInOutDto;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.GameCodes;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.List;
 
 @Service
 @Slf4j
-public class VendorService {
+public class VendorService extends BaseVendorService {
 
     public static void validateOperatorTokenAndSecretKey(String operatorTokenFromRequest, String secretKeyFromRequest, String operatorTokenFromDb, String secretKeyFromDb) throws NoAvailableLineException {
         if (!operatorTokenFromRequest.equals(operatorTokenFromDb) || !secretKeyFromRequest.equals(secretKeyFromDb)) {

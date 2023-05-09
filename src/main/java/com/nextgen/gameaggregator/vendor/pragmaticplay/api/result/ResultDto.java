@@ -10,6 +10,7 @@ import lombok.Data;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -74,6 +75,15 @@ public class ResultDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String token;
 
+    /**
+     * Promo Information
+     */
+    //* Below are not mandatory
+    private BigDecimal promoWinAmount;
+    private String promoWinReference;
+    private String promoCampaignID;
+    private String promoCampaignType;
+
     @Override
     public String getExternalTransactionId() {
         return this.reference;
@@ -91,7 +101,9 @@ public class ResultDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return amount;
+        BigDecimal promoActualWinAmount = Optional.ofNullable(promoWinAmount).orElse(BigDecimal.ZERO);
+        BigDecimal actualWinAmount = amount.add(promoActualWinAmount);
+        return actualWinAmount;
     }
 
     @Override

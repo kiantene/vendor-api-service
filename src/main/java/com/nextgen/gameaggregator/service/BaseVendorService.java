@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import org.springframework.util.ObjectUtils;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -23,23 +22,19 @@ public abstract class BaseVendorService {
         return betInfo.getBetAmount();
     }
 
-    public BigDecimal calculateWinAmount(BetInformation betInfo) {
-        return ObjectUtils.isEmpty(betInfo.getWinAmount()) ? BigDecimal.valueOf(0) : betInfo.getWinAmount();
-    }
-
-    public BigDecimal calculateJackpotAmount(BetInformation betInfo) {
-        return ObjectUtils.isEmpty(betInfo.getJackpotAmount()) ? BigDecimal.valueOf(0) : betInfo.getJackpotAmount();
-    }
-
     public Integer calculateBetResultType(BetInformation betInfo) {
-        int checkWinAmount = betInfo.getWinAmount().compareTo(BigDecimal.ZERO);
-        int checkJackpotAmount = betInfo.getJackpotAmount().compareTo(BigDecimal.ZERO);
-        int checkBetAmount = betInfo.getBetAmount().compareTo(BigDecimal.ZERO);
+
+        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
+
+        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
+        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
+
         Integer betResultType = BetResultType.LOSE.code;
 
-        if (checkBetAmount == 0) {
-            betResultType = BetResultType.WIN.code;
-        } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
+        if (isJackpotAmountMoreThanZero) {
+            betResultType = BetResultType.JACKPOT.code;
+        } else if (isWinAmountMoreThanZero){
             betResultType = BetResultType.WIN.code;
         }
 
@@ -49,17 +44,15 @@ public abstract class BaseVendorService {
     //calculate ResultType for sending to operator
     public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, Integer isBet) {
 
-        BigDecimal getWinAmount = ObjectUtils.isEmpty(winAmount) ? BigDecimal.valueOf(0) : winAmount;
-        BigDecimal getJackpotAmount = ObjectUtils.isEmpty(jackpotAmount) ? BigDecimal.valueOf(0) : jackpotAmount;
+        winAmount = Optional.ofNullable(winAmount).orElse(BigDecimal.ZERO);
+        jackpotAmount = Optional.ofNullable(jackpotAmount).orElse(BigDecimal.ZERO);
 
-        int checkWinAmount = getWinAmount.compareTo(BigDecimal.ZERO);
-        int checkJackpotAmount = getJackpotAmount.compareTo(BigDecimal.ZERO);
-        int checkBetAmount = betAmount.compareTo(BigDecimal.ZERO);
-        ResultType resultType = (isBet == 1) ? ResultType.BET_LOSE : ResultType.LOSE;
+        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
+        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
 
-        if (checkBetAmount == 0) {
-            resultType = (isBet == 1) ? ResultType.BET_WIN : ResultType.WIN;
-        } else if (checkWinAmount > 0 || checkJackpotAmount > 0) {
+        ResultType resultType = (isBet == 1) ? ResultType.BET_LOSE : ResultType.END;
+
+        if (isWinAmountMoreThanZero || isJackpotAmountMoreThanZero) {
             resultType = (isBet == 1) ? ResultType.BET_WIN : ResultType.WIN;
         }
 

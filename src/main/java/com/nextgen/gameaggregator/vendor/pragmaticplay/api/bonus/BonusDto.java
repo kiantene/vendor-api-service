@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BonusDto {
+public class BonusDto implements BetResultData {
 
     // Hash code of the request
     @NotBlank
@@ -61,4 +61,70 @@ public class BonusDto {
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String token;
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.reference;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.reference;
+    }
+
+    @Override
+    public String getGameId() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        //will return as 0 is because, bonusWin end point figure will be included in the result endpoint, so we are not going to double process the winAmount again
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return this.timestamp;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return this.timestamp;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return this.timestamp;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return null;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return null;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return null;
+    }
 }

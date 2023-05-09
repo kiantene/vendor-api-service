@@ -106,7 +106,9 @@ public class TransferService {
         } catch (InvalidRequestException |
                  GameNotSupportedException |
                  InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException invalidException) {
+                 InvalidOperatorResponseException |
+                 BetRefundIdempotentViolationException invalidException
+        ) {
             transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
