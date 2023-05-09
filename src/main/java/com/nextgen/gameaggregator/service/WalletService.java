@@ -423,7 +423,7 @@ public class WalletService {
             RecordNotFoundException, InvalidAgentApiCredentialException,
             InvalidOperatorResponseException, BetRefundIdempotentViolationException {
 
-        Integer vendorId = gameSession.getVendorId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
         BigDecimal balance = BigDecimal.ZERO;
         String externalTransactionId = rollbackData.getRollbackId();
         BetInformation betInformation = null;
@@ -432,13 +432,13 @@ public class WalletService {
         this.betRefundLogService.idempotentCheck(gameSession.getVendorPlayerId(), gameSession.getVendorGameId(), externalTransactionId);
 
         try {
-            betInformation = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+            betInformation = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         } catch (BetNotFoundException unsettledBetNotFoundException) {
-            log.warn("processRollback -> BetNotFoundException in unsettled_bets: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
+            log.warn("processRollback -> BetNotFoundException in unsettled_bets: vendorPlayerId (" + vendorPlayerId + ") externalTransactionId (" + externalTransactionId + ")");
             try {
-                betInformation = settledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+                betInformation = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
             } catch (BetNotFoundException settledBetNotFoundException) {
-                log.warn("processRollback -> BetNotFoundException in settled_bets: vendorId (" + vendorId + ") externalTransactionId (" + externalTransactionId + ")");
+                log.warn("processRollback -> BetNotFoundException in settled_bets: vendorPlayerId (" + vendorPlayerId + ") externalTransactionId (" + externalTransactionId + ")");
             }
         }
 
