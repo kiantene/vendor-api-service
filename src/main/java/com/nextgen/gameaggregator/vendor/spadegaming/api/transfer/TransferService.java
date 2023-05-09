@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -88,7 +87,7 @@ public class TransferService {
                     BigDecimal payoutBalance = (type != null && type.equals("Free")) // If free spin, use BET_WIN
                             ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body)
                             : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or LOSE
-                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
+                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END, vendorService, body);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
