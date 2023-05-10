@@ -118,7 +118,7 @@ pipeline {
             steps {
                 script {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build ${AWS_ECR_URL}:qa /root/vendor-api'"
+                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t ${AWS_ECR_URL}:qa /root/vendor-api'"
                     }
                 }
             }
