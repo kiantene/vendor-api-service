@@ -103,7 +103,7 @@
             },
             {
                 "name": "TESTING_STUB",
-                "value": "false"
+                "value": "true"
             }
         ],
         "mountPoints": [],
