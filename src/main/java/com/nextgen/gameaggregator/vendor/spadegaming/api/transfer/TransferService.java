@@ -76,10 +76,8 @@ public class TransferService {
                     String type = Optional.ofNullable(dto.getSpecialGame()) // Check type in SpecialGame
                             .map(SpecialGameDto::getType) // Map with dto
                             .orElse(null);
-                    BigDecimal payoutBalance = (type != null && type.equals("Free")) // If free spin, use BET_WIN
-                            ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body)
-                            : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or END
-                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END, vendorService, body);
+                    ResultType resultType = determineResultType(type, winDataDto);
+                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, body);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -159,5 +157,11 @@ public class TransferService {
 
         // Verify channel
         if (!Channel.list.contains(dto.getChannel())) throw new InvalidRequestException();
+    }
+
+    private ResultType determineResultType(String type, WinDataDto winDataDto) {
+        return (type != null && type.equals("Free")) 
+            ? (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE // If free spin, use BET_WIN / BET_LOSE
+            : (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;  // Else WIN / END
     }
 }
