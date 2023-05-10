@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,7 +56,10 @@ public class HealthCheckController {
     private String cbScopeName;
 
     @Value("${spring.data.redis.mode}")
-    private RedisMode mode;
+    private RedisMode redisMode;
+
+    @Value("${spring.data.redis.nodehosts}")
+    private List<String> nodeHosts;
 
     @GetMapping(path = "status")
     public String status() {
@@ -74,7 +78,7 @@ public class HealthCheckController {
 
         output = "Profile:<br>" + profilesActive + "<br><br>" +
                 "DB Info:<br>URL: " + jdbcUrl + "<br>Username: " + dbUsername + "<br><br>" +
-                "Redis Info:<br>DB: " + redisDB + "<br>Host: " + redisHost + "<br>Mode: " + mode + "<br><br>" +
+                "Redis Info:<br>DB: " + redisDB + "<br>Host: " + redisHost + "<br>Redis NodeHost: " + nodeHosts.toString() + "<br>Mode: " + redisMode + "<br><br>" +
                 "Testing Stub:<br>" + stub;
 
         return output;
@@ -98,7 +102,9 @@ public class HealthCheckController {
         long endTime = System.nanoTime();
         long latency = endTime - startTime;
         long milliseconds = TimeUnit.MILLISECONDS.convert(latency, TimeUnit.NANOSECONDS);
-        String output = "Redis Host:<br>" + redisHost + "<br><br>" + "Redis latency: " + latency + " nanoseconds / "
+        String output = "<br>Redis Mode:<br>" + redisMode + "<br>Redis Host:<br>" + redisHost
+                + "<br>Redis NodeHost:<br>" + nodeHosts.toString() + "<br><br>" + "Redis latency: " + latency
+                + " nanoseconds / "
                 + milliseconds + " milliseconds";
 
         return output;
@@ -123,7 +129,7 @@ public class HealthCheckController {
     public String testCouchbaseLatency() {
         long startTime = System.nanoTime();
 
-        Object test = couchbaseTemplate.getCollection("result_bet");
+        couchbaseTemplate.getCollection("result_bet");
 
         long endTime = System.nanoTime();
         long latency = endTime - startTime;
