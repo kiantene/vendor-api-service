@@ -80,7 +80,7 @@ public class CancelBetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
 
-            BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService);
 
             //confirm cancel bet if found transaction id
             //commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);

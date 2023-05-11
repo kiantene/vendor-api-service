@@ -21,4 +21,9 @@ public class RefundDto implements RollbackData {
     public String getRollbackId() {
         return this.mtcode;
     }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
 }

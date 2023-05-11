@@ -32,4 +32,9 @@ public class CancelBetNSettleDto implements RollbackData {
     public String getRollbackId() {
         return this.transferId;
     }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
 }

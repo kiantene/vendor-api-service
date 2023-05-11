@@ -73,6 +73,11 @@ public class UpdateBalanceDto implements BetResultData, RollbackData {
     }
 
     @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
+
+    @Override
     public String getExternalTransactionId() {
         return betId;
     }
