@@ -2,8 +2,6 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
 import org.hibernate.validator.constraints.Range;
@@ -162,8 +160,8 @@ public class WinDataDto implements BetResultData {
     }
 
     public Long getTimestamp() {
-        Instant instant = LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant();
-        long epochSecond = instant.getEpochSecond();
-        return epochSecond;
+        Instant instant = Instant.now();
+        long epochMilli = instant.toEpochMilli();
+        return epochMilli;
     }
 }
