@@ -26,9 +26,9 @@ public class BetDto implements BetResultData {
     @JsonProperty("RecordID")
     public String recordID;
 
-    @NotNull(message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("BankID")
-    public Long bankID;
+    public String bankID;
 
     @NotBlank(message = ResponseCodes.PLAYER_NOT_FOUND)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PLAYER_NOT_FOUND)
@@ -104,7 +104,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return Long.toString(this.bankID);
+        return this.bankID;
     }
 
     @Override
