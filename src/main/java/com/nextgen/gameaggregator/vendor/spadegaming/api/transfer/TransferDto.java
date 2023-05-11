@@ -165,4 +165,9 @@ public class TransferDto implements BetResultData, RollbackData {
     public String getRollbackId() {
         return this.referenceId;
     }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
 }

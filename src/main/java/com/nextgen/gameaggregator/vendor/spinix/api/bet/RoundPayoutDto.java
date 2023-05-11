@@ -76,4 +76,9 @@ public class RoundPayoutDto implements RollbackData {
     public String getRollbackId() {
         return this.roundId;
     }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
 }

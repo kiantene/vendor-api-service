@@ -31,6 +31,7 @@ public abstract class BetInformation {
     private BigDecimal jackpotAmount;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
+
     private Integer resultType;
     private Integer isFreespin;
     private String rawData;
