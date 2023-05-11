@@ -70,6 +70,19 @@ pipeline {
             }
         }
 
+        stage('Copy jar file to QA') {
+            when {
+                branch 'qa'
+            }
+            steps {
+                script {
+                    sshagent(credentials: ['CD_PRIVATE_KEY']) {
+                        sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@47.254.202.80:/root/vendor-api/app.jar'
+                    }
+                }
+            }
+        }
+
         stage('Build Prod Project') {
             when {
                 branch 'main'
@@ -85,6 +98,11 @@ pipeline {
         }
 
         stage('Build Docker Image') {
+            when {
+                not {
+                    branch 'qa'
+                }
+            }
             steps {
                 script {
                     String packageVersion = getRepoTag(env.BRANCH_NAME)
@@ -93,7 +111,25 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image For QA') {
+            when {
+                branch 'qa'
+            }
+            steps {
+                script {
+                    sshagent(credentials: ['CD_PRIVATE_KEY']) {
+                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t ${AWS_ECR_URL}:qa /root/vendor-api'"
+                    }
+                }
+            }
+        }
+
         stage('Push Docker Image') {
+            when {
+                not {
+                    branch 'qa'
+                }
+            }
             steps {
                 // Build and push a Docker image to Amazon ECR
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
@@ -114,10 +150,8 @@ pipeline {
             steps {
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
-                        String password = sh(script: 'aws ecr get-login-password --region ap-east-1', returnStdout: true).trim()
-
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker login --username=AWS --password=${password} 634937900606.dkr.ecr.ap-east-1.amazonaws.com && docker pull ${AWS_ECR_URL}:qa && docker service update --force --image 634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
+                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image ${AWS_ECR_URL}:qa game-aggregator_ga-vendor-api-service'"
                         }
                     }
                 }
