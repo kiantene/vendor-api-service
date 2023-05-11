@@ -166,6 +166,6 @@ public class TransferDto implements BetResultData, RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return null;
+        return getTimestamp();
     }
 }
