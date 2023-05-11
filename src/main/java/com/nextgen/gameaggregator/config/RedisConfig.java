@@ -62,8 +62,9 @@ public class RedisConfig extends CachingConfigurerSupport {
             configuration.setPassword(REDIS_PASSWORD);
             return new JedisConnectionFactory(configuration);
         } else {
-        // } else if (mode == RedisMode.STANDALONE) {
-            RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration(REDIS_HOST, REDIS_PORT);
+            // } else if (mode == RedisMode.STANDALONE) {
+            RedisStandaloneConfiguration configuration = new RedisStandaloneConfiguration(REDIS_HOST,
+                    REDIS_PORT);
             configuration.setUsername(REDIS_USERNAME);
             configuration.setPassword(REDIS_PASSWORD);
             configuration.setDatabase(REDIS_DATABASE);

@@ -98,7 +98,6 @@ springdoc:
     tryItOutEnabled: true
   paths-to-match: /**
 logging:
-  config: classpath:logback-spring.xml
   http-request: true
 logstash:
   host: 

@@ -1,28 +1,17 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.exception.MergedBetDataIntegrityException;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
-import org.apache.commons.beanutils.BeanUtils;
-import com.nextgen.gameaggregator.entity.UnsettledBetResult;
 import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -42,10 +31,10 @@ public class SettledBetService {
         rawSettledBetRepository.save(settledBet);
     }
 
-    public SettledBet getByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId) throws BetNotFoundException {
-        SettledBet settledBet = rawSettledBetRepository.findByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+    public SettledBet getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+        SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (settledBet == null) { // No matching bet record for the given round Id
-            throw new BetNotFoundException("Cannot find vendor Id: " + vendorId + ", externalTransactionId: " + externalTransactionId);
+            throw new BetNotFoundException("Cannot find vendor player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
         }
 
         return settledBet;
