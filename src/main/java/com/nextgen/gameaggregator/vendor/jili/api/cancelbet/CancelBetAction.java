@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,8 @@ public class CancelBetAction {
     private WalletService walletService;
     @Autowired
     private BetHistoryService betHistoryService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CancelBetVo CancelBetAction(HttpServletRequest request) {
@@ -66,7 +69,7 @@ public class CancelBetAction {
             this.doVerification(cancelBetDto, gameSession);
 
             // 4. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
 
             cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());

@@ -150,7 +150,7 @@ public class RoundPayoutAction {
 
                 } else if (cancelBet != null && cancelBet.getType().equals("cancelBet")) {
                     // Send refund to Operator
-                    BigDecimal balance = walletService.processRollback(traceId, dto, gameSession);
+                    BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(balance);

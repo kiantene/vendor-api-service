@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,8 @@ public class CancelBetNSettleService {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo cancelBetNSettle(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -66,7 +69,7 @@ public class CancelBetNSettleService {
             this.doVerification(cancelBetNSettleDto, gameSession);
 
             // 5. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetNSettleDto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetNSettleDto, gameSession, vendorService);
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);

@@ -61,6 +61,15 @@ public class UnsettledBetService {
         return unsettledBet;
     }
 
+    public UnsettledBet getByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId) throws BetNotFoundException {
+        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+        if (unsettledBet == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("Cannot find Vendor Id: " + vendorId + ", externalTransactionId: " + externalTransactionId);
+        }
+
+        return unsettledBet;
+    }
+
     public List<UnsettledBet> getByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) {
         List<UnsettledBet> unsettledBetLists = null;
 

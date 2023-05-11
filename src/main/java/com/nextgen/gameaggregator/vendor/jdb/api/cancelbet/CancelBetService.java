@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -29,6 +30,8 @@ public class CancelBetService {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo cancelBet(ActionDto actionDto, String traceId) {
         // Construct VO
@@ -53,7 +56,7 @@ public class CancelBetService {
             this.doVerification(cancelBetDto, gameSession);
 
             // 5. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);

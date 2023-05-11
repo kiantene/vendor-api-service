@@ -5,4 +5,5 @@ public class Credentials {
     public static final String API_TOKEN = "apiToken";
     public static final String WALLET_TOKEN = "walletToken";
     public static final String GAME_HALL = "cq9";
+    public static final String VENDOR_CODE = "CQ9";
 }

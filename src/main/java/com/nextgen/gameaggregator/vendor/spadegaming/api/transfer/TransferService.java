@@ -74,7 +74,7 @@ public class TransferService {
                 }
                 case Actions.CANCEL_BET -> {
                     // Cancel bet and refund action
-                    BigDecimal rollbackBalance = walletService.processRollback(traceId, dto, gameSession);
+                    BigDecimal rollbackBalance = walletService.processRollback(traceId, dto, gameSession, vendorService);
                     transferVo.setBalance(rollbackBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);

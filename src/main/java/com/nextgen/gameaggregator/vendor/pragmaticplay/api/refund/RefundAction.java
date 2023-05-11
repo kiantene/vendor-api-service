@@ -34,6 +34,8 @@ public class RefundAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.REFUND)
     public ResponseVo refund(HttpServletRequest request) {
@@ -56,7 +58,7 @@ public class RefundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send refund to Operator
-            walletService.processRollback(traceId, dto, gameSession);
+            walletService.processRollback(traceId, dto, gameSession, vendorService);
 
             String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
