@@ -54,6 +54,7 @@ public class GameUrlService implements GameUrl {
         formData.add("token", gameSession.getToken());
         formData.add("platform", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
+        formData.add("lobbyUrl", gameSession.getLobbyUrl());
         String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
 

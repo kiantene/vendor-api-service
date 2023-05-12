@@ -26,7 +26,5 @@ public class RawBetRefundLog {
     private Integer agentId;
     private Integer operatorStatus;
     private Integer currencyId;
-    private BigDecimal balance;
-    private Integer status;
     private Long createTime;
 }

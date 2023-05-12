@@ -13,13 +13,12 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -93,6 +92,7 @@ public class BetAction {
             //convert bigDecimal balance into double
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (
                 AuthenticationException |
@@ -108,12 +108,13 @@ public class BetAction {
         } catch (
                 MergedBetDataIntegrityException |
                 CouchbaseDataIntegrityException |
-                InsufficientBalanceException |
                 InvalidOperatorResponseException |
                 InvalidAgentApiCredentialException |
                 BetNotFoundException cancelException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -130,7 +131,8 @@ public class BetAction {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
         } catch (Exception exception) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

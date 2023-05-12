@@ -52,10 +52,19 @@ public class UnsettledBetService {
         return unsettledBet;
     }
 
+    public UnsettledBet getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        if (unsettledBet == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("Cannot find Vendor Player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
+        }
+
+        return unsettledBet;
+    }
+
     public UnsettledBet getByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId) throws BetNotFoundException {
         UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
         if (unsettledBet == null) { // No matching bet record for the given round Id
-            throw new BetNotFoundException("Cannot find vendor Id: " + vendorId + ", externalTransactionId: " + externalTransactionId);
+            throw new BetNotFoundException("Cannot find Vendor Id: " + vendorId + ", externalTransactionId: " + externalTransactionId);
         }
 
         return unsettledBet;

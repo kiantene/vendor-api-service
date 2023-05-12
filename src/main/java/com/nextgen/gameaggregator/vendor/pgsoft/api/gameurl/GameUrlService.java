@@ -39,9 +39,11 @@ public class GameUrlService implements GameUrl {
         String token = formData.get("token").get(0);
         // 7. Retrieve Operator Token as it is required to form the Game URL
         String operatorToken = credentials.get(Credentials.OPERATOR_TOKEN);
-        // 8. Construct the Game URL
-        String gameUrl = VendorService.generateGameUrl(urlScheme, gameCode, language, operatorToken, token);
-        // 9. Save this player's game session
+        // 8. Retrieve Operator lobby URL
+        String lobbyUrl = gameSession.getLobbyUrl();
+        // 9. Construct the Game URL
+        String gameUrl = VendorService.generateGameUrl(urlScheme, gameCode, language, operatorToken, token, lobbyUrl);
+        // 10. Save this player's game session
         // Set the game URL and return to Operator
         responseVo.setGameUrl(gameUrl);
 

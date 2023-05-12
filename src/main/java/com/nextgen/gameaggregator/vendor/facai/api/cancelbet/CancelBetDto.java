@@ -12,8 +12,8 @@ import jakarta.validation.constraints.*;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CancelBetDto implements RollbackData {
 
-    @NotNull(message = ResponseCodes.TRANSACTION_NOT_EXIST)
-    public Long BankID;
+    @NotBlank(message = ResponseCodes.TRANSACTION_NOT_EXIST)
+    public String BankID;
 
     @NotBlank(message = ResponseCodes.TRANSACTION_NOT_EXIST)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.TRANSACTION_NOT_EXIST)
@@ -35,6 +35,11 @@ public class CancelBetDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return String.valueOf(this.BankID);
+        return this.BankID;
+    }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
     }
 }

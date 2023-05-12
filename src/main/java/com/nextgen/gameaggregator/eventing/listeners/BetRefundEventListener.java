@@ -40,8 +40,6 @@ public class BetRefundEventListener implements EventListener<BetRollbackEvent> {
 
         // TODO: To add refund logic for different statuses
         if ( BetStatus.UNSETTLED.isValueOf(betHistory.getStatus()) ) {
-            BigDecimal refundAmount = betHistory.getBetAmount();
-            betHistory.setRefundAmount(refundAmount);
             betHistory.setStatus(BetStatus.REFUNDED.code);
 
             betHistoryRepository.save(betHistory);

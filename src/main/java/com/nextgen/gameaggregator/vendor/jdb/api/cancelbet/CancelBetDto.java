@@ -55,4 +55,9 @@ public class CancelBetDto implements RollbackData {
         // TODO: will throw null pointer if get(0) does not exists
         return getRefTransferIds().get(0).toString();
     }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
 }

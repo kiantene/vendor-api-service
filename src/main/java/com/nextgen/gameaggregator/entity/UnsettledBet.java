@@ -27,4 +27,10 @@ public class UnsettledBet extends BetInformation {
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(settledBet, this);
     }
+
+    public UnsettledBet(BetInformation betInformation) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(betInformation, this);
+    }
 }

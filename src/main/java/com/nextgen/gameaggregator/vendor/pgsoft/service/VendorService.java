@@ -54,9 +54,9 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String generateGameUrl(String urlTemplate, String gameCode, String languageCode, String operatorToken, String playerGameSessionToken) {
-        // https://m.pg-redirect.net/{gameID}/index.html?l={0}&btt=1&ot={2}&ops={3}
-        String gameUrl = MessageFormat.format(urlTemplate, gameCode, languageCode, operatorToken, playerGameSessionToken);
+    public static String generateGameUrl(String urlTemplate, String gameCode, String languageCode, String operatorToken, String playerGameSessionToken, String lobbyUrl) {
+        // https://m.pg-redirect.net/{gameID}/index.html?l={0}&btt=1&ot={2}&ops={3}&f={4}
+        String gameUrl = MessageFormat.format(urlTemplate, gameCode, languageCode, operatorToken, playerGameSessionToken, lobbyUrl);
         return gameUrl;
     }
 

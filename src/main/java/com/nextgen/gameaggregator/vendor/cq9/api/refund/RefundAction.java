@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -10,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
 import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
@@ -41,6 +43,10 @@ public class RefundAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
 
     @PostMapping(path = EndPoints.REFUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> refund(HttpServletRequest request) {
@@ -67,16 +73,17 @@ public class RefundAction {
 
             // 2. Gather require data
             // TODO: get vendor id by vendor code
-            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(refundDto.getMtcode(), 3);
+            Integer vendorId = vendorService.findVendorByCode(Credentials.VENDOR_CODE).getId();
+            UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, refundDto.getMtcode());
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(betHistory.getGameSessionToken());
+            GameSession gameSession = gameSessionService.verifyToken(unsettledBet.getGameSessionToken());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(refundDto, wToken, betHistory);
+            this.doVerification(refundDto, wToken, unsettledBet);
 
             // 5. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
 
             commonVo.setBalance(balance);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -119,9 +126,9 @@ public class RefundAction {
         ValidationUtils.validateRequest(refundDto);
     }
 
-    private void doVerification(RefundDto refundDto, String wToken, BetHistory betHistory) throws InvalidVendorLineException, CredentialNotFoundException {
+    private void doVerification(RefundDto refundDto, String wToken, UnsettledBet unsettledBet) throws InvalidVendorLineException, CredentialNotFoundException {
         // 3. Retrieve vendor line credentials and secretKey for verify API Token
-        String walletToken = vendorLineService.getCredentialValueByName(betHistory.getVendorLineId(), Credentials.WALLET_TOKEN);
+        String walletToken = vendorLineService.getCredentialValueByName(unsettledBet.getVendorLineId(), Credentials.WALLET_TOKEN);
 
         // 4. Validate request Wallet Token
         ValidationUtils.isEquals(walletToken, wToken, InvalidVendorLineException::new);

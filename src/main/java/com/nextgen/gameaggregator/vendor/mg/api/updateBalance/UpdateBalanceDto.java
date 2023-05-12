@@ -69,6 +69,7 @@ public class UpdateBalanceDto implements BetResultData {
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
 
+
     @Override
     public String getExternalTransactionId() {
         return betId;
