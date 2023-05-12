@@ -160,7 +160,7 @@ public class BetHistoryService {
                 entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
                 entity.getGameSessionToken(), entity.getGameCategoryId(),
                 entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(),
-                entity.getEffectiveTurnover(), entity.getResultType(), entity.getRawData(), entity.getStatus(),
+                entity.getEffectiveTurnover(), entity.getResultType(), entity.getStatus(),
                 entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime());
 
         return entity;
@@ -205,7 +205,7 @@ public class BetHistoryService {
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
      *
      * @param roundId        Vendor's round Id
-     * @param vendorLineId         vendor line id within Game Aggregator System
+     * @param vendorBetId         vendor bet id within Game Aggregator System
      * @param vendorPlayerId Id of the record in VendorPlayer
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found

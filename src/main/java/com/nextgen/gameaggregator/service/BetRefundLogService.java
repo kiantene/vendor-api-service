@@ -33,7 +33,6 @@ public class BetRefundLogService {
      */
     public BetRefundLog create(BetRefundLog entity) {
         // Set default values
-        entity.setStatus(1); // TODO: refactor, map to constant/enum value
         entity.setCreateTime(System.currentTimeMillis());
 
         return betRefundLogRepository.save(entity);
@@ -82,11 +81,9 @@ public class BetRefundLogService {
         entity.setVendorPlayerId(gameSession.getVendorPlayerId());
         entity.setAgentPlayerId(gameSession.getAgentPlayerId());
         entity.setAgentId(gameSession.getAgentId());
-        entity.setOperatorStatus(0);
+        entity.setOperatorStatus(1);
         entity.setVendorLineId(gameSession.getVendorLineId());
         entity.setCurrencyId(gameSession.getCurrencyId());
-        entity.setBalance(balance);
-        entity.setStatus(1); // TODO: change to enum
         entity.setCreateTime(System.currentTimeMillis());
 
         return entity;
