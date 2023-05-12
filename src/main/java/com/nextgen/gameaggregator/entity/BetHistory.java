@@ -68,9 +68,6 @@ public class BetHistory {
     @JsonProperty("effective_turnover")
     private BigDecimal effectiveTurnover;
 
-    @JsonProperty("refund_amount")
-    private BigDecimal refundAmount;
-
     @JsonProperty("jackpot_amount")
     private BigDecimal jackpotAmount;
 
@@ -79,9 +76,6 @@ public class BetHistory {
 
     @JsonProperty("is_freespin")
     private Integer isFreespin;
-
-    @JsonProperty("raw_data")
-    private String rawData;
 
     @JsonProperty("resettle_num")
     private Integer resettleNum;
@@ -131,7 +125,6 @@ public class BetHistory {
         this.vendorSettleTime = settledBet.getVendorSettleTime();
         this.createTime = Instant.now().toEpochMilli();
         this.resultTime = settledBet.getResultTime();
-        this.rawData = settledBet.getRawData();
         this.resettleNum = settledBet.getResettleNum();
     }
 }

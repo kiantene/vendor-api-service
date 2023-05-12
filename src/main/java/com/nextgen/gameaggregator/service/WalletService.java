@@ -456,9 +456,6 @@ public class WalletService {
                 WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, rollbackTimestamp);
                 balance = balanceVo.getData().getBalance();
 
-                RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
-                betRefundLogService.create(rawBetRefundLog);
-
                 SettledBet newSettledBet = new SettledBet(unsettledBet, vendorService);
                 String newTraceId = UUID.randomUUID().toString();
 
@@ -474,6 +471,12 @@ public class WalletService {
                 BetHistory betHistory = new BetHistory(newSettledBet);
                 log.info(new Gson().toJson(betHistory));
                 kafkaService.produceBetHistory(betHistory);
+
+                RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
+                betRefundLogService.create(rawBetRefundLog);
+                BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
+                log.info(new Gson().toJson(rawBetRefundLog));
+                //TODO INSERT INTO KAFKA
 
                 betHistoryService.deleteUnsettledBet(unsettledBet);
             }
@@ -535,27 +538,5 @@ public class WalletService {
         unsettledBet.setStatus(betResultData.getBetStatus().code);
 
         return unsettledBet;
-    }
-
-    private BetRefundLog newBetRefundLog(BetHistory betHistory, String externalTransactionId, Long currentTimestamp, String rawData) {
-        BetRefundLog betRefundLog = new BetRefundLog();
-
-        betRefundLog.setBetHistoryId(betHistory.getId());
-        betRefundLog.setExternalTransactionId(externalTransactionId);
-        betRefundLog.setRoundId(betHistory.getRoundId());
-        betRefundLog.setVendorGameId(betHistory.getVendorGameId());
-        betRefundLog.setVendorPlayerId(betHistory.getVendorPlayerId());
-        betRefundLog.setAgentPlayerId(betHistory.getAgentPlayerId());
-        betRefundLog.setAgentId(betHistory.getAgentId());
-        betRefundLog.setCurrencyId(betHistory.getCurrencyId());
-        //TODO remove the balance column from bet_refund_log table
-        betRefundLog.setBalance(BigDecimal.ZERO);
-        betRefundLog.setVendorLineId(betHistory.getVendorLineId());
-        betRefundLog.setRawData(rawData);
-        betRefundLog.setOperatorStatus(1);
-        betRefundLog.setStatus(1); // TODO: refactor, map to constant/enum value
-        betRefundLog.setCreateTime(currentTimestamp);
-
-        return betRefundLog;
     }
 }

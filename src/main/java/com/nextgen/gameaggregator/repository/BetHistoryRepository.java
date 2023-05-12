@@ -68,7 +68,6 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "bh.win_loss AS winLoss, " +
             "bh.effective_turnover AS effectiveTurnover, " +
             "bh.jackpot_amount AS jackpotAmount, " +
-            "bh.refund_amount AS refundAmount, " +
             "bh.status AS status, " +
             "bh.vendor_bet_time AS vendorBetTime, " +
             "bh.vendor_settle_time AS vendorSettleTime, " +
