@@ -31,4 +31,9 @@ public class RollbackDto implements RollbackData {
     public String getRollbackId() {
         return txnId;
     }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return null;
+    }
 }

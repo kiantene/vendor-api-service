@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
+import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -36,6 +37,8 @@ public class RollbackAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
     
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseEntity<RollbackVo> updateBalance(HttpServletRequest request) {
@@ -59,14 +62,14 @@ public class RollbackAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
             rollbackVo.setExtTxnId(dto.getTxnId());
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
             rollbackVo.setExtCreationTimeMs(startTime);
         } catch (BetRefundIdempotentViolationException| JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException| AuthenticationException| RecordNotFoundException e){
+            DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException e){
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
             httpService.end(httpRequestLog, rollbackVo);
