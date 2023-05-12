@@ -37,7 +37,7 @@ public class CheckPlayerAction {
     @Autowired
     private VendorPlayerService vendorPlayerService;
 
-    @PostMapping()
+    @PostMapping(path = EndPoints.ACTION)
     public CheckPlayerVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
