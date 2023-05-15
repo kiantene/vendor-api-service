@@ -2,15 +2,17 @@ package com.nextgen.gameaggregator.entity;
 
 import lombok.Data;
 import jakarta.persistence.*;
+import org.springframework.data.couchbase.core.mapping.Document;
+import org.springframework.data.couchbase.repository.Collection;
+import org.springframework.data.couchbase.repository.Scope;
 
-@Entity
-@Table(name = "http_request_logs")
+@Document
+@Scope("raw")
+@Collection("http_request_logs")
 @Data
 public class HttpRequestLog {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String traceId;
+    private String id;
     private String url;
     private String method;
     private String headers;
@@ -22,4 +24,10 @@ public class HttpRequestLog {
     private Long startTime;
     private Long endTime;
     private Long timeTaken;
+    private Long operatorProcessStartTime;
+    private Long operatorProcessEndTime;
+    private Long operatorProcessTimeTaken;
+    private Long betProcessStartTime;
+    private Long betProcessEndTime;
+    private Long betProcessTimeTaken;
 }

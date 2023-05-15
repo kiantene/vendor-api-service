@@ -43,7 +43,7 @@ public class AppendWagerAction {
         ResponseVo responseVo = new ResponseVo();
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
 
         try {
