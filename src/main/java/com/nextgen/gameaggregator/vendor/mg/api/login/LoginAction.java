@@ -47,7 +47,7 @@ public class LoginAction {
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getId();
-        HttpStatus status = HttpStatus.OK;
+        HttpStatus status;
         LoginVo loginVo = new LoginVo();
         HttpHeaders headers = new HttpHeaders();
         

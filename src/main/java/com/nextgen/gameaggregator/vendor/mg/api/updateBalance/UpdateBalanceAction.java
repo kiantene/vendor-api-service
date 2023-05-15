@@ -49,7 +49,7 @@ public class UpdateBalanceAction {
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getId();
-        HttpStatus status = HttpStatus.OK;
+        HttpStatus status;
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 

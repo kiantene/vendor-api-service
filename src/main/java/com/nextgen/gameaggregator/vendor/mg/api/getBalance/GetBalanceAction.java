@@ -47,7 +47,7 @@ public class GetBalanceAction {
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getId();
-        HttpStatus status = HttpStatus.OK;
+        HttpStatus status;
         GetBalanceVo getBalanceVo = new GetBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 
