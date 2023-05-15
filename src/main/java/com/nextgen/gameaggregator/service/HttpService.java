@@ -77,6 +77,15 @@ public class HttpService {
                             requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
                         }
 
+                        if (requestLog.getOperatorProcessEndTime() != null) {
+                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        }
+
+                        if (requestLog.getBetProcessEndTime() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
+                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        }
+
                         httpRequestLogRepository.save(requestLog);
                     } catch (Exception exception) {
                         log.error(exception.getMessage());
