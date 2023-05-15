@@ -51,7 +51,8 @@ public class RoundPayoutAction {
     public RoundPayoutVo bet(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        walletService.setHttpRequestLog(httpRequestLog);
+        String traceId = httpRequestLog.getId();
         String sign = request.getHeader("x-gaming-signature");
         String body = httpRequestLog.getRequestBody();
         RoundPayoutVo roundPayoutVo = new RoundPayoutVo();

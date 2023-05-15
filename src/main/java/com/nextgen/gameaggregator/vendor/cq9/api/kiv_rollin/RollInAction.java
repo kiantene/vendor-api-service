@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
@@ -49,7 +50,8 @@ public class RollInAction {
     @PostMapping(path = EndPoints.ROLLIN, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     private ResponseVo<CommonVo> rollIn(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        
+        String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
         // Construct Vo

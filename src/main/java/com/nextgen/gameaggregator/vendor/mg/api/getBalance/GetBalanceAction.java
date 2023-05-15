@@ -41,12 +41,13 @@ public class GetBalanceAction {
     public ResponseEntity<GetBalanceVo> getBalance(HttpServletRequest request) {
         // Start the HTTP request logging
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         // Get start time of request
         long startTime = System.currentTimeMillis();
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
-        String traceId = httpRequestLog.getTraceId();
-        HttpStatus status = HttpStatus.OK;
+        String traceId = httpRequestLog.getId();
+        HttpStatus status;
         GetBalanceVo getBalanceVo = new GetBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 

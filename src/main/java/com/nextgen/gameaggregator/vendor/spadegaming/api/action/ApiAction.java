@@ -56,7 +56,7 @@ public class ApiAction {
                 HttpRequestLog httpRequestLog = httpService.start(request);
                 
                 // Get the trace ID from the logging
-                String traceId = httpRequestLog.getTraceId();
+                String traceId = httpRequestLog.getId();
                 responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
                 responseVo.setSerialNo(traceId);
 

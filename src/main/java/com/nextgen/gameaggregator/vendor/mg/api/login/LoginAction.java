@@ -41,12 +41,13 @@ public class LoginAction {
     public ResponseEntity<LoginVo> login(HttpServletRequest request) {
         // Start the HTTP request logging
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         // Get start time of request
         long startTime = System.currentTimeMillis();
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
-        String traceId = httpRequestLog.getTraceId();
-        HttpStatus status = HttpStatus.OK;
+        String traceId = httpRequestLog.getId();
+        HttpStatus status;
         LoginVo loginVo = new LoginVo();
         HttpHeaders headers = new HttpHeaders();
         

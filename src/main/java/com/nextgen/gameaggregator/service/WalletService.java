@@ -51,6 +51,12 @@ public class WalletService {
     @Autowired
     private CachingService cachingService;
 
+    private HttpRequestLog httpRequestLog;
+
+    public void setHttpRequestLog(HttpRequestLog log) {
+        this.httpRequestLog = log;
+    }
+
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         WalletBalanceVo balanceVo = walletBalanceAction.call(traceId, gameSession);
         // TODO: to handle balance returned with more than 4 decimals
@@ -149,6 +155,7 @@ public class WalletService {
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
             BetResultIdempotentViolationException {
 
+        if (this.httpRequestLog != null) this.httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
         log.info("processBetResult (" + resultType + ") " + betResultData.toString());
 
         Integer agentId = gameSession.getAgentId();
@@ -268,7 +275,9 @@ public class WalletService {
             }
 
             if (!isBetExistsForUnsettledBet) {
+                if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betResultDataForOperator, resultType);
+                if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
                 cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
             } else {
                 // TODO: add try-catch in case operator fails
@@ -353,6 +362,7 @@ public class WalletService {
                 // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
                 //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
             }
+            if (this.httpRequestLog != null) this.httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
         }
     }
 

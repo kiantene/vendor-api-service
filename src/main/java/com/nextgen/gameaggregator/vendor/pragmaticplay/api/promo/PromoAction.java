@@ -42,8 +42,9 @@ public class PromoAction {
     @PostMapping(path = Endpoints.PROMO)
     public ResponseVo betResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         PromoVo responseVo = new PromoVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

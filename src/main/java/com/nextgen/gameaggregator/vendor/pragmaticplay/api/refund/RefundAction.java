@@ -40,8 +40,9 @@ public class RefundAction {
     @PostMapping(path = Endpoints.REFUND)
     public ResponseVo refund(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         RefundVo responseVo = new RefundVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

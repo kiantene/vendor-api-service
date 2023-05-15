@@ -43,14 +43,15 @@ public class SettleBetAction {
     @PostMapping(path = EndPoints.SETTLE_BET)
     public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        walletService.setHttpRequestLog(httpRequestLog);
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
 //        commonVo.setResponseCode(ResponseCodes.SUCCESS);
 //        commonVo.setBalance(1000.00);
 
-        try{
+        try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -94,9 +95,9 @@ public class SettleBetAction {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
+            if (invalidRequestException.getValidation() != null) {
                 commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
-            }else{
+            } else {
                 commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             }
         } catch (Exception exception) {

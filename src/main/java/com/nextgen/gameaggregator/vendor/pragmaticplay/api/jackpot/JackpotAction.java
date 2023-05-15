@@ -46,8 +46,9 @@ public class JackpotAction {
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        walletService.setHttpRequestLog(httpRequestLog);
         JackpotVo responseVo = new JackpotVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

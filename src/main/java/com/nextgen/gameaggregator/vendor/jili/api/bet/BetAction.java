@@ -41,8 +41,9 @@ public class BetAction {
     public BetVo betRequest(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+        walletService.setHttpRequestLog(httpRequestLog);
         BetVo betVo = new BetVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

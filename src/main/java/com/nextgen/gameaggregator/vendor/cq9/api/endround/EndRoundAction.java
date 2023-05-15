@@ -60,7 +60,8 @@ public class EndRoundAction {
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        walletService.setHttpRequestLog(httpRequestLog);
+        String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
         // Construct Vo
@@ -202,15 +203,15 @@ public class EndRoundAction {
         dto.setResultTime(resultTime);
         dto.setVendorSettleTime(dto.getResultTime());
 
-        BigDecimal getJackpot = (dto.getJackpot() == null)?BigDecimal.ZERO:dto.getJackpot();
+        BigDecimal getJackpot = (dto.getJackpot() == null) ? BigDecimal.ZERO : dto.getJackpot();
 
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount().subtract(getJackpot));
         dto.setEffectiveTurnover(unsettledBet.getBetAmount());
         dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
         dto.setResultType(this.getResultType(dto, dto.getWinAmount()));
 
-        Integer checkFreeSpin = (dto.getFreegame() == null)?0:dto.getFreegame().intValue();
-        checkFreeSpin = (checkFreeSpin > 0)?1:0;
+        Integer checkFreeSpin = (dto.getFreegame() == null) ? 0 : dto.getFreegame().intValue();
+        checkFreeSpin = (checkFreeSpin > 0) ? 1 : 0;
 
         dto.setIsFreespin(checkFreeSpin);
     }
