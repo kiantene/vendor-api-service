@@ -6,6 +6,5 @@ import java.math.BigDecimal;
 
 @Data
 public class CommonVo {
-    private BigDecimal balance;
-    private String currency;
+
 }
