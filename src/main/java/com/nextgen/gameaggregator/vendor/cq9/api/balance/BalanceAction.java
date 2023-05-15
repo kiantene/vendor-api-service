@@ -45,7 +45,8 @@ public class BalanceAction {
     @GetMapping(path = EndPoints.BALANCE)
     public ResponseVo<CommonVo> balance(HttpServletRequest request, @PathVariable("account") String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        
+        String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
         BalancePathVariableDto pathVariableDto = new BalancePathVariableDto();
         pathVariableDto.setAccount(account);

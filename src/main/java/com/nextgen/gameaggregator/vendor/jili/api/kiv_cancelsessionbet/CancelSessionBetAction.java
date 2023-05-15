@@ -41,8 +41,9 @@ public class CancelSessionBetAction {
     public CancelSessionBetVo CancelSessionBetAction (HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         CancelSessionBetVo cancelSessionBetVo = new CancelSessionBetVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
 
         try{

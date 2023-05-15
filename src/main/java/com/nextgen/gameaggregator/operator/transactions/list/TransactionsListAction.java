@@ -42,7 +42,7 @@ public class TransactionsListAction {
             TransactionsListDto dto = HttpService.convertJsonToDto(body, TransactionsListDto.class);
 
             responseVo.setTraceId(dto.getTraceId());
-            httpRequestLog.setTraceId(dto.getTraceId());
+            httpRequestLog.setId(dto.getTraceId());
             log.info(dto.toString());
 
             // 1. Validate all fields in the request object

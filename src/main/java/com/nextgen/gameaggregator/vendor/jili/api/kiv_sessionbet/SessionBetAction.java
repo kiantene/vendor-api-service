@@ -47,8 +47,9 @@ public class SessionBetAction {
     public SessionBetVo SessionBetAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         SessionBetVo sessionBetVo = new SessionBetVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

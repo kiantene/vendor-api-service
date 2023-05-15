@@ -43,8 +43,9 @@ public class ResultAction {
     @PostMapping(path = Endpoints.RESULT)
     public ResponseVo betResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        walletService.setHttpRequestLog(httpRequestLog);
         ResultVo responseVo = new ResultVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto
