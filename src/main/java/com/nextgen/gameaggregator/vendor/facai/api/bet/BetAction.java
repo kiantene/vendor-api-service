@@ -51,7 +51,8 @@ public class BetAction {
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        walletService.setHttpRequestLog(httpRequestLog);
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         CommonVo commonVo = new CommonVo();

@@ -40,10 +40,11 @@ public class FreeSpinAction {
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         ResponseVo responseVo = new ResponseVo();
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
 
         try {

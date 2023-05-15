@@ -45,8 +45,9 @@ public class EndRoundAction {
     @PostMapping(path = Endpoints.END_ROUND)
     public ResponseVo endRound(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        walletService.setHttpRequestLog(httpRequestLog);
         EndRoundVo responseVo = new EndRoundVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto
