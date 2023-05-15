@@ -281,7 +281,9 @@ public class WalletService {
                 cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
             } else {
                 // TODO: add try-catch in case operator fails
+                if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
                 balanceVo = walletBalanceAction.call(traceId, gameSession);
+                if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
             }
 
             if (isSettled) {
@@ -320,6 +322,7 @@ public class WalletService {
                         //no matter match or not, will perform delete unsettled bet data with same round Id
                         betHistoryService.deleteUnsettledBet(betRecord);
                     }
+                    if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
                 }
             } else { // Unsettled
                 switch (resultType) {
