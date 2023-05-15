@@ -47,7 +47,7 @@ public class CashTransferInOutAction {
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
+        walletService.setHttpRequestLog(httpRequestLog);
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
         String traceId = httpRequestLog.getId();
 
