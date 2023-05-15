@@ -49,6 +49,7 @@ public class BalanceAction {
     public BalanceVo BalanceAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         BalanceVo balanceVo = new BalanceVo();
 
         try {
@@ -64,7 +65,7 @@ public class BalanceAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
             for (UsersDto user : balanceDto.getUsers()) {
-                String traceId = httpRequestLog.getTraceId();
+                String traceId = httpRequestLog.getId();
                 CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId));
                 futures.add(future);
             }

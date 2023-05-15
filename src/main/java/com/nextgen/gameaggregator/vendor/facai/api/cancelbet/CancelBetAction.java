@@ -47,7 +47,8 @@ public class CancelBetAction {
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo cancelbet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         CommonVo commonVo = new CommonVo();

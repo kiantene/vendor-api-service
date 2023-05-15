@@ -48,7 +48,7 @@ public class BalanceAction {
         BalanceVo balanceVo = new BalanceVo();
         BalanceErrorVo balanceErrorVo = new BalanceErrorVo();
         BalanceDataVo balanceDataVo = new BalanceDataVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String sign = request.getHeader("x-gaming-signature");
         String body = httpRequestLog.getRequestBody();
 

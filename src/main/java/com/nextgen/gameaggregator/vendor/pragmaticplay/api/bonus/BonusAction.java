@@ -41,8 +41,9 @@ public class BonusAction {
     @PostMapping(path = Endpoints.BONUS)
     public ResponseVo bonusWin(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         BonusVo responseVo = new BonusVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

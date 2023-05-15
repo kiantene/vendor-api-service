@@ -42,7 +42,8 @@ public class TokenAction {
     @PostMapping(path = EndPoints.TOKEN)
     public TokenVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         TokenVo tokenVo = new TokenVo();
