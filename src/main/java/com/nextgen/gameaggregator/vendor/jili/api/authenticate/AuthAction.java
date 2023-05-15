@@ -40,8 +40,9 @@ public class AuthAction {
     public AuthVo AuthAction (HttpServletRequest request) {
 
             HttpRequestLog httpRequestLog = httpService.start(request);
+
             AuthVo authVo = new AuthVo();
-            String traceId = httpRequestLog.getTraceId();
+            String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

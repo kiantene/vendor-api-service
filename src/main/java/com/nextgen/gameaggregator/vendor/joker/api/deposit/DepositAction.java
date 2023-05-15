@@ -24,7 +24,7 @@ public class DepositAction {
     @PostMapping(path = EndPoints.DEPOSIT)
     public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         CommonVo commonVo = new CommonVo();

@@ -44,7 +44,7 @@ public class CreditAction {
     @PostMapping(path = EndPoints.CREDIT, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> credit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
         // Construct VO

@@ -59,7 +59,7 @@ public class BalanceService {
         
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         // Create new AuthBalanceVo and AcctInfoVo objects
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
