@@ -48,7 +48,7 @@ public class RollbackAction {
         long startTime = System.currentTimeMillis();
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         HttpStatus status = HttpStatus.OK;
         RollbackVo rollbackVo = new RollbackVo();
         HttpHeaders headers = new HttpHeaders();
