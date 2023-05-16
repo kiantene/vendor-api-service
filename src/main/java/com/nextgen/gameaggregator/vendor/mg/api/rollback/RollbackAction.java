@@ -41,7 +41,7 @@ public class RollbackAction {
     private VendorService vendorService;
     
     @PostMapping(path = Endpoints.ROLLBACK)
-    public ResponseEntity<RollbackVo> updateBalance(HttpServletRequest request) {
+    public ResponseEntity<RollbackVo> rollback(HttpServletRequest request) {
         // Start the HTTP request logging
         HttpRequestLog httpRequestLog = httpService.start(request);
         // Get start time of request
@@ -54,7 +54,7 @@ public class RollbackAction {
         HttpHeaders headers = new HttpHeaders();
 
         try {
-            // Convert the request body to a UpdateBalanceDto object
+            // Convert the request body to a RollbackDto object
             RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -81,7 +81,7 @@ public class RollbackAction {
         headers.add(Headers.RESPONSE_TIMESTAMP, String.valueOf(responseTime));
         // Add back the requestId to the response headers
         headers.add(Headers.REQUEST_ID, request.getHeader(Headers.REQUEST_ID));
-        // Return ResponseEntity with UpdateBalanceDto object, headers, and HTTP status code
+        // Return ResponseEntity with RollbackDto object, headers, and HTTP status code
         return new ResponseEntity<>(rollbackVo, headers, status);
     }
 
