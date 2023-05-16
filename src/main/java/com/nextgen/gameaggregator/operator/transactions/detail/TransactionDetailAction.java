@@ -117,6 +117,11 @@ public class TransactionDetailAction {
         } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
 
+        } catch (Exception exception) {
+            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+            exception.printStackTrace();
+
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
 
