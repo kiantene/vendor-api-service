@@ -178,11 +178,11 @@ public class RequestService {
         logInfo.put("RequestEndTime: ", requestLogVo.getEndTime());
         logInfo.put("ExecuteTimeMillis: ", requestLogVo.getEndTime() - requestLogVo.getStartTime());
         logInfo.put("ServicePackage: ", requestLogVo.getPackageName());
-        if ((requestLogVo.getProfilesActive().equals("dev")) ||
-                (requestLogVo.getProfilesActive().equals("qa")) ||
-                (requestLogVo.getProfilesActive().equals("stg"))) {
+//        if ((requestLogVo.getProfilesActive().equals("dev")) ||
+//                (requestLogVo.getProfilesActive().equals("qa")) ||
+//                (requestLogVo.getProfilesActive().equals("stg"))) {
             log.info(gson.toJson(logInfo));
-        }
+//        }
     }
 
 
