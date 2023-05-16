@@ -51,7 +51,7 @@ public class RefundAction {
     @PostMapping(path = EndPoints.REFUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> refund(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
         // Construct Vo

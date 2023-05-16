@@ -41,7 +41,7 @@ public class AuthenticateService {
 
         // Get the request body and trace ID from the logging
         String body = httpRequestLog.getRequestBody();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         AuthBalanceVo authBalanceVo = new AuthBalanceVo();
         AcctInfoVo acctInfoVo = new AcctInfoVo();

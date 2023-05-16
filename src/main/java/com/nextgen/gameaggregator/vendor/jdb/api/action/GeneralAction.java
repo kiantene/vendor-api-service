@@ -61,7 +61,7 @@ public class GeneralAction {
     @PostMapping(path = EndPoints.ACTION + "/{id}")
     public CommonVo action(HttpServletRequest request, @PathVariable String id) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         // Construct VO
         CommonVo vo = new CommonVo();

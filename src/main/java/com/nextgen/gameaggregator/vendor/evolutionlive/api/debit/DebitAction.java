@@ -39,8 +39,9 @@ public class DebitAction {
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo DebitAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         ResponseVo responseVo = new ResponseVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

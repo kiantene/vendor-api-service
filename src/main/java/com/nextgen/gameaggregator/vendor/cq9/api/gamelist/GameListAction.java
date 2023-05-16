@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -33,7 +34,7 @@ public class GameListAction {
     @PostMapping(path = "/game/list")
     public ResponseVo<List<GameDetailsDto>> getGameListAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         ResponseVo<List<GameDetailsDto>> responseVo = new ResponseVo<>();
 
         try {
@@ -42,7 +43,8 @@ public class GameListAction {
             Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
             Optional.ofNullable(apiToken).orElseThrow(InvalidVendorLineException::new);
 
-            ParameterizedTypeReference<ResponseVo<List<GameDetailsDto>>> responseType = new ParameterizedTypeReference<ResponseVo<List<GameDetailsDto>>>() {};
+            ParameterizedTypeReference<ResponseVo<List<GameDetailsDto>>> responseType = new ParameterizedTypeReference<ResponseVo<List<GameDetailsDto>>>() {
+            };
 
             responseVo = WebClient.create(apiUrl)
                     .get()

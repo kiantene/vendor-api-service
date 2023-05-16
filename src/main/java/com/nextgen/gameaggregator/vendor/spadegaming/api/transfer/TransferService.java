@@ -38,7 +38,7 @@ public class TransferService {
     public TransferVo transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String body = httpRequestLog.getRequestBody();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         TransferVo transferVo = new TransferVo();
 
         try {

@@ -46,7 +46,7 @@ public class TerminateAction {
             TerminateDto dto = HttpService.convertJsonToDto(body, TerminateDto.class);
 
             responseVo.setTraceId(dto.getTraceId());
-            httpRequestLog.setTraceId(dto.getTraceId());
+            httpRequestLog.setId(dto.getTraceId());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);

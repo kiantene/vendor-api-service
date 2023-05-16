@@ -45,10 +45,11 @@ public class EndWagerAction {
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         ResponseVo responseVo = new ResponseVo();
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String body = httpRequestLog.getRequestBody();
 
         try {
@@ -154,6 +155,7 @@ public class EndWagerAction {
 
     private ResponseVo getCurrentBalanceResponseVo (HttpServletRequest request, String traceId, String body) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         ResponseVo responseVo = new ResponseVo();
         ResponseDataVo responseDataVo = new ResponseDataVo();
 

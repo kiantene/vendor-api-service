@@ -38,7 +38,7 @@ public class PayoffAction {
     @PostMapping(path = EndPoints.PAYOFF)
     public ResponseVo<CommonVo> payoff(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
         // Construct VO

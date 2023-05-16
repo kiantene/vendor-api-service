@@ -50,7 +50,7 @@ public class TransactionDetailAction {
             TransactionDetailDto dto = HttpService.convertJsonToDto(body, TransactionDetailDto.class);
 
             responseVo.setTraceId(dto.getTraceId());
-            httpRequestLog.setTraceId(dto.getTraceId());
+            httpRequestLog.setId(dto.getTraceId());
 
             // 1. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
@@ -116,6 +116,11 @@ public class TransactionDetailAction {
 
         } catch (VendorLanguageNotSupportedException vendorLanguageNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LANGUAGE_NOT_SUPPORTED);
+
+        } catch (Exception exception) {
+            responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, exception);
+            exception.printStackTrace();
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);

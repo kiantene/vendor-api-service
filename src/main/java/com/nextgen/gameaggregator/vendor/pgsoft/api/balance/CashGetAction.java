@@ -44,7 +44,8 @@ public class CashGetAction {
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo<CashGetVo> balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getTraceId();
+
+        String traceId = httpRequestLog.getId();
 
         // Construct Vo
         ResponseVo<CashGetVo> parentResponseVo = new ResponseVo<>();

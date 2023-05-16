@@ -46,6 +46,7 @@ public class CreditAction {
     public CreditVo CreditAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         CreditVo creditVo = new CreditVo();
 
         try {
@@ -61,7 +62,7 @@ public class CreditAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
             for (TransactionsDto transaction : creditDto.getTransactions()) {
-                String traceId = httpRequestLog.getTraceId();
+                String traceId = httpRequestLog.getId();
                 CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId));
                 futures.add(future);
             }

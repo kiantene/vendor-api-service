@@ -29,7 +29,7 @@ public class HttpService {
     public static final Integer COMPLETED = 2;
     public static final Integer ERROR = -1;
 
-    private static final Integer THREAD_SIZE = 8;
+    private static final Integer THREAD_SIZE = 32;
     public static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
 
     @Value("${logging.http-request:true}")
@@ -43,7 +43,7 @@ public class HttpService {
             Map<String, String> headers = this.getHeadersInfo(request);
             String headersJson = new ObjectMapper().writeValueAsString(headers);
             String requestBody = this.getRawRequestBody(request);
-            httpRequestLog.setTraceId(UUID.randomUUID().toString());
+            httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
             httpRequestLog.setHeaders(headersJson);
@@ -70,6 +70,48 @@ public class HttpService {
                         requestLog.setResponseBody(responseBody);
                         requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                         requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
+                        if (requestLog.getBetProcessEndTime() != null) {
+                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime());
+                        }
+                        if (requestLog.getOperatorProcessEndTime() != null) {
+                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        }
+
+                        if (requestLog.getOperatorProcessEndTime() != null) {
+                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        }
+
+                        if (requestLog.getBetProcessEndTime() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
+                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        }
+
+                        if (requestLog.getOperatorProcessEndTime() != null) {
+                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        }
+
+                        if (requestLog.getBetProcessEndTime() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
+                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        }
+
+                        if (requestLog.getOperatorProcessEndTime() != null) {
+                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        }
+
+                        if (requestLog.getBetProcessEndTime() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
+                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        }
+
+                        if (requestLog.getOperatorProcessEndTime() != null) {
+                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        }
+
+                        if (requestLog.getBetProcessEndTime() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
+                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        }
 
                         httpRequestLogRepository.save(requestLog);
                     } catch (Exception exception) {

@@ -41,8 +41,9 @@ public class AuthenticateAction {
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         AuthenticateVo responseVo = new AuthenticateVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto

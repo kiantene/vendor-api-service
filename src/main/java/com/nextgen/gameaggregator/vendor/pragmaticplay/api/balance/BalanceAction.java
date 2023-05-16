@@ -40,8 +40,9 @@ public class BalanceAction {
     @PostMapping(path = Endpoints.BALANCE)
     public ResponseVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         BalanceVo responseVo = new BalanceVo();
-        String traceId = httpRequestLog.getTraceId();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto
