@@ -47,7 +47,8 @@ public class LoginService {
         player.setIs_test(false);
 
         balance.setValue("100.00");
-        balance.setVersion(BigInteger.valueOf(0));
+        long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
+        balance.setVersion(BigInteger.valueOf(unixTime));
 
         vo.setUid(loginDto.getUid());
         vo.setPlayer(player);
