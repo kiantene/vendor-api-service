@@ -11,19 +11,22 @@ import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-
+@Slf4j
 public class BetDetailService implements BetDetailUrl {
 
     @Autowired
@@ -65,6 +68,10 @@ public class BetDetailService implements BetDetailUrl {
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
+                .onErrorResume(WebClientRequestException.class, e -> {
+                    log.error("Failed to fetch data from {}: {}", apiUrl, e.getMessage());
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching data from " + apiUrl));
+                })
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
@@ -88,6 +95,10 @@ public class BetDetailService implements BetDetailUrl {
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
             requestService.failResponseLog(requestLogVo, invalidException);
+            throw new InvalidVendorResponseException();
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            requestService.failResponseLog(requestLogVo, exception);
             throw new InvalidVendorResponseException();
         }
 
