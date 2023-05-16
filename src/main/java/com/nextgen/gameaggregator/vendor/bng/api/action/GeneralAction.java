@@ -1,10 +1,15 @@
 package com.nextgen.gameaggregator.vendor.bng.api.action;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.vendor.bng.api.login.LoginService;
 import com.nextgen.gameaggregator.vendor.bng.constant.EndPoints;
+
+import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bng.constant.Actions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,30 +32,37 @@ public class GeneralAction {
     @Autowired
     private VendorLineService vendorLineService;
 
+    @Autowired
+    private LoginService loginService;
+
     @PostMapping(path = EndPoints.ACTION)
-    public LoginResponseDto action(HttpServletRequest request) {
+    public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
+
+        String body = httpRequestLog.getRequestBody();
+
+        ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
+
+        // Construct VO
+        CommonVo vo = new CommonVo();
 
         LoginResponseDto responseDto = new LoginResponseDto();
 
-        ArgsDto args = new ArgsDto();
-
-        args.setPlatform("DESKTOP");
-
-        responseDto.setName("login");
-        responseDto.setUid("c22535914505424591bdaa930236932c");
-        responseDto.setToken("TJj5ynZaLU");
-        responseDto.setSession("400bd91815e94f06887c5ba61a332168");
-        responseDto.setGame_id("151");
-        responseDto.setGame_name("dragon_pearls_bng");
-        responseDto.setProvider_id("1");
-        responseDto.setProvider_name("booongo");
-        responseDto.setC_at("2023-05-15T03:10:23+00:00");
-        responseDto.setSent_at("2023-05-15T03:10:23+00:00");
-        responseDto.setArgs(args);
+        // Handle the action and return the resulting value
+        vo = this.actionHandling(actionDto, traceId, body);
 
         httpService.end(httpRequestLog, responseDto);
 
-        return responseDto;
+        return vo;
+    }
+
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, String body) throws JsonProcessingException {
+        CommonVo vo = new CommonVo();
+        switch (actionDto.getName()) {
+            case Actions.LOGIN:
+                vo = loginService.login(body, traceId);
+        }
+        return vo;
     }
 }
