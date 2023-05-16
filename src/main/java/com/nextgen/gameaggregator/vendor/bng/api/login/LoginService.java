@@ -43,8 +43,8 @@ public class LoginService {
         player.setId("testgame1");
         player.setBrand("zt001winksw-stage");
         player.setCurrency("BRL");
-        player.setMode("REAL");
-        player.setIs_test(false);
+        player.setMode("FUN");
+        player.setIs_test(true);
 
         balance.setValue("0.00");
         balance.setVersion(BigInteger.valueOf(0));
