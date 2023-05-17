@@ -40,19 +40,22 @@ public class GeneralAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
+        // Retrieve request body in original string format
         String body = httpRequestLog.getRequestBody();
 
+        // Construct this vo for action handling purpose
         ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
 
         // Construct VO
         CommonVo vo = new CommonVo();
 
-        LoginResponseDto responseDto = new LoginResponseDto();
+        //response body(empty)
+//        LoginResponseDto responseDto = new LoginResponseDto();
 
         // Handle the action and return the resulting value
         vo = this.actionHandling(actionDto, traceId, body);
 
-        httpService.end(httpRequestLog, responseDto);
+        httpService.end(httpRequestLog, vo);
 
         return vo;
     }
