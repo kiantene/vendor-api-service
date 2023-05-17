@@ -68,9 +68,11 @@ public class AuthenticateAction {
             // Emit event for additional asynchronous processing
 //            eventDispatcher.emit(getClass(), body);
 
-            responseVo.setUsername("");
-            responseVo.setCurrency("USD");
-            responseVo.setToken("");
+            responseVo.setUsername(dto.getUsername());
+            responseVo.setCurrency(dto.getCurrency());
+            responseVo.setToken(dto.getToken());
+            responseVo.setOperatorId(dto.getOperatorId());
+            responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (InvalidRequestException invalidRequestException) {
 //            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
