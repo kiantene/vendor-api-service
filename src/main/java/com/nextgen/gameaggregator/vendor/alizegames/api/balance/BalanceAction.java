@@ -61,7 +61,7 @@ public class BalanceAction {
             responseVo.setCurrency(dto.getCurrency());
             responseVo.setToken(dto.getToken());
             responseVo.setUsername(dto.getUsername());
-            responseVo.setBalance(new BigDecimal("1000"));
+            responseVo.setBalance(new BigDecimal("5000"));
             responseVo.setTimestamp(System.currentTimeMillis());
 
 //        } catch (InvalidRequestException invalidRequestException) {
