@@ -13,6 +13,9 @@ public class CommonVo implements HttpResponse {
     @JsonProperty("name")
     private String name;
 
+    @JsonProperty("error")
+    private Object error;
+
     @Override
     public boolean hasError() {
         return false;
