@@ -47,7 +47,7 @@ public class LoginService {
         player.setMode("REAL");
         player.setIs_test(false);
 
-        balance.setValue("0.00");
+        balance.setValue("100.00");
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
         balance.setVersion(BigInteger.valueOf(unixTime));
 

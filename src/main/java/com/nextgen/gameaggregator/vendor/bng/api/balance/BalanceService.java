@@ -38,7 +38,7 @@ public class BalanceService {
         BalanceVo vo = new BalanceVo();
         AmountVo amountVo = new AmountVo();
 
-        amountVo.setValue("0.00");
+        amountVo.setValue("100.00");
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
         amountVo.setVersion(BigInteger.valueOf(unixTime));
 
