@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.vendor.bng.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bng.api.login.LoginService;
 import com.nextgen.gameaggregator.vendor.bng.constant.EndPoints;
 
@@ -34,6 +35,9 @@ public class GeneralAction {
 
     @Autowired
     private LoginService loginService;
+
+    @Autowired
+    private BalanceService balanceService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
@@ -65,6 +69,8 @@ public class GeneralAction {
         switch (actionDto.getName()) {
             case Actions.LOGIN:
                 vo = loginService.login(body, traceId);
+            case Actions.GETBALANCE:
+                vo = balanceService.balance(body, traceId);
         }
         return vo;
     }
