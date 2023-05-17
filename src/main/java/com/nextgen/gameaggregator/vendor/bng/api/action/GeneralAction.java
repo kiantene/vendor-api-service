@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.bng.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.bng.api.bet.TransactionService;
 import com.nextgen.gameaggregator.vendor.bng.api.login.LoginService;
 import com.nextgen.gameaggregator.vendor.bng.constant.EndPoints;
 
@@ -39,6 +40,9 @@ public class GeneralAction {
     @Autowired
     private BalanceService balanceService;
 
+    @Autowired
+    private TransactionService transactionService;
+
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -63,13 +67,15 @@ public class GeneralAction {
 
     private CommonVo actionHandling(ActionDto actionDto, String traceId, String body) throws JsonProcessingException {
         CommonVo vo = new CommonVo();
-        System.out.print("serhrs-"+actionDto.getName().toLowerCase());
         switch (actionDto.getName().toLowerCase()) {
             case Actions.LOGIN:
                 vo = loginService.login(body, traceId);
                 break;
             case Actions.GETBALANCE:
                 vo = balanceService.balance(body, traceId);
+                break;
+            case Actions.TRANSACTION:
+                vo = transactionService.transaction(body, traceId);
                 break;
         }
         return vo;
