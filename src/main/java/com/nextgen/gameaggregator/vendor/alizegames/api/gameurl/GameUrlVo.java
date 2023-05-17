@@ -6,10 +6,10 @@ import lombok.Data;
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo {
     private String error;
     private String description;
-    private String gameURL;
+    private GameUrlDataVo data;
 
     @Override
     public String getGameUrl() {
-        return this.gameURL;
+        return this.data.getGameUrl();
     }
 }
