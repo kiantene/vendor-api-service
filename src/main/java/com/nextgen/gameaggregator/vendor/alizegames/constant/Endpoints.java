@@ -9,7 +9,7 @@ public class Endpoints {
 //    public static final String OPEN_HISTORY = "/OpenHistory/";
     public static final String AUTHENTICATE = "authenticate";
     public static final String BALANCE = "balance";
-//    public static final String BET = "bet";
+    public static final String BET_N_SETTLE = "betNSettle";
 //    public static final String RESULT = "result";
 //    public static final String REFUND = "refund";
 //    public static final String JACKPOT = "jackpotWin";
