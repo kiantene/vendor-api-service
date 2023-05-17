@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.alizegames.api.authenticate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -49,7 +50,7 @@ public class AuthenticateAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            AuthenticateDto dto = HttpService.convertQueryStringToDto(body, AuthenticateDto.class);
+            AuthenticateDto dto = HttpService.convertJsonToDto(body, AuthenticateDto.class);
 
             log.info(dto.toString());
 
@@ -74,7 +75,7 @@ public class AuthenticateAction {
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setTimestamp(System.currentTimeMillis());
 
-        } catch (InvalidRequestException invalidRequestException) {
+        } catch (JsonProcessingException jsonProcessingException) {
 //            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 //            if (invalidRequestException.getValidation() != null) {
 //                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
