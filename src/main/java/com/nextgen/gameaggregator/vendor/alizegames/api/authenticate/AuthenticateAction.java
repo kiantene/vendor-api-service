@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+@RequestMapping(path = Endpoints.PATH)
 @Slf4j
 public class AuthenticateAction {
     @Autowired
