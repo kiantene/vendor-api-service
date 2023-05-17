@@ -53,9 +53,6 @@ public class GeneralAction {
         // Construct VO
         CommonVo vo = new CommonVo();
 
-        //response body(empty)
-//        LoginResponseDto responseDto = new LoginResponseDto();
-
         // Handle the action and return the resulting value
         vo = this.actionHandling(actionDto, traceId, body);
 
@@ -66,11 +63,14 @@ public class GeneralAction {
 
     private CommonVo actionHandling(ActionDto actionDto, String traceId, String body) throws JsonProcessingException {
         CommonVo vo = new CommonVo();
-        switch (actionDto.getName()) {
+        System.out.print("serhrs-"+actionDto.getName().toLowerCase());
+        switch (actionDto.getName().toLowerCase()) {
             case Actions.LOGIN:
                 vo = loginService.login(body, traceId);
+                break;
             case Actions.GETBALANCE:
                 vo = balanceService.balance(body, traceId);
+                break;
         }
         return vo;
     }

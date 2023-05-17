@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bng.api.login;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -31,6 +32,7 @@ public class LoginService {
     private HttpService httpService;
 
     public CommonVo login(String body, String traceId) throws JsonProcessingException {
+
         // Retrieve request body in original string format
         LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
 

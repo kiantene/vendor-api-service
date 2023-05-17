@@ -1,10 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bng.api.login;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.vendor.bng.api.login.ArgsDto;
-import jakarta.validation.constraints.NotNull;
+
 import lombok.Data;
-import org.checkerframework.checker.index.qual.Positive;
 
 @Data
 public class LoginDto {
