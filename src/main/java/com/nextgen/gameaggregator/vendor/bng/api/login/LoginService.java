@@ -41,13 +41,13 @@ public class LoginService {
         PlayerVo player = new PlayerVo();
         BalanceVo balance = new BalanceVo();
 
-        player.setId("testgame1");
+        player.setId("testgame2");
         player.setBrand("zt001winksw-stage");
         player.setCurrency("BRL");
         player.setMode("REAL");
         player.setIs_test(false);
 
-        balance.setValue("100.00");
+        balance.setValue("0.00");
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
         balance.setVersion(BigInteger.valueOf(unixTime));
 
