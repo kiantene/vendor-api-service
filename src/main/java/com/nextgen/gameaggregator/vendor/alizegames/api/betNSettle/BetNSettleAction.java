@@ -65,6 +65,8 @@ public class BetNSettleAction {
             responseVo.setUsername(dto.getUsername());
             responseVo.setBalance(new BigDecimal("1000"));
             responseVo.setTimestamp(System.currentTimeMillis());
+            responseVo.setError(0);
+            responseVo.setMessage("Success Operation");
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
