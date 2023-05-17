@@ -40,7 +40,7 @@ public class LoginService {
         PlayerVo player = new PlayerVo();
         BalanceVo balance = new BalanceVo();
 
-        player.setId("testgame2");
+        player.setId("testgame3");
         player.setBrand("zt001winksw-stage");
         player.setCurrency("BRL");
         player.setMode("REAL");
