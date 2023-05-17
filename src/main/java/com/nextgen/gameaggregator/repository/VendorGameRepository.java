@@ -52,6 +52,7 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
             "INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id " +
             "INNER JOIN currencies c on c.id = vgcurrency.currency_id " +
             "WHERE vgc.status = :status " +
+            "AND vgcurrency.status = :status " +
             "AND vgc.vendor_id = :vendorId " +
             "AND vgcurrency.currency_id = :currencyId " +
             "AND vg.game_category_id IN (:categoryIds) " +
@@ -75,6 +76,7 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
                             "INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id " +
                             "INNER JOIN currencies c on c.id = vgcurrency.currency_id " +
                             "WHERE vgc.status = :status " +
+                            "AND vgcurrency.status = :status " +
                             "AND vgc.vendor_id = :vendorId " +
                             "AND vgcurrency.currency_id = :currencyId " +
                             "AND vg.game_category_id IN (:categoryIds) " +

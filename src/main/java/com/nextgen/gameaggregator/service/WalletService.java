@@ -297,8 +297,7 @@ public class WalletService {
 
                 BetHistory betHistory = new BetHistory(settledBet);
                 log.info(new Gson().toJson(betHistory));
-                // TODO: add try-catch on KafkaException
-                kafkaService.produceBetHistory(betHistory);
+                kafkaService.produceBetHistory(betHistory, settledBet);
 
                 if (unsettledBetList != null && unsettledBetList.size() > 0) { // multiple bets within same round
                     for (UnsettledBet betRecord : unsettledBetList) {
@@ -316,7 +315,7 @@ public class WalletService {
                             settledBetService.create(newSettledBet, newSettledBet.getRawData());
                             betHistory = new BetHistory(newSettledBet);
                             log.info(new Gson().toJson(betHistory));
-                            kafkaService.produceBetHistory(betHistory);
+                            kafkaService.produceBetHistory(betHistory, newSettledBet);
                         }
 
                         //no matter match or not, will perform delete unsettled bet data with same round Id
@@ -483,7 +482,7 @@ public class WalletService {
                 settledBetService.create(newSettledBet, " ");
                 BetHistory betHistory = new BetHistory(newSettledBet);
                 log.info(new Gson().toJson(betHistory));
-                kafkaService.produceBetHistory(betHistory);
+                kafkaService.produceBetHistory(betHistory, newSettledBet);
 
                 RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
                 betRefundLogService.create(rawBetRefundLog);

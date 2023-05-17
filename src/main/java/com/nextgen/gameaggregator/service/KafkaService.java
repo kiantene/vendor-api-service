@@ -2,19 +2,29 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.SettledBet;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class KafkaService {
 
     @Autowired
     private KafkaTemplate<String, String> stringKafkaTemplate;
     @Autowired
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
+    @Autowired
+    private SettledBetService settledBetService;
 
-    public void produceBetHistory(BetHistory betHistory) {
-        jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
+    public void produceBetHistory(BetHistory betHistory, SettledBet settledBet) {
+        try{
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
+            settledBetService.delete(settledBet);
+        } catch (Exception e){
+            log.warn("Kafka produceBetHistory.exception -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+        }
     }
 }

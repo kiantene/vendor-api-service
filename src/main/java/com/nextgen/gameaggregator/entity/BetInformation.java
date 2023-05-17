@@ -43,6 +43,7 @@ public abstract class BetInformation {
     private Long vendorSettleTime;
     private Long createTime;
     private Long resultTime;
+    private Integer processingStatus;
     public BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
