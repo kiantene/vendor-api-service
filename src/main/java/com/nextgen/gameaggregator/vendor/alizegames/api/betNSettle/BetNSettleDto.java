@@ -21,9 +21,9 @@ public class BetNSettleDto {
     private Long timestamp;
     private String gameCode;
     private String ip;
-    private String info;
-    private String result;
-    private String hits;
+//    private String info;
+//    private String result;
+//    private String hits;
     private Long betTime;
     private Long processedTime;
 }
