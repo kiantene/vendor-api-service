@@ -8,17 +8,22 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.Optional;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetNSettleDto {
+public class BetNSettleDto implements BetResultData {
 
+    private String traceId;
+    private String betId;
+    private String roundId;
     private String token;
     private String username;
     private String currency;
     private String operatorId;
-    private Long timestamp;
+
+    private BigDecimal stake;
+    private BigDecimal payout;
+    private BigDecimal winloss;
     private String gameCode;
     private String ip;
 //    private String info;
@@ -26,4 +31,75 @@ public class BetNSettleDto {
 //    private String hits;
     private Long betTime;
     private Long processedTime;
+    private Long timestamp;
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.traceId;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.betId;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.roundId;
+    }
+
+    @Override
+    public String getGameId() {
+        return this.gameCode;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return this.stake;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return this.payout;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return this.winloss;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return this.betTime;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return System.currentTimeMillis();
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return this.processedTime;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
+    }
 }

@@ -48,20 +48,20 @@ public class BalanceAction {
 //            this.doValidation(dto);
 
             // 2. Verify session token
-//            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
 
 
             // 5. Retrieve the latest wallet balance from Operator
-//            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setCurrency(dto.getCurrency());
             responseVo.setToken(dto.getToken());
             responseVo.setUsername(dto.getUsername());
-            responseVo.setBalance(new BigDecimal("5000"));
+            responseVo.setBalance(balance);
             responseVo.setTimestamp(System.currentTimeMillis());
 
 //        } catch (InvalidRequestException invalidRequestException) {

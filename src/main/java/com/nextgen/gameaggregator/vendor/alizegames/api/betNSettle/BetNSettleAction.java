@@ -13,7 +13,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 //import com.nextgen.gameaggregator.vendor.alizegames.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 //import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
-//import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
+import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
 import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +37,8 @@ public class BetNSettleAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-//    @Autowired
-//    private VendorService vendorService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
     public ResponseVo betResult(HttpServletRequest request) {
@@ -57,13 +57,12 @@ public class BetNSettleAction {
 //            this.doValidation(dto);
 
             // 2. Verify session token
-//            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setToken(dto.getToken());
             responseVo.setCurrency(dto.getCurrency());
             responseVo.setUsername(dto.getUsername());
-            responseVo.setBalance(new BigDecimal("1000"));
             responseVo.setTimestamp(System.currentTimeMillis());
             responseVo.setError(0);
             responseVo.setMessage("Success Operation");
@@ -72,16 +71,20 @@ public class BetNSettleAction {
 //            this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send win result to Operator
-//            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            Integer isBet = 1;
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
+
+            responseVo.setBalance(balance);
 
 //            String transactionId = VendorService.getTransactionId(traceId);
 
-//        } catch (BetResultIdempotentViolationException idempotentViolationException) {
-//            // duplicate bet result received, do not process but return original transaction id back to vendor
-//            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
+        } catch (BetResultIdempotentViolationException idempotentViolationException) {
+            // duplicate bet result received, do not process but return original transaction id back to vendor
+            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
 //            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
 //            responseVo.setCash(rawBetResultLog.getBalance());
-//
+
 //        } catch (InvalidRequestException invalidRequestException) {
 //            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 //            if (invalidRequestException.getValidation() != null) {
