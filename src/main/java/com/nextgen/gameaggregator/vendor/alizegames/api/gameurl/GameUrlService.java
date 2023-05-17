@@ -52,7 +52,7 @@ public class GameUrlService implements GameUrl {
         formData.add("gameCode", gameSession.getVendorGameCode());
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("ip", gameSession.getIpAddress());
-        formData.add("operator", "NFG");
+        formData.add("operator", "1api");
         formData.add("playmode", "free");
         formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
 //        String hash = VendorService.generateHash(formData, secret);
