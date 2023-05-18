@@ -8,6 +8,6 @@ import java.math.BigDecimal;
 @Data
 public class AuthenticationVo extends CommonVo {
     private String uid;
-    private BigDecimal balance;
+    private Double balance;
     private String currency;
 }

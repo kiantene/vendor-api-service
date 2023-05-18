@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -59,7 +60,7 @@ public class AuthenticationAction {
             authenticationVo.setToken(authenticationDto.getToken());
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
             authenticationVo.setUid(gameSession.getVendorPlayerUsername());
-            authenticationVo.setBalance(balance);
+            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             authenticationVo.setCurrency(gameSession.getVendorCurrencyCode());
             authenticationVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
             authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
