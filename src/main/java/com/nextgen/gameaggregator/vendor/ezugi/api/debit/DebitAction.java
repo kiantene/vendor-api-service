@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -37,7 +39,7 @@ public class DebitAction {
         debitVo.setUid("testgame1");
         debitVo.setRoundId("11111111111112R");
         debitVo.setTransactionId("11111111111112RT");
-        debitVo.setBalance(10.00);
+        debitVo.setBalance(BigDecimal.valueOf(10.00));
         debitVo.setCurrency("BRL");
         debitVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
         debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));

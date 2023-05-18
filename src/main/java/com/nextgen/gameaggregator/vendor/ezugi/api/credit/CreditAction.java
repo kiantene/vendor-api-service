@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -38,7 +40,7 @@ public class CreditAction extends CommonDto {
         creditVo.setUid("testgame1");
         creditVo.setRoundId("11111111111111R");
         creditVo.setTransactionId("11111111111111RT");
-        creditVo.setBalance(200.00);
+        creditVo.setBalance(BigDecimal.valueOf(200.00));
         creditVo.setCurrency("BRL");
         creditVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
         creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));

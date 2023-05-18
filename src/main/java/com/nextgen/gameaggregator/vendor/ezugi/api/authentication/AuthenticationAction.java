@@ -48,19 +48,19 @@ public class AuthenticationAction {
             this.doValidation(authenticationDto);
 
             //Get GameSession by player name and vendor game id
-            //GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
 
             //Verify remaining parameters (Verify against database values)
-            //this.doVerification(authenticationDto, gameSession);
+            this.doVerification(authenticationDto, gameSession);
 
             //Get walletBalance
-            //BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             authenticationVo.setToken(authenticationDto.getToken()+"ST");
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
-            authenticationVo.setUid("testgame1");
-            authenticationVo.setBalance(100.00);
-            authenticationVo.setCurrency("CNY");
+            authenticationVo.setUid(gameSession.getVendorPlayerUsername());
+            authenticationVo.setBalance(balance);
+            authenticationVo.setCurrency(gameSession.getVendorCurrencyCode());
             authenticationVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
             authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
             authenticationVo.setTimestamp(System.currentTimeMillis());
