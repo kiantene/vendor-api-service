@@ -11,6 +11,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -27,14 +28,17 @@ public class SettledBetService {
     @Autowired
     private BetHistoryService betHistoryService;
 
-    public void create(SettledBet settledBet, String rawData) {
+    @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    public SettledBet create(SettledBet settledBet, String rawData) {
         settledBet.setResettleNum(Optional.ofNullable(settledBet.getResettleNum()).orElse(0));
         settledBet.setRawData(Optional.ofNullable(settledBet.getRawData()).orElse(DigestUtils.md5Hex(rawData)));
         settledBet.setCreateTime(System.currentTimeMillis());
         settledBet.setProcessingStatus(0);
         rawSettledBetRepository.save(settledBet);
+        return settledBet;
     }
 
+    @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager")
     public SettledBet getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
         SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (settledBet == null) { // No matching bet record for the given round Id
