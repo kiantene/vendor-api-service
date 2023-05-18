@@ -289,6 +289,11 @@ public class WalletService {
             if (isSettled) {
                 settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
                 long settledTime = System.currentTimeMillis();
+                //get settle time from unsettled bet first
+                if (unsettledBet.getVendorSettleTime() != null) {
+                    settledTime = unsettledBet.getVendorSettleTime();
+                }
+                // but if bet result data have settle time then use it
                 if (betResultData.getVendorSettleTime() != null) {
                     settledTime = betResultData.getVendorSettleTime();
                 }
