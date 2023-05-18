@@ -20,6 +20,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -178,11 +179,11 @@ public class RequestService {
         logInfo.put("RequestEndTime: ", requestLogVo.getEndTime());
         logInfo.put("ExecuteTimeMillis: ", requestLogVo.getEndTime() - requestLogVo.getStartTime());
         logInfo.put("ServicePackage: ", requestLogVo.getPackageName());
-//        if ((requestLogVo.getProfilesActive().equals("dev")) ||
-//                (requestLogVo.getProfilesActive().equals("qa")) ||
-//                (requestLogVo.getProfilesActive().equals("stg"))) {
+        if ((requestLogVo.getProfilesActive().equals("dev")) ||
+                (requestLogVo.getProfilesActive().equals("qa")) ||
+                (requestLogVo.getProfilesActive().equals("stg"))) {
             log.info(gson.toJson(logInfo));
-//        }
+        }
     }
 
 
@@ -201,6 +202,11 @@ public class RequestService {
         requestLogVo.setPackageName(packageName);
         requestLogVo.setProfilesActive(profilesActive);
         return requestLogVo;
+    }
+
+    public Boolean isTestEnvironment(String profilesActive){
+        String[] environments = {"dev","qa","stg"};
+        return Arrays.stream(environments).anyMatch(profilesActive::equals);
     }
 
 
