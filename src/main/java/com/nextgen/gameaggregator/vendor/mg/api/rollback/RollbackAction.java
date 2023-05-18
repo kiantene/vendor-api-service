@@ -63,10 +63,10 @@ public class RollbackAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
-            rollbackVo.setExtTxnId(dto.getTxnId());
+            //rollbackVo.setExtTxnId(dto.getTxnId());
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
-            rollbackVo.setExtCreationTimeMs(startTime);
+            //rollbackVo.setExtCreationTimeMs(startTime);
         } catch (BetRefundIdempotentViolationException| JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
             DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException e){
