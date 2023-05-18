@@ -5,10 +5,10 @@ public class EndPoints {
     public static final String PATH = "api/v1/ezugi";
     // authentication API
     public static final String AUTHENTICATION = "/authentication";
-    // authentication API
+    // debit API
     public static final String DEBIT = "/debit";
-    // authentication API
-    public static final String ROLLBACK = "/rollback";
-    // authentication API
+    // credit API
     public static final String CREDIT = "/credit";
+    // rollback API
+    public static final String ROLLBACK = "/rollback";
 }

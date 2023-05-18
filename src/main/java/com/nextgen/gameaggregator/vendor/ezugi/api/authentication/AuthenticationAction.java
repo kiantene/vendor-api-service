@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
@@ -13,8 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -22,26 +23,73 @@ import java.util.Date;
 public class AuthenticationAction {
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.AUTHENTICATION)
-    public CommonVo authenticate(HttpServletRequest request) throws JsonProcessingException {
+    public CommonVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
-
-        String body = httpRequestLog.getRequestBody();
-        AuthenticationDto authenticationDto = HttpService.convertJsonToDto(body, AuthenticationDto.class);
-
         // Construct Vo
         AuthenticationVo authenticationVo = new AuthenticationVo();
-        authenticationVo.setToken(authenticationDto.getToken()+"ST");
-        authenticationVo.setOperatorId(authenticationDto.getOperatorId());
-        authenticationVo.setUid("testgame1");
-        authenticationVo.setBalance(100.00);
-        authenticationVo.setCurrency("BRL");
-        authenticationVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
-        authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
-        authenticationVo.setTimestamp(System.currentTimeMillis());
-        httpService.end(httpRequestLog, authenticationVo);
+        try {
+            String body = httpRequestLog.getRequestBody();
+            AuthenticationDto authenticationDto = HttpService.convertJsonToDto(body, AuthenticationDto.class);
+
+            //Validate request parameters from vendor (Non-database related)
+            this.doValidation(authenticationDto);
+
+            //Get GameSession by player name and vendor game id
+            GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
+
+            //Verify remaining parameters (Verify against database values)
+            this.doVerification(authenticationDto, gameSession);
+
+            //Get walletBalance
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+
+            authenticationVo.setToken(gameSession.getToken()+"ST");
+            authenticationVo.setOperatorId(authenticationDto.getOperatorId());
+            authenticationVo.setUid(gameSession.getVendorPlayerUsername());
+            authenticationVo.setBalance(balance.doubleValue());
+            authenticationVo.setCurrency(gameSession.getVendorCurrencyCode());
+            authenticationVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
+            authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
+            authenticationVo.setTimestamp(System.currentTimeMillis());
+        }catch (Exception e){
+            httpService.logError(httpRequestLog, e);
+        }finally {
+            httpService.end(httpRequestLog, authenticationVo);
+        }
         return authenticationVo;
+    }
+    private void doValidation(AuthenticationDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+    private void doVerification(AuthenticationDto dto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+
+        // 1. Verify received token is the same from game session
+        // comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+
+        // 2. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // 5. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 6. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
     }
 }
