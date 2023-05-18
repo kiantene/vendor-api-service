@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 public class VendorService extends BaseVendorService {
     public static String generateGameUrl(String lobbyUrl, String playerGameSessionToken, String operatorId, String languageCode, String gameCode) {
         // form query string
-        String loginUrl = lobbyUrl + "/?token=" + playerGameSessionToken + "&operatorId=" + operatorId + "&language" + languageCode + "&selectGame=" + gameCode;
+        String loginUrl = lobbyUrl + "?token=" + playerGameSessionToken + "&operatorId=" + operatorId + "&language" + languageCode + "&selectGame=" + gameCode;
         return loginUrl;
     }
 }
