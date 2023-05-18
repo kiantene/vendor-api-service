@@ -4,7 +4,16 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.text.MessageFormat;
+
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    public static String generateGameUrl(String API_URL, String PROJECT_NAME, String token, String platform, String gameCode, String lang){
+        String gameUrl = API_URL + PROJECT_NAME + "/game.html";
+
+        gameUrl = MessageFormat.format(gameUrl, token, platform, gameCode, lang);
+
+        return gameUrl;
+    }
 }
