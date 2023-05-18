@@ -16,7 +16,7 @@ public class CreditDto extends CommonDto implements BetResultData {
     private String transactionId;
     private String roundId;
     private String gameId;
-    private Double debitAmount;
+    private Double creditAmount;
     private GameDataStringDto gameDataString;
 
     @Override
@@ -31,17 +31,17 @@ public class CreditDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return BigDecimal.valueOf(gameDataString.getBetAmount());
+        return BigDecimal.valueOf(this.getGameDataString().getBetAmount());
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.valueOf(gameDataString.getWinAmount());
+        return BigDecimal.valueOf(this.getGameDataString().getWinAmount());
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        Double winLossAmount = gameDataString.getWinAmount() - gameDataString.getBetAmount();
+        Double winLossAmount = this.getGameDataString().getWinAmount() - this.getGameDataString().getBetAmount();
         return BigDecimal.valueOf(winLossAmount);
     }
 
