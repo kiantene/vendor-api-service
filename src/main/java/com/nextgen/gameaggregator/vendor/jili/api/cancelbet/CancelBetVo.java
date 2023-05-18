@@ -10,5 +10,5 @@ public class CancelBetVo extends ResponseVo {
     private String username;      // Identifier of the user within the Casino Operator’s system
     private String currency;    // Currency of the player
     private BigDecimal balance;    // Real balance of the player
-    private BigInteger txId;
+    private String txId;
 }
