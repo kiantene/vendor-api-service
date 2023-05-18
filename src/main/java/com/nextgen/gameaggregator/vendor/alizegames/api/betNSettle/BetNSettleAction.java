@@ -57,7 +57,7 @@ public class BetNSettleAction {
 //            this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUsername(), dto.getGameCode());
 
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setToken(dto.getToken());
