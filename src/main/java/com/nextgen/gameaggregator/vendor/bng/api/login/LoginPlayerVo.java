@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.bng.api.login;
 import lombok.Data;
 
 @Data
-public class PlayerVo {
+public class LoginPlayerVo {
     private String id;
     private String brand;
     private String currency;

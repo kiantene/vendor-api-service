@@ -16,5 +16,5 @@ public class LoginDto {
     private String provider_name;
     private String c_at;
     private String sent_at;
-    private ArgsDto args;
+    private LoginArgsDto args;
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigInteger;
 
 @Data
-public class ArgsDto {
+public class TransactionArgsDto {
     private String bet;
     private String win;
     private Boolean round_started;

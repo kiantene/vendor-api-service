@@ -44,23 +44,29 @@ public class GeneralAction {
     private TransactionService transactionService;
 
     @PostMapping(path = EndPoints.ACTION)
-    public CommonVo action(HttpServletRequest request) throws JsonProcessingException {
+    public CommonVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         // Retrieve request body in original string format
         String body = httpRequestLog.getRequestBody();
 
-        // Construct this vo for action handling purpose
-        ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
-
         // Construct VO
         CommonVo vo = new CommonVo();
 
-        // Handle the action and return the resulting value
-        vo = this.actionHandling(actionDto, traceId, body);
+        try {
 
-        httpService.end(httpRequestLog, vo);
+            // Construct this vo for action handling purpose
+            ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
+
+            // Handle the action and return the resulting value
+            vo = this.actionHandling(actionDto, traceId, body);
+        }catch(Exception exception){
+
+        }finally {
+            httpService.end(httpRequestLog, vo);
+        }
+
 
         return vo;
     }

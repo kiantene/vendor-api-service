@@ -7,7 +7,7 @@ import lombok.Data;
 public class LoginVo extends CommonVo {
 
     private String uid;
-    private PlayerVo player;
-    private BalanceVo balance;
+    private LoginPlayerVo player;
+    private LoginBalanceVo balance;
     private String tag;
 }

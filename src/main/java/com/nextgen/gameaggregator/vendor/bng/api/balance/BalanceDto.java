@@ -14,5 +14,5 @@ public class BalanceDto {
     private String provider_name;
     private String c_at;
     private String sent_at;
-    private ArgsDto args;
+    private BalanceArgsDto args;
 }

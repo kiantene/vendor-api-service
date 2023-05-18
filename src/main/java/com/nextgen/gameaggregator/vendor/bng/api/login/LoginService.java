@@ -1,11 +1,9 @@
 package com.nextgen.gameaggregator.vendor.bng.api.login;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bng.constant.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,30 +28,46 @@ public class LoginService {
     @Autowired
     private HttpService httpService;
 
-    public CommonVo login(String body, String traceId) throws JsonProcessingException {
-
-        // Retrieve request body in original string format
-        LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
+    public CommonVo login(String body, String traceId){
 
         // Construct VO
         LoginVo vo = new LoginVo();
-        PlayerVo player = new PlayerVo();
-        BalanceVo balance = new BalanceVo();
+        LoginPlayerVo loginPlayer = new LoginPlayerVo();
+        LoginBalanceVo loginBalance = new LoginBalanceVo();
 
-        player.setId("testgame3");
-        player.setBrand("zt001winksw-stage");
-        player.setCurrency("BRL");
-        player.setMode("REAL");
-        player.setIs_test(false);
+        try{
 
-        balance.setValue("0.00");
-        long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
-        balance.setVersion(BigInteger.valueOf(unixTime));
+            // Retrieve request body in original string format
+            LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
 
-        vo.setUid(loginDto.getUid());
-        vo.setPlayer(player);
-        vo.setBalance(balance);
-        vo.setTag("");
+            // Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
+
+            // Retrieve the latest wallet balance from Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+
+            // Retrieve vendor line credentials
+            String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
+
+            loginPlayer.setId(gameSession.getVendorPlayerUsername());
+            loginPlayer.setBrand(brand);
+            loginPlayer.setCurrency(gameSession.getVendorCurrencyCode());
+            loginPlayer.setMode("REAL"); // "FUN" or "REAL", REAL by default. Mode of the player. 'FUN' stands for playing for fun not using real funds, 'REAL' stands for playing using real funds
+            loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
+
+            long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
+
+            loginBalance.setValue(balance.toString());
+            loginBalance.setVersion(BigInteger.valueOf(unixTime));
+
+            vo.setUid(loginDto.getUid());
+            vo.setPlayer(loginPlayer);
+            vo.setBalance(loginBalance);
+            vo.setTag("");
+
+        }catch (Exception exception){
+
+        }
 
         return vo;
     }
