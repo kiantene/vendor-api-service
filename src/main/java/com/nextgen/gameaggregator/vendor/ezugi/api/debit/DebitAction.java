@@ -39,7 +39,7 @@ public class DebitAction {
         debitVo.setUid("testgame1");
         debitVo.setRoundId("11111111111112R");
         debitVo.setTransactionId("11111111111112RT");
-        debitVo.setBalance(BigDecimal.valueOf(10.00));
+        debitVo.setBalance(10.00);
         debitVo.setCurrency("BRL");
         debitVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
         debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));

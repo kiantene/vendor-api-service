@@ -10,6 +10,6 @@ public class DebitVo extends CommonVo {
     private String uid;
     private String roundId;
     private String transactionId;
-    private BigDecimal balance;
+    private Double balance;
     private String currency;
 }
