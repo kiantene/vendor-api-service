@@ -56,7 +56,7 @@ public class AuthenticationAction {
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            authenticationVo.setToken(authenticationDto.getToken()+"ST");
+            authenticationVo.setToken(authenticationDto.getToken());
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
             authenticationVo.setUid(gameSession.getVendorPlayerUsername());
             authenticationVo.setBalance(balance);
