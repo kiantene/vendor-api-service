@@ -62,6 +62,10 @@ public class CreditAction extends CommonDto {
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
+            //Get and set bet data Object from body
+            //GameDataStringDto gameDataStringDto = HttpService.convertJsonToDto(creditDto.getGameDataString(), GameDataStringDto.class);
+            //creditDto.setGameDataStringDto(gameDataStringDto);
+
             //Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getToken());
 
