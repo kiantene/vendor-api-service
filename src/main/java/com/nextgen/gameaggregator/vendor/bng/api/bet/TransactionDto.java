@@ -1,15 +1,17 @@
 package com.nextgen.gameaggregator.vendor.bng.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
-import com.nextgen.gameaggregator.enums.BetStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionDto implements BetResultData {
     private String name;
     private String uid;
@@ -25,17 +27,17 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getSession();
-    }
-
-    @Override
-    public String getVendorBetId() {
         return this.getUid();
     }
 
     @Override
+    public String getVendorBetId() {
+        return this.getSession();
+    }
+
+    @Override
     public String getRoundId() {
-        return this.getArgs().getRound_id().toString();
+        return String.valueOf(this.getArgs().getRound_id());
     }
 
     @Override
@@ -56,23 +58,26 @@ public class TransactionDto implements BetResultData {
     @Override
     public BigDecimal getWinLoss() {
 
-        BigDecimal winloss = new BigDecimal(this.getArgs().getWin());
-        BigDecimal bet = new BigDecimal(this.getArgs().getBet());
+        // Convert win and bet amount into BigDecimal format
+        BigDecimal betAmount = new BigDecimal(this.getArgs().getBet());
+        BigDecimal winAmount = new BigDecimal(this.getArgs().getWin());
 
-        return winloss.subtract(bet);
+        // Return the value by (winAmount - betAmount)
+        return winAmount.subtract(betAmount);
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return new BigDecimal(this.getArgs().getBet());
     }
 
     @Override
     public Long getVendorBetTime() {
-        // Convert string into datetime format
+
+        // Convert string datetime into LocalDateTime format
         LocalDateTime dateTime = LocalDateTime.parse(this.getC_at());
 
-        // Convert datetime into unix time format
+        // Convert LocalDateTime into unixTimestamp format
         long unixTimestamp = dateTime.toEpochSecond(ZoneOffset.UTC);
 
         return unixTimestamp;
@@ -80,10 +85,10 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        // Convert string into datetime format
+        // Convert string datetime into LocalDateTime format
         LocalDateTime dateTime = LocalDateTime.parse(this.getSent_at());
 
-        // Convert datetime into unix time format
+        // Convert LocalDateTime into unixTimestamp format
         long unixTimestamp = dateTime.toEpochSecond(ZoneOffset.UTC);
 
         return unixTimestamp;
@@ -91,11 +96,10 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-
-        // Convert string into datetime format
+        // Convert string datetime into LocalDateTime format
         LocalDateTime dateTime = LocalDateTime.parse(this.getSent_at());
 
-        // Convert datetime into unix time format
+        // Convert LocalDateTime into unixTimestamp format
         long unixTimestamp = dateTime.toEpochSecond(ZoneOffset.UTC);
 
         return unixTimestamp;

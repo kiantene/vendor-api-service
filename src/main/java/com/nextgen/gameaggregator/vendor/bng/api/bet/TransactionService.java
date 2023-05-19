@@ -2,9 +2,10 @@ package com.nextgen.gameaggregator.vendor.bng.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bng.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,8 @@ public class TransactionService {
     private ValidationService validationService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo transaction(String body, String traceId){
 
@@ -42,12 +45,12 @@ public class TransactionService {
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(transactionDto.getToken());
 
-            // Process bet data by checking player's balance
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionDto, body);
+            ResultType resultType = getResultType(transactionDto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, body);
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
-            transactionBalanceVo.setValue(betEvent.getLastBalance().toString());
+            transactionBalanceVo.setValue(balance.toString());
             transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
 
             vo.setUid(transactionDto.getUid());
@@ -58,5 +61,19 @@ public class TransactionService {
         }
 
         return vo;
+    }
+
+    private ResultType getResultType(TransactionDto transactionDto) {
+
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        BigDecimal winLoss = new BigDecimal(transactionDto.getArgs().getWin());
+
+        if (winLoss.compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
+            resultType = ResultType.BET_WIN;
+        }
+
+        return resultType;
     }
 }
