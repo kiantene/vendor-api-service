@@ -289,6 +289,11 @@ public class WalletService {
             if (isSettled) {
                 settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
                 long settledTime = System.currentTimeMillis();
+                //get settle time from unsettled bet first
+                if (unsettledBet.getVendorSettleTime() != null) {
+                    settledTime = unsettledBet.getVendorSettleTime();
+                }
+                // but if bet result data have settle time then use it
                 if (betResultData.getVendorSettleTime() != null) {
                     settledTime = betResultData.getVendorSettleTime();
                 }
@@ -297,8 +302,7 @@ public class WalletService {
 
                 BetHistory betHistory = new BetHistory(settledBet);
                 log.info(new Gson().toJson(betHistory));
-                // TODO: add try-catch on KafkaException
-                kafkaService.produceBetHistory(betHistory);
+                kafkaService.produceBetHistory(betHistory, settledBet);
 
                 if (unsettledBetList != null && unsettledBetList.size() > 0) { // multiple bets within same round
                     for (UnsettledBet betRecord : unsettledBetList) {
@@ -316,7 +320,7 @@ public class WalletService {
                             settledBetService.create(newSettledBet, newSettledBet.getRawData());
                             betHistory = new BetHistory(newSettledBet);
                             log.info(new Gson().toJson(betHistory));
-                            kafkaService.produceBetHistory(betHistory);
+                            kafkaService.produceBetHistory(betHistory, newSettledBet);
                         }
 
                         //no matter match or not, will perform delete unsettled bet data with same round Id
@@ -434,7 +438,7 @@ public class WalletService {
      */
     public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService) throws
             RecordNotFoundException, InvalidAgentApiCredentialException,
-            InvalidOperatorResponseException, BetRefundIdempotentViolationException, CouchbaseDataIntegrityException {
+            InvalidOperatorResponseException, BetRefundIdempotentViolationException, CouchbaseDataIntegrityException, BetNotFoundException {
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         BigDecimal balance = BigDecimal.ZERO;
@@ -455,6 +459,7 @@ public class WalletService {
                 betStatus = BetStatus.CANCELLED;
             } catch (BetNotFoundException settledBetNotFoundException) {
                 log.warn("processRollback -> BetNotFoundException in settled_bets: vendorPlayerId (" + vendorPlayerId + ") externalTransactionId (" + externalTransactionId + ")");
+                throw settledBetNotFoundException;
             }
         }
 
@@ -483,7 +488,7 @@ public class WalletService {
                 settledBetService.create(newSettledBet, " ");
                 BetHistory betHistory = new BetHistory(newSettledBet);
                 log.info(new Gson().toJson(betHistory));
-                kafkaService.produceBetHistory(betHistory);
+                kafkaService.produceBetHistory(betHistory, newSettledBet);
 
                 RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
                 betRefundLogService.create(rawBetRefundLog);
@@ -503,10 +508,23 @@ public class WalletService {
                 WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, rollbackTimestamp);
                 balance = balanceVo.getData().getBalance();
 
-                // TODO: add process resettlement and resettlement logic as below
-                RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
-                betRefundLogService.create(rawBetRefundLog);
+                String newTraceId = UUID.randomUUID().toString();
+                settledBet.setInternalTransactionId(newTraceId);
+                settledBet.setStatus(betStatus.code);
+                settledBet.setVendorSettleTime(rollbackTimestamp);
+                settledBet.setResultTime(rollbackTimestamp);
+                settledBet.setResultType(ResultType.LOSE.code);
+                settledBet.setBetAmount(settledBet.getBetAmount().negate());
+                settledBet.setWinAmount(settledBet.getWinAmount().negate());
+                settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
+                settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
+                settledBet.setWinLoss(settledBet.getWinLoss().negate());
+                settledBet.setResettleNum(settledBet.getResettleNum()+1);
 
+                settledBetService.create(settledBet, " ");
+                BetHistory betHistory = new BetHistory(settledBet);
+                log.info(new Gson().toJson(betHistory));
+                kafkaService.produceBetHistory(betHistory, settledBet);
             }
             default -> log.warn("processRollback.exception -> bet status not handled");
         }

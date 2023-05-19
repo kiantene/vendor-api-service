@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
@@ -8,7 +9,9 @@ import com.nextgen.gameaggregator.entity.SettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -25,12 +28,17 @@ public class SettledBetService {
     @Autowired
     private BetHistoryService betHistoryService;
 
-    public void create(SettledBet settledBet, String rawData) {
+    @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    public SettledBet create(SettledBet settledBet, String rawData) {
         settledBet.setResettleNum(Optional.ofNullable(settledBet.getResettleNum()).orElse(0));
         settledBet.setRawData(Optional.ofNullable(settledBet.getRawData()).orElse(DigestUtils.md5Hex(rawData)));
+        settledBet.setCreateTime(System.currentTimeMillis());
+        settledBet.setProcessingStatus(0);
         rawSettledBetRepository.save(settledBet);
+        return settledBet;
     }
 
+    @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager")
     public SettledBet getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
         SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (settledBet == null) { // No matching bet record for the given round Id
@@ -38,6 +46,18 @@ public class SettledBetService {
         }
 
         return settledBet;
+    }
+
+    /**
+     * Delete settled bet record of the given settleBet entity object after successful inserted into kafka.
+     * @param settledBet entity object containing information of a single settled bet
+     */
+    public void delete(SettledBet settledBet){
+        try {
+            rawSettledBetRepository.delete(settledBet);
+        } catch (Exception e){
+            log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+        }
     }
 
     /**

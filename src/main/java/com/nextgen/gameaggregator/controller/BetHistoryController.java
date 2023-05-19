@@ -9,8 +9,10 @@ import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import com.nextgen.gameaggregator.service.RequestService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,7 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path = "betHistory/")
 public class BetHistoryController {
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
+    @Autowired
+    RequestService requestService;
     @Autowired
     BetHistoryRepository betHistoryRepository;
     @Autowired
@@ -35,21 +41,21 @@ public class BetHistoryController {
     @PostMapping(path = "/detail")
     public ResponseEntity<Detailvo> detail(@RequestBody ObjectNode json){
         Detailvo detailvo = new Detailvo();
-        VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
+        if (requestService.isTestEnvironment(profilesActive)) {
+            VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
 
-        detailvo.setBetHistory(
-                betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
-                        json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
+            detailvo.setBetHistory(
+                    betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+                            json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
 
-//        detailvo.setBetResultLog(betResultLogRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
-//                json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
-//
-//        detailvo.setBetRefundLog(betRefundLogRepository.findByExternalTransactionIdAndRoundIdAndVendorPlayerId(
-//                json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
-
-        return new ResponseEntity<>(
-                detailvo ,
-                HttpStatus.OK);
+            return new ResponseEntity<>(
+                    detailvo,
+                    HttpStatus.OK);
+        }else{
+            return new ResponseEntity<>(
+                    detailvo,
+                    HttpStatus.BAD_REQUEST);
+        }
 
     }
 

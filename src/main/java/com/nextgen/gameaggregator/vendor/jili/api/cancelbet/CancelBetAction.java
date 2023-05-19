@@ -75,6 +75,7 @@ public class CancelBetAction {
             cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             cancelBetVo.setBalance(balance);
+            cancelBetVo.setTxId(traceId);
 //            cancelBetVo.setToken(rawGameSession.getToken());
 
         } catch (InvalidRequestException |

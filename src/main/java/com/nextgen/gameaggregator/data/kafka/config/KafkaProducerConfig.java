@@ -57,6 +57,10 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaJsonSchemaSerializer.class);
 //        props.put(ProducerConfig.BATCH_SIZE_CONFIG, 10000);
 //        props.put(ProducerConfig.LINGER_MS_CONFIG, 3000);
+//        props.put(ProducerConfig.RETRIES_CONFIG, 15);
+//        props.put(ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG, 5000);
+//        props.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
+        props.put(ProducerConfig.MAX_BLOCK_MS_CONFIG, 5000);
         props.put(KafkaJsonSchemaSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, this.schemaRegistryUrl);
         props.put(KafkaJsonSchemaSerializerConfig.BASIC_AUTH_CREDENTIALS_SOURCE, this.basicAuthCredentialsSource);
         props.put(KafkaJsonSchemaSerializerConfig.USER_INFO_CONFIG, this.basicAuthUserInfo);
