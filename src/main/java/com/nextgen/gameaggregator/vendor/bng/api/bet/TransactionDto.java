@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
@@ -74,35 +75,17 @@ public class TransactionDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
 
-        // Convert string datetime into LocalDateTime format
-        LocalDateTime dateTime = LocalDateTime.parse(this.getC_at());
-
-        // Convert LocalDateTime into unixTimestamp format
-        long unixTimestamp = dateTime.toEpochSecond(ZoneOffset.UTC);
-
-        return unixTimestamp;
+        return getTimeStamp(this.getC_at());
     }
 
     @Override
     public Long getResultTime() {
-        // Convert string datetime into LocalDateTime format
-        LocalDateTime dateTime = LocalDateTime.parse(this.getSent_at());
-
-        // Convert LocalDateTime into unixTimestamp format
-        long unixTimestamp = dateTime.toEpochSecond(ZoneOffset.UTC);
-
-        return unixTimestamp;
+        return getTimeStamp(this.getSent_at());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        // Convert string datetime into LocalDateTime format
-        LocalDateTime dateTime = LocalDateTime.parse(this.getSent_at());
-
-        // Convert LocalDateTime into unixTimestamp format
-        long unixTimestamp = dateTime.toEpochSecond(ZoneOffset.UTC);
-
-        return unixTimestamp;
+        return getTimeStamp(this.getSent_at());
     }
 
     @Override
@@ -118,5 +101,10 @@ public class TransactionDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    public Long getTimeStamp(String datetime) {
+        Instant instant = Instant.parse(datetime);
+        return instant.toEpochMilli();
     }
 }
