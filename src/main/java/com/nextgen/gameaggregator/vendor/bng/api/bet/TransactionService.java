@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.bng.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
@@ -41,12 +42,12 @@ public class TransactionService {
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(transactionDto.getToken());
 
-            // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // Process bet data by checking player's balance
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionDto, body);
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
-            transactionBalanceVo.setValue(balance.toString());
+            transactionBalanceVo.setValue(betEvent.getLastBalance().toString());
             transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
 
             vo.setUid(transactionDto.getUid());

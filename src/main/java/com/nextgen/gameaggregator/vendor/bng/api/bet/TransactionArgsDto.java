@@ -14,4 +14,12 @@ public class TransactionArgsDto {
     private Object player;
     private Object bonus;
     private String tag;
+
+    public BigInteger getRound_id() {
+        return round_id;
+    }
+
+    public void setRound_id(BigInteger round_id) {
+        this.round_id = round_id;
+    }
 }
