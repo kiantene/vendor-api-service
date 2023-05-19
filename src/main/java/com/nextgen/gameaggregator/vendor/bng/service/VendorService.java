@@ -12,6 +12,7 @@ public class VendorService extends BaseVendorService {
     public static String generateGameUrl(String API_URL, String PROJECT_NAME, String token, String platform, String gameCode, String lang){
         String gameUrl = API_URL + PROJECT_NAME + "/game.html";
 
+        //combine those string to form url
         gameUrl = gameUrl + "?token=" + token + "&platform=" + platform + "&game=" + gameCode + "&lang=" + lang;
 
 //        gameUrl = MessageFormat.format(gameUrl, token, platform, gameCode, lang);
