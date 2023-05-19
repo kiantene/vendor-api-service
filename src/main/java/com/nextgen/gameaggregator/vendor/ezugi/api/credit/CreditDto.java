@@ -53,7 +53,7 @@ public class CreditDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return getTimestamp();
     }
 
     @Override
