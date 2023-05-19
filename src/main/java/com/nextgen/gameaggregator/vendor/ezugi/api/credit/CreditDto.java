@@ -31,7 +31,7 @@ public class CreditDto extends CommonDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getBetAmount() { return BigDecimal.ZERO; }
+    public BigDecimal getBetAmount() { return null; }
 
     @Override
     public BigDecimal getWinAmount() {
@@ -51,7 +51,7 @@ public class CreditDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
