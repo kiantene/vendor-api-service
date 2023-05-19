@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.credit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -51,6 +50,10 @@ public class CreditAction extends CommonDto {
     private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private BetHistoryService betHistoryService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
 
     @PostMapping(path = EndPoints.CREDIT)
     public CommonVo credit(HttpServletRequest request) throws JsonProcessingException {
@@ -72,8 +75,14 @@ public class CreditAction extends CommonDto {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession);
 
+            //Get unsettled bet
+            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(creditDto.getUid());
+            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(creditDto.getGameId(), vendorPlayer.getVendorId());
+            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(),
+                    creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
+
             //Process result settle data
-            ResultType resultType = getResultType(creditDto);
+            ResultType resultType = getResultType(creditDto,unsettledBet);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, body);
 
             // Construct Vo
@@ -108,15 +117,21 @@ public class CreditAction extends CommonDto {
         // 2. Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
     }
-    private ResultType getResultType(CreditDto dto) {
+    private ResultType getResultType(CreditDto dto,UnsettledBet unsettledBet) {
 
         ResultType resultType = ResultType.BET_LOSE;
-        BigDecimal zero = BigDecimal.ZERO;
 
-        if (dto.getWinAmount().compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
+        BigDecimal betAmount = Optional.ofNullable(unsettledBet.getBetAmount()).orElse(BigDecimal.ZERO);
+        BigDecimal winAmount = Optional.ofNullable(dto.getWinAmount()).orElse(BigDecimal.ZERO);
+
+        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
+        boolean isBetAmountEqualThanZero = betAmount.compareTo(BigDecimal.ZERO) == 0;
+        boolean isWinAmountEqualThanZero = winAmount.compareTo(BigDecimal.ZERO) == 0;
+
+        if (isWinAmountMoreThanZero) { // Win Amount > 0 ~ BET_WIN
             resultType = ResultType.BET_WIN;
         }
-        if (dto.getWinAmount().compareTo(zero) == 0 && dto.getBetAmount().compareTo(zero) == 0) { // Win Amount == 0 and Bet Amount == 0 ~ BET_WIN
+        if (isBetAmountEqualThanZero && isWinAmountEqualThanZero) { // Win Amount == 0 and Bet Amount == 0 ~ BET_WIN
             resultType = ResultType.BET_WIN;
         }
 
