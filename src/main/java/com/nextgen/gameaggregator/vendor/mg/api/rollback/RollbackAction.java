@@ -68,7 +68,7 @@ public class RollbackAction {
             rollbackVo.setBalance(balance);
             //rollbackVo.setExtCreationTimeMs(startTime);
         } catch (BetRefundIdempotentViolationException| JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
+            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException| BetNotFoundException|
             DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException e){
             status = HttpStatus.INTERNAL_SERVER_ERROR;
         } finally {
