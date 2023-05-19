@@ -17,9 +17,9 @@ public class GameListDto {
     private String traceId;
 
 
-    @NotBlank( message = "min 2 and max 20 alphanumeric")
-    @Size(min = 2, max = 20, message = "min 2 and max 20 alphanumeric")
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "min 2 and max 20 alphanumeric") // Only alphanumeric allowed
+    @NotBlank( message = "min 2 and max 20 alphanumeric underscore")
+    @Size(min = 2, max = 20, message = "min 2 and max 20 alphanumeric underscore")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX, message = "min 2 and max 20 alphanumeric underscore") // Only alphanumeric allowed
     private String vendorCode;
 
     @NotNull( message = "numeric number only")
