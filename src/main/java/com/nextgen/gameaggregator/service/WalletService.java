@@ -163,6 +163,7 @@ public class WalletService {
         String roundId = betResultData.getRoundId();
         String vendorBetId = betResultData.getVendorBetId();
         Integer vendorGameId = gameSession.getVendorGameId();
+        Integer vendorId = gameSession.getVendorId();
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
 
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
@@ -175,10 +176,25 @@ public class WalletService {
             WalletBalanceVo balanceVo;
             BetInformation betResultDataForOperator = null;
             boolean isBetExistsForUnsettledBet = false;
+            boolean isBetExistsForSettledBet = false;
             List<UnsettledBet> unsettledBetList = null;
 
             if (isSettled) {
                 unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+
+                try{
+                    settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+                    isBetExistsForSettledBet = true;
+                } catch (BetNotFoundException betNotFoundException){
+                    isBetExistsForSettledBet = false;
+                }
+
+                if(isBetExistsForSettledBet == true){
+                    if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
+                    balanceVo = walletBalanceAction.call(traceId, gameSession);
+                    if (this.httpRequestLog != null) this.httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
+                    return balanceVo.getData().getBalance();
+                }
 
                 switch (resultType) {
                     case LOSE, END -> { // PP END

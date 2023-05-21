@@ -11,4 +11,6 @@ import org.springframework.stereotype.Repository;
 @Collection("settled_bet")
 public interface RawSettledBetRepository extends CouchbaseRepository<SettledBet, String> {
     SettledBet findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
+
+    SettledBet findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId);
 }
