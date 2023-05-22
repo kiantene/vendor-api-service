@@ -70,39 +70,6 @@ public class HttpService {
                         requestLog.setResponseBody(responseBody);
                         requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                         requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
-                        if (requestLog.getBetProcessEndTime() != null) {
-                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime());
-                        }
-                        if (requestLog.getOperatorProcessEndTime() != null) {
-                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
-                        }
-
-                        if (requestLog.getOperatorProcessEndTime() != null) {
-                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
-                        }
-
-                        if (requestLog.getBetProcessEndTime() != null) {
-                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
-                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
-                        }
-
-                        if (requestLog.getOperatorProcessEndTime() != null) {
-                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
-                        }
-
-                        if (requestLog.getBetProcessEndTime() != null) {
-                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
-                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
-                        }
-
-                        if (requestLog.getOperatorProcessEndTime() != null) {
-                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
-                        }
-
-                        if (requestLog.getBetProcessEndTime() != null) {
-                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
-                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
-                        }
 
                         if (requestLog.getOperatorProcessEndTime() != null) {
                             requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
