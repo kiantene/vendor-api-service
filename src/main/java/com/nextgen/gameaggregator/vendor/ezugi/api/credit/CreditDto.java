@@ -28,7 +28,7 @@ public class CreditDto extends CommonDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.roundId;
+        return this.debitTransactionId;
     }
 
     @Override

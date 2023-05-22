@@ -15,7 +15,7 @@ public class RollbackDto extends CommonDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return this.roundId;
+        return this.transactionId;
     }
 
     @Override

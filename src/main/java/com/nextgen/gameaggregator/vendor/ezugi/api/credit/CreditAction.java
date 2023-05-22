@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.credit;
 
+import com.ctc.wstx.util.StringUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.protobuf.Empty;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -18,6 +20,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
+import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,9 +68,8 @@ public class CreditAction extends CommonDto {
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
-            //Get and set bet data Object from body
-            GameDataStringDto gameDataStringDto = HttpService.convertJsonToDto(creditDto.getGameDataString(), GameDataStringDto.class);
-            creditDto.setGameDataStringDto(gameDataStringDto);
+            //Get and set bet game data Object from body
+            this.setGameData(creditDto);
 
             //Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getToken());
@@ -135,6 +137,17 @@ public class CreditAction extends CommonDto {
             resultType = ResultType.WIN;
         }
         return resultType;
+    }
+
+    private void setGameData(CreditDto creditDto) throws JsonProcessingException {
+        GameDataStringDto gameDataStringDto = new GameDataStringDto();
+        gameDataStringDto.setBetAmount(0.0);
+        gameDataStringDto.setWinAmount(0.0);
+
+        if(StringUtils.isNotBlank(creditDto.getGameDataString())){
+            gameDataStringDto = HttpService.convertJsonToDto(creditDto.getGameDataString(), GameDataStringDto.class);
+        }
+        creditDto.setGameDataStringDto(gameDataStringDto);
     }
 
 }
