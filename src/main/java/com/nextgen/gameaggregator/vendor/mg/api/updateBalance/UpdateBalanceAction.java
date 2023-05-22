@@ -69,17 +69,15 @@ public class UpdateBalanceAction {
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(betEvent.getLastBalance());
                     updateBalanceVo.setExtCreationTimeMs(betEvent.getBetInformation().getCreateTime());
-                    break;
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     ResultType resultType = determineResultType(dto);
-                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setExtTxnId(dto.getTxnId());
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
                     updateBalanceVo.setExtCreationTimeMs(startTime);
-                    break;
                 }
                 default -> {
                     status = HttpStatus.BAD_REQUEST;

@@ -54,7 +54,7 @@ public class SettleService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, 
-            (settleDto.getNetWin().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, actionDto.getParams());
+            (settleDto.getNetWin().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, actionDto.getHttpRequestLog());
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
