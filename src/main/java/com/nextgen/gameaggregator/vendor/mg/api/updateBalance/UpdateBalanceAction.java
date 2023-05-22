@@ -80,9 +80,9 @@ public class UpdateBalanceAction {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     if (dto.getCompleted() == false) {
                         walletService.processBetResult(traceId, gameSession, winDataDto,
-                            (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
+                            (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, httpRequestLog);
                     } else {
-                        walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.END, vendorService, body);
+                        walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.END, vendorService, httpRequestLog);
                     }
                     break;
                 }

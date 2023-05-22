@@ -43,7 +43,6 @@ public class SettleBetAction {
     @PostMapping(path = EndPoints.SETTLE_BET)
     public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         String traceId = httpRequestLog.getId();
 
         // Construct VO
@@ -68,7 +67,7 @@ public class SettleBetAction {
             this.doVerification(httpRequestLog, settleBetDto, gameSession);
 
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, ResultType.BET_WIN, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);

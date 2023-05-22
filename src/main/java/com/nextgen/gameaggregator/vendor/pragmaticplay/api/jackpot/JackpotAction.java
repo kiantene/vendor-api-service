@@ -46,7 +46,6 @@ public class JackpotAction {
     @PostMapping(path = Endpoints.JACKPOT)
     public ResponseVo jackpot(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         JackpotVo responseVo = new JackpotVo();
         String traceId = httpRequestLog.getId();
 
@@ -70,7 +69,7 @@ public class JackpotAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, httpRequestLog);
 
             String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
