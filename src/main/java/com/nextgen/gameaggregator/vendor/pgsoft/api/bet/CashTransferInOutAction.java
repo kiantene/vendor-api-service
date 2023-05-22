@@ -47,7 +47,6 @@ public class CashTransferInOutAction {
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
         String traceId = httpRequestLog.getId();
 
@@ -67,7 +66,7 @@ public class CashTransferInOutAction {
             // 4. Process full bet data
             Integer isBet = 1;
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
             parentResponseVo.setData(responseVo);

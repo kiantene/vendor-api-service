@@ -41,7 +41,6 @@ public class BetAction {
     public BetVo betRequest(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         BetVo betVo = new BetVo();
         String traceId = httpRequestLog.getId();
 
@@ -61,7 +60,7 @@ public class BetAction {
             // 3. Process bet data
             // 4. Process win data
             ResultType resultType = getResultType(betDto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
 
             betVo.setUsername(gameSession.getVendorPlayerUsername());
             betVo.setCurrency(gameSession.getVendorCurrencyCode());

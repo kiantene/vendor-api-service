@@ -5,7 +5,9 @@ import com.nextgen.gameaggregator.entity.AgentVendorLine;
 import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
 import com.nextgen.gameaggregator.repository.VendorLineRepository;
+import com.nextgen.gameaggregator.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +22,11 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = "vendorLine/")
 public class VendorLineController {
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
+    @Autowired
+    RequestService requestService;
     @Autowired
     VendorLineRepository vendorLineRepository;
 
@@ -34,35 +40,37 @@ public class VendorLineController {
     @PostMapping(path = "/status")
     public ResponseEntity<Map<String, String>> status(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
+        if (requestService.isTestEnvironment(profilesActive)) {
+            VendorLine vendorLine = vendorLineRepository.findById(Integer.parseInt(json.get("id").toString())).orElse(null);
+            controllerServices.clearVendorLines();
 
-        VendorLine vendorLine = vendorLineRepository.findById(Integer.parseInt(json.get("id").toString())).orElse(null);
-        controllerServices.clearVendorLines();
+            List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByVendorLineId(Integer.parseInt(json.get("id").toString()));
 
-        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByVendorLineId(Integer.parseInt(json.get("id").toString()));
+            if (vendorLine == null) {
+                responseMap.put("status", "fail, vendor line not found");
+                responseMap.put("id", json.get("id").toString());
 
-        if (vendorLine == null) {
-            responseMap.put("status", "fail, vendor line not found");
-            responseMap.put("id", json.get("id").toString());
-
-            return new ResponseEntity<>(
-                    responseMap,
-                    HttpStatus.BAD_REQUEST);
-        }
-
-        vendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
-        vendorLineRepository.save(vendorLine);
-
-
-        if (!agentVendorLines.isEmpty()) {
-            for (AgentVendorLine agentVendorLine : agentVendorLines) {
-                agentVendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
-                agentVendorLineRepository.save(agentVendorLine);
+                return new ResponseEntity<>(
+                        responseMap,
+                        HttpStatus.BAD_REQUEST);
             }
+
+            vendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
+            vendorLineRepository.save(vendorLine);
+
+
+            if (!agentVendorLines.isEmpty()) {
+                for (AgentVendorLine agentVendorLine : agentVendorLines) {
+                    agentVendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
+                    agentVendorLineRepository.save(agentVendorLine);
+                }
+            }
+
+            responseMap.put("status", "Success");
+            responseMap.put("id", json.get("id").toString());
+        } else {
+            responseMap.put("status", "Invalid environment, only support staging and qa");
         }
-
-        responseMap.put("status", "Success");
-        responseMap.put("id", json.get("id").toString());
-
         return new ResponseEntity<>(
                 responseMap,
                 HttpStatus.OK);
@@ -73,29 +81,31 @@ public class VendorLineController {
     @PostMapping(path = "/agentVendorLineStatus")
     public ResponseEntity<Map<String, String>> agentVendorLineStatus(@RequestBody ObjectNode json) {
         HashMap<String, String> responseMap = new HashMap<>();
+        if (requestService.isTestEnvironment(profilesActive)) {
+            List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByAgentIdAndVendorLineId(
+                    Integer.parseInt(json.get("agentId").toString()), Integer.parseInt(json.get("vendorLineId").toString()));
 
-        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.findByAgentIdAndVendorLineId(
-                Integer.parseInt(json.get("agentId").toString()),Integer.parseInt(json.get("vendorLineId").toString()));
+            if (agentVendorLines.isEmpty()) {
+                responseMap.put("status", "fail, Agent vendor line not found");
+                responseMap.put("agentId", json.get("agentId").toString());
+                responseMap.put("vendorLineId", json.get("vendorLineId").toString());
 
-        if (agentVendorLines.isEmpty()) {
-            responseMap.put("status", "fail, Agent vendor line not found");
+                return new ResponseEntity<>(
+                        responseMap,
+                        HttpStatus.BAD_REQUEST);
+            }
+
+            for (AgentVendorLine agentVendorLine : agentVendorLines) {
+                agentVendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
+                agentVendorLineRepository.save(agentVendorLine);
+            }
+
+            responseMap.put("status", "Success");
             responseMap.put("agentId", json.get("agentId").toString());
             responseMap.put("vendorLineId", json.get("vendorLineId").toString());
-
-            return new ResponseEntity<>(
-                    responseMap,
-                    HttpStatus.BAD_REQUEST);
+        } else {
+            responseMap.put("status", "Invalid environment, only support staging and qa");
         }
-
-        for (AgentVendorLine agentVendorLine : agentVendorLines) {
-            agentVendorLine.setStatus(Integer.parseInt(json.get("status").toString()));
-            agentVendorLineRepository.save(agentVendorLine);
-        }
-
-        responseMap.put("status", "Success");
-        responseMap.put("agentId", json.get("agentId").toString());
-        responseMap.put("vendorLineId", json.get("vendorLineId").toString());
-
         return new ResponseEntity<>(
                 responseMap,
                 HttpStatus.OK);

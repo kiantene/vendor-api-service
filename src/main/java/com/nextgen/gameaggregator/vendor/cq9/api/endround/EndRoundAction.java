@@ -60,7 +60,6 @@ public class EndRoundAction {
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseVo<CommonVo> endRound(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
@@ -76,7 +75,7 @@ public class EndRoundAction {
             // Convert original request body into dto
             EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);
-            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<List<EndRoundDataDto>>() {
+            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {
             });
 
             // 1. Validate request parameters from vendor
@@ -100,7 +99,7 @@ public class EndRoundAction {
             // 6. Process result settle data
             Integer isBet = 0;
             ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, httpRequestLog);
 
             // Construct VO data
             CommonVo commonVo = new CommonVo();
