@@ -71,7 +71,7 @@ public class TransactionService {
         BigDecimal winAmount = new BigDecimal(transactionDto.getArgs().getWin());
 
         // If win amount is not equal to zero meant win(sometimes result in win but lose money)
-        if (winAmount.compareTo(zero) >= 0) { // Win amount equal or greater than 0 ~ BET_WIN
+        if (winAmount.compareTo(zero) > 0) { // Win amount greater than 0 ~ BET_WIN
             resultType = ResultType.BET_WIN;
         }
 
