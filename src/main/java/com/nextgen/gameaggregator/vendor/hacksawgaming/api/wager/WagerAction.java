@@ -44,7 +44,6 @@ public class WagerAction {
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         ResponseVo responseVo = new ResponseVo();
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
@@ -66,7 +65,7 @@ public class WagerAction {
 
             // Process bet
             // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id an wager_id)
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_LOSE, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_LOSE, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
