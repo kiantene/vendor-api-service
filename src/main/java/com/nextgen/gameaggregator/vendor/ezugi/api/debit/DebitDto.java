@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.debit;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -30,6 +31,7 @@ public class DebitDto extends CommonDto implements BetResultData {
     }
 
     @Override
+    @JsonIgnore
     public String getRoundId() {
         return this.transactionId;
     }
