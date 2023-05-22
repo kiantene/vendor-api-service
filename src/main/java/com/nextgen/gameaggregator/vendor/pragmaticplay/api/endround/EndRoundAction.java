@@ -45,7 +45,6 @@ public class EndRoundAction {
     @PostMapping(path = Endpoints.END_ROUND)
     public ResponseVo endRound(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         EndRoundVo responseVo = new EndRoundVo();
         String traceId = httpRequestLog.getId();
 
@@ -64,7 +63,7 @@ public class EndRoundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Retrieve the bet transaction
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
 
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);

@@ -51,7 +51,6 @@ public class BetAction {
     @PostMapping(path = EndPoints.BET)
     public CommonVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         String traceId = httpRequestLog.getId();
 
         // Construct VO
@@ -87,7 +86,7 @@ public class BetAction {
 
             //Process full bet data
             ResultType resultType = this.getResultType(betDto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
 
             //set VO data
             //convert bigDecimal balance into double

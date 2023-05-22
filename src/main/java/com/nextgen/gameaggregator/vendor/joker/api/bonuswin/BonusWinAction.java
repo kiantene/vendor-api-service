@@ -69,7 +69,7 @@ public class BonusWinAction {
 
             //Process full bet data
             ResultType resultType = bonusWinDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, bonusWinDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, bonusWinDto, resultType, vendorService, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
