@@ -119,7 +119,7 @@ public class CreditAction extends CommonDto {
     }
     private ResultType getResultType(CreditDto dto,UnsettledBet unsettledBet) {
 
-        ResultType resultType = ResultType.BET_LOSE;
+        ResultType resultType = ResultType.LOSE;
 
         BigDecimal betAmount = Optional.ofNullable(unsettledBet.getBetAmount()).orElse(BigDecimal.ZERO);
         BigDecimal winAmount = Optional.ofNullable(dto.getWinAmount()).orElse(BigDecimal.ZERO);
@@ -129,10 +129,10 @@ public class CreditAction extends CommonDto {
         boolean isWinAmountEqualThanZero = winAmount.compareTo(BigDecimal.ZERO) == 0;
 
         if (isWinAmountMoreThanZero) { // Win Amount > 0 ~ BET_WIN
-            resultType = ResultType.BET_WIN;
+            resultType = ResultType.WIN;
         }
         if (isBetAmountEqualThanZero && isWinAmountEqualThanZero) { // Win Amount == 0 and Bet Amount == 0 ~ BET_WIN
-            resultType = ResultType.BET_WIN;
+            resultType = ResultType.WIN;
         }
         return resultType;
     }

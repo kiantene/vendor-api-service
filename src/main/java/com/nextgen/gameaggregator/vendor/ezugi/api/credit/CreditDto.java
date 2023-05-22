@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 public class CreditDto extends CommonDto implements BetResultData {
     private String uid;
     private String transactionId;
+    private String debitTransactionId;
     private String roundId;
     private String gameId;
     private Double creditAmount;
