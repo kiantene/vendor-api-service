@@ -33,7 +33,7 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return String.valueOf(this.getArgs().getRound_id());
+        return this.getUid();
     }
 
     @Override
