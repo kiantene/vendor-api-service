@@ -67,10 +67,15 @@ public class TransactionService {
 
         ResultType resultType = ResultType.BET_LOSE;
         BigDecimal zero = BigDecimal.ZERO;
-
+        
         BigDecimal winLoss = new BigDecimal(transactionDto.getArgs().getWin());
+        BigDecimal bet = new BigDecimal(transactionDto.getArgs().getBet());
+        BigDecimal net_total;
 
-        if (winLoss.compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
+        // Calculate the net total to decide the status
+        net_total = winLoss.subtract(bet);
+
+        if (net_total.compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
             resultType = ResultType.BET_WIN;
         }
 
