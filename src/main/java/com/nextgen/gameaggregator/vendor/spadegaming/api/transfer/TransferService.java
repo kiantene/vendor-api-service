@@ -86,9 +86,9 @@ public class TransferService {
                             .map(SpecialGameDto::getType) // Map with dto
                             .orElse(null);
                     BigDecimal payoutBalance = (type != null && type.equals("Free")) // If free spin, use BET_WIN
-                            ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, body)
+                            ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, httpRequestLog)
                             : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or LOSE
-                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, body);
+                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, httpRequestLog);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);

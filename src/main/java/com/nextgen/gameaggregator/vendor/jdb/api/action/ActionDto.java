@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import jakarta.validation.constraints.NotNull;
 
 import org.checkerframework.checker.index.qual.Positive;
@@ -17,4 +18,5 @@ public class ActionDto {
     @JsonProperty("action")
     private Integer action;
     private String params;
+    private HttpRequestLog httpRequestLog;
 }
