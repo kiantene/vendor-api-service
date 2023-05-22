@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.bng.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
@@ -27,15 +28,15 @@ public class BalanceService {
     @Autowired
     private HttpService httpService;
 
-    public CommonVo balance(String body, String traceId){
+    public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
 
         // Construct VO
         BalanceVo vo = new BalanceVo();
         BalanceAmountVo balanceAmountVo = new BalanceAmountVo();
 
-        try{
+        try {
             // Retrieve request body in original string format
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            BalanceDto balanceDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(balanceDto.getToken());
@@ -51,7 +52,7 @@ public class BalanceService {
             vo.setUid(balanceDto.getUid());
             vo.setBalance(balanceAmountVo);
 
-        }catch (Exception exception){
+        } catch (Exception exception) {
 
         }
 

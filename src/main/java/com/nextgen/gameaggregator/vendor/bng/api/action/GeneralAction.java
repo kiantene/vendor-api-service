@@ -60,10 +60,10 @@ public class GeneralAction {
             ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
 
             // Handle the action and return the resulting value
-            vo = this.actionHandling(actionDto, traceId, body);
-        }catch(Exception exception){
+            vo = this.actionHandling(actionDto, traceId, httpRequestLog);
+        } catch (Exception exception) {
 
-        }finally {
+        } finally {
             httpService.end(httpRequestLog, vo);
         }
 
@@ -71,17 +71,17 @@ public class GeneralAction {
         return vo;
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId, String body) throws JsonProcessingException {
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws JsonProcessingException {
         CommonVo vo = new CommonVo();
         switch (actionDto.getName().toLowerCase()) {
             case Actions.LOGIN:
-                vo = loginService.login(body, traceId);
+                vo = loginService.login(httpRequestLog, traceId);
                 break;
             case Actions.GETBALANCE:
-                vo = balanceService.balance(body, traceId);
+                vo = balanceService.balance(httpRequestLog, traceId);
                 break;
             case Actions.TRANSACTION:
-                vo = transactionService.transaction(body, traceId);
+                vo = transactionService.transaction(httpRequestLog, traceId);
                 break;
         }
         return vo;

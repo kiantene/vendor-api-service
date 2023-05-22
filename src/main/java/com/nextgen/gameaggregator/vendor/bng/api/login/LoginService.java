@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bng.api.login;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bng.constant.Credentials;
@@ -28,17 +29,17 @@ public class LoginService {
     @Autowired
     private HttpService httpService;
 
-    public CommonVo login(String body, String traceId){
+    public CommonVo login(HttpRequestLog httpRequestLog, String traceId) {
 
         // Construct VO
         LoginVo vo = new LoginVo();
         LoginPlayerVo loginPlayer = new LoginPlayerVo();
         LoginBalanceVo loginBalance = new LoginBalanceVo();
 
-        try{
+        try {
 
             // Retrieve request body in original string format
-            LoginDto loginDto = HttpService.convertJsonToDto(body, LoginDto.class);
+            LoginDto loginDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), LoginDto.class);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
@@ -65,7 +66,7 @@ public class LoginService {
             vo.setBalance(loginBalance);
             vo.setTag("");
 
-        }catch (Exception exception){
+        } catch (Exception exception) {
 
         }
 
