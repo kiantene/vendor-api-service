@@ -134,7 +134,6 @@ public class CreditAction extends CommonDto {
         if (isBetAmountEqualThanZero && isWinAmountEqualThanZero) { // Win Amount == 0 and Bet Amount == 0 ~ BET_WIN
             resultType = ResultType.BET_WIN;
         }
-
         return resultType;
     }
 

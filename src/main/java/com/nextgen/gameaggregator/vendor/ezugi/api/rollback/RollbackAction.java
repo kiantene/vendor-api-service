@@ -1,19 +1,30 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.api.debit.DebitDto;
 import com.nextgen.gameaggregator.vendor.ezugi.api.debit.DebitVo;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -22,28 +33,58 @@ public class RollbackAction {
 
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.ROLLBACK)
     public CommonVo rollback(HttpServletRequest request) throws JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
-        String body = httpRequestLog.getRequestBody();
-        RollbackDto rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
-
-        // Construct Vo
         RollbackVo rollbackVo = new RollbackVo();
-        rollbackVo.setToken(rollbackDto.getToken());
-        rollbackVo.setOperatorId(rollbackDto.getOperatorId());
-        rollbackVo.setUid("testgame1");
-        rollbackVo.setRoundId("11111111111112R");
-        rollbackVo.setTransactionId("11111111111112RT");
-        rollbackVo.setBalance(50.00);
-        rollbackVo.setCurrency("BRL");
-        rollbackVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
-        rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(rollbackVo.getErrorCode()));
-        rollbackVo.setTimestamp(System.currentTimeMillis());
-        httpService.end(httpRequestLog, rollbackVo);
+        try {
+
+            String body = httpRequestLog.getRequestBody();
+            RollbackDto rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
+
+            GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
+
+            // Construct Vo
+            rollbackVo.setToken(rollbackDto.getToken());
+            rollbackVo.setOperatorId(rollbackDto.getOperatorId());
+            rollbackVo.setUid(gameSession.getVendorPlayerUsername());
+            rollbackVo.setRoundId(rollbackDto.getRoundId());
+            rollbackVo.setTransactionId(rollbackDto.getTransactionId());
+            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
+            rollbackVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
+            rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(rollbackVo.getErrorCode()));
+            rollbackVo.setTimestamp(System.currentTimeMillis());
+        }
+        catch (Exception e){
+            httpService.logError(httpRequestLog, e);
+        }finally {
+            httpService.end(httpRequestLog, rollbackVo);
+        }
         return rollbackVo;
+    }
+    private void doValidation(RollbackDto rollbackdto) throws InvalidRequestException {
+        ValidationUtils.validateRequest(rollbackdto);
+    }
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
+            CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
+
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), rollbackdto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }
