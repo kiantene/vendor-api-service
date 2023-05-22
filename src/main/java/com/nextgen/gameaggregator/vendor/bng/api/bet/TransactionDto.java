@@ -28,12 +28,12 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getUid();
+        return String.valueOf(this.getArgs().getRound_id());
     }
 
     @Override
     public String getVendorBetId() {
-        return this.getSession();
+        return String.valueOf(this.getArgs().getRound_id());
     }
 
     @Override
