@@ -43,7 +43,6 @@ public class BetNSettleAction {
     @PostMapping(path = Endpoints.BET_N_SETTLE)
     public ResponseVo betResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         BetNSettleVo responseVo = new BetNSettleVo();
         String traceId = httpRequestLog.getId();
 
@@ -73,7 +72,7 @@ public class BetNSettleAction {
             // 4. Send win result to Operator
             Integer isBet = 1;
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             responseVo.setBalance(balance);
 
