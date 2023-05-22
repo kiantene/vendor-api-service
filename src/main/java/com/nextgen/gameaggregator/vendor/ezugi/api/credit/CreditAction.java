@@ -85,7 +85,7 @@ public class CreditAction extends CommonDto {
 
             //Process result settle data
             ResultType resultType = getResultType(creditDto,unsettledBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, body);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
             // Construct Vo
             creditVo.setToken(creditDto.getToken());
