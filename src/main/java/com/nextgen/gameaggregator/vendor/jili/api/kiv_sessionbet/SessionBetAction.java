@@ -70,7 +70,7 @@ public class SessionBetAction {
                     sessionBetVo.setBalance(betEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
-                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, ResultType.BET_WIN, vendorService, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, sessionBetDto, ResultType.BET_WIN, vendorService, httpRequestLog);
                     sessionBetVo.setBalance(balance);
                 }
                 default -> throw new InvalidRequestException();

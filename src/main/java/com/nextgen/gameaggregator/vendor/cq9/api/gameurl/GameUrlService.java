@@ -77,7 +77,7 @@ public class GameUrlService implements GameUrl {
 
         long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                Endpoints.OPEN_HISTORY, apiUrl, formData, apiResponse, headers, startTime, endTime,
+                Endpoints.GAME_URL, apiUrl, formData, apiResponse, headers, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {

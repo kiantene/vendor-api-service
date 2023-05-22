@@ -77,7 +77,7 @@ public class TransferService {
                             .map(SpecialGameDto::getType) // Map with dto
                             .orElse(null);
                     ResultType resultType = determineResultType(type, winDataDto);
-                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, body);
+                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);

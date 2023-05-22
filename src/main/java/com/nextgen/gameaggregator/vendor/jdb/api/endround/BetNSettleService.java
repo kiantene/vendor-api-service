@@ -55,7 +55,7 @@ public class BetNSettleService {
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Result and End Round
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, 
-            ((betNSettleDto.getWinAmount().subtract(betNSettleDto.getBetAmount())).compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE, vendorService, actionDto.getParams());
+            ((betNSettleDto.getWinAmount().subtract(betNSettleDto.getBetAmount())).compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE, vendorService, actionDto.getHttpRequestLog());
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
