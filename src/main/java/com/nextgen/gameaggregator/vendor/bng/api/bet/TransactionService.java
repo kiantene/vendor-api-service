@@ -3,8 +3,11 @@ package com.nextgen.gameaggregator.vendor.bng.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
+import com.nextgen.gameaggregator.vendor.bng.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bng.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,7 @@ public class TransactionService {
         // Construct VO
         TransactionVo vo = new TransactionVo();
         TransactionBalanceVo transactionBalanceVo = new TransactionBalanceVo();
+        ErrorVo errorVo = new ErrorVo();
 
         try {
             // Retrieve request body in original string format
@@ -57,6 +61,9 @@ public class TransactionService {
             vo.setUid(transactionDto.getUid());
             vo.setBalance(transactionBalanceVo);
 
+        }catch(InsufficientBalanceException insufficientBalanceException){
+            errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
+            vo.setError(errorVo);
         } catch (Exception exception) {
 
         }
