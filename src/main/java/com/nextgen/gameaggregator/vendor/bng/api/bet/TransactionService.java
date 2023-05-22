@@ -65,17 +65,13 @@ public class TransactionService {
 
     private ResultType getResultType(TransactionDto transactionDto) {
 
-        ResultType resultType = ResultType.BET_LOSE;
+        ResultType resultType = ResultType.BET_LOSE; // Default value is lose
         BigDecimal zero = BigDecimal.ZERO;
         
-        BigDecimal winLoss = new BigDecimal(transactionDto.getArgs().getWin());
-        BigDecimal bet = new BigDecimal(transactionDto.getArgs().getBet());
-        BigDecimal net_total;
+        BigDecimal winAmount = new BigDecimal(transactionDto.getArgs().getWin());
 
-        // Calculate the net total to decide the status
-        net_total = winLoss.subtract(bet);
-
-        if (net_total.compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
+        // If win amount is not equal to zero meant win(sometimes result in win but lose money)
+        if (winAmount.compareTo(zero) > 0) { // Win Amount > 0 ~ BET_WIN
             resultType = ResultType.BET_WIN;
         }
 
