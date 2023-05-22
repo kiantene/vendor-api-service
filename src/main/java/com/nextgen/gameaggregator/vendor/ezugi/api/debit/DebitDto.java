@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.debit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
@@ -14,7 +15,8 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     private String uid;
     private String transactionId;
-    private String roundId;
+    @JsonProperty("roundId")
+    private String vendorRoundId;
     private String gameId;
     private Double debitAmount;
     @Override
@@ -29,7 +31,7 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.roundId;
+        return this.transactionId;
     }
 
     @Override

@@ -69,7 +69,7 @@ public class DebitAction {
             debitVo.setToken(debitDto.getToken());
             debitVo.setOperatorId(debitDto.getOperatorId());
             debitVo.setUid(gameSession.getVendorPlayerUsername());
-            debitVo.setRoundId(debitDto.getRoundId());
+            debitVo.setRoundId(debitDto.getVendorRoundId());
             debitVo.setTransactionId(debitDto.getTransactionId());
             debitVo.setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
             debitVo.setCurrency(gameSession.getVendorCurrencyCode());

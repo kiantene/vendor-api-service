@@ -91,7 +91,7 @@ public class CreditAction extends CommonDto {
             creditVo.setToken(creditDto.getToken());
             creditVo.setOperatorId(creditDto.getOperatorId());
             creditVo.setUid(gameSession.getVendorPlayerUsername());
-            creditVo.setRoundId(creditDto.getRoundId());
+            creditVo.setRoundId(creditDto.getVendorRoundId());
             creditVo.setTransactionId(creditDto.getTransactionId());
             creditVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             creditVo.setCurrency(gameSession.getVendorCurrencyCode());
