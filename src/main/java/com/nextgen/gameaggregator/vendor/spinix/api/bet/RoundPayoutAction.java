@@ -51,7 +51,6 @@ public class RoundPayoutAction {
     public RoundPayoutVo bet(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-        walletService.setHttpRequestLog(httpRequestLog);
         String traceId = httpRequestLog.getId();
         String sign = request.getHeader("x-gaming-signature");
         String body = httpRequestLog.getRequestBody();
@@ -109,7 +108,7 @@ public class RoundPayoutAction {
                         betWinDto.getWinAmount().compareTo(BigDecimal.ZERO) == 0)
                         ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
-                BigDecimal balance = walletService.processBetResult(traceId, gameSession, betWinDto, resultType, vendorService, body);
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, betWinDto, resultType, vendorService, httpRequestLog);
 
                 // Set Balance
                 roundPayoutDataWalletVo.setBalance(balance);
@@ -127,7 +126,7 @@ public class RoundPayoutAction {
                     betDto.setGameId(dto.getGameId());
                     betDto.setTimestamp(betRecord.getConvertedTimestamp());
 
-                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(balance);
@@ -144,7 +143,7 @@ public class RoundPayoutAction {
                     winDto.setGameId(dto.getGameId());
                     winDto.setTimestamp(winRecord.getConvertedTimestamp());
 
-                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, ResultType.BET_WIN, vendorService, body);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
                     // Set Balance
                     roundPayoutDataWalletVo.setBalance(balance);

@@ -94,6 +94,7 @@ public class GeneralAction {
 
             // Set params to be the decrypted 'X' value again
             actionDto.setParams(params);
+            actionDto.setHttpRequestLog(httpRequestLog);
 
             // Handle the action and return the resulting value
             vo = this.actionHandling(actionDto, traceId);
