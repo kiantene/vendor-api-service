@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.bng.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bng.api.bet.TransactionService;
 import com.nextgen.gameaggregator.vendor.bng.api.login.LoginService;
-import com.nextgen.gameaggregator.vendor.bng.api.rollback.RollbackService;
 import com.nextgen.gameaggregator.vendor.bng.constant.EndPoints;
 
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
