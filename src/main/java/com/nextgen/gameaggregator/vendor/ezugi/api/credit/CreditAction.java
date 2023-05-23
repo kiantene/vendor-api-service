@@ -81,7 +81,7 @@ public class CreditAction extends CommonDto {
 
             //Get unsettled bet
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(creditDto.getUid());
-            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(creditDto.getGameId(), vendorPlayer.getVendorId());
+            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(creditDto.getTableId(), vendorPlayer.getVendorId());
             UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(),
                     creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
