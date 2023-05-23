@@ -73,7 +73,7 @@ public class DebitAction {
             debitVo.setTransactionId(debitDto.getTransactionId());
             debitVo.setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
             debitVo.setCurrency(gameSession.getVendorCurrencyCode());
-            debitVo.setErrorCode(ResponseCodes.TRANSACTION_TIMED_OUT);
+            debitVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
             debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
             debitVo.setTimestamp(System.currentTimeMillis());
         }catch (Exception e){

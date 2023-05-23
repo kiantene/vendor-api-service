@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.api.authentication.Authentication
 import com.nextgen.gameaggregator.vendor.ezugi.api.authentication.AuthenticationVo;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleDto;
@@ -24,6 +25,7 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,9 +85,16 @@ public class CreditAction extends CommonDto {
             UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(),
                     creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
-            //Process result settle data
-            ResultType resultType = getResultType(creditDto,unsettledBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = BigDecimal.ZERO;
+            //Process result settled or cancelled bet data
+            switch (creditDto.getReturnReason()){
+                case ReturnReasons.CANCEL_BET, ReturnReasons.CANCELED_ROUND:
+                    balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService);
+                    break;
+                default:
+                    ResultType resultType = getResultType(creditDto,unsettledBet);
+                    balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+            }
 
             // Construct Vo
             creditVo.setToken(creditDto.getToken());
