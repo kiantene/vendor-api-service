@@ -19,6 +19,7 @@ public class DebitDto extends CommonDto implements BetResultData {
     @JsonProperty("roundId")
     private String vendorRoundId;
     private String gameId;
+    private String tableId;
     private Double debitAmount;
     @Override
     public String getExternalTransactionId() {

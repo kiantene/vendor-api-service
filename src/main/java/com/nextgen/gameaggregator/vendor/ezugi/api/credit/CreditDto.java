@@ -21,6 +21,7 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     @JsonProperty("roundId")
     private String vendorRoundId;
     private String gameId;
+    private String tableId;
     private Double creditAmount;
     private Integer returnReason;
     private String gameDataString;

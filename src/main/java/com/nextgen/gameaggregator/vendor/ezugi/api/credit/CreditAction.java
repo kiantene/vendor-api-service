@@ -126,7 +126,7 @@ public class CreditAction extends CommonDto {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
 
         // 2. Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getTableId(), AuthenticationException::new);
     }
     private ResultType getResultType(CreditDto dto,UnsettledBet unsettledBet) {
 

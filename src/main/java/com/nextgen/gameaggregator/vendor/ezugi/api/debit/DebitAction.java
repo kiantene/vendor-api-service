@@ -94,7 +94,7 @@ public class DebitAction {
     private void doVerification(DebitDto debitDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // 3. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getGameId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
 
         //4.. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
