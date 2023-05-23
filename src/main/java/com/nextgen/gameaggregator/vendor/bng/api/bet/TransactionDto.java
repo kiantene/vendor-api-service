@@ -94,7 +94,7 @@ public class TransactionDto implements BetResultData {
         int freeSpin = 0;
 
         // Check condition to know this bet is free spin or not
-        if (this.getArgs().getBet() == null && this.getArgs().getRound_started() == false && this.getArgs().getRound_finished() == false){
+        if (this.getArgs().getBet() == null){
             freeSpin = 1;
         }
 
