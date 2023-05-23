@@ -62,6 +62,9 @@ public class TransactionService {
 
             transactionBalanceVo.setValue(balance.toString());
 
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+            vo.setError(errorVo);
+
         }catch(InvalidOperatorResponseException invalidOperatorResponseException){ // If insufficient balance for placing bet
 
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
