@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
@@ -44,7 +45,7 @@ public class TransactionService {
         ErrorVo errorVo = new ErrorVo();
 
         try {
-            // Retrieve request body in original string format
+            // Retrieve request body in original string format(*)
             TransactionDto transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
             // Verify session token
@@ -61,11 +62,11 @@ public class TransactionService {
             vo.setUid(transactionDto.getUid());
             vo.setBalance(transactionBalanceVo);
 
-        }catch(InsufficientBalanceException insufficientBalanceException){
+        }catch(InvalidOperatorResponseException invalidOperatorResponseException){ // If insufficient balance for placing bet
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
             vo.setError(errorVo);
         } catch (Exception exception) {
-
+//            System.out.println(exception.getMessage());
         }
 
         return vo;

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bng.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.math.BigInteger;

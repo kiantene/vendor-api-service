@@ -48,7 +48,7 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return new BigDecimal(this.getArgs().getBet());
+        return this.getArgs().getBet() == null ? BigDecimal.ZERO : new BigDecimal(this.getArgs().getBet());
     }
 
     @Override
@@ -60,7 +60,7 @@ public class TransactionDto implements BetResultData {
     public BigDecimal getWinLoss() {
 
         // Convert win and bet amount into BigDecimal format
-        BigDecimal betAmount = new BigDecimal(this.getArgs().getBet());
+        BigDecimal betAmount = this.getArgs().getBet() == null ? BigDecimal.ZERO : new BigDecimal(this.getArgs().getBet());
         BigDecimal winAmount = new BigDecimal(this.getArgs().getWin());
 
         // Return the value by (winAmount - betAmount)
@@ -69,19 +69,14 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return new BigDecimal(this.getArgs().getBet());
+        return this.getArgs().getBet() == null ? BigDecimal.ZERO : new BigDecimal(this.getArgs().getBet());
     }
 
     @Override
-    public Long getVendorBetTime() {
-
-        return getTimeStamp(this.getC_at());
-    }
+    public Long getVendorBetTime() { return getTimeStamp(this.getC_at()); }
 
     @Override
-    public Long getResultTime() {
-        return getTimeStamp(this.getSent_at());
-    }
+    public Long getResultTime() { return getTimeStamp(this.getSent_at()); }
 
     @Override
     public Long getVendorSettleTime() {
@@ -95,7 +90,15 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+
+        int freeSpin = 0;
+
+        // Check condition to know this bet is free spin or not
+        if (this.getArgs().getBet() == null && this.getArgs().getRound_started() == false && this.getArgs().getRound_finished() == false){
+            freeSpin = 1;
+        }
+
+        return freeSpin;
     }
 
     @Override
