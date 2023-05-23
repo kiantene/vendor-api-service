@@ -44,8 +44,6 @@ public class GeneralAction {
     @Autowired
     private TransactionService transactionService;
 
-    @Autowired
-    private RollbackService rollbackService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) {
@@ -86,9 +84,6 @@ public class GeneralAction {
                 break;
             case Actions.TRANSACTION:
                 vo = transactionService.transaction(httpRequestLog, traceId);
-                break;
-            case Actions.ROLLBACK:
-                vo = rollbackService.rollback(httpRequestLog, traceId);
                 break;
         }
         return vo;
