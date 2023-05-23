@@ -44,17 +44,19 @@ public class TransactionService {
         TransactionBalanceVo transactionBalanceVo = new TransactionBalanceVo();
         ErrorVo errorVo = new ErrorVo();
 
+        TransactionDto transactionDto = new TransactionDto();
+
+        long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
+
         try {
             // Retrieve request body in original string format(*)
-            TransactionDto transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
+            transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(transactionDto.getToken());
 
             ResultType resultType = getResultType(transactionDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
-
-            long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             transactionBalanceVo.setValue(balance.toString());
             transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
@@ -63,7 +65,17 @@ public class TransactionService {
             vo.setBalance(transactionBalanceVo);
 
         }catch(InvalidOperatorResponseException invalidOperatorResponseException){ // If insufficient balance for placing bet
+
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
+
+            // Retrieve current wallet balance
+            BigDecimal balance = BigDecimal.ZERO;
+
+            transactionBalanceVo.setValue(balance.toString());
+            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
+
+            vo.setUid(transactionDto.getUid());
+            vo.setBalance(transactionBalanceVo);
             vo.setError(errorVo);
         } catch (Exception exception) {
 //            System.out.println(exception.getMessage());
