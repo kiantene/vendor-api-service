@@ -28,7 +28,7 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return String.valueOf(this.getArgs().getRound_id());
+        return this.getUid();
     }
 
     @Override
