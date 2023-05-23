@@ -118,7 +118,7 @@ pipeline {
             steps {
                 script {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t ${AWS_ECR_URL}:qa /root/vendor-api'"
+                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
                     }
                 }
             }
@@ -151,7 +151,7 @@ pipeline {
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image ${AWS_ECR_URL}:qa game-aggregator_ga-vendor-api-service'"
+                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
                         }
                     }
                 }
@@ -173,13 +173,14 @@ pipeline {
                     script {
                         String branchName = env.BRANCH_NAME
                         String packageVersion = getRepoTag(branchName)
-                        String taskDefinitionPath = "./ecs/${branchName}.json"
 
                         withEnv(getECSConfig(branchName)) {
-                            updateContainerDefinitionJsonWithImageVersion(packageVersion, taskDefinitionPath)
-                            sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
-                            String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
-                            sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                            configFileProvider([configFile(fileId: "${branchName}_td", variable: 'taskDefinitionPath')]) {
+                                updateContainerDefinitionJsonWithImageVersion(packageVersion, taskDefinitionPath)
+                                sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
+                                String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
+                                sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                            }
                         }
                     }
                 }
