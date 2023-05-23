@@ -8,7 +8,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.bng.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bng.api.bet.TransactionService;
 import com.nextgen.gameaggregator.vendor.bng.api.login.LoginService;
-import com.nextgen.gameaggregator.vendor.bng.api.logout.LogoutService;
+import com.nextgen.gameaggregator.vendor.bng.api.rollback.RollbackService;
 import com.nextgen.gameaggregator.vendor.bng.constant.EndPoints;
 
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
@@ -45,7 +45,7 @@ public class GeneralAction {
     private TransactionService transactionService;
 
     @Autowired
-    private LogoutService logoutService;
+    private RollbackService rollbackService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request) {
@@ -87,8 +87,8 @@ public class GeneralAction {
             case Actions.TRANSACTION:
                 vo = transactionService.transaction(httpRequestLog, traceId);
                 break;
-            case Actions.LOGOUT:
-                vo = logoutService.logout(httpRequestLog, traceId);
+            case Actions.ROLLBACK:
+                vo = rollbackService.rollback(httpRequestLog, traceId);
                 break;
         }
         return vo;

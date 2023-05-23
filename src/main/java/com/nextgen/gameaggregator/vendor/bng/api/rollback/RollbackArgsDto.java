@@ -1,12 +1,13 @@
-package com.nextgen.gameaggregator.vendor.bng.api.bet;
+package com.nextgen.gameaggregator.vendor.bng.api.rollback;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.math.BigInteger;
 
 @Data
-public class TransactionArgsDto {
+public class RollbackArgsDto {
+
+    private String transaction_uid;
     private String bet;
     private String win;
     private Boolean round_started;
