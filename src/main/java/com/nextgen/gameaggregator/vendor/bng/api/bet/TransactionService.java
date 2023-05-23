@@ -48,37 +48,34 @@ public class TransactionService {
 
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
+        GameSession gameSession = new GameSession();
+
         try {
-            // Retrieve request body in original string format(*)
+            // Retrieve request body in original string format
             transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+            gameSession = gameSessionService.verifyToken(transactionDto.getToken());
 
             ResultType resultType = getResultType(transactionDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
             transactionBalanceVo.setValue(balance.toString());
-            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
-
-            vo.setUid(transactionDto.getUid());
-            vo.setBalance(transactionBalanceVo);
 
         }catch(InvalidOperatorResponseException invalidOperatorResponseException){ // If insufficient balance for placing bet
 
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
             // Retrieve current wallet balance
-            BigDecimal balance = BigDecimal.ZERO;
+            transactionBalanceVo.setValue(getCurrentBalance(traceId,gameSession).toString());
 
-            transactionBalanceVo.setValue(balance.toString());
-            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
-
-            vo.setUid(transactionDto.getUid());
-            vo.setBalance(transactionBalanceVo);
             vo.setError(errorVo);
         } catch (Exception exception) {
 //            System.out.println(exception.getMessage());
+        }finally {
+            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
+            vo.setUid(transactionDto.getUid());
+            vo.setBalance(transactionBalanceVo);
         }
 
         return vo;
@@ -97,5 +94,19 @@ public class TransactionService {
         }
 
         return resultType;
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession){
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try{
+            balance = walletService.getBalance(traceId, gameSession);
+
+        }catch(Exception exception){
+
+        }
+
+        return balance;
     }
 }
