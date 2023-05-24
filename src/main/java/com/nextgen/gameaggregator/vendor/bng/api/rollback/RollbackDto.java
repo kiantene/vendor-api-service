@@ -1,9 +1,10 @@
 package com.nextgen.gameaggregator.vendor.bng.api.rollback;
 
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import lombok.Data;
 
 @Data
-public class RollbackDto {
+public class RollbackDto implements RollbackData {
     private String name;
     private String uid;
     private String token;
@@ -15,4 +16,16 @@ public class RollbackDto {
     private String c_at;
     private String sent_at;
     private RollbackArgsDto args;
+
+    @Override
+    public String getRollbackId() {
+        return this.getArgs().getTransaction_uid();
+    }
+
+    @Override
+    public Long getVendorSettledTime() {
+        long timestampMillis = System.currentTimeMillis();
+
+        return timestampMillis;
+    }
 }

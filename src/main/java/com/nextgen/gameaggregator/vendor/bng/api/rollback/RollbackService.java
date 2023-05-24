@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,8 @@ public class RollbackService {
     private ValidationService validationService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private VendorService vendorService;
 
     public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
 
@@ -43,7 +46,7 @@ public class RollbackService {
             GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
