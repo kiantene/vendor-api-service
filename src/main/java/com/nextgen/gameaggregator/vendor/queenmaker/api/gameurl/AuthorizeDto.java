@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.authorize;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.gameurl;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
