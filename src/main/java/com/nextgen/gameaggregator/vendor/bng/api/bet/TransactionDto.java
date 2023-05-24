@@ -94,7 +94,7 @@ public class TransactionDto implements BetResultData {
         int freeSpin = 0;
 
         // Check condition to know this bet is free spin or not
-        if (this.getArgs().getBet() == null){
+        if (this.getArgs().getBet() == null) {
             freeSpin = 1;
         }
 
@@ -103,7 +103,13 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+
+        // Check condition to decide it is settled or unsettle
+        if (this.getArgs().getRound_finished()) {
+            return BetStatus.SETTLED;
+        } else {
+            return BetStatus.UNSETTLED;
+        }
     }
 
     public Long getTimeStamp(String datetime) {
