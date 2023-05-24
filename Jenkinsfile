@@ -120,6 +120,9 @@ pipeline {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
                         sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
                     }
+                    sshagent(credentials: ['tokyo_key']) {
+                        sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
+                    }
                 }
             }
         }
@@ -152,6 +155,9 @@ pipeline {
                     script {
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
                             sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
+                        }
+                        sshagent(credentials: ['tokyo_key']) {
+                            sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
                         }
                     }
                 }
