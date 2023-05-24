@@ -1,6 +1,5 @@
-package com.nextgen.gameaggregator.vendor.bng.api.balance;
+package com.nextgen.gameaggregator.vendor.bng.api.rollback;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
@@ -15,7 +14,8 @@ import java.math.RoundingMode;
 
 @Service
 @Slf4j
-public class BalanceService {
+public class RollbackService {
+
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
@@ -29,18 +29,18 @@ public class BalanceService {
     @Autowired
     private HttpService httpService;
 
-    public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
+    public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
 
-        // Construct VO
-        BalanceVo vo = new BalanceVo();
-        BalanceAmountVo balanceAmountVo = new BalanceAmountVo();
+        // Construct vo
+        RollbackVo vo = new RollbackVo();
+        RollbackBalanceVo rollbackBalanceVo = new RollbackBalanceVo();
 
-        try {
+        try{
             // Retrieve request body in original string format
-            BalanceDto balanceDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
+            RollbackDto rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getToken());
+            GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -48,13 +48,13 @@ public class BalanceService {
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             // Construct response data into vo
-            balanceAmountVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            balanceAmountVo.setVersion(BigInteger.valueOf(unixTime));
+            rollbackBalanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            rollbackBalanceVo.setVersion(BigInteger.valueOf(unixTime));
 
-            vo.setUid(balanceDto.getUid());
-            vo.setBalance(balanceAmountVo);
+            vo.setUid(rollbackDto.getUid());
+            vo.setBalance(rollbackBalanceVo);
 
-        } catch (Exception exception) {
+        }catch(Exception exception){
 
         }
 

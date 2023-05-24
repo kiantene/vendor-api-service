@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 
 @Service
 @Slf4j
@@ -46,6 +47,8 @@ public class TransactionService {
 
         TransactionDto transactionDto = new TransactionDto();
 
+        BigDecimal balance;
+
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
         GameSession gameSession = new GameSession();
@@ -58,16 +61,18 @@ public class TransactionService {
             gameSession = gameSessionService.verifyToken(transactionDto.getToken());
 
             ResultType resultType = getResultType(transactionDto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
+            balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
-            transactionBalanceVo.setValue(balance.toString());
+            transactionBalanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
         }catch(InvalidOperatorResponseException invalidOperatorResponseException){ // If insufficient balance for placing bet
 
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
+            balance = getCurrentBalance(traceId,gameSession);
+
             // Retrieve current wallet balance
-            transactionBalanceVo.setValue(getCurrentBalance(traceId,gameSession).toString());
+            transactionBalanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
             vo.setError(errorVo);
         } catch (Exception exception) {

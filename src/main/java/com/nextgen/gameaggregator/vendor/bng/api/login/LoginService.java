@@ -50,6 +50,7 @@ public class LoginService {
             // Retrieve vendor line credentials
             String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
 
+            // Construct response data into vo
             loginPlayer.setId(gameSession.getVendorPlayerUsername());
             loginPlayer.setBrand(brand);
             loginPlayer.setCurrency(gameSession.getVendorCurrencyCode());
