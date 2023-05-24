@@ -78,10 +78,9 @@ public class TransactionService {
         } catch (Exception exception) {
 //            System.out.println(exception.getMessage());
         }finally {
-//            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
-//            vo.setUid(transactionDto.getUid());
-//            vo.setBalance(transactionBalanceVo);
-            vo = null;
+            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
+            vo.setUid(transactionDto.getUid());
+            vo.setBalance(transactionBalanceVo);
         }
 
         return vo;
