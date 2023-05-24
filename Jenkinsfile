@@ -80,6 +80,11 @@ pipeline {
                         sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@47.254.202.80:/root/vendor-api/app.jar'
                     }
                 }
+                script {
+                    sshagent(credentials: ['tokyo_key']) {
+                        sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@35.77.164.118:/root/vendor-api/app.jar'
+                    }
+                }
             }
         }
 
