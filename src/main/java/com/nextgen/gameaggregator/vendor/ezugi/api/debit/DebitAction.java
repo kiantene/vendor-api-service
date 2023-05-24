@@ -5,12 +5,15 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
@@ -45,6 +49,8 @@ public class DebitAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.DEBIT)
     public CommonVo debit(HttpServletRequest request) throws JsonProcessingException {
@@ -62,16 +68,24 @@ public class DebitAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession);
 
+            BigDecimal balance = BigDecimal.ZERO;
             //Get walletBalance
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
-
+            switch (debitDto.getBetTypeID()) {
+                case BetTypeID.TIP:
+                    balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                    break;
+                default:
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
+                    balance = betEvent.getLastBalance();
+                    break;
+            }
             // Construct Vo
             debitVo.setToken(debitDto.getToken());
             debitVo.setOperatorId(debitDto.getOperatorId());
             debitVo.setUid(gameSession.getVendorPlayerUsername());
             debitVo.setRoundId(debitDto.getVendorRoundId());
             debitVo.setTransactionId(debitDto.getTransactionId());
-            debitVo.setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             debitVo.setCurrency(gameSession.getVendorCurrencyCode());
             debitVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
             debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));

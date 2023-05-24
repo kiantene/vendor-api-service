@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
 import lombok.Data;
 
@@ -21,6 +22,8 @@ public class DebitDto extends CommonDto implements BetResultData {
     private String gameId;
     private String tableId;
     private Double debitAmount;
+    private Integer betTypeID;
+
     @Override
     public String getExternalTransactionId() {
         return this.transactionId;
@@ -74,6 +77,9 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
+        if(betTypeID.equals(BetTypeID.TIP)){
+            return getTimestamp();
+        }
         return null;
     }
 
@@ -89,6 +95,9 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
+        if(betTypeID.equals(BetTypeID.TIP)){
+            return BetStatus.SETTLED;
+        }
         return BetStatus.UNSETTLED;
     }
 }

@@ -94,6 +94,7 @@ public class CreditAction extends CommonDto {
                 default:
                     ResultType resultType = getResultType(creditDto,unsettledBet);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+                    break;
             }
 
             // Construct Vo
