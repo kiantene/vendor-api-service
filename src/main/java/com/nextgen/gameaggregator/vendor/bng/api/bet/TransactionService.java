@@ -79,7 +79,8 @@ public class TransactionService {
 //            System.out.println(exception.getMessage());
         }finally {
             transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
-            vo.setUid(transactionDto.getUid());
+//            vo.setUid(transactionDto.getUid());
+            vo.setUid("ec641e202ed64234ad62822ab61121331");
             vo.setBalance(transactionBalanceVo);
         }
 
