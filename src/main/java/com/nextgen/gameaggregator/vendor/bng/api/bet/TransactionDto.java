@@ -79,9 +79,7 @@ public class TransactionDto implements BetResultData {
     public Long getResultTime() { return getTimeStamp(this.getSent_at()); }
 
     @Override
-    public Long getVendorSettleTime() {
-        return getTimeStamp(this.getSent_at());
-    }
+    public Long getVendorSettleTime() { return getTimeStamp(this.getC_at()); }
 
     @Override
     public BigDecimal getJackpotAmount() {
