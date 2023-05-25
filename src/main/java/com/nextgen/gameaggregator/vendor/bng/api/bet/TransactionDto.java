@@ -53,7 +53,7 @@ public class TransactionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(this.getArgs().getWin());
+        return this.getArgs().getWin() == null ? BigDecimal.ZERO : new BigDecimal(this.getArgs().getWin());
     }
 
     @Override
@@ -61,7 +61,7 @@ public class TransactionDto implements BetResultData {
 
         // Convert win and bet amount into BigDecimal format
         BigDecimal betAmount = this.getArgs().getBet() == null ? BigDecimal.ZERO : new BigDecimal(this.getArgs().getBet());
-        BigDecimal winAmount = new BigDecimal(this.getArgs().getWin());
+        BigDecimal winAmount = this.getArgs().getWin() == null ? BigDecimal.ZERO : new BigDecimal(this.getArgs().getWin());
 
         // Return the value by (winAmount - betAmount)
         return winAmount.subtract(betAmount);

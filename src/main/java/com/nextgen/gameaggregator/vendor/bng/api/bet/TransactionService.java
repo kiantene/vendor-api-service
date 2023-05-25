@@ -76,11 +76,10 @@ public class TransactionService {
 
             vo.setError(errorVo);
         } catch (Exception exception) {
-//            System.out.println(exception.getMessage());
+//            httpService.logError(httpRequestLog, exception);
         }finally {
             transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
-//            vo.setUid("ec641e202ed64234ad62822ab61121331");
             vo.setBalance(transactionBalanceVo);
         }
 
