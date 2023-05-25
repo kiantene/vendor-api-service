@@ -47,7 +47,7 @@ public class TransactionService {
 
         TransactionDto transactionDto = new TransactionDto();
 
-        BigDecimal balance;
+        BigDecimal balance = BigDecimal.ZERO;
 
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
