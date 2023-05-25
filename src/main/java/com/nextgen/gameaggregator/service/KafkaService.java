@@ -22,7 +22,8 @@ public class KafkaService {
     public void produceBetHistory(BetHistory betHistory, SettledBet settledBet) {
         try{
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
-            settledBetService.delete(settledBet);
+            //ga-1726 temporary remove delete actions
+            //settledBetService.delete(settledBet);
         } catch (Exception e){
             log.warn("Kafka produceBetHistory.exception -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
         }
