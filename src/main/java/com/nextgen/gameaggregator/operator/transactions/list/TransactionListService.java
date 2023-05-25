@@ -60,9 +60,9 @@ public class TransactionListService {
     //region generate headers
     private HashMap<String, Integer> getHeaders() {
         HashMap<String, Integer> hm = (new HashMap<String, Integer>() {{
-            put("transactionId", 0);
-            put("externalTransactionId", 1);
-            put("roundId", 2);
+            put("betId", 0);
+            put("roundId", 1);
+            put("externalTransactionId", 2);
             put("username", 3);
             put("currencyCode", 4);
             put("gameCode", 5);
