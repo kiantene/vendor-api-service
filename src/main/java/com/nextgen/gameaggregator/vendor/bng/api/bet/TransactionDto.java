@@ -103,7 +103,7 @@ public class TransactionDto implements BetResultData {
     public BetStatus getBetStatus() {
 
         // Check condition to decide it is settled or unsettle
-        if (this.getArgs().getRound_finished()) {
+        if (this.getArgs().getRound_finished() == true) {
             return BetStatus.SETTLED;
         } else {
             return BetStatus.UNSETTLED;
