@@ -21,8 +21,8 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
 
 
     @Query(value="SELECT " +
-            "bh.external_transaction_id AS transactionId, " +
-            "bh.round_id AS externalRoundId, " +
+            "bh.id AS betId, " +
+            "bh.round_id AS roundId, " +
             "bh.vendor_bet_id AS externalTransactionId, " +
             "ap.username AS username, " +
             "c.code AS currencyCode, " +
@@ -34,7 +34,6 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "bh.win_loss AS winLoss, " +
             "bh.effective_turnover AS effectiveTurnover, " +
             "bh.jackpot_amount AS jackpotAmount, " +
-            "bh.refund_amount AS refundAmount, " +
             "bh.status AS status, " +
             "bh.vendor_bet_time AS vendorBetTime, " +
             "bh.vendor_settle_time AS vendorSettleTime, " +
@@ -55,6 +54,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             @Param("agentId") Integer agentId, @Param("fromTime") Long fromTime, @Param("toTime") Long toTime, Pageable pageable);
 
     @Query(value=" SELECT " +
+            "bh.id AS betId, " +
             "bh.external_transaction_id AS transactionId, " +
             "bh.round_id AS externalRoundId, " +
             "bh.vendor_bet_id AS externalTransactionId, " +

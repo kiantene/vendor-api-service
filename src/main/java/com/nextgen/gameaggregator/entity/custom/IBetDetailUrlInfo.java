@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public interface IBetDetailUrlInfo {
 
+    String getBetId();
     String getTransactionId();
     String getExternalTransactionId();
     String getExternalRoundId();
