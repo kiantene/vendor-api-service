@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.gson.Gson;
@@ -58,19 +57,21 @@ public class GameUrlService implements GameUrl {
                             + "/players/" + gameSession.getVendorPlayerUsername()
                             + "/sessions";
             Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
+
+            String token = vendorTokenService.getToken(gameSession.getVendorLineId());
             
             GameUrlVo responseVo = null;
             MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
-            long startTime = System.currentTimeMillis();
-            String token = vendorTokenService.getToken(gameSession.getVendorLineId());
+            headerMap.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
+            headerMap.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
 
-            ResponseEntity<String> apiResponse  = WebClient.builder()
-                .baseUrl(apiUrl)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-                .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                .build()
+            long startTime = System.currentTimeMillis();
+
+            ResponseEntity<String> apiResponse = WebClient.create()
                 .post()
-                .body(BodyInserters.fromFormData(formData))
+                .uri(apiUrl)
+                .headers(httpHeaders -> httpHeaders.addAll(headerMap))
+                .bodyValue(formData)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
