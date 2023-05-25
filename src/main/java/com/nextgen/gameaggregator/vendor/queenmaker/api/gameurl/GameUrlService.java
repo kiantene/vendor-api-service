@@ -70,7 +70,8 @@ public class GameUrlService implements GameUrl {
         // Build Game Url
         formData.set("token", authorizeDto.getAuthtoken());
 
-        URI gameUrl = UriComponentsBuilder.fromUriString(gameApiUrl + EndPoints.GAME_URL)
+        URI gameUrl = UriComponentsBuilder.fromUriString(gameApiUrl)
+                .path(EndPoints.GAME_URL)
                 .queryParams(formData)
                 .build()
                 .encode()
