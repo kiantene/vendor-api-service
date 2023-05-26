@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.vendor.bng.api.rollback;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import lombok.Data;
 
+import java.time.Instant;
+
 @Data
 public class RollbackDto implements RollbackData {
     private String name;
@@ -25,6 +27,11 @@ public class RollbackDto implements RollbackData {
     @Override
     public Long getVendorSettledTime() {
         // Vendor did not provide any time as reference, so using current time
-        return System.currentTimeMillis();
+        return getTimeStamp(this.getC_at());
+    }
+
+    public Long getTimeStamp(String datetime) {
+        Instant instant = Instant.parse(datetime);
+        return instant.toEpochMilli();
     }
 }
