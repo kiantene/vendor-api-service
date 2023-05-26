@@ -1,10 +1,13 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
+import com.couchbase.client.core.deps.com.google.common.io.CharStreams;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
@@ -14,9 +17,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -34,6 +41,10 @@ public class AuthenticationAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
 
     @PostMapping(path = EndPoints.AUTHENTICATION)
     public CommonVo authenticate(HttpServletRequest request) {
@@ -52,7 +63,7 @@ public class AuthenticationAction {
             GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(authenticationDto, gameSession);
+            this.doVerification(authenticationDto, gameSession, httpRequestLog, request);
 
             //Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -76,12 +87,15 @@ public class AuthenticationAction {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
-    private void doVerification(AuthenticationDto dto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+    private void doVerification(AuthenticationDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+
+        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        VendorService.verifyHash(hashKey,httpRequestLog.getRequestBody(),request.getHeader("hash"));
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
