@@ -3,10 +3,12 @@ package com.nextgen.gameaggregator.vendor.bng.api.bet;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Data
 public class TransactionArgsDto {
+
     private String bet;
     private String win;
     private Boolean round_started;
