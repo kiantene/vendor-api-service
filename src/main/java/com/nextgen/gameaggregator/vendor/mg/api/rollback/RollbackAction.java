@@ -52,6 +52,7 @@ public class RollbackAction {
         HttpStatus status = HttpStatus.OK;
         RollbackVo rollbackVo = new RollbackVo();
         HttpHeaders headers = new HttpHeaders();
+        Boolean refunded = false;
 
         try {
             // Convert the request body to a RollbackDto object
@@ -67,12 +68,27 @@ public class RollbackAction {
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
             //rollbackVo.setExtCreationTimeMs(startTime);
-        } catch (BetRefundIdempotentViolationException| JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
+        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException| BetNotFoundException|
             DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException e){
             status = HttpStatus.INTERNAL_SERVER_ERROR;
+        } catch (BetRefundIdempotentViolationException e) {
+            refunded = true;
         } finally {
             httpService.end(httpRequestLog, rollbackVo);
+        }
+
+        // Set back balance when already refunded
+        if (refunded) {
+            try {
+                RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
+                GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+                BigDecimal balance = walletService.getBalance(traceId, gameSession);
+                rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
+                rollbackVo.setBalance(balance);
+            } catch (Exception e) {
+                status = HttpStatus.INTERNAL_SERVER_ERROR;
+            }
         }
 
         // Calculate response time and add it to the headers
