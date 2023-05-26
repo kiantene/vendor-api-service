@@ -18,6 +18,19 @@ public class TransactionArgsDto {
     private Object player;
     private String tag;
 
+    public String getWin() {
+
+        if(win == null){
+            win = "0";
+        }
+
+        return win;
+    }
+
+    public void setWin(String win) {
+        this.win = win;
+    }
+
     public BigInteger getRound_id() {
         return round_id;
     }
