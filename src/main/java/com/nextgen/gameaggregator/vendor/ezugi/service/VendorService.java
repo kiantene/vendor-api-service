@@ -28,7 +28,7 @@ public class VendorService extends BaseVendorService {
         sha256_HMAC.init(secret_key);
         String generatedHash = Base64.encodeBase64String(sha256_HMAC.doFinal(data.getBytes()));
         if (!hashKey.equals(generatedHash)) {
-            String msg = "Expected hash: " + generatedHash + ", but received: " + hashKey;
+            String msg = "Expected hash: " + generatedHash + ", but received: " + hashKey + " KEY : "+secretKey;
             log.error("Request body: " + data);
             log.error(msg);
             throw new InvalidSignatureException(msg);
