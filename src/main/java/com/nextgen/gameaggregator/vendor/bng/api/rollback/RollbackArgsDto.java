@@ -11,7 +11,7 @@ public class RollbackArgsDto {
     private Boolean round_started;
     private Boolean round_finished;
     private BigInteger round_id;
-    private Object bonus;
     private Object player;
+    private Object bonus;
     private String tag;
 }

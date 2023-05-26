@@ -26,7 +26,7 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        // Vendor did not provide any time as reference, so using current time
+        // Convert vendor time into our timestamp
         return getTimeStamp(this.getC_at());
     }
 
