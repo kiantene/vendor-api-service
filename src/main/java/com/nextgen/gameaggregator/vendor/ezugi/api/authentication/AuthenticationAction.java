@@ -94,8 +94,8 @@ public class AuthenticationAction {
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
 
-        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey,httpRequestLog.getRequestBody(),request.getHeader("hash"));
+        //String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        //VendorService.verifyHash(hashKey,httpRequestLog.getRequestBody(),request.getHeader("hash"));
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
