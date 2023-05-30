@@ -72,17 +72,17 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public String getExternalTransactionId() {
-        return betId;
+        return txnId;
     }
 
     @Override
     public String getVendorBetId() {
-        return betId;
+        return txnId;
     }
 
     @Override
     public String getRoundId() {
-        return roundId == null ? betId : roundId;
+        return betId == null ? txnId : betId;
     }
 
     @Override
