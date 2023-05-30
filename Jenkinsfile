@@ -40,7 +40,7 @@ pipeline {
         AWS_ECS_SERVICE = ''
 
         SONAR_PROJECTKEY = 'game-aggregator'
-        SONAR_HOST_URL = 'http://223.25.67.48:9000'
+        SONAR_HOST_URL = 'http://192.168.88.112:9000'
         SONAR_LOGIN = credentials('sonar_token')
     }
 
@@ -78,6 +78,11 @@ pipeline {
                 script {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
                         sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@47.254.202.80:/root/vendor-api/app.jar'
+                    }
+                }
+                script {
+                    sshagent(credentials: ['tokyo_key']) {
+                        sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@35.77.164.118:/root/vendor-api/app.jar'
                     }
                 }
             }
@@ -120,6 +125,9 @@ pipeline {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
                         sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
                     }
+                    sshagent(credentials: ['tokyo_key']) {
+                        sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
+                    }
                 }
             }
         }
@@ -152,6 +160,9 @@ pipeline {
                     script {
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
                             sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
+                        }
+                        sshagent(credentials: ['tokyo_key']) {
+                            sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
                         }
                     }
                 }
