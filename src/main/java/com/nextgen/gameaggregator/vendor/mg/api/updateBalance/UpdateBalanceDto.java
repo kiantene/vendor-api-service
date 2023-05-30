@@ -77,12 +77,12 @@ public class UpdateBalanceDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return txnId;
+        return betId;
     }
 
     @Override
     public String getRoundId() {
-        return betId == null ? txnId : betId;
+        return betId;
     }
 
     @Override
