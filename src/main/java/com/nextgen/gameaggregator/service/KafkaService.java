@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,12 +21,16 @@ public class KafkaService {
     private SettledBetService settledBetService;
 
     public void produceBetHistory(BetHistory betHistory, SettledBet settledBet) {
-        try{
+        try {
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.warn("Kafka produceBetHistory.exception -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
         }
+    }
+
+    public void send(HttpRequestLog httpRequestLog) {
+        jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_REQUEST_LOGS, httpRequestLog);
     }
 }
