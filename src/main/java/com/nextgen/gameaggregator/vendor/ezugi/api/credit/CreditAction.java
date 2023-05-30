@@ -70,29 +70,28 @@ public class CreditAction extends CommonDto {
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
-            //Get and set bet game data Object from body
+            // Get and set bet game data Object from body
             this.setGameData(creditDto);
 
-            //Get GameSession by player name and vendor game id
+            // Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getToken());
 
-            //Verify remaining parameters (Verify against database values)
+            // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession);
 
-            //Get unsettled bet
+            // Get unsettled bet
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(creditDto.getUid());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(creditDto.getTableId(), vendorPlayer.getVendorId());
-            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(),
-                    creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
+            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(), creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
             BigDecimal balance = BigDecimal.ZERO;
-            //Process result settled or cancelled bet data
-            switch (creditDto.getReturnReason()){
+            // Process result settled or cancelled bet data
+            switch (creditDto.getReturnReason()) {
                 case ReturnReasons.CANCEL_BET, ReturnReasons.CANCELED_ROUND:
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService);
                     break;
                 default:
-                    ResultType resultType = getResultType(creditDto,unsettledBet);
+                    ResultType resultType = getResultType(creditDto, unsettledBet);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
                     break;
             }
@@ -105,12 +104,22 @@ public class CreditAction extends CommonDto {
             creditVo.setTransactionId(creditDto.getTransactionId());
             creditVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             creditVo.setCurrency(gameSession.getVendorCurrencyCode());
-            creditVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
-            creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));
+            creditVo.setErrorCode(ResponseCodes.OK);
             creditVo.setTimestamp(System.currentTimeMillis());
-        }catch (Exception e){
+        } catch (AuthenticationException e) {
+            creditVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        }finally {
+        } catch (InsufficientBalanceException e) {
+            creditVo.setErrorCode(ResponseCodes.INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidPlayerException e) {
+            creditVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));
             httpService.end(httpRequestLog, creditVo);
         }
         return creditVo;
@@ -123,13 +132,14 @@ public class CreditAction extends CommonDto {
     }
 
     private void doVerification(CreditDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
-        // 1. Verify received username is the same from game session
+        // Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
 
-        // 2. Verify received game id is the same from game session
+        // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getTableId(), AuthenticationException::new);
     }
-    private ResultType getResultType(CreditDto dto,UnsettledBet unsettledBet) {
+
+    private ResultType getResultType(CreditDto dto, UnsettledBet unsettledBet) {
 
         ResultType resultType = ResultType.LOSE;
 
@@ -154,7 +164,7 @@ public class CreditAction extends CommonDto {
         gameDataStringDto.setBetAmount(0.0);
         gameDataStringDto.setWinAmount(0.0);
 
-        if(StringUtils.isNotBlank(creditDto.getGameDataString())){
+        if (StringUtils.isNotBlank(creditDto.getGameDataString())) {
             gameDataStringDto = HttpService.convertJsonToDto(creditDto.getGameDataString(), GameDataStringDto.class);
         }
         creditDto.setGameDataStringDto(gameDataStringDto);

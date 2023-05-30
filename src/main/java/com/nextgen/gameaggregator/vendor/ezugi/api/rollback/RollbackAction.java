@@ -65,23 +65,27 @@ public class RollbackAction {
             rollbackVo.setTransactionId(rollbackDto.getTransactionId());
             rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
-            rollbackVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
-            rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(rollbackVo.getErrorCode()));
+            rollbackVo.setErrorCode(ResponseCodes.OK);
             rollbackVo.setTimestamp(System.currentTimeMillis());
-        }
-        catch (Exception e){
+        } catch (AuthenticationException e) {
+            rollbackVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        }finally {
+        } catch (Exception e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION_ROLLBACK.get(rollbackVo.getErrorCode()));
             httpService.end(httpRequestLog, rollbackVo);
         }
         return rollbackVo;
     }
+
     private void doValidation(RollbackDto rollbackdto) throws InvalidRequestException {
         ValidationUtils.validateRequest(rollbackdto);
     }
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException,
-            CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
-        //validate vendor username, agent vendor line, player status, and game status
+
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
+        // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 
         // Verify vendor currency

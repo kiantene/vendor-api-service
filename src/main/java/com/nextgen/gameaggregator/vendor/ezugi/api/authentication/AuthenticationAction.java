@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
 import com.couchbase.client.core.deps.com.google.common.io.CharStreams;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorPlayer;
@@ -50,60 +51,77 @@ public class AuthenticationAction {
     public CommonVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
+
         // Construct Vo
         AuthenticationVo authenticationVo = new AuthenticationVo();
         try {
             String body = httpRequestLog.getRequestBody();
             AuthenticationDto authenticationDto = HttpService.convertJsonToDto(body, AuthenticationDto.class);
 
-            //Validate request parameters from vendor (Non-database related)
+            // Validate request parameters from vendor (Non-database related)
             this.doValidation(authenticationDto);
 
-            //Get GameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
+            // Remove last 2 char LT to get our session token, because the session and launch token cannot be same
+            String token = authenticationDto.getToken().substring(0, authenticationDto.getToken().length() - 2);
 
-            //Verify remaining parameters (Verify against database values)
+            // Get GameSession by player name and vendor game id
+            GameSession gameSession = gameSessionService.verifyToken(token);
+
+            // Verify remaining parameters (Verify against database values)
             this.doVerification(authenticationDto, gameSession, httpRequestLog, request);
 
-            //Get walletBalance
+            // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            authenticationVo.setToken(authenticationDto.getToken());
+            authenticationVo.setToken(gameSession.getToken());
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
             authenticationVo.setUid(gameSession.getVendorPlayerUsername());
             authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             authenticationVo.setCurrency(gameSession.getVendorCurrencyCode());
-            authenticationVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
-            authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
+            authenticationVo.setErrorCode(ResponseCodes.OK);
             authenticationVo.setTimestamp(System.currentTimeMillis());
-        }catch (Exception e){
+        } catch (AuthenticationException e) {
+            authenticationVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        }finally {
+        } catch (InvalidPlayerException e) {
+            authenticationVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledAgentPlayerException e) {
+            authenticationVo.setErrorCode(ResponseCodes.USER_BLOCKED);
+            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
             httpService.end(httpRequestLog, authenticationVo);
         }
         return authenticationVo;
     }
+
     private void doValidation(AuthenticationDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
+
     private void doVerification(AuthenticationDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException {
 
-        // 1. Verify received token is the same from game session
+        // Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
 
-        //String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        //VendorService.verifyHash(hashKey,httpRequestLog.getRequestBody(),request.getHeader("hash"));
+        // Verify Signature key from vendor given
+        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        VendorService.verifyHash(hashKey,httpRequestLog.getRequestBody(),request.getHeader("hash"));
 
-        // 2. Verify vendor line is active
+        // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 5. Verify agent player is active
+        // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 6. Verify vendor game is active
+        // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }

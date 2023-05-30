@@ -27,20 +27,20 @@ public class GameUrlService implements GameUrl {
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException {
         GameUrlVo gameUrlVo = new GameUrlVo();
-
-        // 1. Get Game Lobby Url By Vendor Line
+        // Get Game Lobby Url By Vendor Line
         String lobbyUrl = credentials.get(Credentials.LOBBY_URL);
-        // 2. Lookup Game Code (Baccarat,BlackJack,...)
+        // Lookup Game Code (Baccarat,BlackJack,...)
         String selectGame = formData.get("selectGame").get(0);
-        // 3. Lookup Game language
+        // Lookup Game language
         String language = formData.get("language").get(0);
-        // 4. Generate game session token to embed into urlScheme and save into game session table
-        String token = formData.get("token").get(0);
-        // 5. Retrieve Operator Id as it is required to form the Game URL
+        // Generate game session token to embed into urlScheme and save into game session table
+        // Add LT to define launch token, because session and launch token cannot be same)
+        String token = formData.get("token").get(0) + "LT";
+        // Retrieve Operator Id as it is required to form the Game URL
         String operatorId = credentials.get(Credentials.OPERATOR_ID);
-        // 9. Construct the Game URL
+        // Construct the Game URL
         String gameUrl = VendorService.generateGameUrl(lobbyUrl, token, operatorId, language, selectGame);
-        // 10. Save this player's game session
+        // Save this player's game session
         // Set the game URL and return to Operator
         gameUrlVo.setGameUrl(gameUrl);
 

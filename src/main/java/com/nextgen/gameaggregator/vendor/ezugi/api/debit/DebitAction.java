@@ -62,14 +62,14 @@ public class DebitAction {
             String body = httpRequestLog.getRequestBody();
             DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
-            //Get GameSession by player name and vendor game id
+            // Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getToken());
 
-            //Verify remaining parameters (Verify against database values)
+            // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession);
 
             BigDecimal balance = BigDecimal.ZERO;
-            //Get walletBalance
+            // Get walletBalance
             switch (debitDto.getBetTypeID()) {
                 case BetTypeID.TIP:
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
@@ -87,12 +87,22 @@ public class DebitAction {
             debitVo.setTransactionId(debitDto.getTransactionId());
             debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             debitVo.setCurrency(gameSession.getVendorCurrencyCode());
-            debitVo.setErrorCode(ResponseCodes.COMPLETED_SUCCESSFULLY);
-            debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
+            debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setTimestamp(System.currentTimeMillis());
-        }catch (Exception e){
+        } catch (AuthenticationException e) {
+            debitVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        }finally {
+        } catch (InsufficientBalanceException e) {
+            debitVo.setErrorCode(ResponseCodes.INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidPlayerException e) {
+            debitVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
             httpService.end(httpRequestLog, debitVo);
         }
         return debitVo;
@@ -106,11 +116,11 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
-        // 3. Verify received game id is the same from game session
+        // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
 
-        //4.. validate vendor username, agent vendor line, player status, and game status
+        // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
     }
 }
