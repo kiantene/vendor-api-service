@@ -68,7 +68,7 @@ public class AuthenticationAction {
             GameSession gameSession = gameSessionService.verifyToken(token);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(authenticationDto, gameSession, httpRequestLog, request);
+            this.doVerification(token, gameSession, httpRequestLog, request);
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -104,12 +104,12 @@ public class AuthenticationAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthenticationDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
+    private void doVerification(String token, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException {
 
         // Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), dto.getToken(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
