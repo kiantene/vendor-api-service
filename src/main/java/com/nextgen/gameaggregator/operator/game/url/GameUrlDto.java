@@ -47,7 +47,7 @@ public class GameUrlDto {
 
     @NotBlank( message = "IPv4 or IPv6 required")
     //https://www.techdreams.org/microsoft/sql-server/maximum-length-of-ip-address-15-ipv4-39ipv6/5467-20110127
-    @Size(min = 11, max = 39, message = "min 11 and max 39  characters")
+    @Size(min = 7, max = 39, message = "min 11 and max 39  characters")
     @Pattern(regexp = ValidationUtils.IP_REGEX, message = "IPv4 or IPv6 format only")
     private String ipAddress;
 }
