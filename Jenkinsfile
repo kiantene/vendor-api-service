@@ -40,7 +40,7 @@ pipeline {
         AWS_ECS_SERVICE = ''
 
         SONAR_PROJECTKEY = 'game-aggregator'
-        SONAR_HOST_URL = 'http://223.25.67.48:9000'
+        SONAR_HOST_URL = 'http://192.168.88.112:9000'
         SONAR_LOGIN = credentials('sonar_token')
     }
 
