@@ -4,18 +4,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
-import com.nextgen.gameaggregator.vendor.ezugi.api.debit.DebitDto;
-import com.nextgen.gameaggregator.vendor.ezugi.api.debit.DebitVo;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class RollbackAction {
-
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -41,6 +37,8 @@ public class RollbackAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.ROLLBACK)
     public CommonVo rollback(HttpServletRequest request) throws JsonProcessingException {
@@ -49,12 +47,19 @@ public class RollbackAction {
 
         RollbackVo rollbackVo = new RollbackVo();
         try {
-
             String body = httpRequestLog.getRequestBody();
             RollbackDto rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
+            // Validate request parameters (Non-database calls)
+            this.doValidation(rollbackDto);
+
+            // Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
 
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(rollbackDto, gameSession, httpRequestLog, request);
+
+            // Send refund to Operator
             BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
 
             // Construct Vo
@@ -84,11 +89,16 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
+            throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), rollbackdto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify Signature key from vendor given
+        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 }

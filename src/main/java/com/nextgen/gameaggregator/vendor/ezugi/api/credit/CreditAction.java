@@ -1,37 +1,30 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.credit;
 
-import com.ctc.wstx.util.StringUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.protobuf.Empty;
 import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.api.endround.EndRoundDataDto;
-import com.nextgen.gameaggregator.vendor.cq9.api.endround.EndRoundDto;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.ezugi.api.authentication.AuthenticationDto;
-import com.nextgen.gameaggregator.vendor.ezugi.api.authentication.AuthenticationVo;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -73,19 +66,22 @@ public class CreditAction extends CommonDto {
             // Get and set bet game data Object from body
             this.setGameData(creditDto);
 
+            // Validate request parameters (Non-database calls)
+            this.doValidation(creditDto);
+
             // Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(creditDto, gameSession);
+            this.doVerification(creditDto, gameSession, httpRequestLog, request);
 
             // Get unsettled bet
             VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(creditDto.getUid());
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(creditDto.getTableId(), vendorPlayer.getVendorId());
             UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(), creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
 
-            BigDecimal balance = BigDecimal.ZERO;
             // Process result settled or cancelled bet data
+            BigDecimal balance = BigDecimal.ZERO;
             switch (creditDto.getReturnReason()) {
                 case ReturnReasons.CANCEL_BET, ReturnReasons.CANCELED_ROUND:
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService);
@@ -125,22 +121,25 @@ public class CreditAction extends CommonDto {
         return creditVo;
     }
 
-
     private void doValidation(CreditDto creditDto) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         // General validation
         ValidationUtils.validateRequest(creditDto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidVendorLineException {
+    private void doVerification(CreditDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
+            throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException {
         // Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
 
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getTableId(), AuthenticationException::new);
+
+        // Verify Signature key from vendor given
+        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 
     private ResultType getResultType(CreditDto dto, UnsettledBet unsettledBet) {
-
         ResultType resultType = ResultType.LOSE;
 
         BigDecimal betAmount = Optional.ofNullable(unsettledBet.getBetAmount()).orElse(BigDecimal.ZERO);
@@ -169,5 +168,4 @@ public class CreditAction extends CommonDto {
         }
         creditDto.setGameDataStringDto(gameDataStringDto);
     }
-
 }

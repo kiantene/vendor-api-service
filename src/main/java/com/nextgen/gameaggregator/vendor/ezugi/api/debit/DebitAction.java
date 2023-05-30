@@ -8,8 +8,8 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
@@ -62,14 +64,17 @@ public class DebitAction {
             String body = httpRequestLog.getRequestBody();
             DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
+            // Validate request parameters (Non-database calls)
+            this.doValidation(debitDto);
+
             // Get GameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(debitDto, gameSession);
+            this.doVerification(debitDto, gameSession, httpRequestLog, request);
 
-            BigDecimal balance = BigDecimal.ZERO;
             // Get walletBalance
+            BigDecimal balance = BigDecimal.ZERO;
             switch (debitDto.getBetTypeID()) {
                 case BetTypeID.TIP:
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
@@ -108,19 +113,22 @@ public class DebitAction {
         return debitVo;
     }
 
-    private void doValidation(DebitDto debitDto, String wToken) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
-        Optional.ofNullable(wToken).orElseThrow(InvalidRequestException::new);
-
+    private void doValidation(DebitDto debitDto) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         // General validation
         ValidationUtils.validateRequest(debitDto);
     }
 
-    private void doVerification(DebitDto debitDto, GameSession gameSession) throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, InvalidVendorLineException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
+
+        // Verify Signature key from vendor given
+        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 }

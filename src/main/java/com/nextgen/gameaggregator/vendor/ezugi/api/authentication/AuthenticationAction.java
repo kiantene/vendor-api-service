@@ -1,10 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
-import com.couchbase.client.core.deps.com.google.common.io.CharStreams;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -106,14 +103,9 @@ public class AuthenticationAction {
 
     private void doVerification(String token, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException {
-
         // Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
-
-        // Verify Signature key from vendor given
-        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey,httpRequestLog.getRequestBody(),request.getHeader("hash"));
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -124,5 +116,8 @@ public class AuthenticationAction {
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
+        // Verify Signature key from vendor given
+        String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 }
