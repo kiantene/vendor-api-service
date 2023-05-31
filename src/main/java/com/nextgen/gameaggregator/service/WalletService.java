@@ -75,6 +75,8 @@ public class WalletService {
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException {
 
+        log.info("processBet (" + traceId + "): " + betResultData);
+
         Integer agentId = gameSession.getAgentId();
         UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
         UnsettledBet unsettledBet = null;
@@ -150,7 +152,7 @@ public class WalletService {
             BetResultIdempotentViolationException {
 
         httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
-        log.info("processBetResult (" + resultType + ") " + betResultData.toString());
+        log.info("processBetResult:" + resultType + " (" + traceId + ") :" + betResultData);
 
         String rawData = httpRequestLog.getRequestBody();
         Integer agentId = gameSession.getAgentId();
@@ -466,6 +468,8 @@ public class WalletService {
     public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService) throws
             RecordNotFoundException, InvalidAgentApiCredentialException,
             InvalidOperatorResponseException, BetRefundIdempotentViolationException, CouchbaseDataIntegrityException, BetNotFoundException {
+
+        log.info("processRollback (" + traceId + "): " + rollbackData);
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         BigDecimal balance = BigDecimal.ZERO;
