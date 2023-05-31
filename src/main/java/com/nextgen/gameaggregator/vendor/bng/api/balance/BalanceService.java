@@ -63,13 +63,10 @@ public class BalanceService {
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             // Construct response data into vo
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-//            balanceVo.setVersion(BigInteger.valueOf(unixTime));
-//
-//            vo.setBalance(balanceVo);
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
-            error.setCode(ResponseCodes.OTHER_EXCEED);
-            vo.setError(error);
+            vo.setBalance(balanceVo);
 
         } catch (InvalidAgentApiCredentialException |
                  AuthenticationException |

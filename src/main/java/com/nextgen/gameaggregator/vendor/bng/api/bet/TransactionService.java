@@ -71,7 +71,9 @@ public class TransactionService {
             ResultType resultType = getResultType(transactionDto);
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+
+            balanceVo.setValue(null);
 
         }catch (AuthenticationException e) {
             errorVo.setCode(ResponseCodes.TIME_EXCEED);
