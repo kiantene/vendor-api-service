@@ -75,7 +75,12 @@ public class RollbackAction {
         } catch (AuthenticationException e) {
             rollbackVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (Exception e) {
+        } catch (InvalidSignatureException | BetNotFoundException | InvalidRequestException | DisabledGameException |
+                 DisabledAgentPlayerException | CurrencyNotSupportedException | RecordNotFoundException |
+                 InvalidPlayerException | InvalidAgentApiCredentialException | CredentialNotFoundException |
+                 DisabledVendorLineException | InvalidKeyException | CouchbaseDataIntegrityException |
+                 NoSuchAlgorithmException | InvalidOperatorResponseException |
+                 BetRefundIdempotentViolationException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
@@ -89,8 +94,7 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 

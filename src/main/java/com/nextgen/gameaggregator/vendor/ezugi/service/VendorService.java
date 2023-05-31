@@ -2,15 +2,19 @@ package com.nextgen.gameaggregator.vendor.ezugi.service;
 
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -33,5 +37,16 @@ public class VendorService extends BaseVendorService {
             log.error(msg);
             throw new InvalidSignatureException(msg);
         }
+    }
+
+    public static String generateRequestToken(MultiValueMap<String, String> params) throws NoSuchAlgorithmException {
+        List<String> values = new ArrayList<>();
+        for (String key : params.keySet()){
+            values.add(key + "=" + params.getFirst(key));
+        }
+        String queryString = String.join("&", values);
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(queryString.getBytes());
+        return hash.toString();
     }
 }

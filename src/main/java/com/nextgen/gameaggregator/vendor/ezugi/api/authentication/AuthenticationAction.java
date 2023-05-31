@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -86,7 +87,9 @@ public class AuthenticationAction {
         } catch (DisabledAgentPlayerException e) {
             authenticationVo.setErrorCode(ResponseCodes.USER_BLOCKED);
             httpService.logError(httpRequestLog, e);
-        } catch (Exception e) {
+        } catch (InvalidSignatureException | InvalidOperatorResponseException | NoSuchAlgorithmException | IOException |
+                 InvalidKeyException | DisabledVendorLineException | CredentialNotFoundException |
+                 InvalidAgentApiCredentialException | DisabledGameException | InvalidRequestException e) {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {

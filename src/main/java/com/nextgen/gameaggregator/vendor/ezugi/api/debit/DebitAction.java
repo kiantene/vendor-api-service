@@ -103,7 +103,11 @@ public class DebitAction {
         } catch (InvalidPlayerException e) {
             debitVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (Exception e) {
+        } catch (InvalidSignatureException | BetNotFoundException | InvalidRequestException | DisabledGameException |
+                 MergedBetDataIntegrityException | DisabledAgentPlayerException |
+                 BetResultIdempotentViolationException | InvalidAgentApiCredentialException |
+                 DisabledVendorLineException | CredentialNotFoundException | InvalidKeyException |
+                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {

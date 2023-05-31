@@ -12,7 +12,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -111,7 +111,11 @@ public class CreditAction extends CommonDto {
         } catch (InvalidPlayerException e) {
             creditVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (Exception e) {
+        } catch (InvalidSignatureException | BetNotFoundException | InvalidRequestException |
+                 MergedBetDataIntegrityException | BetResultIdempotentViolationException | RecordNotFoundException |
+                 InvalidAgentApiCredentialException | CredentialNotFoundException | InvalidKeyException |
+                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException |
+                 BetRefundIdempotentViolationException | GameNotSupportedException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
