@@ -74,6 +74,7 @@ public class TransactionService {
 //            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
             balanceVo.setValue(null);
+
         }catch (AuthenticationException e) {
             errorVo.setCode(ResponseCodes.TIME_EXCEED);
 
@@ -156,9 +157,6 @@ public class TransactionService {
     private void doValidation(TransactionDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
-        // Check vendor return data is same with our credential or not
-        ValidationUtils.isEquals(dto.getArgs().getPlayer().getBrand(), Credentials.PROJECT_NAME);
     }
 
     private void doVerification(TransactionDto dto, GameSession gameSession) throws DisabledVendorLineException,

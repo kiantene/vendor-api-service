@@ -107,9 +107,6 @@ public class RollbackService {
     private void doValidation(RollbackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-
-        // Check vendor return data is same with our credential or not
-        ValidationUtils.isEquals(dto.getArgs().getPlayer().getBrand(), Credentials.PROJECT_NAME);
     }
 
     private void doVerification(RollbackDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
