@@ -3,13 +3,14 @@ package com.nextgen.gameaggregator.vendor.bng.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.bng.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bng.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.bng.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +43,7 @@ public class TransactionService {
 
         // Construct VO
         TransactionVo vo = new TransactionVo();
-        TransactionBalanceVo transactionBalanceVo = new TransactionBalanceVo();
+        BalanceVo balanceVo = new BalanceVo();
         ErrorVo errorVo = new ErrorVo();
 
         TransactionDto transactionDto = new TransactionDto();
@@ -57,30 +58,67 @@ public class TransactionService {
             // Retrieve request body in original string format
             transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(transactionDto);
+
             // Verify session token
             gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(transactionDto, gameSession);
 
             ResultType resultType = getResultType(transactionDto);
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
-            transactionBalanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-        }catch(InvalidOperatorResponseException invalidOperatorResponseException){ // If insufficient balance for placing bet
+        }catch (AuthenticationException e) {
+            errorVo.setCode(ResponseCodes.TIME_EXCEED);
 
+            balance = getCurrentBalance(traceId,gameSession);
+
+            System.out.println(balance);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
+        }catch (InsufficientBalanceException e) {
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
             balance = getCurrentBalance(traceId,gameSession);
 
             // Retrieve current wallet balance
-            transactionBalanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        } catch (Exception exception) {
-//            httpService.logError(httpRequestLog, exception);
-        }finally {
-            transactionBalanceVo.setVersion(BigInteger.valueOf(unixTime));
+        }catch (InvalidOperatorResponseException |
+                CouchbaseDataIntegrityException |
+                DisabledVendorLineException |
+                InvalidAgentApiCredentialException |
+                InvalidPlayerException |
+                CurrencyNotSupportedException |
+                DisabledAgentPlayerException |
+                MergedBetDataIntegrityException |
+                DisabledGameException |
+                InvalidRequestException |
+                BetNotFoundException |
+                BetResultIdempotentViolationException |
+                GameNotSupportedException |
+                JsonProcessingException e) {
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+
+            balance = getCurrentBalance(traceId,gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
+        }
+        catch(Exception exception){
+            httpService.logError(httpRequestLog, exception);
+        }
+        finally {
+            balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
-            vo.setBalance(transactionBalanceVo);
+            vo.setBalance(balanceVo);
         }
 
         return vo;
@@ -113,5 +151,22 @@ public class TransactionService {
         }
 
         return balance;
+    }
+
+    private void doValidation(TransactionDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(TransactionDto dto, GameSession gameSession) throws DisabledVendorLineException,
+            DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
+            InvalidPlayerException, AuthenticationException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
+
+        // Verify vendor gameCode, currency and platform
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
+
     }
 }

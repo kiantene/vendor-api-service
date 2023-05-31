@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bng.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -14,16 +15,42 @@ import java.time.ZoneOffset;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionDto implements BetResultData {
+
+    @NotBlank
     private String name;
+
+    @NotBlank
+    @Pattern(regexp = "^[a-zA-Z0-9_\\-.]*$")
+    @Size(max = 35)
     private String uid;
+
+    @NotBlank
     private String token;
+
+    @NotBlank
+    @Pattern(regexp = "^[a-zA-Z0-9_\\-.]*$")
+    @Size(min = 32)
     private String session;
+
+    @NotBlank
     private String game_id;
+
+    @NotBlank
     private String game_name;
+
+    @NotBlank
     private String provider_id;
+
+    @NotBlank
     private String provider_name;
+
+    @NotBlank
     private String c_at;
+
+    @NotBlank
     private String sent_at;
+
+    @NotNull
     private TransactionArgsDto args;
 
     @Override
