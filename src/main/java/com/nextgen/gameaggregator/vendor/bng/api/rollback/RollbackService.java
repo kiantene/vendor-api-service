@@ -87,6 +87,7 @@ public class RollbackService {
                  InvalidRequestException |
                  DisabledVendorLineException e) {
 
+            // vendor did not give any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
         }
