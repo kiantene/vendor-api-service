@@ -78,6 +78,8 @@ public class UpdateBalanceAction {
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
                     updateBalanceVo.setExtCreationTimeMs(startTime);
+
+                    // resolve conflict
                 }
                 default -> {
                     status = HttpStatus.BAD_REQUEST;
