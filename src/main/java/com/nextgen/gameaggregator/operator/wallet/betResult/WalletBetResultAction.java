@@ -62,13 +62,15 @@ public class WalletBetResultAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
+        log.info("WalletBetResultAction (" + traceId + ") " + dto);
+
         WalletBalanceVo responseVo = null;
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
+        ResponseEntity<String> apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_BET_RESULT)
                 .header(Endpoints.HEADER_SIGNATURE, signature)
@@ -83,6 +85,7 @@ public class WalletBetResultAction {
                 .block();
 
         long endTime = System.currentTimeMillis();
+
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 Endpoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
@@ -95,7 +98,7 @@ public class WalletBetResultAction {
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-            requestService.validateResponse(responseVo);
+            RequestService.validateResponse(responseVo);
 
             System.out.println("apiResponse = " + apiResponse);
             System.out.println("dto = " + dto);
@@ -113,22 +116,22 @@ public class WalletBetResultAction {
 //                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
 //            }
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            requestService.failResponseLog(requestLogVo, invalidResponseException);
+            RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            requestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            requestService.failResponseLog(requestLogVo, exception);
+            RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
         return responseVo;
