@@ -1,11 +1,10 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
-import jakarta.validation.constraints.*;
-
 import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
