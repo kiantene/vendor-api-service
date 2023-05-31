@@ -1,13 +1,20 @@
 package com.nextgen.gameaggregator.vendor.bng.api.rollback;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bng.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bng.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
+import com.nextgen.gameaggregator.vendor.bng.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.nextgen.gameaggregator.vendor.bng.service.VendorService;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -34,16 +41,25 @@ public class RollbackService {
 
     public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
 
+        RollbackDto rollbackDto = new RollbackDto();
+
         // Construct vo
         RollbackVo vo = new RollbackVo();
-        RollbackBalanceVo rollbackBalanceVo = new RollbackBalanceVo();
+        BalanceVo balanceVo = new BalanceVo();
+        ErrorVo error = new ErrorVo();
 
         try{
             // Retrieve request body in original string format
-            RollbackDto rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
+            rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
+
+            // 1. Validate request parameters from vendor (Non-database related)
+            this.doValidation(rollbackDto);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(rollbackDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
@@ -51,16 +67,52 @@ public class RollbackService {
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             // Construct response data into vo
-            rollbackBalanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            rollbackBalanceVo.setVersion(BigInteger.valueOf(unixTime));
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
+            vo.setBalance(balanceVo);
+
+        } catch (InvalidAgentApiCredentialException |
+                 RecordNotFoundException |
+                 AuthenticationException |
+                 BetRefundIdempotentViolationException |
+                 InvalidOperatorResponseException |
+                 BetNotFoundException |
+                 CouchbaseDataIntegrityException |
+                 JsonProcessingException |
+                 InvalidPlayerException |
+                 CurrencyNotSupportedException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidRequestException |
+                 DisabledVendorLineException e) {
+
+            error.setCode(ResponseCodes.OTHER_EXCEED);
+            vo.setError(error);
+        }
+//        catch(Exception exception){
+//            httpService.logError(httpRequestLog, exception);
+//        }
+         finally{
             vo.setUid(rollbackDto.getUid());
-            vo.setBalance(rollbackBalanceVo);
-
-        }catch(Exception exception){
-
         }
 
         return vo;
+    }
+
+    private void doValidation(RollbackDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+
+        // Check vendor return data is same with our credential or not
+        ValidationUtils.isEquals(dto.getArgs().getPlayer().getBrand(), Credentials.PROJECT_NAME);
+    }
+
+    private void doVerification(RollbackDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
+
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
     }
 }

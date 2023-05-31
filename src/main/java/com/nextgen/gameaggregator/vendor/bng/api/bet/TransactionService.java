@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bng.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.bng.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
@@ -70,9 +71,7 @@ public class TransactionService {
             ResultType resultType = getResultType(transactionDto);
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-
-            balanceVo.setValue(null);
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
         }catch (AuthenticationException e) {
             errorVo.setCode(ResponseCodes.TIME_EXCEED);
@@ -158,6 +157,9 @@ public class TransactionService {
     private void doValidation(TransactionDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        // Check vendor return data is same with our credential or not
+        ValidationUtils.isEquals(dto.getArgs().getPlayer().getBrand(), Credentials.PROJECT_NAME);
     }
 
     private void doVerification(TransactionDto dto, GameSession gameSession) throws DisabledVendorLineException,

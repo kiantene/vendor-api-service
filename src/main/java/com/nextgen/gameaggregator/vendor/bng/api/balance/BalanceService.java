@@ -6,9 +6,11 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bng.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bng.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
+import com.nextgen.gameaggregator.vendor.bng.constant.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -46,13 +48,13 @@ public class BalanceService {
             // Retrieve request body in original string format
             balanceDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
 
-            // 1. Validate request parameters from vendor (Non-database related)
+            // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
-            // 3. Verify remaining parameters (Verify against database values)
+            // Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
@@ -76,7 +78,7 @@ public class BalanceService {
                  InvalidRequestException |
                  DisabledVendorLineException |
                  CurrencyNotSupportedException e) {
-            error.setCode("GAME_NOT_ALLOWED");
+            error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
         } finally{
             vo.setUid(balanceDto.getUid());
@@ -88,6 +90,9 @@ public class BalanceService {
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        // Check vendor return data is same with our credential or not
+        ValidationUtils.isEquals(dto.getArgs().getPlayer().getBrand(), Credentials.PROJECT_NAME);
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
