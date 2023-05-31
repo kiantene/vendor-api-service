@@ -72,7 +72,7 @@ public class TransactionService {
 
 //            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-            balanceVo.setValue(BigDecimal.ZERO.toString());
+            balanceVo.setValue(null);
 
         }catch (AuthenticationException e) {
             errorVo.setCode(ResponseCodes.TIME_EXCEED);
