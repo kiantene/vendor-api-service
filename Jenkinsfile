@@ -201,7 +201,17 @@ pipeline {
 
     post {
         always {
-            discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl/?thread_id=1113328150210949130', link: "${currentBuild.absoluteUrl}", showChangeset: true
+            script {
+                switch (branchName) {
+                case 'main':
+                case 'stg':
+                case 'qa':
+                case 'pt':
+                case 'devops':
+                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130', link: "${currentBuild.absoluteUrl}", showChangeset: true
+                        break
+                }
+            }
         }
     }
 }
