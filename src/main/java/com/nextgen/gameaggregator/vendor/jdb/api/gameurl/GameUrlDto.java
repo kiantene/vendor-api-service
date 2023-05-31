@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.gameurl;
 
-import lombok.Data;
-
 import java.math.BigDecimal;
+
+import lombok.Data;
 
 @Data
 public class GameUrlDto {
