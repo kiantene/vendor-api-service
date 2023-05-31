@@ -113,10 +113,16 @@ public class BalanceAction {
             InvalidVendorLineException,
             InvalidCurrencyException, AuthenticationException {
 
-        //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, usersDto.getUserid());
+        // 1. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 2. Validate Credentials
+        // 2. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 3. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // 4. Validate Credentials
         Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
         Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
@@ -124,7 +130,7 @@ public class BalanceAction {
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
 
-        // 3. Validate Vendor Currency Code
+        // 5. Validate Vendor Currency Code
         ValidationUtils.isEquals(usersDto.getCur(), gameSession.getVendorCurrencyCode(), InvalidCurrencyException::new);
     }
 
@@ -172,8 +178,8 @@ public class BalanceAction {
 
             usersVo.setUserid(usersDto.getUserid());
             usersVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
-        } catch (InvalidPlayerException | AuthenticationException exception) {
-
+        } catch (InvalidPlayerException | AuthenticationException e) {
+//            e.getValidation().
             usersVo.setUserid(usersDto.getUserid());
             String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INVALID_ARGUMENTS).replace(ResponseCode.INVALID_ARGUMENTS_REPLACE_STRING, " : invalid player");
             usersVo.setResponseCode(ResponseCode.INVALID_ARGUMENTS, errdesc);

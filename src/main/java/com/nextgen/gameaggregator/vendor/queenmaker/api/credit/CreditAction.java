@@ -103,10 +103,16 @@ public class CreditAction {
             GameNotSupportedException,
             AuthenticationException {
 
-        //1. validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, transactionsDto.getUserid());
+        // 1. Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 2. Validate Credentials
+        // 2. Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // 3. Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // 4. Validate Credentials
         Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
         Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
@@ -114,7 +120,7 @@ public class CreditAction {
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
 
-        // 3. Validate Vendor Currency Code, Brand Code, Game Code
+        // 5. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
         String[] parts = gameSession.getVendorGameCode().split("_", 2);
         String gpcode = parts[0];
