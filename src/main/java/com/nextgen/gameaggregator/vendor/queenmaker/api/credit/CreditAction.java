@@ -1,13 +1,15 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.TransactionsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +48,6 @@ public class CreditAction {
     public CreditVo CreditAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-
         CreditVo creditVo = new CreditVo();
 
         try {
@@ -74,8 +75,8 @@ public class CreditAction {
             creditVo.setTransactions(transactionsList);
 
 
-        } catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
+        } catch (Exception e) {
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, creditVo);
@@ -98,7 +99,9 @@ public class CreditAction {
             InvalidRequestException,
             CredentialNotFoundException,
             InvalidVendorLineException,
-            InvalidCurrencyException, CurrencyNotSupportedException, GameNotSupportedException, AuthenticationException {
+            CurrencyNotSupportedException,
+            GameNotSupportedException,
+            AuthenticationException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, transactionsDto.getUserid());

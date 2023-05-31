@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.debit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.TransactionsDto;
 import lombok.Data;
 
 import java.util.List;

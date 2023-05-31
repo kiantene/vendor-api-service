@@ -70,14 +70,15 @@ public class GameUrlService implements GameUrl {
         // Build Game Url
         formData.set("token", authorizeDto.getAuthtoken());
 
-        URI gameUrl = UriComponentsBuilder.fromUriString(gameApiUrl)
+        String gameUrl = UriComponentsBuilder.fromUriString(gameApiUrl)
                 .path(EndPoints.GAME_URL)
                 .queryParams(formData)
                 .build()
                 .encode()
-                .toUri();
+                .toUri()
+                .toString();
 
-        GameUrlVo gameUrlVo = new GameUrlVo(gameUrl.toString());
+        GameUrlVo gameUrlVo = new GameUrlVo(gameUrl);
 
         if (gameUrlVo.getGameUrl() == null) {
             throw new InvalidVendorResponseException();
@@ -89,15 +90,13 @@ public class GameUrlService implements GameUrl {
     public AuthorizeDto callAuthorize(Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException, InvalidVendorResponseException {
 
         String clientId = credentials.get(Credentials.CLIENT_ID);
-        Optional.ofNullable(clientId).orElseThrow(InvalidVendorLineException::new);
-
         String clientSecret = credentials.get(Credentials.CLIENT_SECRET);
-        Optional.ofNullable(clientSecret).orElseThrow(InvalidVendorLineException::new);
-
         String apiUrl = credentials.get(Credentials.API_URL);
-        Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
-
         String ipAddress = gameSession.getIpAddress();
+
+        Optional.ofNullable(clientId).orElseThrow(InvalidVendorLineException::new);
+        Optional.ofNullable(clientSecret).orElseThrow(InvalidVendorLineException::new);
+        Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
         Optional.ofNullable(ipAddress).orElseThrow(InvalidVendorLineException::new);
 
         Map<String, Object> formData = new LinkedHashMap<>();

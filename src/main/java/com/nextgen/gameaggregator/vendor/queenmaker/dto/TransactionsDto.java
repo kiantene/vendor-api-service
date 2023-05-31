@@ -1,17 +1,17 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.debit;
+package com.nextgen.gameaggregator.vendor.queenmaker.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-class TransactionsDto{
+public class TransactionsDto {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -77,7 +77,7 @@ class TransactionsDto{
 
     @NotNull
     @Digits(integer = 1, fraction = 0, message = "Value must be either 0 or 1")
-    @Range(min=0, max=1)
+    @Range(min = 0, max = 1)
     private Integer gametype;
 
     @NotBlank
@@ -137,7 +137,38 @@ class TransactionsDto{
     @Size(min = 1, max = 2000)
     private String desc; // optional
 
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 255)
+    private String jpexternalid; // optional
+
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 3, max = 8)
+    private String jpcur; // optional
+
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 3)
+    private BigDecimal jprate;
+
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 6)
+    private BigDecimal jpamt;
+
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 6)
+    private BigDecimal jpcvtamt;
+
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 6)
+    private BigDecimal jpbal;
+
+    private List<JpcontribsDto> jpcontribs;
+
     @Range(min = 0)
     @Digits(integer = 12, fraction = 6)
     private BigDecimal commission; // optional
+
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 14)
+    private String redeemcode; // optional
+
 }

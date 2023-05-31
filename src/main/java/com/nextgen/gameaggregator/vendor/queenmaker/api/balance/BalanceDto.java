@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.UsersDto;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 

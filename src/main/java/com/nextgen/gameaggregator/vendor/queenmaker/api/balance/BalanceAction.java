@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -10,6 +10,9 @@ import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.UsersDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.vo.UsersVo;
+import com.nextgen.gameaggregator.vendor.queenmaker.vo.WalletsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

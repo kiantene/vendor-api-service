@@ -1,13 +1,13 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
+package com.nextgen.gameaggregator.vendor.queenmaker.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import lombok.Data;
-import org.hibernate.validator.constraints.Range;
-
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Data;
+import org.hibernate.validator.constraints.Range;
+
 import java.math.BigDecimal;
 
 @Data
