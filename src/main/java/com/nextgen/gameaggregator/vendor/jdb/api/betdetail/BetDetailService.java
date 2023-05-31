@@ -54,7 +54,7 @@ public class BetDetailService implements BetDetailUrl {
         dto.setLang(vendorLanguageCode.getLanguageCode());
         dto.setGType(gType);
         dto.setSeqNo(iBetDetailUrlInfo.getExternalRoundId());
-        dto.setShowUid(1);
+        dto.setShowUid(1); // Whether show player id (1 is default)
 
         Gson gson = new GsonBuilder().create();
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();

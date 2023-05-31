@@ -46,9 +46,12 @@ public class GameUrlService implements GameUrl {
         Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = gameCode.split("_");
+        //String[] parts = gameCode.split("_");
+        String[] parts = gameSession.getVendorGameCode().split("_");
         int gType = Integer.parseInt(parts[0]);
-        String windowMode = "2";
+        int mType = Integer.parseInt(parts[1]);
+        
+        String windowMode = "2"; // 2: Without using the JDB game lobby.
 
         GameUrlDto dto = new GameUrlDto();
         dto.setAction(Actions.GAME_URL);
@@ -58,7 +61,7 @@ public class GameUrlService implements GameUrl {
         dto.setBalance(BigDecimal.ZERO);
         dto.setLang(gameSession.getVendorLanguageCode());
         dto.setGType(gType);
-        dto.setMType(gameSession.getVendorGameCode());
+        dto.setMType(String.valueOf(mType));
         dto.setWindowMode(windowMode);
 
         Gson gson = new GsonBuilder().create();
