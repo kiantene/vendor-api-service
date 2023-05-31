@@ -63,10 +63,13 @@ public class BalanceService {
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             // Construct response data into vo
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            balanceVo.setVersion(BigInteger.valueOf(unixTime));
+//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+//            balanceVo.setVersion(BigInteger.valueOf(unixTime));
+//
+//            vo.setBalance(balanceVo);
 
-            vo.setBalance(balanceVo);
+            error.setCode(ResponseCodes.OTHER_EXCEED);
+            vo.setError(error);
 
         } catch (InvalidAgentApiCredentialException |
                  AuthenticationException |
@@ -79,7 +82,7 @@ public class BalanceService {
                  DisabledVendorLineException |
                  CurrencyNotSupportedException e) {
 
-            // vendor did not give any error code, so using back general transaction error
+            // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
         } finally{
