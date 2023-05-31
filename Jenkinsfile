@@ -202,7 +202,7 @@ pipeline {
     post {
         always {
             script {
-                switch (branchName) {
+                switch (env.BRANCH_NAME) {
                 case 'main':
                 case 'stg':
                 case 'qa':
