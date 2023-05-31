@@ -74,7 +74,8 @@ public class BalanceService {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidRequestException |
-                 DisabledVendorLineException e) {
+                 DisabledVendorLineException |
+                 CurrencyNotSupportedException e) {
             error.setCode("GAME_NOT_ALLOWED");
             vo.setError(error);
         } finally{
@@ -90,8 +91,10 @@ public class BalanceService {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
+
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
     }
 }

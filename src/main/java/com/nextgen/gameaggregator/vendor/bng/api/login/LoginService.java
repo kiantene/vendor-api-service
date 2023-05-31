@@ -80,7 +80,7 @@ public class LoginService {
             vo.setBalance(balanceVo);
             vo.setTag("");
 
-        } catch (AuthenticationException e) {
+        }catch (AuthenticationException e) {
             error.setCode("INVALID_TOKEN");
             vo.setError(error);
         } catch (DisabledAgentPlayerException |
@@ -90,12 +90,15 @@ public class LoginService {
                  InvalidOperatorResponseException |
                  JsonProcessingException |
                  CredentialNotFoundException |
-                 InvalidRequestException e) {
+                 InvalidRequestException |
+                 GameNotSupportedException e) {
             error.setCode("GAME_NOT_ALLOWED");
             vo.setError(error);
-        }catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
-        } finally{
+        }
+//        catch (Exception exception) {
+//            httpService.logError(httpRequestLog, exception);
+//        }
+        finally{
             vo.setUid(loginDto.getUid());
         }
 
@@ -108,8 +111,14 @@ public class LoginService {
     }
 
     private void doVerification(LoginDto dto, GameSession gameSession) throws InvalidRequestException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
         //  validationService.validateEligibleBet(gameSession, dto.getToken());
+
+        System.out.println(gameSession.getVendorGameCode());
+        System.out.println(dto.getGame_id());
+
+        // Verify vendor gameCode and platform
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
     }
 }
