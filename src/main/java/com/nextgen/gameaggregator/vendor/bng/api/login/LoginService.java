@@ -1,9 +1,16 @@
 package com.nextgen.gameaggregator.vendor.bng.api.login;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bng.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.bng.constant.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,15 +38,18 @@ public class LoginService {
 
     public CommonVo login(HttpRequestLog httpRequestLog, String traceId) {
 
+        LoginDto loginDto = new LoginDto();
+
         // Construct VO
         LoginVo vo = new LoginVo();
         LoginPlayerVo loginPlayer = new LoginPlayerVo();
-        LoginBalanceVo loginBalance = new LoginBalanceVo();
+        BalanceVo balanceVo = new BalanceVo();
+        ErrorVo error = new ErrorVo();
 
         try {
 
             // Retrieve request body in original string format
-            LoginDto loginDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), LoginDto.class);
+            loginDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), LoginDto.class);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
@@ -59,16 +69,30 @@ public class LoginService {
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
-            loginBalance.setValue(balance.toString());
-            loginBalance.setVersion(BigInteger.valueOf(unixTime));
+            balanceVo.setValue(balance.toString());
+            balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
-            vo.setUid(loginDto.getUid());
             vo.setPlayer(loginPlayer);
-            vo.setBalance(loginBalance);
+            vo.setBalance(balanceVo);
             vo.setTag("");
 
-        } catch (Exception exception) {
-
+        } catch (InvalidAgentApiCredentialException e) {
+            error.setCode("GAME_NOT_ALLOWED");
+            vo.setError(error);
+        } catch (AuthenticationException e) {
+            error.setCode("INVALID_TOKEN");
+            vo.setError(error);
+        } catch (InvalidOperatorResponseException e) {
+            error.setCode("GAME_NOT_ALLOWED");
+            vo.setError(error);
+        } catch (JsonProcessingException e) {
+            error.setCode("GAME_NOT_ALLOWED");
+            vo.setError(error);
+        } catch (CredentialNotFoundException e) {
+            error.setCode("GAME_NOT_ALLOWED");
+            vo.setError(error);
+        }finally{
+            vo.setUid(loginDto.getUid());
         }
 
         return vo;

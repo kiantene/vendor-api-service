@@ -13,6 +13,8 @@ public class CommonVo implements HttpResponse {
     @JsonProperty("uid")
     private String uid;
 
+    private ErrorVo error;
+
     @Override
     public boolean hasError() {
         return false;
