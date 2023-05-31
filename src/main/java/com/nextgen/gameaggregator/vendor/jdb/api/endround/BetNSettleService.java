@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
-import com.nextgen.gameaggregator.vendor.jdb.constant.GameCategory;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -45,7 +44,7 @@ public class BetNSettleService {
             this.doValidation(betNSettleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betNSettleDto.getUid(), betNSettleDto.getMType().toString());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betNSettleDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betNSettleDto, gameSession);
@@ -54,8 +53,8 @@ public class BetNSettleService {
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
             // 4.3 Process Bet Result and End Round
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, 
-            ((betNSettleDto.getWinAmount().subtract(betNSettleDto.getBetAmount())).compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE, vendorService, actionDto.getHttpRequestLog());
+            ResultType resultType = getResultType(betNSettleDto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betNSettleDto, resultType, vendorService, actionDto.getHttpRequestLog());
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
@@ -101,29 +100,6 @@ public class BetNSettleService {
 
     private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
         ValidationUtils.validateRequest(dto);
-
-        switch (dto.getGType()) {
-            case "0" -> {
-                if (dto.getJackpotWin() == null || dto.getJackpotContribute() == null || dto.getHasFreeGame() == null || dto.getHasGamble() == null) {
-                    throw new InvalidRequestException();
-                }
-            }
-            case "7" -> {
-                if (dto.getRoomType() == null) {
-                    throw new InvalidRequestException();
-                }
-            }
-            case "9" -> {
-                if (dto.getHasBonusGame() == null || dto.getHasGamble() == null) {
-                    throw new InvalidRequestException();
-                }
-            }
-            case "12" -> {
-                if (dto.getHasBonusGame() == null) {
-                    throw new InvalidRequestException();
-                }
-            }
-        }
     }
 
     private void doVerification(BetNSettleDto dto, GameSession gameSession) throws DisabledAgentPlayerException,
@@ -133,11 +109,22 @@ public class BetNSettleService {
         validationService.validateEligibleBet(gameSession, dto.getUid());
 
         // Verify vendor gameCode, currency and platform
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        String[] parts = gameSession.getVendorGameCode().split("_");
+        int mType = Integer.parseInt(parts[1]);
+        ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
+    }
 
-        // Verify game category
-        if (!GameCategory.CATEGORY.containsValue(dto.getGType())) throw new InvalidRequestException();
+    private ResultType getResultType(BetNSettleDto dto) {
+
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        if (dto.getWinAmount().compareTo(zero) > 0 || dto.getJackpotAmount().compareTo(zero) > 0) { 
+            resultType = ResultType.BET_WIN;
+        }
+
+        return resultType;
     }
 }

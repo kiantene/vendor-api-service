@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
@@ -65,10 +64,6 @@ public class BetDto implements BetResultData {
         return this.mType.toString();
     }
 
-    public Long getTimestamp() {
-        return this.ts;
-    }
-
     @Override
     public String getVendorBetId() {
         return this.transferId.toString();
@@ -97,10 +92,6 @@ public class BetDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
         return ts;
-    }
-
-    public void setVendorBetTime(Long ts) {
-        this.ts = ts;
     }
 
     @Override
