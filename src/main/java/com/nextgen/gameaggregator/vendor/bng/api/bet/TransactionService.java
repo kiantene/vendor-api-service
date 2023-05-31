@@ -73,8 +73,6 @@ public class TransactionService {
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-            balanceVo.setValue(null);
-
         }catch (AuthenticationException e) {
             errorVo.setCode(ResponseCodes.TIME_EXCEED);
 
@@ -117,9 +115,11 @@ public class TransactionService {
 //            httpService.logError(httpRequestLog, exception);
 //        }
         finally {
-            balanceVo.setVersion(BigInteger.valueOf(unixTime));
-            vo.setUid(transactionDto.getUid());
-            vo.setBalance(balanceVo);
+//            balanceVo.setVersion(BigInteger.valueOf(unixTime));
+//            vo.setUid(transactionDto.getUid());
+//            vo.setBalance(balanceVo);
+
+            vo = null;
         }
 
         return vo;
