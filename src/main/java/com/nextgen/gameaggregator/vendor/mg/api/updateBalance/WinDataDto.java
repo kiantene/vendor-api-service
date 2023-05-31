@@ -77,7 +77,7 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public String getVendorBetId() {
-        return getCompleted() ? betId : txnId;
+        return txnId;
     }
 
     @Override
