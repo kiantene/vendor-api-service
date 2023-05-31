@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class BalanceVo extends CommonVo {
-    private String uid;
+
     private BalanceAmountVo balance;
 }

@@ -10,8 +10,8 @@ import java.math.BigDecimal;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonVo implements HttpResponse {
-    @JsonProperty("name")
-    private String name;
+    @JsonProperty("uid")
+    private String uid;
 
     @Override
     public boolean hasError() {

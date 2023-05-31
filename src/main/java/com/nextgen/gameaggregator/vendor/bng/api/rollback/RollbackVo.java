@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class RollbackVo extends CommonVo {
-    private String uid;
+
     private RollbackBalanceVo balance;
 }

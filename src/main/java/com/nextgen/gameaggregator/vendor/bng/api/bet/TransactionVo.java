@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 
 @Data
 public class TransactionVo extends CommonVo {
-    private String uid;
+
     private TransactionBalanceVo balance;
     private ErrorVo error;
 }
