@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bng.api.bet;
 
 import com.nextgen.gameaggregator.vendor.bng.dto.PlayerDto;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -11,11 +12,21 @@ public class TransactionArgsDto {
 
     private String bet;
     private String win;
+
+    @NotNull
     private Boolean round_started;
+
+    @NotNull
     private Boolean round_finished;
+
+    @NotNull
     private BigInteger round_id;
     private Object bonus;
+
+    @NotNull
     private PlayerDto player;
+
+
     private String tag;
 
     public String getWin() {
