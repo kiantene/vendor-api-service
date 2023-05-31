@@ -115,11 +115,9 @@ public class TransactionService {
 //            httpService.logError(httpRequestLog, exception);
 //        }
         finally {
-//            balanceVo.setVersion(BigInteger.valueOf(unixTime));
-//            vo.setUid(transactionDto.getUid());
-//            vo.setBalance(balanceVo);
-
-            vo = null;
+            balanceVo.setVersion(BigInteger.valueOf(unixTime));
+            vo.setUid(transactionDto.getUid());
+            vo.setBalance(balanceVo);
         }
 
         return vo;
