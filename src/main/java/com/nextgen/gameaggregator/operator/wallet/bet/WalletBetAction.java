@@ -58,14 +58,15 @@ public class WalletBetAction {
 
         // 1. Generate walletBetDto
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
-//        dto.setBetId(dto.getTransactionId());
+        log.info("WalletBetAction (" + traceId + ") " + dto);
+
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
+        ResponseEntity<String> apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
                 .uri(Endpoints.WALLET_BET)
                 .header(Endpoints.HEADER_SIGNATURE, signature)
@@ -91,7 +92,7 @@ public class WalletBetAction {
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-            requestService.validateResponse(responseVo);
+            RequestService.validateResponse(responseVo);
 
             //3. validate username and currency
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
@@ -106,22 +107,22 @@ public class WalletBetAction {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
-                ResponseNotMatchRequestException invalidResponseException) {
+                 ResponseNotMatchRequestException invalidResponseException) {
 
-            requestService.failResponseLog(requestLogVo, invalidResponseException);
+            RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            requestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            requestService.failResponseLog(requestLogVo, exception);
+            RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
         return responseVo;
