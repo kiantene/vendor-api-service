@@ -3,11 +3,9 @@ package com.nextgen.gameaggregator.vendor.bng.api.login;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.bng.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
@@ -51,8 +49,14 @@ public class LoginService {
             // Retrieve request body in original string format
             loginDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), LoginDto.class);
 
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(loginDto);
+
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(loginDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -76,25 +80,36 @@ public class LoginService {
             vo.setBalance(balanceVo);
             vo.setTag("");
 
-        } catch (InvalidAgentApiCredentialException e) {
-            error.setCode("GAME_NOT_ALLOWED");
-            vo.setError(error);
         } catch (AuthenticationException e) {
             error.setCode("INVALID_TOKEN");
             vo.setError(error);
-        } catch (InvalidOperatorResponseException e) {
+        } catch (DisabledAgentPlayerException |
+                 DisabledGameException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidOperatorResponseException |
+                 JsonProcessingException |
+                 CredentialNotFoundException |
+                 InvalidRequestException e) {
             error.setCode("GAME_NOT_ALLOWED");
             vo.setError(error);
-        } catch (JsonProcessingException e) {
-            error.setCode("GAME_NOT_ALLOWED");
-            vo.setError(error);
-        } catch (CredentialNotFoundException e) {
-            error.setCode("GAME_NOT_ALLOWED");
-            vo.setError(error);
-        }finally{
+        }catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
+        } finally{
             vo.setUid(loginDto.getUid());
         }
 
         return vo;
+    }
+
+    private void doValidation(LoginDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(LoginDto dto, GameSession gameSession) throws InvalidRequestException,
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
+        //validate vendor username, agent vendor line, player status, and game status
+        //  validationService.validateEligibleBet(gameSession, dto.getToken());
     }
 }
