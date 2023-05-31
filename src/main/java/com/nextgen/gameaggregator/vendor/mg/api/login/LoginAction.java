@@ -44,14 +44,15 @@ public class LoginAction {
 
         // Get start time of request
         long startTime = System.currentTimeMillis();
-        // Get the request body and trace ID from the logging
-        String body = httpRequestLog.getRequestBody();
+        // Get the trace ID from the logging
         String traceId = httpRequestLog.getId();
         HttpStatus status = HttpStatus.OK;
         LoginVo loginVo = new LoginVo();
         HttpHeaders headers = new HttpHeaders();
         
         try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
             // Convert the request body to a LoginDto object
             LoginDto dto = HttpService.convertJsonToDto(body, LoginDto.class);
             // Validate request parameters (Non-database calls)
@@ -65,12 +66,23 @@ public class LoginAction {
             loginVo.setCurrency(gameSession.getVendorCurrencyCode());
             loginVo.setBalance(balance);
             loginVo.setExtOperatorToken(gameSession.getId());
-        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException e){
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 401 and 404
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.UNAUTHORIZED;
-        } catch (AuthenticationException e) {
+
+        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
+            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
+            DisabledGameException invalidException) {
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (AuthenticationException playerNotFoundException) {
             status = HttpStatus.NOT_FOUND;
+            
+        } catch (Exception exception) { // any other exception encountered
+            status = HttpStatus.UNAUTHORIZED;
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, loginVo);
         }

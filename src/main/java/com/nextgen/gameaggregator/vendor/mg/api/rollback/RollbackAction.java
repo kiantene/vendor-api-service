@@ -46,8 +46,7 @@ public class RollbackAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         // Get start time of request
         long startTime = System.currentTimeMillis();
-        // Get the request body and trace ID from the logging
-        String body = httpRequestLog.getRequestBody();
+        // Get the trace ID from the logging
         String traceId = httpRequestLog.getId();
         HttpStatus status = HttpStatus.OK;
         RollbackVo rollbackVo = new RollbackVo();
@@ -55,6 +54,8 @@ public class RollbackAction {
         Boolean refunded = false;
 
         try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
             // Convert the request body to a RollbackDto object
             RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
             // Validate request parameters (Non-database calls)
@@ -64,16 +65,25 @@ public class RollbackAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
-            //rollbackVo.setExtTxnId(dto.getTxnId());
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
-            //rollbackVo.setExtCreationTimeMs(startTime);
-        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException| BetNotFoundException|
-            DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException e){
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-        } catch (BetRefundIdempotentViolationException e) {
+
+        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             refunded = true;
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200 and 500
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
+            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException| BetNotFoundException|
+            DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException invalidException) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (Exception exception) { // any other exception encountered
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, rollbackVo);
         }
@@ -81,12 +91,13 @@ public class RollbackAction {
         // Set back balance when already refunded
         if (refunded) {
             try {
+                String body = httpRequestLog.getRequestBody();
                 RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
                 GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
                 BigDecimal balance = walletService.getBalance(traceId, gameSession);
                 rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
                 rollbackVo.setBalance(balance);
-            } catch (Exception e) {
+            } catch (Exception exception) {
                 status = HttpStatus.INTERNAL_SERVER_ERROR;
             }
         }
@@ -101,13 +112,13 @@ public class RollbackAction {
         return new ResponseEntity<>(rollbackVo, headers, status);
     }
 
-    private void doValidation(RollbackDto dto) throws InvalidRequestException{
+    private void doValidation(RollbackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(RollbackDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
         // Verify vendor line is active

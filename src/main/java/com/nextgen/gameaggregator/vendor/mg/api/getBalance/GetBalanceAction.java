@@ -44,14 +44,15 @@ public class GetBalanceAction {
 
         // Get start time of request
         long startTime = System.currentTimeMillis();
-        // Get the request body and trace ID from the logging
-        String body = httpRequestLog.getRequestBody();
+        // Get the trace ID from the logging
         String traceId = httpRequestLog.getId();
         HttpStatus status = HttpStatus.OK;
         GetBalanceVo getBalanceVo = new GetBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 
         try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
             // Convert the request body to a GetBalanceDto object
             GetBalanceDto dto = HttpService.convertJsonToDto(body, GetBalanceDto.class);
             // Validate request parameters (Non-database calls)
@@ -64,10 +65,20 @@ public class GetBalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
             getBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             getBalanceVo.setBalance(balance);
-        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException| AuthenticationException e){
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200 and 401
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.UNAUTHORIZED;
+
+        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
+            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
+            DisabledGameException| AuthenticationException invalidException) {
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (Exception exception) { // any other exception encountered
+            status = HttpStatus.UNAUTHORIZED;
+            httpService.logError(httpRequestLog, exception);
+            
         } finally {
             httpService.end(httpRequestLog, getBalanceVo);
         }
@@ -82,13 +93,13 @@ public class GetBalanceAction {
         return new ResponseEntity<>(getBalanceVo, headers, status);
     }
 
-    private void doValidation(GetBalanceDto dto) throws InvalidRequestException{
+    private void doValidation(GetBalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(GetBalanceDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
         // Verify vendor line is active

@@ -46,14 +46,15 @@ public class UpdateBalanceAction {
 
         // Get start time of request
         long startTime = System.currentTimeMillis();
-        // Get the request body and trace ID from the logging
-        String body = httpRequestLog.getRequestBody();
+        // Get the trace ID from the logging
         String traceId = httpRequestLog.getId();
         HttpStatus status = HttpStatus.OK;
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 
         try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
             // Convert the request body to a UpdateBalanceDto object
             UpdateBalanceDto dto = HttpService.convertJsonToDto(body, UpdateBalanceDto.class);
             // Validate request parameters (Non-database calls)
@@ -83,17 +84,28 @@ public class UpdateBalanceAction {
                     status = HttpStatus.BAD_REQUEST;
                 }
             }
-            
-        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException e){
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
-        } catch (InsufficientBalanceException e) {
+
+        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
+            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
+            DisabledGameException badRequestException) {
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
             status = HttpStatus.PAYMENT_REQUIRED;
-        } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException e) {
+
+        } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException playerNotFoundException) {
             status = HttpStatus.NOT_FOUND;
-        } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException e) {
+
+        } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException internalErrorException) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (Exception exception) { // any other exception encountered
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, updateBalanceVo);
         }
@@ -108,13 +120,13 @@ public class UpdateBalanceAction {
         return new ResponseEntity<>(updateBalanceVo, headers, status);
     }
 
-    private void doValidation(UpdateBalanceDto dto) throws InvalidRequestException{
+    private void doValidation(UpdateBalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(UpdateBalanceDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException{
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
     }
