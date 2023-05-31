@@ -49,7 +49,7 @@ public class TransactionService {
 
         TransactionDto transactionDto = new TransactionDto();
 
-        BigDecimal balance = BigDecimal.ZERO;
+        BigDecimal balance = null;
 
         long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
@@ -71,7 +71,7 @@ public class TransactionService {
             ResultType resultType = getResultType(transactionDto);
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
             balanceVo.setValue(null);
 
