@@ -81,14 +81,14 @@ public class BalanceAction {
             balanceVo.setUsers(usersList);
 
         } catch (InvalidRequestException invalidRequestException) {
-            String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.SYSTEM_ERROR).replace(ResponseCode.SYSTEM_ERROR_REPLACE_STRING, "");
+            String message = Optional.ofNullable(invalidRequestException.getValidation().values().iterator().next()).orElse("");
+            String errdesc = ResponseCode.SYSTEM_ERROR.errdesc.replace(Formats.REPLACE_STRING, " : " + message);
             balanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR, errdesc);
         } catch (JsonProcessingException jsonProcessingException) {
-            String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INCORRECT_FORMAT).replace(ResponseCode.INCORRECT_FORMAT_REPLACE_STRING, "");
-            balanceVo.setResponseCode(ResponseCode.INCORRECT_FORMAT, errdesc);
+            balanceVo.setResponseCode(ResponseCode.INCORRECT_FORMAT);
         } catch (Exception exception) {
-            String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.SYSTEM_ERROR).replace(ResponseCode.SYSTEM_ERROR_REPLACE_STRING, "");
-            balanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR, errdesc);
+
+            balanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, balanceVo);
@@ -163,9 +163,9 @@ public class BalanceAction {
             usersVo.setWallets(walletsList);
 
         } catch (InvalidRequestException invalidRequestException) {
-
+            String message = Optional.ofNullable(invalidRequestException.getValidation().values().iterator().next()).orElse("");
+            String errdesc = ResponseCode.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, message);
             usersVo.setUserid(usersDto.getUserid());
-            String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INCORRECT_FORMAT).replace(ResponseCode.INCORRECT_FORMAT_REPLACE_STRING, " : " + invalidRequestException.getValidation().values().iterator().next());
             usersVo.setResponseCode(ResponseCode.INCORRECT_FORMAT, errdesc);
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
@@ -177,11 +177,10 @@ public class BalanceAction {
                 exception) {
 
             usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+            usersVo.setResponseCode(ResponseCode.OPERATION_FAILED_DETERMINISTICALLY);
         } catch (InvalidPlayerException | AuthenticationException e) {
-//            e.getValidation().
+            String errdesc = ResponseCode.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, "invalid player");
             usersVo.setUserid(usersDto.getUserid());
-            String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.INVALID_ARGUMENTS).replace(ResponseCode.INVALID_ARGUMENTS_REPLACE_STRING, " : invalid player");
             usersVo.setResponseCode(ResponseCode.INVALID_ARGUMENTS, errdesc);
         } catch (InvalidCurrencyException invalidCurrencyException) {
 
@@ -190,8 +189,7 @@ public class BalanceAction {
         } catch (Exception exception) {
 
             usersVo.setUserid(usersDto.getUserid());
-            String errdesc = ResponseCode.RESPONSE_DESCRIPTION.get(ResponseCode.SYSTEM_ERROR).replace(ResponseCode.SYSTEM_ERROR_REPLACE_STRING, "");
-            usersVo.setResponseCode(ResponseCode.SYSTEM_ERROR, errdesc);
+            usersVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
         }
 
         return usersVo;
