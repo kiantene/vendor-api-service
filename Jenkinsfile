@@ -162,7 +162,7 @@ pipeline {
                             sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
                         }
                         sshagent(credentials: ['tokyo_key']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
+                            sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker service update --force --image local-ga-vendor-api-service:qa vendor-api_main-service'"
                         }
                     }
                 }
@@ -201,7 +201,17 @@ pipeline {
 
     post {
         always {
-            discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl', link: "${currentBuild.absoluteUrl}", showChangeset: true
+            script {
+                switch (env.BRANCH_NAME) {
+                case 'main':
+                case 'stg':
+                case 'qa':
+                case 'pt':
+                case 'devops':
+                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130', link: "${currentBuild.absoluteUrl}", showChangeset: true
+                        break
+                }
+            }
         }
     }
 }
