@@ -52,7 +52,7 @@ public class DebitDto extends CommonDto implements BetResultData {
     @Override
     @JsonIgnore
     public String getRoundId() {
-        return this.vendorRoundId;
+        return this.transactionId;
     }
 
     @Override
