@@ -33,6 +33,10 @@ public class LoginService {
     private ValidationService validationService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     public CommonVo login(HttpRequestLog httpRequestLog, String traceId) {
 
@@ -112,8 +116,14 @@ public class LoginService {
 
     private void doVerification(LoginDto dto, GameSession gameSession) throws InvalidRequestException,
             DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, GameNotSupportedException {
-        //validate vendor username, agent vendor line, player status, and game status
-        //  validationService.validateEligibleBet(gameSession, dto.getToken());
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // Verify vendor gameCode and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
