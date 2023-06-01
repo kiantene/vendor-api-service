@@ -97,7 +97,10 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BigDecimal getWinAmount() {
-        return amount;
+        if (getMetaData() == null) {
+            return amount;
+        }
+        return (getMetaData().getProgressive().getType().equals("jackpot")) ? BigDecimal.ZERO : amount;
     }
 
     @Override
@@ -127,7 +130,10 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        if (getMetaData() == null) {
+            return BigDecimal.ZERO;
+        }
+        return (getMetaData().getProgressive().getType().equals("jackpot")) ? amount : BigDecimal.ZERO;
     }
 
     @Override
