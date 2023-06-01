@@ -77,7 +77,8 @@ public class BalanceService {
                  DisabledGameException |
                  InvalidRequestException |
                  DisabledVendorLineException |
-                 CurrencyNotSupportedException e) {
+                 CurrencyNotSupportedException |
+                 CredentialNotFoundException e) {
 
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
@@ -95,10 +96,14 @@ public class BalanceService {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException {
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
 
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
+
+        //Verify received brand is same with credential
+        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
+        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 }

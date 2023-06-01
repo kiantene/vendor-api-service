@@ -115,9 +115,6 @@ public class LoginService {
         //validate vendor username, agent vendor line, player status, and game status
         //  validationService.validateEligibleBet(gameSession, dto.getToken());
 
-        System.out.println(gameSession.getVendorGameCode());
-        System.out.println(dto.getGame_id());
-
         // Verify vendor gameCode and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
     }

@@ -102,7 +102,8 @@ public class TransactionService {
                 BetNotFoundException |
                 BetResultIdempotentViolationException |
                 GameNotSupportedException |
-                JsonProcessingException e) {
+                JsonProcessingException |
+                CredentialNotFoundException e) {
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
             balance = getCurrentBalance(traceId,gameSession);
@@ -159,7 +160,7 @@ public class TransactionService {
 
     private void doVerification(TransactionDto dto, GameSession gameSession) throws DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
-            InvalidPlayerException, AuthenticationException {
+            InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidRequestException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
 
@@ -167,5 +168,8 @@ public class TransactionService {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
 
+        //Verify received brand is same with credential
+        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
+        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 }

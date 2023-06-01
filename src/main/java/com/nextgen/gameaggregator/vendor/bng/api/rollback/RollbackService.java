@@ -52,7 +52,7 @@ public class RollbackService {
             // Retrieve request body in original string format
             rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
 
-            // 1. Validate request parameters from vendor (Non-database related)
+            // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollbackDto);
 
             // Verify session token
@@ -85,7 +85,8 @@ public class RollbackService {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidRequestException |
-                 DisabledVendorLineException e) {
+                 DisabledVendorLineException |
+                 CredentialNotFoundException e) {
 
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
@@ -107,10 +108,14 @@ public class RollbackService {
     }
 
     private void doVerification(RollbackDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException {
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
 
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
+
+        //Verify received brand is same with credential
+        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
+        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 }
