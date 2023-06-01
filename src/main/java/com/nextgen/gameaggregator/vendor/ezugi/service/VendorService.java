@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.ezugi.service;
 
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
+import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -39,14 +42,15 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String generateRequestToken(MultiValueMap<String, String> params) throws NoSuchAlgorithmException {
+    public static String generateRequestToken(MultiValueMap<String, String> params, Map<String, String> credentials) throws NoSuchAlgorithmException {
         List<String> values = new ArrayList<>();
         for (String key : params.keySet()){
             values.add(key + "=" + params.getFirst(key));
         }
-        String queryString = String.join("&", values);
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(queryString.getBytes());
-        return hash.toString();
+        String queryString = credentials.get(Credentials.API_ACCESS)+String.join("&", values);
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] digest = md.digest(queryString.getBytes(StandardCharsets.UTF_8));
+        String sha256 = DatatypeConverter.printHexBinary(digest).toLowerCase();
+        return sha256;
     }
 }

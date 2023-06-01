@@ -58,7 +58,7 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     @Override
     @JsonIgnore
     public String getRoundId() {
-        return this.debitTransactionId;
+        return this.vendorRoundId;
     }
 
     @Override

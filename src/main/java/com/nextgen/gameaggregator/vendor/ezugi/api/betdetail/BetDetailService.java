@@ -44,12 +44,12 @@ public class BetDetailService implements BetDetailUrl {
         formData.add("DataSet", "per_round_report");
         formData.add("APIID", credentials.get(Credentials.API_ID));
         formData.add("APIUser", credentials.get(Credentials.API_USER));
-        formData.add("RoundID", iBetDetailUrlInfo.getExternalTransactionId());
+        formData.add("RoundID", iBetDetailUrlInfo.getTransactionId());
         formData.add("UID", iBetDetailUrlInfo.getVendorUsername());
         formData.add("language", vendorLanguageCode.getLanguageCode());
         String requestToken = null;
         try {
-            requestToken = com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.generateRequestToken(formData);
+            requestToken = com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.generateRequestToken(formData, credentials);
         }catch (Exception e){
             log.error("Failed to generate request token : ",e.getMessage());
         }finally {

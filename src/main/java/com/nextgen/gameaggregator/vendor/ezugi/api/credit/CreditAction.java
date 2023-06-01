@@ -87,7 +87,7 @@ public class CreditAction extends CommonDto {
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService);
                     break;
                 default:
-                    ResultType resultType = getResultType(creditDto, unsettledBet);
+                    ResultType resultType = getResultType(creditDto);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
                     break;
             }
@@ -143,20 +143,14 @@ public class CreditAction extends CommonDto {
         com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 
-    private ResultType getResultType(CreditDto dto, UnsettledBet unsettledBet) {
+    private ResultType getResultType(CreditDto dto) {
         ResultType resultType = ResultType.LOSE;
 
-        BigDecimal betAmount = Optional.ofNullable(unsettledBet.getBetAmount()).orElse(BigDecimal.ZERO);
         BigDecimal winAmount = Optional.ofNullable(dto.getWinAmount()).orElse(BigDecimal.ZERO);
 
         boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
-        boolean isBetAmountEqualThanZero = betAmount.compareTo(BigDecimal.ZERO) == 0;
-        boolean isWinAmountEqualThanZero = winAmount.compareTo(BigDecimal.ZERO) == 0;
 
         if (isWinAmountMoreThanZero) { // Win Amount > 0 ~ BET_WIN
-            resultType = ResultType.WIN;
-        }
-        if (isBetAmountEqualThanZero && isWinAmountEqualThanZero) { // Win Amount == 0 and Bet Amount == 0 ~ BET_WIN
             resultType = ResultType.WIN;
         }
         return resultType;

@@ -7,4 +7,5 @@ public class Credentials {
     public static final String SERVER_URL = "serverUrl";
     public static final String API_ID = "apiId";
     public static final String API_USER = "apiUser";
+    public static final String API_ACCESS = "apiAccess";
 }
