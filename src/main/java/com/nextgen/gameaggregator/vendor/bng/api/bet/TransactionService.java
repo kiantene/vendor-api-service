@@ -123,6 +123,8 @@ public class TransactionService {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
             vo.setBalance(balanceVo);
+
+            vo = null;
         }
 
         return vo;
