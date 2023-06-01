@@ -46,7 +46,7 @@ public class UpdateBalanceDto implements BetResultData {
     @Size(max = 256)
     private String roundId;
 
-    private MetaDataDto metaData;
+    private MetaDataDto metadata;
 
     private DeviceType deviceType;
 
@@ -132,7 +132,7 @@ public class UpdateBalanceDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return (getMetaData() != null && Boolean.TRUE.equals(getMetaData().getIsFreeGame())) ? 1 : 0;
+        return (getMetadata() != null && Boolean.TRUE.equals(getMetadata().getIsFreeGame())) ? 1 : 0;
     }
 
     @Override
