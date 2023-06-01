@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bng.api.login;
 
 
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -11,7 +12,7 @@ public class LoginDto {
     private String name;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_\\-.]*$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 35)
     private String uid;
 
@@ -19,7 +20,7 @@ public class LoginDto {
     private String token;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_\\-.]*$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 32)
     private String session;
 

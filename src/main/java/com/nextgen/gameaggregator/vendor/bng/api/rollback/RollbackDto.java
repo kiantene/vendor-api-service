@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.bng.api.rollback;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -13,7 +15,7 @@ public class RollbackDto implements RollbackData {
     private String name;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_\\-.]*$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 35)
     private String uid;
 
@@ -21,7 +23,7 @@ public class RollbackDto implements RollbackData {
     private String token;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_\\-.]*$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 32)
     private String session;
 
