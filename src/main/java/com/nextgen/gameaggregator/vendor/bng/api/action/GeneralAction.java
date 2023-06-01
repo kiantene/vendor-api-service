@@ -2,16 +2,19 @@ package com.nextgen.gameaggregator.vendor.bng.api.action;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bng.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bng.api.bet.TransactionService;
 import com.nextgen.gameaggregator.vendor.bng.api.login.LoginService;
 import com.nextgen.gameaggregator.vendor.bng.api.rollback.RollbackService;
 import com.nextgen.gameaggregator.vendor.bng.constant.EndPoints;
-
+import com.nextgen.gameaggregator.vendor.bng.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bng.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.bng.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.bng.constant.Actions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,21 +61,27 @@ public class GeneralAction {
 
         // Construct VO
         CommonVo vo = new CommonVo();
+        ErrorVo error = new ErrorVo();
 
         try {
 
             // Construct this vo for action handling purpose
             ActionDto actionDto = HttpService.convertJsonToDto(body, ActionDto.class);
 
+            // Validate the actionDto object
+            this.doValidation(actionDto);
+
             // Handle the action and return the resulting value
             vo = this.actionHandling(actionDto, traceId, httpRequestLog);
-        } catch (Exception exception) {
 
+        } catch (InvalidRequestException |
+                 JsonProcessingException e) {
+            error.setCode(ResponseCodes.OTHER_EXCEED);
+            vo.setError(error);
         } finally {
             httpService.end(httpRequestLog, vo);
         }
-
-
+        
         return vo;
     }
 
@@ -93,5 +102,10 @@ public class GeneralAction {
                 break;
         }
         return vo;
+    }
+
+    private void doValidation(ActionDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 }

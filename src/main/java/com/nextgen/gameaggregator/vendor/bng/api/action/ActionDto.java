@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bng.api.action;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import lombok.Data;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ActionDto {
 
+    @NotBlank
     @JsonProperty("name")
     private String name;
 }
