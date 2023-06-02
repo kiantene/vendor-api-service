@@ -74,10 +74,7 @@ public class RollbackService {
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
-//            vo.setBalance(balanceVo);
-
-            error.setCode(ResponseCodes.OTHER_EXCEED);
-            vo.setError(error);
+            vo.setBalance(balanceVo);
 
         } catch (InvalidAgentApiCredentialException |
                  RecordNotFoundException |
