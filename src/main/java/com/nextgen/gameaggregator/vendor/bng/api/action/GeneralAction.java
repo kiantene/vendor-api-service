@@ -94,12 +94,12 @@ public class GeneralAction {
             case Actions.GETBALANCE:
                 vo = balanceService.balance(httpRequestLog, traceId);
                 break;
-            case Actions.TRANSACTION:
-                vo = transactionService.transaction(httpRequestLog, traceId);
-                break;
-            case Actions.ROLLBACK:
-                vo = rollbackService.rollback(httpRequestLog, traceId);
-                break;
+//            case Actions.TRANSACTION:
+//                vo = transactionService.transaction(httpRequestLog, traceId);
+//                break;
+//            case Actions.ROLLBACK:
+//                vo = rollbackService.rollback(httpRequestLog, traceId);
+//                break;
         }
         return vo;
     }
