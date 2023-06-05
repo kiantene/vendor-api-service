@@ -1,5 +1,18 @@
 package com.nextgen.gameaggregator.vendor.alizegames.api.gameurl;
 
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -9,23 +22,10 @@ import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
-//import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
+import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
 
-import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
@@ -33,6 +33,8 @@ public class GameUrlService implements GameUrl {
 
     @Autowired
     RequestService requestService;
+    @Autowired
+    VendorService vendorService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -40,11 +42,6 @@ public class GameUrlService implements GameUrl {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
-//        String secureLogin = credentials.get(Credentials.SECURE_LOGIN);
-//        Optional.ofNullable(secureLogin).orElseThrow(InvalidVendorLineException::new);
-//
-//        String secret = credentials.get(Credentials.SECRET_KEY);
-//        Optional.ofNullable(secret).orElseThrow(InvalidVendorLineException::new);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("username", gameSession.getVendorPlayerUsername());
@@ -55,8 +52,6 @@ public class GameUrlService implements GameUrl {
         formData.add("operator", "1api");
         formData.add("playmode", "free");
         formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
-//        String hash = VendorService.generateHash(formData, secret);
-//        formData.add("hash", hash);
 
         return formData;
     }
@@ -70,10 +65,25 @@ public class GameUrlService implements GameUrl {
         GameUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
+        // Define headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("X-API-Key", Credentials.API_KEY);
+
+        // Generate the signature
+        String apiSecret = credentials.get(Credentials.SECRET_KEY);
+        Optional.ofNullable(apiSecret).orElseThrow(InvalidVendorLineException::new);
+        String requestBody = new Gson().toJson(formData.toSingleValueMap());
+        String signature = VendorService.generateHash(apiSecret, requestBody);
+
+        // Add the signature to the headers
+        headers.set("X-Signature", signature);
+
         Long startTime = System.currentTimeMillis();
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.GAME_URL)
+                .headers(header -> header.addAll(headers))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
