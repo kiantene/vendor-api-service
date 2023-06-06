@@ -63,7 +63,7 @@ public class GameUrlService implements GameUrl {
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
         GameUrlVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
 
         // Define headers
         HttpHeaders headers = new HttpHeaders();
@@ -75,6 +75,8 @@ public class GameUrlService implements GameUrl {
         Optional.ofNullable(apiSecret).orElseThrow(InvalidVendorLineException::new);
         String requestBody = new Gson().toJson(formData.toSingleValueMap());
         String signature = VendorService.generateHash(apiSecret, requestBody);
+
+        log.info(requestBody);
 
         // Add the signature to the headers
         headers.set("X-Signature", signature);
