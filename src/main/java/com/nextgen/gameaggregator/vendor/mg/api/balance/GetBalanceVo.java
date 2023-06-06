@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.mg.api.getBalance;
+package com.nextgen.gameaggregator.vendor.mg.api.balance;
 
 import java.math.BigDecimal;
 

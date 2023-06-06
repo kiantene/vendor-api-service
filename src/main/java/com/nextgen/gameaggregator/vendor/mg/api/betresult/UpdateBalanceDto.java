@@ -1,19 +1,18 @@
-package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
+package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import java.math.BigDecimal;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
+import com.nextgen.gameaggregator.vendor.mg.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class WinDataDto implements BetResultData  {
+public class UpdateBalanceDto implements BetResultData {
     @NotNull
     private TxnType txnType;
 
@@ -51,7 +50,7 @@ public class WinDataDto implements BetResultData  {
 
     private DeviceType deviceType;
 
-    private String platformType;
+    private PlatformType platformType;
 
     @NotNull
     private Boolean completed;
@@ -69,6 +68,7 @@ public class WinDataDto implements BetResultData  {
     @Size(max = 50)
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
+
 
     @Override
     public String getExternalTransactionId() {
@@ -92,15 +92,12 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        return amount;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        if (getMetadata() == null) {
-            return amount;
-        }
-        return (getMetadata().getProgressive().getType().equals("jackpot")) ? BigDecimal.ZERO : amount;
+        return null;
     }
 
     @Override
@@ -130,10 +127,7 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        if (getMetadata() == null) {
-            return BigDecimal.ZERO;
-        }
-        return (getMetadata().getProgressive().getType().equals("jackpot")) ? amount : BigDecimal.ZERO;
+        return BigDecimal.ZERO;
     }
 
     @Override
@@ -143,6 +137,6 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BetStatus getBetStatus() {
-        return getCompleted() ? BetStatus.SETTLED : BetStatus.UNSETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
+package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
