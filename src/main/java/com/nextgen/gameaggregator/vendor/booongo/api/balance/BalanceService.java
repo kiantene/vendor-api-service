@@ -89,7 +89,6 @@ public class BalanceService {
             vo.setError(error);
         } finally{
             vo.setUid(balanceDto.getUid());
-            vo = null;
         }
 
         return vo;
