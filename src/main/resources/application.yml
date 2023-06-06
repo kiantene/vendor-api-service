@@ -51,6 +51,8 @@ spring:
     bucketName: 
     scopeName: 
   data:
+    rest:
+      detection-strategy: annotated
     redis:
       mode:
       nodehosts:
