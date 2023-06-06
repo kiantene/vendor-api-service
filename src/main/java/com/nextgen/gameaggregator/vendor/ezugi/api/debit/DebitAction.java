@@ -27,7 +27,6 @@ import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
-import java.util.Optional;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -103,7 +102,11 @@ public class DebitAction {
         } catch (InvalidPlayerException e) {
             debitVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidSignatureException | BetNotFoundException | InvalidRequestException | DisabledGameException |
+        } catch (InvalidSignatureException e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            debitVo.setErrorDescription("Invalid Hash");
+            httpService.logError(httpRequestLog, e);
+        } catch (BetNotFoundException | InvalidRequestException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
                  BetResultIdempotentViolationException | InvalidAgentApiCredentialException |
                  DisabledVendorLineException | CredentialNotFoundException | InvalidKeyException |

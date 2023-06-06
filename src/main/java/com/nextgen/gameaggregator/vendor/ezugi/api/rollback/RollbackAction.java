@@ -75,16 +75,28 @@ public class RollbackAction {
         } catch (AuthenticationException e) {
             rollbackVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidSignatureException | BetNotFoundException | InvalidRequestException | DisabledGameException |
+        } catch (BetNotFoundException e) {
+            rollbackVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetRefundIdempotentViolationException e){
+            rollbackVo.setErrorCode(ResponseCodes.OK);
+            rollbackVo.setErrorDescription("Transaction already processed");
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidSignatureException e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            rollbackVo.setErrorDescription("Invalid Hash");
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException | DisabledGameException |
                  DisabledAgentPlayerException | CurrencyNotSupportedException | RecordNotFoundException |
                  InvalidPlayerException | InvalidAgentApiCredentialException | CredentialNotFoundException |
                  DisabledVendorLineException | InvalidKeyException | CouchbaseDataIntegrityException |
-                 NoSuchAlgorithmException | InvalidOperatorResponseException |
-                 BetRefundIdempotentViolationException e) {
+                 NoSuchAlgorithmException | InvalidOperatorResponseException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION_ROLLBACK.get(rollbackVo.getErrorCode()));
+            if(rollbackVo.getErrorDescription()==null) {
+                rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION_ROLLBACK.get(rollbackVo.getErrorCode()));
+            }
             httpService.end(httpRequestLog, rollbackVo);
         }
         return rollbackVo;

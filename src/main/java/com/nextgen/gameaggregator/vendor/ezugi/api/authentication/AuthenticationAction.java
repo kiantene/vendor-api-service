@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -9,6 +8,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -87,7 +86,11 @@ public class AuthenticationAction {
         } catch (DisabledAgentPlayerException e) {
             authenticationVo.setErrorCode(ResponseCodes.USER_BLOCKED);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidSignatureException | InvalidOperatorResponseException | NoSuchAlgorithmException | IOException |
+        } catch (InvalidSignatureException e) {
+            authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            authenticationVo.setErrorDescription("Invalid Hash");
+            httpService.logError(httpRequestLog, e);
+        }  catch (InvalidOperatorResponseException | NoSuchAlgorithmException | IOException |
                  InvalidKeyException | DisabledVendorLineException | CredentialNotFoundException |
                  InvalidAgentApiCredentialException | DisabledGameException | InvalidRequestException e) {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);

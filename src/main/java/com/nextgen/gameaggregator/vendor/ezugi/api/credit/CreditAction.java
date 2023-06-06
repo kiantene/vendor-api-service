@@ -11,8 +11,8 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
-import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +25,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -75,11 +73,6 @@ public class CreditAction extends CommonDto {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, httpRequestLog, request);
 
-            // Get unsettled bet
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(creditDto.getUid());
-            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(creditDto.getTableId(), vendorPlayer.getVendorId());
-            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(creditDto.getVendorBetId(), creditDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
-
             // Process result settled or cancelled bet data
             BigDecimal balance = BigDecimal.ZERO;
             switch (creditDto.getReturnReason()) {
@@ -111,15 +104,27 @@ public class CreditAction extends CommonDto {
         } catch (InvalidPlayerException e) {
             creditVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidSignatureException | BetNotFoundException | InvalidRequestException |
-                 MergedBetDataIntegrityException | BetResultIdempotentViolationException | RecordNotFoundException |
+        } catch (BetResultIdempotentViolationException | BetRefundIdempotentViolationException e){
+            creditVo.setErrorCode(ResponseCodes.OK);
+            creditVo.setErrorDescription("Transaction already processed");
+            httpService.logError(httpRequestLog, e);
+        } catch (BetNotFoundException | InvalidRequestException e) {
+            creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
+            creditVo.setErrorDescription("Debit transaction ID not found");
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidSignatureException e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Invalid Hash");
+            httpService.logError(httpRequestLog, e);
+        } catch (MergedBetDataIntegrityException | RecordNotFoundException |
                  InvalidAgentApiCredentialException | CredentialNotFoundException | InvalidKeyException |
-                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException |
-                 BetRefundIdempotentViolationException | GameNotSupportedException e) {
+                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));
+            if(creditVo.getErrorDescription()==null) {
+                creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));
+            }
             httpService.end(httpRequestLog, creditVo);
         }
         return creditVo;
