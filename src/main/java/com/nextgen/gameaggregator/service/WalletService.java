@@ -343,13 +343,11 @@ public class WalletService {
                             newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
                             newSettledBet.setVendorSettleTime(settledTime);
 
-                            walletBetResultAction.call(newTraceId, agentId, gameSession, newSettledBet, ResultType.END);
-                            newSettledBet.setResultType(vendorService.calculateBetResultType(newSettledBet));
+                            //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
+                            EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
+                                    gameSession.getCurrencyCode(), gameSession.getGameCode(), vendorService.calculateBetResultType(newSettledBet));
 
-                            settledBetService.create(newSettledBet, newSettledBet.getRawData());
-                            betHistory = new BetHistory(newSettledBet);
-                            log.info(new Gson().toJson(betHistory));
-                            kafkaService.produceBetHistory(betHistory, newSettledBet);
+                            kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
                         }
 
                         //no matter match or not, will perform delete unsettled bet data with same round Id
