@@ -3,14 +3,14 @@ package com.nextgen.gameaggregator.vendor.booongo.api.balance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
-import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -53,13 +53,13 @@ public class BalanceService {
             balanceDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
-            this.doValidation(balanceDto);
+//            this.doValidation(balanceDto);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+//            this.doVerification(balanceDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -75,14 +75,7 @@ public class BalanceService {
         } catch (InvalidAgentApiCredentialException |
                  AuthenticationException |
                  InvalidOperatorResponseException |
-                 JsonProcessingException |
-                 InvalidPlayerException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidRequestException |
-                 DisabledVendorLineException |
-                 CurrencyNotSupportedException |
-                 CredentialNotFoundException e) {
+                 JsonProcessingException e) {
 
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
@@ -94,30 +87,30 @@ public class BalanceService {
         return vo;
     }
 
-    private void doValidation(BalanceDto dto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(dto);
-    }
-
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
-
-        //Verify received brand is same with credential
-        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
-        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
-    }
+//    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+//        // General validation
+//        ValidationUtils.validateRequest(dto);
+//    }
+//
+//    private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
+//            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
+//        //validate vendor username, agent vendor line, player status, and game status
+//        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
+//
+//        // Verify vendor line is active
+//        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+//
+//        // Verify agent player is active
+//        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+//
+//        // Verify vendor game is active
+//        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+//
+//        // Verify vendor currency
+//        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
+//
+//        //Verify received brand is same with credential
+//        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
+//        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
+//    }
 }
