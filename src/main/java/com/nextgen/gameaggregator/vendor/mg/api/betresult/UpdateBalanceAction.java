@@ -66,6 +66,7 @@ public class UpdateBalanceAction {
             this.doVerification(dto, gameSession);
             switch (dto.getTxnType()) {
                 case DEBIT -> {
+                    validationService.validateEligibleBet(gameSession, dto.getPlayerId());
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(betEvent.getLastBalance());
