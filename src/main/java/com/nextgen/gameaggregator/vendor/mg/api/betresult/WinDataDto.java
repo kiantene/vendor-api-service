@@ -1,15 +1,14 @@
 package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
 import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -115,7 +114,7 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public Long getVendorBetTime() {
-        return creationTimeMs;
+        return null;
     }
 
     @Override
