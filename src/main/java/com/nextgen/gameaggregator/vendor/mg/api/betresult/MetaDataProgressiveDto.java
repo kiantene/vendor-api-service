@@ -6,6 +6,6 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ProgressiveDto {
+public class MetaDataProgressiveDto {
     private String type;
 }

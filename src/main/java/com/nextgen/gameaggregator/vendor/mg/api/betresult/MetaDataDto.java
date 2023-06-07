@@ -8,5 +8,5 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MetaDataDto {
     private Boolean isFreeGame;
-    private ProgressiveDto progressive;
+    private MetaDataProgressiveDto progressive;
 }
