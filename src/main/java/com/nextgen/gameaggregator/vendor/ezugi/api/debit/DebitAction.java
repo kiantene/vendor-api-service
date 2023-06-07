@@ -13,7 +13,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +27,7 @@ import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -106,7 +107,19 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Hash");
             httpService.logError(httpRequestLog, e);
-        } catch (BetNotFoundException | InvalidRequestException | DisabledGameException |
+        } catch (InvalidRequestException e){
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            if (e.getValidation() != null) {
+                String violation = e.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode())); // if there's no value, set it to the default invalid request parameter
+                debitVo.setErrorDescription(violation);
+            }
+            httpService.logError(httpRequestLog, e);
+        } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
                  BetResultIdempotentViolationException | InvalidAgentApiCredentialException |
                  DisabledVendorLineException | CredentialNotFoundException | InvalidKeyException |
@@ -114,7 +127,9 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
+            if(debitVo.getErrorDescription()==null) {
+                debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
+            }
             httpService.end(httpRequestLog, debitVo);
         }
         return debitVo;
@@ -136,6 +151,6 @@ public class DebitAction {
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 }
