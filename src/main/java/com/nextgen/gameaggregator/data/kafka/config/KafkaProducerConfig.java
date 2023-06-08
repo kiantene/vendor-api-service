@@ -41,7 +41,7 @@ public class KafkaProducerConfig {
         props.put(SaslConfigs.SASL_MECHANISM, this.saslMechanism);
         props.put(SaslConfigs.SASL_JAAS_CONFIG, this.saslJaasConfig);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaJsonSchemaSerializer.class);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
 
         return new DefaultKafkaProducerFactory<>(props);
     }
