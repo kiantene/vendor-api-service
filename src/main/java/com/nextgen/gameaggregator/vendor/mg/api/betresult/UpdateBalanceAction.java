@@ -1,21 +1,7 @@
 package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
-import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
-import jakarta.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -24,7 +10,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
+import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -62,8 +61,6 @@ public class UpdateBalanceAction {
             this.doValidation(dto);
             // Get GameSession by vendor player username
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
-            // Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
@@ -121,12 +118,6 @@ public class UpdateBalanceAction {
     private void doValidation(UpdateBalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
-    }
-
-    private void doVerification(UpdateBalanceDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getPlayerId());
     }
 
     private ResultType determineResultType(UpdateBalanceDto dto) {
