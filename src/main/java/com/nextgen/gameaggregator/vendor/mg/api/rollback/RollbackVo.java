@@ -2,12 +2,21 @@ package com.nextgen.gameaggregator.vendor.mg.api.rollback;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nextgen.gameaggregator.service.HttpResponse;
+
 import lombok.Data;
 
 @Data
-public class RollbackVo {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class RollbackVo implements HttpResponse {
     private String extTxnId;
     private String currency;
     private BigDecimal balance;
     private Long extCreationTimeMs;
+
+    @Override
+    public boolean hasError() {
+        return false;
+    }
 }

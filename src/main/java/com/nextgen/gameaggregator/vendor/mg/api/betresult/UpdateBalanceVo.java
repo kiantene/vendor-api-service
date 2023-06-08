@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.mg.api.login;
+package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import java.math.BigDecimal;
 
@@ -9,10 +9,11 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LoginVo implements HttpResponse {
+public class UpdateBalanceVo implements HttpResponse {
+    private String extTxnId;
     private String currency;
     private BigDecimal balance;
-    private String extOperatorToken;
+    private Long extCreationTimeMs;
 
     @Override
     public boolean hasError() {
