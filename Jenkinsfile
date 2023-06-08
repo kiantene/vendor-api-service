@@ -40,7 +40,7 @@ pipeline {
         AWS_ECS_SERVICE = ''
 
         SONAR_PROJECTKEY = 'game-aggregator'
-        SONAR_HOST_URL = 'http://223.25.67.48:9000'
+        SONAR_HOST_URL = 'http://192.168.88.112:9000'
         SONAR_LOGIN = credentials('sonar_token')
     }
 
@@ -78,6 +78,11 @@ pipeline {
                 script {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
                         sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@47.254.202.80:/root/vendor-api/app.jar'
+                    }
+                }
+                script {
+                    sshagent(credentials: ['tokyo_key']) {
+                        sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@35.77.164.118:/root/vendor-api/app.jar'
                     }
                 }
             }
@@ -118,7 +123,10 @@ pipeline {
             steps {
                 script {
                     sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t ${AWS_ECR_URL}:qa /root/vendor-api'"
+                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
+                    }
+                    sshagent(credentials: ['tokyo_key']) {
+                        sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
                     }
                 }
             }
@@ -151,7 +159,10 @@ pipeline {
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
                         sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image ${AWS_ECR_URL}:qa game-aggregator_ga-vendor-api-service'"
+                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
+                        }
+                        sshagent(credentials: ['tokyo_key']) {
+                            sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker service update --force --image local-ga-vendor-api-service:qa vendor-api_main-service'"
                         }
                     }
                 }
@@ -173,13 +184,14 @@ pipeline {
                     script {
                         String branchName = env.BRANCH_NAME
                         String packageVersion = getRepoTag(branchName)
-                        String taskDefinitionPath = "./ecs/${branchName}.json"
 
                         withEnv(getECSConfig(branchName)) {
-                            updateContainerDefinitionJsonWithImageVersion(packageVersion, taskDefinitionPath)
-                            sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
-                            String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
-                            sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                            configFileProvider([configFile(fileId: "${branchName}_td", variable: 'taskDefinitionPath')]) {
+                                updateContainerDefinitionJsonWithImageVersion(packageVersion, taskDefinitionPath)
+                                sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
+                                String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
+                                sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                            }
                         }
                     }
                 }
@@ -189,7 +201,17 @@ pipeline {
 
     post {
         always {
-            discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl', link: "${currentBuild.absoluteUrl}", showChangeset: true
+            script {
+                switch (env.BRANCH_NAME) {
+                case 'main':
+                case 'stg':
+                case 'qa':
+                case 'pt':
+                case 'devops':
+                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130', link: "${currentBuild.absoluteUrl}", showChangeset: true
+                        break
+                }
+            }
         }
     }
 }

@@ -1,11 +1,10 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 
-import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
-import jakarta.validation.constraints.*;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
