@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
@@ -75,40 +78,53 @@ public class TransactionService {
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-        }catch(Exception exception){
+        }catch (AuthenticationException e) {
+            errorVo.setCode(ResponseCodes.TIME_EXCEED);
 
+            balance = getCurrentBalance(traceId,gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
+        }catch (InsufficientBalanceException e) {
+            errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
+
+            balance = getCurrentBalance(traceId,gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
         }
-//        catch (AuthenticationException e) {
-//            errorVo.setCode(ResponseCodes.TIME_EXCEED);
-//
-//            balance = getCurrentBalance(traceId,gameSession);
-//
-//            // Retrieve current wallet balance
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-//            vo.setError(errorVo);
-//        }catch (InsufficientBalanceException e) {
-//            errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
-//
-//            balance = getCurrentBalance(traceId,gameSession);
-//
-//            // Retrieve current wallet balance
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-//            vo.setError(errorVo);
-//        }catch (InvalidOperatorResponseException |
-//                CouchbaseDataIntegrityException |
-//                InvalidAgentApiCredentialException |
-//                MergedBetDataIntegrityException |
-//                BetNotFoundException |
-//                BetResultIdempotentViolationException |
-//                JsonProcessingException e) {
-//            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-//
-//            balance = getCurrentBalance(traceId,gameSession);
-//
-//            // Retrieve current wallet balance
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-//            vo.setError(errorVo);
-//        }
+//        catch (InvalidOperatorResponseException |
+//               CouchbaseDataIntegrityException |
+//               DisabledVendorLineException |
+//               InvalidAgentApiCredentialException |
+//               InvalidPlayerException |
+//               CurrencyNotSupportedException |
+//               DisabledAgentPlayerException |
+//               MergedBetDataIntegrityException |
+//               DisabledGameException |
+//               InvalidRequestException |
+//               BetNotFoundException |
+//               BetResultIdempotentViolationException |
+//               GameNotSupportedException |
+//               JsonProcessingException |
+//               CredentialNotFoundException e) {
+        catch (InvalidOperatorResponseException |
+                CouchbaseDataIntegrityException |
+                InvalidAgentApiCredentialException |
+                MergedBetDataIntegrityException |
+                BetNotFoundException |
+                BetResultIdempotentViolationException |
+                JsonProcessingException e) {
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+
+            balance = getCurrentBalance(traceId,gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
+        }
 //        catch(Exception exception){
 //            httpService.logError(httpRequestLog, exception);
 //        }
