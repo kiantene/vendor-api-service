@@ -6,18 +6,17 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
-import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 
 @Service
 @Slf4j
@@ -67,7 +66,8 @@ public class BalanceService {
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             // Construct response data into vo
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            balanceVo.setValue("");
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
             vo.setBalance(balanceVo);
