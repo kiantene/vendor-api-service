@@ -1,13 +1,12 @@
 package com.nextgen.gameaggregator.vendor.alizegames.api.betNSettle;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.*;
-import lombok.Data;
 
-import java.math.BigDecimal;
+import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -35,7 +34,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.traceId;
+        return this.betId;
     }
 
     @Override

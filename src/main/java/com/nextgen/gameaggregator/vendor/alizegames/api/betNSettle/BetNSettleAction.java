@@ -1,29 +1,26 @@
 package com.nextgen.gameaggregator.vendor.alizegames.api.betNSettle;
 
+import java.math.BigDecimal;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.RawBetResultLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.service.*;
 //import com.nextgen.gameaggregator.vendor.alizegames.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 //import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
 import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
