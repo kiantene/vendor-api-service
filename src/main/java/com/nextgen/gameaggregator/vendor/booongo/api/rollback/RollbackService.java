@@ -5,16 +5,14 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -57,13 +55,13 @@ public class RollbackService {
             rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
 
             // Validate request parameters from vendor (Non-database related)
-            this.doValidation(rollbackDto);
+//            this.doValidation(rollbackDto);
 
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(rollbackDto, gameSession);
+//            this.doVerification(rollbackDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
@@ -83,14 +81,7 @@ public class RollbackService {
                  InvalidOperatorResponseException |
                  BetNotFoundException |
                  CouchbaseDataIntegrityException |
-                 JsonProcessingException |
-                 InvalidPlayerException |
-                 CurrencyNotSupportedException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidRequestException |
-                 DisabledVendorLineException |
-                 CredentialNotFoundException e) {
+                 JsonProcessingException e) {
 
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
@@ -106,33 +97,33 @@ public class RollbackService {
         return vo;
     }
 
-    private void doValidation(RollbackDto dto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(dto);
-    }
+//    private void doValidation(RollbackDto dto) throws InvalidRequestException {
+//        // General validation
+//        ValidationUtils.validateRequest(dto);
+//    }
 
-    private void doVerification(RollbackDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
-
-        // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
-
-        //Verify received brand is same with credential
-        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
-        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
-    }
+//    private void doVerification(RollbackDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
+//            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
+//        //validate vendor username, agent vendor line, player status, and game status
+//        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
+//
+//        // Verify vendor currency
+//        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
+//
+//        // Verify vendor line is active
+//        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+//
+//        // Verify agent player is active
+//        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+//
+//        // Verify vendor game is active
+//        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+//
+//        // Verify vendor currency
+//        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
+//
+//        //Verify received brand is same with credential
+//        String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
+//        ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
+//    }
 }
