@@ -152,7 +152,7 @@ public class CreditAction extends CommonDto {
         com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
         // Verify valid bet type id
-        VendorService.verifyDebitBetTypeId(dto.getBetTypeID());
+        VendorService.verifyCreditBetTypeId(dto.getBetTypeID());
     }
 
     private ResultType getResultType(CreditDto dto) {
