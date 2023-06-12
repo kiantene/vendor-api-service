@@ -80,7 +80,9 @@ public class DebitAction {
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     break;
                 default:
+                    httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
+                    httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
                     balance = betEvent.getLastBalance();
                     break;
             }
