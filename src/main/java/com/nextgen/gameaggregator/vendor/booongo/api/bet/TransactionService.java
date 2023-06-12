@@ -117,7 +117,7 @@ public class TransactionService {
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
         }catch(NullPointerException exception){
-            // this exception will happen when the data is exits id DB
+            // this exception will happen when the data is exits in DB
             balance = getCurrentBalance(traceId,gameSession);
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
         }
@@ -141,7 +141,7 @@ public class TransactionService {
         BigDecimal winAmount = new BigDecimal(transactionDto.getArgs().getWin());
 
         // If win amount is not equal to zero meant win(sometimes result in win but lose money)
-        if (winAmount.compareTo(zero) > 0) { // Win amount greater than 0 ~ BET_WIN
+        if (winAmount.compareTo(zero) > 0 || !transactionDto.getArgs().getRound_started()) { // Win amount greater than 0 ~ BET_WIN & it is free spin or jackpot
             resultType = ResultType.BET_WIN;
         }
 
