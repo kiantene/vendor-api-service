@@ -73,8 +73,10 @@ public class TransactionService {
             this.doVerification(transactionDto, gameSession);
 
             // Check result type
-            Integer isBet = getResultType(transactionDto);
-            ResultType resultType = vendorService.calculateResultType(transactionDto.getBetAmount(), transactionDto.getWinAmount(), transactionDto.getJackpotAmount(), isBet);
+//            Integer isBet = getResultType(transactionDto);
+//            ResultType resultType = vendorService.calculateResultType(transactionDto.getBetAmount(), transactionDto.getWinAmount(), transactionDto.getJackpotAmount(), isBet);
+
+            ResultType resultType = getResultType(transactionDto);
 
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
@@ -134,16 +136,31 @@ public class TransactionService {
         return vo;
     }
 
-    private Integer getResultType(TransactionDto transactionDto){
-        Integer isBet = 0;
+    private ResultType getResultType(TransactionDto transactionDto) {
 
-        // check the transaction is first record or not(first record got included bet)
-        if(transactionDto.getArgs().getRound_started() == true){
-            isBet = 1;
+        ResultType resultType = ResultType.BET_LOSE; // Default value is lose
+        BigDecimal zero = BigDecimal.ZERO;
+
+        BigDecimal winAmount = new BigDecimal(transactionDto.getArgs().getWin());
+
+        // If win amount is not equal to zero meant win(sometimes result in win but lose money)
+        if (winAmount.compareTo(zero) > 0) { // Win amount greater than 0 ~ BET_WIN
+            resultType = ResultType.BET_WIN;
         }
 
-        return isBet;
+        return resultType;
     }
+
+//    private Integer getResultType(TransactionDto transactionDto){
+//        Integer isBet = 0;
+//
+//        // check the transaction is first record or not(first record got included bet)
+//        if(transactionDto.getArgs().getRound_started() == true){
+//            isBet = 1;
+//        }
+//
+//        return isBet;
+//    }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession){
 
