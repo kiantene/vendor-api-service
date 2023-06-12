@@ -72,12 +72,7 @@ public class TransactionService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionDto, gameSession);
 
-            // Check result type
-//            Integer isBet = getResultType(transactionDto);
-//            ResultType resultType = vendorService.calculateResultType(transactionDto.getBetAmount(), transactionDto.getWinAmount(), transactionDto.getJackpotAmount(), isBet);
-
             ResultType resultType = getResultType(transactionDto);
-
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -98,6 +93,12 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
+        }catch(NullPointerException exception){
+            // this exception happen due to our call logic didn't handle it as well
+            balance = getCurrentBalance(traceId,gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
         }catch (InvalidOperatorResponseException |
                 CouchbaseDataIntegrityException |
                 DisabledVendorLineException |
@@ -109,6 +110,7 @@ public class TransactionService {
                 DisabledGameException |
                 InvalidRequestException |
                 BetNotFoundException |
+                BetResultIdempotentViolationException |
                 GameNotSupportedException |
                 JsonProcessingException |
                 CredentialNotFoundException e) {
@@ -119,10 +121,6 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch(BetResultIdempotentViolationException exception){
-            // this exception will happen when the data is exits in DB
-            balance = getCurrentBalance(traceId,gameSession);
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
         }
 //        catch(Exception exception){
 //            httpService.logError(httpRequestLog, exception);
@@ -150,17 +148,6 @@ public class TransactionService {
 
         return resultType;
     }
-
-//    private Integer getResultType(TransactionDto transactionDto){
-//        Integer isBet = 0;
-//
-//        // check the transaction is first record or not(first record got included bet)
-//        if(transactionDto.getArgs().getRound_started() == true){
-//            isBet = 1;
-//        }
-//
-//        return isBet;
-//    }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession){
 
