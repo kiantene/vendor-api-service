@@ -1,20 +1,20 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.gameurl;
 
-import java.util.Map;
-
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.service.RequestService;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -47,13 +47,14 @@ public class GameUrlService implements GameUrl {
 
         String API_URL = credentials.get(Credentials.API_URL);
         String PROJECT_NAME = credentials.get(Credentials.PROJECT_NAME);
+        String WL = credentials.get(Credentials.WL);
         String token = formData.get("token").get(0);
         String platform = formData.get("platform").get(0);
         String gameCode = formData.get("gameCode").get(0);
         String lang = formData.get("lang").get(0);
 
         //combine all string and generate game url
-        gameUrlVo.setGameUrl(VendorService.generateGameUrl(API_URL, PROJECT_NAME, token, platform, gameCode, lang));
+        gameUrlVo.setGameUrl(VendorService.generateGameUrl(API_URL, PROJECT_NAME, token, platform, gameCode, lang, WL));
 
         return gameUrlVo;
     }
