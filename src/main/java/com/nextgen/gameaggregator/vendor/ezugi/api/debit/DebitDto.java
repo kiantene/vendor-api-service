@@ -94,7 +94,7 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        if(betTypeID.equals(BetTypeID.TIP)){
+        if(betTypeID.equals(BetTypeID.DEBIT_TIP)){
             return getTimestamp();
         }
         return null;
@@ -112,7 +112,7 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if(betTypeID.equals(BetTypeID.TIP)){
+        if(betTypeID.equals(BetTypeID.DEBIT_TIP)){
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;

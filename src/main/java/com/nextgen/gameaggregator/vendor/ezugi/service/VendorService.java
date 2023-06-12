@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.ezugi.service;
 
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
@@ -52,5 +54,19 @@ public class VendorService extends BaseVendorService {
         byte[] digest = md.digest(queryString.getBytes(StandardCharsets.UTF_8));
         String sha256 = DatatypeConverter.printHexBinary(digest).toLowerCase();
         return sha256;
+    }
+    public static boolean verifyDebitBetTypeId(Integer betTypeId) throws InvalidFormatException {
+        String betType = BetTypeID.VALID_DEBIT_BET_TYPE_ID.get(betTypeId);
+        if (betType == null){
+            throw new InvalidFormatException();
+        }
+        return true;
+    }
+    public static boolean verifyCreditBetTypeId(Integer betTypeId) throws InvalidFormatException {
+        String betType = BetTypeID.VALID_CREDIT_BET_TYPE_ID.get(betTypeId);
+        if (betType == null){
+            throw new InvalidFormatException();
+        }
+        return true;
     }
 }

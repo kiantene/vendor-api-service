@@ -116,6 +116,10 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid Hash");
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidFormatException e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Invalid Bet Type");
+            httpService.logError(httpRequestLog, e);
         } catch (MergedBetDataIntegrityException | RecordNotFoundException |
                  InvalidAgentApiCredentialException | CredentialNotFoundException | InvalidKeyException |
                  CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
@@ -136,7 +140,7 @@ public class CreditAction extends CommonDto {
     }
 
     private void doVerification(CreditDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException {
+            throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException {
         // Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
 
@@ -146,6 +150,9 @@ public class CreditAction extends CommonDto {
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+
+        // Verify valid bet type id
+        VendorService.verifyDebitBetTypeId(dto.getBetTypeID());
     }
 
     private ResultType getResultType(CreditDto dto) {

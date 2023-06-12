@@ -12,8 +12,8 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,13 +76,11 @@ public class DebitAction {
             // Get walletBalance
             BigDecimal balance = BigDecimal.ZERO;
             switch (debitDto.getBetTypeID()) {
-                case BetTypeID.TIP:
+                case BetTypeID.DEBIT_TIP:
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     break;
                 default:
-                    httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
-                    httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
                     balance = betEvent.getLastBalance();
                     break;
             }
@@ -109,7 +107,7 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Hash");
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e){
+        } catch (InvalidRequestException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             if (e.getValidation() != null) {
                 String violation = e.getValidation()
@@ -120,6 +118,10 @@ public class DebitAction {
                         .orElse(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode())); // if there's no value, set it to the default invalid request parameter
                 debitVo.setErrorDescription(violation);
             }
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidFormatException e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            debitVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
@@ -143,7 +145,7 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
@@ -154,5 +156,8 @@ public class DebitAction {
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+
+        // Verify valid bet type id
+        VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());
     }
 }

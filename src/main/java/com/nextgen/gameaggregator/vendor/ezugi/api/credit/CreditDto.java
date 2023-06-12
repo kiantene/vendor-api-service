@@ -12,7 +12,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-import net.bytebuddy.implementation.bind.annotation.IgnoreForBinding;
 
 import java.math.BigDecimal;
 
@@ -42,6 +41,8 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     private Double creditAmount;
     @NotNull
     private Integer returnReason;
+    @NotNull
+    private Integer betTypeID;
     private String gameDataString;
     private GameDataStringDto gameDataStringDto;
 
