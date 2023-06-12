@@ -72,7 +72,9 @@ public class TransactionService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionDto, gameSession);
 
-            ResultType resultType = getResultType(transactionDto);
+            // Check result type
+            Integer isBet = getResultType(transactionDto);
+            ResultType resultType = vendorService.calculateResultType(transactionDto.getBetAmount(), transactionDto.getWinAmount(), transactionDto.getJackpotAmount(), isBet);
 
             balance = walletService.processBetResult(traceId, gameSession, transactionDto, resultType, vendorService, httpRequestLog);
 
@@ -105,7 +107,6 @@ public class TransactionService {
                 DisabledGameException |
                 InvalidRequestException |
                 BetNotFoundException |
-                BetResultIdempotentViolationException |
                 GameNotSupportedException |
                 JsonProcessingException |
                 CredentialNotFoundException e) {
@@ -116,7 +117,7 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch(NullPointerException exception){
+        }catch(BetResultIdempotentViolationException exception){
             // this exception will happen when the data is exits in DB
             balance = getCurrentBalance(traceId,gameSession);
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -133,19 +134,15 @@ public class TransactionService {
         return vo;
     }
 
-    private ResultType getResultType(TransactionDto transactionDto) {
+    private Integer getResultType(TransactionDto transactionDto){
+        Integer isBet = 0;
 
-        ResultType resultType = ResultType.BET_LOSE; // Default value is lose
-        BigDecimal zero = BigDecimal.ZERO;
-
-        BigDecimal winAmount = new BigDecimal(transactionDto.getArgs().getWin());
-
-        // If win amount is not equal to zero meant win(sometimes result in win but lose money)
-        if (winAmount.compareTo(zero) > 0 || !transactionDto.getArgs().getRound_started()) { // Win amount greater than 0 ~ BET_WIN & it is free spin or jackpot
-            resultType = ResultType.BET_WIN;
+        // check the transaction is first record or not(first record got included bet)
+        if(transactionDto.getArgs().getRound_started() == true){
+            isBet = 1;
         }
 
-        return resultType;
+        return isBet;
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession){
