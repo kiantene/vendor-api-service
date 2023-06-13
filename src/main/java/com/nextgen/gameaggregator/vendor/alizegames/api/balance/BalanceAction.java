@@ -67,6 +67,7 @@ public class BalanceAction {
             responseVo.setUsername(dto.getUsername());
             responseVo.setBalance(balance);
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);

@@ -11,4 +11,5 @@ public class BalanceVo extends ResponseVo {
     private String username;
     private BigDecimal balance;
     private String currency;
+    private Long timestamp;
 }
