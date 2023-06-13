@@ -54,7 +54,7 @@ public class CancelBetNSettleAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUsername());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
