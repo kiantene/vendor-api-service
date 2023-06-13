@@ -26,7 +26,6 @@ public class AuthenticateDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String username;
 
-    @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String currency;
 

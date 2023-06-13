@@ -55,7 +55,7 @@ public class AuthenticateAction {
             responseVo.setResponseCode(ResponseCode.SUCCESS);
             responseVo.setToken(gameSession.getToken());
             responseVo.setUsername(dto.getUsername());
-            responseVo.setCurrency(dto.getCurrency());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setOperatorId(dto.getOperatorId());
             responseVo.setTimestamp(System.currentTimeMillis());
 
