@@ -15,7 +15,7 @@ public class BalanceDto {
     private String token;
 
     @NotBlank
-    private String operator;
+    private String operatorId;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed

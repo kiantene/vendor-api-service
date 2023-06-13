@@ -14,5 +14,5 @@ public class DataVo {
     private String currency;
     private Long timestamp;
     private String token;
-    private String operator;
+    private String operatorId;
 }

@@ -40,7 +40,7 @@ public class BetNSettleDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
-    private String operator;
+    private String operatorId;
 
     @NotNull
     private BigDecimal stake;
