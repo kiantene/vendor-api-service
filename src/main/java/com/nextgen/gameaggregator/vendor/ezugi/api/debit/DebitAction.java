@@ -123,9 +123,13 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e){
+            debitVo.setErrorCode(ResponseCodes.OK);
+            debitVo.setErrorDescription("Transaction already processed");
+            httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
-                 BetResultIdempotentViolationException | InvalidAgentApiCredentialException |
+                 InvalidAgentApiCredentialException |
                  DisabledVendorLineException | CredentialNotFoundException | InvalidKeyException |
                  CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);

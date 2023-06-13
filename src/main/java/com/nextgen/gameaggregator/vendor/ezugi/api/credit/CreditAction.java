@@ -104,9 +104,13 @@ public class CreditAction extends CommonDto {
         } catch (InvalidPlayerException e) {
             creditVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (BetResultIdempotentViolationException | BetRefundIdempotentViolationException e){
+        } catch (BetRefundIdempotentViolationException e) {
             creditVo.setErrorCode(ResponseCodes.OK);
             creditVo.setErrorDescription("Transaction already processed");
+            httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Debit Transaction already processed");
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | InvalidRequestException e) {
             creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
