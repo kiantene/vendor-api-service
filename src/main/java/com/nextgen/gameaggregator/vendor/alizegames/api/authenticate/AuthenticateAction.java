@@ -34,7 +34,7 @@ public class AuthenticateAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    @PostMapping(path = Endpoints.LOGIN)
+    @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo<DataVo> authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
