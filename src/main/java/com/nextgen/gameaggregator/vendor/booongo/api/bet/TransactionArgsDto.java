@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.booongo.dto.PlayerDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -7,6 +8,7 @@ import lombok.Data;
 import java.math.BigInteger;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionArgsDto {
 
     private String bet;

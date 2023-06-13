@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.rollback;
 
-import jakarta.validation.constraints.*;
-import lombok.Data;
-import java.math.BigInteger;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.booongo.dto.PlayerDto;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
+
+import java.math.BigInteger;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RollbackArgsDto {
     @NotBlank
     private String transaction_uid;
