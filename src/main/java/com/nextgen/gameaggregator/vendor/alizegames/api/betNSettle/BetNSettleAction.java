@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,10 +38,9 @@ public class BetNSettleAction {
     private VendorService vendorService;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
-    public ResponseVo<DataVo> betResult(HttpServletRequest request) {
+    public ResponseVo betResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
-        DataVo data = new DataVo();
+        BetNSettleVo responseVo = new BetNSettleVo();
         String traceId = httpRequestLog.getId();
 
         try {
@@ -64,22 +62,20 @@ public class BetNSettleAction {
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 6. Set response data
-            data.setUsername(dto.getUsername());
-            data.setBalance(balance);
-            data.setCurrency(dto.getCurrency());
-            data.setTimestamp(System.currentTimeMillis());
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setData(data);
+            responseVo.setBalance(balance);
+            responseVo.setUsername(dto.getUsername());
+            responseVo.setCurrency(dto.getCurrency());
+            responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // Return original result when idempotent
             RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
-            data.setUsername(String.valueOf(rawBetResultLog.getVendorPlayerId()));
-            data.setBalance(rawBetResultLog.getBalance());
-            data.setCurrency(rawBetResultLog.getVendorCurrencyCode());
-            data.setTimestamp(System.currentTimeMillis());
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setData(data);
+            responseVo.setBalance(rawBetResultLog.getBalance());
+            responseVo.setUsername(String.valueOf(rawBetResultLog.getAgentPlayerId()));
+            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.ERROR);

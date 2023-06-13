@@ -9,10 +9,9 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ResponseVo<T> implements HttpResponse {
-    private Integer code;
-    private String status;
-    private T data;
+public class ResponseVo implements HttpResponse {
+    private Integer error;
+    private String message;
 
     @JsonIgnore
     private ResponseCode responseCode;
@@ -23,8 +22,8 @@ public class ResponseVo<T> implements HttpResponse {
 
     public void setResponseCode(ResponseCode responseCode) {
         this.responseCode = responseCode;
-        this.code = responseCode.code;
-        this.status = responseCode.description;
+        this.error = responseCode.code;
+        this.message = responseCode.description;
     }
 
     @Override

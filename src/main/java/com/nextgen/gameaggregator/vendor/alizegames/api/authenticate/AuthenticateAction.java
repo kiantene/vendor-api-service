@@ -13,8 +13,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.DataVo;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +33,9 @@ public class AuthenticateAction {
     private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
-    public ResponseVo<DataVo> authenticate(HttpServletRequest request) {
+    public AuthenticateVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
-        DataVo data = new DataVo();
+        AuthenticateVo responseVo = new AuthenticateVo();
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -55,13 +52,12 @@ public class AuthenticateAction {
             this.doVerification(dto, gameSession);
 
             // 5. Set response data
-            data.setToken(dto.getToken());
-            data.setUsername(dto.getUsername());
-            data.setCurrency(gameSession.getVendorCurrencyCode());
-            data.setOperatorId(dto.getOperatorId());
-            data.setTimestamp(System.currentTimeMillis());
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setData(data);
+            responseVo.setToken(gameSession.getToken());
+            responseVo.setUsername(dto.getUsername());
+            responseVo.setCurrency(dto.getCurrency());
+            responseVo.setOperatorId(dto.getOperatorId());
+            responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setResponseCode(ResponseCode.ERROR);

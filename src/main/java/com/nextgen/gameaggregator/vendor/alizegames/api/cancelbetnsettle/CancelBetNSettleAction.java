@@ -17,8 +17,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.DataVo;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +37,9 @@ public class CancelBetNSettleAction {
     private ValidationService validationService;
 
     @PostMapping(path = Endpoints.CANCEL_BET_N_SETTLE)
-    public ResponseVo<DataVo> action(HttpServletRequest request) {
+    public CancelBetNSettleVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
-        DataVo data = new DataVo();
+        CancelBetNSettleVo responseVo = new CancelBetNSettleVo();
         String traceId = httpRequestLog.getId();
 
         try {
@@ -63,12 +60,11 @@ public class CancelBetNSettleAction {
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
 
             // 6. Set response data
-            data.setUsername(dto.getUsername());
-            data.setBalance(balance);
-            data.setCurrency(gameSession.getVendorCurrencyCode());
-            data.setTimestamp(System.currentTimeMillis());
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setData(data);
+            responseVo.setBalance(balance);
+            responseVo.setUsername(dto.getUsername());
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setTimestamp(System.currentTimeMillis());
         
         } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
@@ -87,7 +83,7 @@ public class CancelBetNSettleAction {
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             RawBetRefundLog rawBetRefundLog = betRefundIdempotentViolationException.getBetRefundLog();
-            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.ERROR);

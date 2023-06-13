@@ -15,8 +15,6 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.DataVo;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -39,11 +37,13 @@ public class BalanceAction {
     private AgentPlayerService agentPlayerService;
 
     @PostMapping(path = Endpoints.BALANCE)
-    public ResponseVo<DataVo> balance(HttpServletRequest request) {
+    public BalanceVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
-        DataVo data = new DataVo();
+        BalanceVo responseVo = new BalanceVo();
         String traceId = httpRequestLog.getId();
+        responseVo.setUsername("");
+        responseVo.setBalance(BigDecimal.ZERO);
+        responseVo.setCurrency("");
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -63,12 +63,10 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             // 6. Set response data
-            data.setUsername(dto.getUsername());
-            data.setBalance(balance);
-            data.setCurrency(gameSession.getVendorCurrencyCode());
-            data.setTimestamp(System.currentTimeMillis());
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setData(data);
+            responseVo.setUsername(dto.getUsername());
+            responseVo.setBalance(balance);
+            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
