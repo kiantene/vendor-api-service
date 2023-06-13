@@ -10,13 +10,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.RawBetResultLog;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
-//import com.nextgen.gameaggregator.vendor.alizegames.constant.Credentials;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
-//import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
+import com.nextgen.gameaggregator.vendor.alizegames.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,88 +34,94 @@ public class BetNSettleAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
+    private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
-    public ResponseVo betResult(HttpServletRequest request) {
+    public ResponseVo<DataVo> betResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        BetNSettleVo responseVo = new BetNSettleVo();
+        ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
+        DataVo data = new DataVo();
         String traceId = httpRequestLog.getId();
 
         try {
-            // Retrieve request body in original string format and convert into dto
+            // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             BetNSettleDto dto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
 
-            log.info(dto.toString());
-            // 1. Validate request parameters (Non-database calls)
-//            this.doValidation(dto);
+            // 2. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
-            // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUsername());
+            // 3. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // 4. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-            responseVo.setOperatorId(dto.getOperatorId());
-            responseVo.setToken(dto.getToken());
-            responseVo.setCurrency(dto.getCurrency());
-            responseVo.setUsername(dto.getUsername());
-            responseVo.setTimestamp(System.currentTimeMillis());
-            responseVo.setError(0);
-            responseVo.setMessage("Success Operation");
-
-            // 3. Verify remaining parameters (Verify against database values)
-//            this.doVerification(httpRequestLog, dto, gameSession);
-
-            // 4. Send win result to Operator
+            // 5. Send win result to Operator
             Integer isBet = 1;
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            responseVo.setBalance(balance);
-
-//            String transactionId = VendorService.getTransactionId(traceId);
+            // 6. Set response data
+            data.setUsername(dto.getUsername());
+            data.setBalance(balance);
+            data.setCurrency(dto.getCurrency());
+            data.setTimestamp(System.currentTimeMillis());
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setData(data);
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
-            // duplicate bet result received, do not process but return original transaction id back to vendor
+            // Return original result when idempotent
             RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
-//            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
-//            responseVo.setCash(rawBetResultLog.getBalance());
+            data.setUsername(String.valueOf(rawBetResultLog.getVendorPlayerId()));
+            data.setBalance(rawBetResultLog.getBalance());
+            data.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            data.setTimestamp(System.currentTimeMillis());
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setData(data);
 
-//        } catch (InvalidRequestException invalidRequestException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-//            if (invalidRequestException.getValidation() != null) {
-//                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
-//            }
-//        } catch (CredentialNotFoundException credentialNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-//
-//        } catch (InvalidPlayerException invalidPlayerException) {
-//            responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-//
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
-//
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-//
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
-//
-//        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//
-//        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
-//
-//        } catch (BetNotFoundException betNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+        } catch (InvalidSignatureException invalidSignatureException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
+
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+            
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+        
+        } catch (DisabledGameException disabledGameException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+            responseVo.setResponseCode(ResponseCode.ERROR);
             httpService.logError(httpRequestLog, exception);
         }
 
@@ -122,31 +129,15 @@ public class BetNSettleAction {
         return responseVo;
     }
 
-//    private void doValidation(BetNSettleDto dto) throws InvalidRequestException, InvalidPlayerException {
-//        // General validation
-//        ValidationUtils.validateRequest(dto);
-//        // Validation with custom exception
-//        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-//        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
-//        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
-//    }
+    private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
+            // General validation
+            ValidationUtils.validateRequest(dto);
+    }
 
-//    private void doVerification(HttpRequestLog request, BetNSettleDto dto, GameSession gameSession) throws
-//            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException {
-//
-//        // 1. Verify received username is the same from game session
-//        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-//
-//        // 2. Verify received game id is the same from game session
-//        //TODO: review this exception
-//        if (!gameSession.getVendorGameCode().equals("101")) {
-//            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-//        }
-//
-//        // 3. Retrieve vendor line credentials and secretKey for hash validation
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-//
-//        // 4. Verify request signature is valid
-//        VendorService.verifyHash(request.getRequestBody(), secretKey);
-//    }
+    private void doVerification(HttpRequestLog request, BetNSettleDto dto, GameSession gameSession) throws
+            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+
+            validationService.validateEligibleBet(gameSession, dto.getUsername());
+    }
 }

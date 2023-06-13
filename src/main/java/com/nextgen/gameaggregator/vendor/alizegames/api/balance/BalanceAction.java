@@ -1,20 +1,25 @@
 package com.nextgen.gameaggregator.vendor.alizegames.api.balance;
 
+import java.math.BigDecimal;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.alizegames.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -28,109 +33,87 @@ public class BalanceAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-
+    @Autowired
+    private VendorGameService vendorGameService;
     @Autowired
     private AgentPlayerService agentPlayerService;
 
     @PostMapping(path = Endpoints.BALANCE)
-    public ResponseVo balance(HttpServletRequest request) {
+    public ResponseVo<DataVo> balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        BalanceVo responseVo = new BalanceVo();
+        ResponseVo<DataVo> responseVo = new ResponseVo<DataVo>();
+        DataVo data = new DataVo();
         String traceId = httpRequestLog.getId();
 
         try {
-            // Retrieve request body in original string format and convert into dto
+            // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
-            // 1. Validate request parameters (Non-database calls)
-//            this.doValidation(dto);
+            // 2. Validate request parameters (Non-database calls)
+            this.doValidation(dto);
 
-            // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUsername());
+            // 3. Verify session token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            // 3. Verify remaining parameters (Verify against database values)
-//            this.doVerification(httpRequestLog, dto, gameSession);
-
+            // 4. Verify remaining parameters (Verify against database values)
+            this.doVerification(dto, gameSession);
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            responseVo.setOperatorId(dto.getOperatorId());
-            responseVo.setCurrency(dto.getCurrency());
-            responseVo.setToken(dto.getToken());
-            responseVo.setUsername(dto.getUsername());
-            responseVo.setBalance(balance);
-            responseVo.setTimestamp(System.currentTimeMillis());
+            // 6. Set response data
+            data.setUsername(dto.getUsername());
+            data.setBalance(balance);
+            data.setCurrency(gameSession.getVendorCurrencyCode());
+            data.setTimestamp(System.currentTimeMillis());
+            responseVo.setResponseCode(ResponseCode.SUCCESS);
+            responseVo.setData(data);
 
-//        } catch (InvalidRequestException invalidRequestException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-//            if (invalidRequestException.getValidation() != null) {
-//                httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
-//            }
-//
-//        } catch (InvalidPlayerException invalidPlayerException) {
-//            responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-//
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
-//
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
-//
-//        } catch (CredentialNotFoundException credentialNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
-//            httpService.logError(httpRequestLog, credentialNotFoundException);
-//
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-//
-//        } catch (InvalidAgentApiCredentialException e) {
-//            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
-//
-//        } catch (DisabledVendorLineException disabledVendorLineException) {
-//            //TODO to be discuss the response code
-//            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
-//
-//        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-//            responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (JsonProcessingException jsonProcessingException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (DisabledGameException disabledGameException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
-        httpService.end(httpRequestLog, responseVo);
         return responseVo;
     }
 
-//    private void doValidation(BalanceDto dto) throws InvalidRequestException, InvalidPlayerException {
-//        // General validation
-//        ValidationUtils.validateRequest(dto);
-//        // Validation with custom exception
-//        ValidationUtils.validateLength(dto.getUserId(), 3, 20, InvalidPlayerException::new);
-//        //TODO (by Alex), get the provider ID from vendor_line_credentials tables
-//        ValidationUtils.isEquals(dto.getProviderId(), Credentials.PROVIDER_ID);
-//    }
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
 
-//    private void doVerification(HttpRequestLog request, BalanceDto dto, GameSession gameSession) throws
-//            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, DisabledAgentPlayerException,
-//            DisabledVendorLineException {
-//        // 1. Verify received username is the same from game session
-//        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
-//
-//        // 2. Verify vendor line is active
-//        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-//
-//        // 3. Retrieve vendor line credentials and secretKey for hash validation
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
-//
-//        // 4. Verify request signature is valid
-//        VendorService.verifyHash(request.getRequestBody(), secretKey);
-//
-//        // 4. Verify agent player is active
-//        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-//    }
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException, 
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+        // Verify received vendor player username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+    }
 }
