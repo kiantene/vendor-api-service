@@ -91,8 +91,8 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch(NullPointerException exception){
-            // this exception happen due to our call logic didn't handle it as well
+        }catch(BetResultIdempotentViolationException exception){
+            // this exception happened when handle repeated data
             balance = getCurrentBalance(traceId,gameSession);
 
             // Retrieve current wallet balance
@@ -102,7 +102,6 @@ public class TransactionService {
                 InvalidAgentApiCredentialException |
                 MergedBetDataIntegrityException |
                 BetNotFoundException |
-                BetResultIdempotentViolationException |
                 JsonProcessingException e) {
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
@@ -132,7 +131,7 @@ public class TransactionService {
         BigDecimal winAmount = new BigDecimal(transactionDto.getArgs().getWin());
 
         // If win amount is not equal to zero meant win(sometimes result in win but lose money)
-        if (winAmount.compareTo(zero) > 0) { // Win amount greater than 0 ~ BET_WIN
+        if (winAmount.compareTo(zero) > 0 || !transactionDto.getArgs().getRound_started()) { // Win amount greater than 0 or not first record of round data
             resultType = ResultType.BET_WIN;
         }
 
