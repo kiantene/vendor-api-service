@@ -5,7 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
@@ -60,13 +60,13 @@ public class WalletBalanceAction {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
-        headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.WALLET_BALANCE)
-                .header(Endpoints.HEADER_SIGNATURE, signature)
+                .uri(EndPoints.WALLET_BALANCE)
+                .header(EndPoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))
@@ -74,13 +74,13 @@ public class WalletBalanceAction {
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
-                .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .retry(3)
                 .block();
         long endTime = System.currentTimeMillis();
 
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                Endpoints.WALLET_BALANCE, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                EndPoints.WALLET_BALANCE, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {

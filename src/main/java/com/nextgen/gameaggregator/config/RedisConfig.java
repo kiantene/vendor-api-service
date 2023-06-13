@@ -101,6 +101,8 @@ public class RedisConfig extends CachingConfigurerSupport {
 
         Map<String, RedisCacheConfiguration> cacheNamesConfigurationMap = new HashMap<>();
 
+        cacheNamesConfigurationMap.put("rawResultLog", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofSeconds(20)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("SettledBet", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("ResultBet", RedisCacheConfiguration.defaultCacheConfig()

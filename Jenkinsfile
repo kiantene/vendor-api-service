@@ -29,11 +29,12 @@ pipeline {
         JENKINS_CREDENTIALS = 'GA-AWS'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
         AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
+
         AWS_ECS_REGION = 'ap-east-1' // Hong Kong
         AWS_ECS_COMPATIBILITY = 'FARGATE'
         AWS_ECS_NETWORK_MODE = 'awsvpc'
-        AWS_ECS_CPU = '4096'
-        AWS_ECS_MEMORY = '8192'
+        AWS_ECS_CPU = '2048'
+        AWS_ECS_MEMORY = '4096'
         AWS_ECS_EXECUTION_ROL = 'arn:aws:iam::634937900606:role/devops_ecs_cicd'
         AWS_ECS_TASK_DEFINITION = ''
         AWS_ECS_CLUSTER = ''
@@ -42,6 +43,9 @@ pipeline {
         SONAR_PROJECTKEY = 'game-aggregator'
         SONAR_HOST_URL = 'http://192.168.88.112:9000'
         SONAR_LOGIN = credentials('sonar_token')
+
+        QA_LOGIN_SERVER = 'root@35.77.164.118'
+        PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
     }
 
     stages {
@@ -76,13 +80,8 @@ pipeline {
             }
             steps {
                 script {
-                    sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                        sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@47.254.202.80:/root/vendor-api/app.jar'
-                    }
-                }
-                script {
                     sshagent(credentials: ['tokyo_key']) {
-                        sh 'scp -o StrictHostKeyChecking=no ./target/*.jar root@35.77.164.118:/root/vendor-api/app.jar'
+                        sh "scp -o StrictHostKeyChecking=no ./target/*.jar ${QA_LOGIN_SERVER}:/root/vendor-api/app.jar"
                     }
                 }
             }
@@ -122,11 +121,8 @@ pipeline {
             }
             steps {
                 script {
-                    sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                        sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
-                    }
                     sshagent(credentials: ['tokyo_key']) {
-                        sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
+                        sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
                     }
                 }
             }
@@ -151,18 +147,15 @@ pipeline {
             }
         }
 
-        stage('Deploy in Alibaba Cloud') {
+        stage('Deploy in QA Server') {
             when {
                 branch 'qa'
             }
             steps {
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
-                        sshagent(credentials: ['CD_PRIVATE_KEY']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no root@47.254.202.80 'docker service update --force --image local-ga-vendor-api-service:qa game-aggregator_ga-vendor-api-service'"
-                        }
                         sshagent(credentials: ['tokyo_key']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no root@35.77.164.118 'docker service update --force --image local-ga-vendor-api-service:qa vendor-api_main-service'"
+                            sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa ${PORTAINER_SERVICE_NAME}'"
                         }
                     }
                 }
@@ -208,7 +201,7 @@ pipeline {
                 case 'qa':
                 case 'pt':
                 case 'devops':
-                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130', link: "${currentBuild.absoluteUrl}", showChangeset: true
+                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130', link: currentBuild.absoluteUrl, result: currentBuild.currentResult, showChangeset: true
                         break
                 }
             }

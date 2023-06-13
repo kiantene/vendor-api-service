@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.AuthenticationService;
@@ -48,16 +48,16 @@ public class WalletWinAction {
 
         String responseString = WebClient.create(agentApiCredential.getCallbackUrl())
                 .post()
-                .uri(Endpoints.WALLET_WIN)
+                .uri(EndPoints.WALLET_WIN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .header(Endpoints.HEADER_SIGNATURE, signature)
+                .header(EndPoints.HEADER_SIGNATURE, signature)
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
                 // TODO: to catch more error codes
                 .onStatus(HttpStatus.BAD_REQUEST::equals, response -> Mono.empty())
                 .bodyToMono(String.class)
-                .timeout(Duration.ofMillis(Endpoints.TIMEOUT)) // TODO: timeout constant
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT)) // TODO: timeout constant
                 .block();
         try {
             responseVo = new Gson().fromJson(responseString, WalletBalanceVo.class);
@@ -74,11 +74,11 @@ public class WalletWinAction {
                     (!responseVo.getData().getCurrency().equals(dto.getCurrency()))) {
                 throw new InvalidOperatorResponseException(responseVo.toString(), responseVo.getStatus().code);
             } else {
-                operatorRequestService.operatorResponseLogging(true, Endpoints.WALLET_WIN, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
+                operatorRequestService.operatorResponseLogging(true, EndPoints.WALLET_WIN, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
             }
 
         } catch (JsonSyntaxException | InvalidOperatorResponseException exception) {
-            operatorRequestService.operatorResponseLogging(false, Endpoints.WALLET_WIN, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
+            operatorRequestService.operatorResponseLogging(false, EndPoints.WALLET_WIN, agentApiCredential.getCallbackUrl(), dto, responseString, profilesActive);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
         }
 
