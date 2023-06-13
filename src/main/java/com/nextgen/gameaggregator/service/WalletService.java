@@ -208,7 +208,7 @@ public class WalletService {
                         }
 
                         //handle if settle end/lose resultType having isFreeSpin = 1.
-                        unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1)?betResultData.getIsFreespin():unsettledBet.getIsFreespin());
+                        unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1) ? betResultData.getIsFreespin() : unsettledBet.getIsFreespin());
 
                         settledBet = new SettledBet(unsettledBet, vendorService);
                         settledBet.setInternalTransactionId(traceId);
@@ -250,7 +250,7 @@ public class WalletService {
                 }
 
                 //if settled bet with resultType = WIN, then will prepare betResultDataForOperator in the switch case.
-                if(resultType != ResultType.WIN) {
+                if (resultType != ResultType.WIN) {
                     betResultDataForOperator = settledBet;
                 }
 
@@ -258,11 +258,11 @@ public class WalletService {
                 betResultDataForOperator = new UnsettledBet(betResultData);
                 betResultDataForOperator.setInternalTransactionId(traceId);
 
+                // Idempotent checks
+                this.idempotentCheckForBetResult(gameSession, betResultData);
+
                 switch (resultType) {
                     case WIN, LOSE -> { // PP Win
-                        // Idempotent checks
-                        this.idempotentCheckForBetResult(gameSession, betResultData);
-
                         // check if bet record exists
                         unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
 
@@ -307,6 +307,12 @@ public class WalletService {
             // record operator processing time
             httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
             if (!isBetExistsForUnsettledBet) {
+                if (!isSettled) {
+                    unsettledBet.setOperatorStatus(0);
+                    unsettledBetService.update(unsettledBet);
+                    betResultLogService.create(traceId, unsettledBet.getBetId(), betResultData, gameSession, BigDecimal.ZERO);
+
+                }
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betResultDataForOperator, resultType);
                 cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
             } else {
@@ -358,6 +364,7 @@ public class WalletService {
             } else { // Unsettled
                 switch (resultType) {
                     case WIN, LOSE -> { // PP WIN
+                        unsettledBet.setOperatorStatus(1);
                         unsettledBetService.update(unsettledBet);
 
                         // Create result_log record in couchbase for idempotent checks
@@ -533,7 +540,7 @@ public class WalletService {
                 Long rollbackTimestamp = Optional.ofNullable(rollbackData.getVendorSettledTime()).orElse(settledBet.getVendorSettleTime());
 
                 //if data is exists on redis and status equal to cancel bet, then considered as duplicate rollback request.
-                if(settledBet.getStatus() == BetStatus.CANCELLED.code){
+                if (settledBet.getStatus() == BetStatus.CANCELLED.code) {
                     traceId = settledBet.getInternalTransactionId();
                     WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, rollbackTimestamp);
                     balance = balanceVo.getData().getBalance();
