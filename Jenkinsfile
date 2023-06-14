@@ -72,7 +72,7 @@ pipeline {
                             String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
                             sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                             sh "mvn versions:set -DnewVersion=$VERSION_NUMBER"
-                            sh 'mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests'
+                            sh 'mvn clean package spring-boot:repackage -U -f ./pom.xml -DskipTests'
                         }
                     }
                 }
@@ -104,7 +104,7 @@ pipeline {
                             String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
                             sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                             sh "mvn versions:set -DnewVersion=$VERSION_NUMBER"
-                            sh 'mvn package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
+                            sh 'mvn clean package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
                         }
                     }
                 }
