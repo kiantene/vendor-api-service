@@ -59,23 +59,18 @@ pipeline {
         }
 
         stage('Build Project') {
-            when {
-                not {
-                    branch 'main'
-                }
-            }
             steps {
                 script {
-                    String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
-                    String pom_file = getPomFile(env.BRANCH_NAME)
+                    String branchName = env.BRANCH_NAME
+                    String couchbase_cert_file_id = getCouchbaseCertId(branchName)
+                    String pom_file = getPomFile(branchName)
 
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
-                        configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
-                            String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
-                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
-                            sh "mvn versions:set -DnewVersion=$VERSION_NUMBER"
-                            sh "mvn clean package spring-boot:repackage -U -f ${pom_file} -DskipTests"
-                        }
+                        String versionTag = getVersionTag(branchName)
+
+                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
+                        sh "mvn versions:set -DnewVersion=$versionTag"
+                        sh "mvn clean package spring-boot:repackage -U -f ${pom_file} -DskipTests"
                     }
                 }
             }
@@ -170,13 +165,10 @@ pipeline {
             steps {
                 script {
                     withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
-                        configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
-                            String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+                            String versionTag = getVersionTag('stg')
                             String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
-                            String versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
                             sh "git tag -a ${versionTag} -m '${commitMessage}'"
                             sh "git push origin ${versionTag}"
-                        }
                     }
                 }
             }
@@ -285,4 +277,24 @@ String getPomFile(String branchName) {
     }
 
     return file
+}
+
+String getVersionTag(String branchName) {
+    String versionTag = '0.0.1'
+
+    configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
+        String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+        switch (branchName) {
+            case 'main':
+                versionTag = "$VERSION_NUMBER"
+                break
+            case 'stg':
+            case 'qa':
+            case 'pt':
+                versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
+                break
+        }
+    }
+
+    return versionTag
 }
