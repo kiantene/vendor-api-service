@@ -10,4 +10,7 @@ public class Endpoints {
     public static final String BALANCE = "balance";
     public static final String BET_N_SETTLE = "betNSettle";
     public static final String CANCEL_BET_N_SETTLE = "cancelBetNSettle";
+    public static final String PLACE_BET = "placeBet";
+    public static final String SETTLE_BET = "settleBet";
+    public static final String CANCEL_BET = "cancelBet";
 }

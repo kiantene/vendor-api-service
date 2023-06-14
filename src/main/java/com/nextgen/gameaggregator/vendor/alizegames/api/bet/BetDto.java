@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.alizegames.api.betNSettle;
+package com.nextgen.gameaggregator.vendor.alizegames.api.bet;
 
 import java.math.BigDecimal;
 
@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetNSettleDto implements BetResultData {
+public class BetDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String betId;
@@ -46,75 +46,58 @@ public class BetNSettleDto implements BetResultData {
     private BigDecimal stake;
 
     @NotNull
-    private BigDecimal winloss;
-
-    @NotNull
-    private BigDecimal payout;
-
-    @NotNull
-    private Long betTime;
-
-    @NotNull
-    private Long processedTime;
-
-    @NotNull
     private Long timestamp;
 
-    private String info;
+    private String ip;
 
     @Override
     public String getExternalTransactionId() {
-        return this.betId;
+        return betId;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
-    }
-
-    @Override
-    public String getRoundId() {
-        return this.roundId;
+        return betId;
     }
 
     @Override
     public String getGameId() {
-        return this.gameCode;
+        return gameCode;
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.stake;
+        return stake;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.payout;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.winloss;
-    }
-
-    @Override
-    public BigDecimal getEffectiveTurnover() {
         return null;
     }
 
     @Override
+    public BigDecimal getEffectiveTurnover() {
+        return stake;
+    }
+
+    @Override
     public Long getVendorBetTime() {
-        return this.betTime;
+        return timestamp;
     }
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return this.processedTime;
+        return null;
     }
 
     @Override
@@ -129,6 +112,6 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

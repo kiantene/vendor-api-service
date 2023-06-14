@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.alizegames.api.betNSettle;
+package com.nextgen.gameaggregator.vendor.alizegames.api.result;
 
 import java.math.BigDecimal;
 
@@ -12,7 +12,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetNSettleDto implements BetResultData {
+public class SettleDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String betId;
@@ -46,75 +46,71 @@ public class BetNSettleDto implements BetResultData {
     private BigDecimal stake;
 
     @NotNull
-    private BigDecimal winloss;
-
-    @NotNull
     private BigDecimal payout;
 
     @NotNull
-    private Long betTime;
-
-    @NotNull
-    private Long processedTime;
+    private BigDecimal winloss;
 
     @NotNull
     private Long timestamp;
 
     private String info;
 
+    private String ip;
+
     @Override
     public String getExternalTransactionId() {
-        return this.betId;
+        return betId;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
+        return betId;
     }
 
     @Override
     public String getRoundId() {
-        return this.roundId;
+        return roundId;
     }
 
     @Override
     public String getGameId() {
-        return this.gameCode;
+        return gameCode;
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.stake;
+        return stake;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.payout;
+        return payout;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.winloss;
+        return winloss;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return stake;
     }
 
     @Override
     public Long getVendorBetTime() {
-        return this.betTime;
+        return null;
     }
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis();
+        return timestamp;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return this.processedTime;
+        return timestamp;
     }
 
     @Override

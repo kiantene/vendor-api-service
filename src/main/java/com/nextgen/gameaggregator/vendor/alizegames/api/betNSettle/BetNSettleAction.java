@@ -17,7 +17,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
-import com.nextgen.gameaggregator.vendor.alizegames.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.alizegames.vo.CommonVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +38,9 @@ public class BetNSettleAction {
     private VendorService vendorService;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
-    public ResponseVo betResult(HttpServletRequest request) {
+    public CommonVo betResult(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        BetNSettleVo responseVo = new BetNSettleVo();
+        CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
 
         try {

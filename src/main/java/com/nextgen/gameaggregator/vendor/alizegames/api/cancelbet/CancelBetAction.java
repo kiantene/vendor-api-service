@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.alizegames.api.balance;
+package com.nextgen.gameaggregator.vendor.alizegames.api.cancelbet;
 
 import java.math.BigDecimal;
 
@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.alizegames.service.VendorService;
 import com.nextgen.gameaggregator.vendor.alizegames.vo.CommonVo;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class CancelBetAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -31,14 +32,12 @@ public class BalanceAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
+    private VendorService vendorService;
     @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-
-    @PostMapping(path = Endpoints.BALANCE)
-    public CommonVo balance(HttpServletRequest request) {
+    private ValidationService validationService;
+    
+    @PostMapping(path = Endpoints.CANCEL_BET)
+    public CommonVo cancelBet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
@@ -46,7 +45,7 @@ public class BalanceAction {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            CancelBetDto dto = HttpService.convertJsonToDto(body, CancelBetDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -55,41 +54,67 @@ public class BalanceAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUsername());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // 5. Process rollback
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setUsername(dto.getUsername());
             responseVo.setBalance(balance);
+            responseVo.setUsername(dto.getUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setTimestamp(System.currentTimeMillis());
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (DisabledVendorLineException disabledVendorLineException) {
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+            
+        } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
+        } catch (RecordNotFoundException recordNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+           responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+           responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
+        
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
             responseVo.setResponseCode(ResponseCode.ERROR);
-            
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
@@ -97,20 +122,15 @@ public class BalanceAction {
         return responseVo;
     }
 
-    private void doValidation(BalanceDto dto) throws InvalidRequestException {
-        // General validation
-        ValidationUtils.validateRequest(dto);
+    private void doValidation(CancelBetDto dto) throws InvalidRequestException {
+            // General validation
+            ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
-        // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+    private void doVerification(HttpRequestLog request, CancelBetDto dto, GameSession gameSession) throws
+            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
+            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+
+            validationService.validateEligibleBet(gameSession, dto.getUsername());
     }
 }
