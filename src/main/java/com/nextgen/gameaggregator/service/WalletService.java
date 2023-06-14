@@ -261,6 +261,9 @@ public class WalletService {
                 // Idempotent checks
                 this.idempotentCheckForBetResult(gameSession, betResultData);
 
+                // create bet result log first with betId = 0
+                betResultLogService.create(traceId, "0", betResultData, gameSession, BigDecimal.ZERO);
+
                 switch (resultType) {
                     case WIN, LOSE -> { // PP Win
                         // check if bet record exists
@@ -299,6 +302,10 @@ public class WalletService {
                     default -> log.warn("ProcessBetResult.exception -> result not handled");
                 }
 
+                // create unsettledBet first with betId = 0
+                unsettledBet.setOperatorStatus(0);
+                unsettledBetService.update(unsettledBet);
+
                 // insert into unsettled_bet_result
 //                unsettledBetService.update(unsettledBet);
                 // 5. Prepare to send this transaction to operator as win
@@ -307,12 +314,6 @@ public class WalletService {
             // record operator processing time
             httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
             if (!isBetExistsForUnsettledBet) {
-                if (!isSettled) {
-                    unsettledBet.setOperatorStatus(0);
-                    unsettledBetService.update(unsettledBet);
-                    betResultLogService.create(traceId, unsettledBet.getBetId(), betResultData, gameSession, BigDecimal.ZERO);
-
-                }
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betResultDataForOperator, resultType);
                 cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
             } else {
