@@ -202,6 +202,25 @@ pipeline {
                 }
             }
         }
+
+        stage('Tagging') {
+            when {
+                branch 'stg'
+            }
+            steps {
+                script {
+                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
+                        configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
+                            String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+                            String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
+                            String versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
+                            sh "git tag -a ${versionTag} -m '${commitMessage}'"
+                            sh "git push origin ${versionTag}"
+                        }
+                    }
+                }
+            }
+        }
     }
 
     post {
