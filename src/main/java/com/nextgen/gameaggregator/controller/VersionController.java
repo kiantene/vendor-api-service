@@ -10,6 +10,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequestMapping(path = "version/")
@@ -55,13 +58,18 @@ public class VersionController {
     public String info() {
         String checksum = "-";
         String algorithm = "SHA-256";
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.of("UTC"));
+        ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, formatter);
+        zonedDateTime = zonedDateTime.withZoneSameInstant(ZoneId.of("Asia/Singapore"));
+        String timezoneTimestamp = zonedDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd K:mm:ssa z"));
         try {
             checksum = calculateChecksum(checksumPath, algorithm);
         } catch (Exception e) {
             e.printStackTrace();
         }
         String message = String.format(
-                "Build Version: %s<br>Checksum: %s<br>Build Time: %s", version, checksum, timestamp);
+                "Build Version: %s<br>Checksum: %s<br>Build Time: %s", version, checksum, timezoneTimestamp);
         return message;
     }
 }
