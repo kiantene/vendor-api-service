@@ -13,10 +13,12 @@ pipeline {
     }
 
     options {
+        // Show running stages only
+        skipDefaultStage()
         // Keep up to 10 build logs
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        // Disable concurrent builds to avoid race conditions
-        disableConcurrentBuilds()
+        // Disable concurrent builds to avoid race conditions and aboard previous builds
+        disableConcurrentBuilds(abortPrevious: true)
         // Set a timeout of 1 hour
         timeout(time: 1, unit: 'HOURS')
         // Add timestamps to build output
@@ -269,7 +271,6 @@ String getRepoTag(String branchName) {
             break
     }
 
-    // String packageVersion = sh(script: "git describe --tags --always --dirty", returnStdout: true)
     return packageVersion
 }
 
@@ -283,25 +284,11 @@ def getECSConfig(String branchName) {
                 'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
             ]
             break
-        case 'qa':
-            config = [
-                'AWS_ECS_CLUSTER=qa',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=qa-vendor-api-service-td'
-            ]
-            break
         case 'pt':
             config = [
                 'AWS_ECS_CLUSTER=pt',
                 'AWS_ECS_SERVICE=vendor-api-service',
                 'AWS_ECS_TASK_DEFINITION=pt-vendor-api-service-td'
-            ]
-            break
-        case 'devops':
-            config = [
-                'AWS_ECS_CLUSTER=ga-ecs-cluster',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=devo-vendor-api-service-td'
             ]
             break
     }
@@ -318,7 +305,6 @@ String getCouchbaseCertId(String branchName) {
         case 'stg':
         case 'qa':
         case 'pt':
-        case 'devops':
             file = 'couchbase_cert_file'
             break
     }
