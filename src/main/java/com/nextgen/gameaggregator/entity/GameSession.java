@@ -46,5 +46,6 @@ public class GameSession {
         this.agentPlayerUsername = endRoundSettledBet.getAgentPlayerUsername();
         this.currencyCode = endRoundSettledBet.getCurrencyCode();
         this.gameCode = endRoundSettledBet.getGameCode();
+        this.token = endRoundSettledBet.getGameSessionToken();
     }
 }
