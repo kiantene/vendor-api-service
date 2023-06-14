@@ -4,19 +4,32 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 
 @RestController
 @RequestMapping(path = "version/")
 @Slf4j
 public class VersionController {
+    @Autowired
+    private Environment environment;
+
+    @Value("${mavenTimestamp}")
+    private String timestamp;
+
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
+
+    @Value("${checksum}")
+    private String checksum;
 
     @GetMapping(path = "info")
     public String info() {
-        String version = "1.0.13.1";
-        String checksum = "2c9bb26333c460d75062f29929abf6578237de5a6019a3d0c849965dd6867c68";
-        String versionLabel = "Build Version: " + version;
-        String checksumLabel = "Checksum: " + checksum;
+        String version = environment.getProperty("project.version");
 
-        return versionLabel + "<br>" + checksumLabel;
+        String message = String.format(
+                "Build Version: %s<br>Checksum: %s<br>Build Time: %s", version, checksum, timestamp);
+        return message;
     }
 }
