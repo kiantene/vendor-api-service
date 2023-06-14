@@ -70,7 +70,7 @@ pipeline {
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
                         configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
                             def VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
-                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn versions:set -DnewVersion=$VERSION_NUMBER package spring-boot:repackage -U -f ./pom.xml -DskipTests -Dspring.version'
+                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn versions:set -DnewVersion=$VERSION_NUMBER && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests'
                         }
                     }
                 }
@@ -100,7 +100,7 @@ pipeline {
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
                         configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
                             def VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
-                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn versions:set -DnewVersion=$VERSION_NUMBER package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
+                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn versions:set -DnewVersion=$VERSION_NUMBER && mvn package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
                         }
                     }
                 }
