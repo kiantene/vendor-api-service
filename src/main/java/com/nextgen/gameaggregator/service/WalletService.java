@@ -314,12 +314,6 @@ public class WalletService {
             // record operator processing time
             httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
             if (!isBetExistsForUnsettledBet) {
-                if (!isSettled) {
-                    unsettledBet.setOperatorStatus(0);
-                    unsettledBetService.update(unsettledBet);
-                    betResultLogService.create(traceId, unsettledBet.getBetId(), betResultData, gameSession, BigDecimal.ZERO);
-
-                }
                 balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, betResultDataForOperator, resultType);
                 cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
             } else {
