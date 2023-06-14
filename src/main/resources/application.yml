@@ -13,7 +13,9 @@ server:
     threads:
       min-spare: 150 # Default: 10 (Minimum amount of worker threads.)
       max: 150 # Default: 200 (Maximum amount of worker threads.)
-mavenTimestamp: @timestamp@
+mavenTimestamp: '@timestamp@'
+version: '@project.version@'
+checksumPath: target/game-aggregator-vendor-api-service-0.0.1-SNAPSHOT.jar
 sas:
   enabled: false
 spring:

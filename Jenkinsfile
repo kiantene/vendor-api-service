@@ -68,7 +68,12 @@ pipeline {
                 script {
                     String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
-                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests'
+                        configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
+                            String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
+                            sh "mvn versions:set -DnewVersion=$VERSION_NUMBER"
+                            sh 'mvn clean package spring-boot:repackage -U -f ./pom.xml -DskipTests'
+                        }
                     }
                 }
             }
@@ -95,7 +100,12 @@ pipeline {
                 script {
                     String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
-                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
+                        configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
+                            String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
+                            sh "mvn versions:set -DnewVersion=$VERSION_NUMBER"
+                            sh 'mvn clean package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
+                        }
                     }
                 }
             }
@@ -187,6 +197,25 @@ pipeline {
                                 String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
                                 sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Tagging') {
+            when {
+                branch 'stg'
+            }
+            steps {
+                script {
+                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
+                        configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
+                            String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+                            String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
+                            String versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
+                            sh "git tag -a ${versionTag} -m '${commitMessage}'"
+                            sh "git push origin ${versionTag}"
                         }
                     }
                 }
