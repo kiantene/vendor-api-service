@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -44,9 +47,11 @@ public class TransactionDto implements BetResultData {
     private String provider_name;
 
     @NotBlank
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$")
     private String c_at;
 
     @NotBlank
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$")
     private String sent_at;
 
     @NotNull

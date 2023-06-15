@@ -61,8 +61,6 @@ public class LoginService {
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
 
-            System.out.println(gameSession);
-
             // Verify remaining parameters (Verify against database values)
             this.doVerification(loginDto, gameSession);
 
