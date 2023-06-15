@@ -49,11 +49,6 @@ public class KafkaConsumerService {
             //2. get agentPlayerUsername, currencyCode and gameCode into gameSession for walletBetResultAction.call
             GameSession gameSession = new GameSession(endRoundSettledBet);
 
-            //temp log, will delete
-            if(gameSession.getToken() == null){
-                log.warn("missing token roundId = "+endRoundSettledBet.getRoundId()+" betId = "+endRoundSettledBet.getVendorBetId()+ " gameSession = "+gameSession);
-            }
-
             //3. convert endRoundSettledBet back to settledBet
             SettledBet settledBet = new SettledBet(endRoundSettledBet);
             vendorBetId = settledBet.getVendorBetId();
