@@ -1,32 +1,31 @@
-package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
+package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import java.math.BigDecimal;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
-import com.nextgen.gameaggregator.vendor.mg.constant.EventType;
+import com.nextgen.gameaggregator.vendor.mg.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
-public class WinDataDto implements BetResultData  {
-    @NotBlank
-    @Size(max = 6)
+public class UpdateBalanceDto implements BetResultData {
+    @NotNull
     private TxnType txnType;
 
     @NotBlank
-    @Size(max = 50)
-    private EventType txnEventType;
+    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$") //checks whether the input matches one of the given types(case-insensitive)
+    private String txnEventType;
 
     @NotBlank
     @Size(max = 50)
     private String playerId;
     
     @NotNull
-    @Positive
+    @PositiveOrZero
     private BigDecimal amount;
 
     @NotBlank
@@ -47,16 +46,16 @@ public class WinDataDto implements BetResultData  {
     @Size(max = 256)
     private String roundId;
 
-    private String metaData;
+    private MetaDataDto metadata;
 
-    @Size(max = 7)
     private DeviceType deviceType;
 
-    private String platformType;
+    private PlatformType platformType;
 
-    @Min(value = 0)
-    @Max(value = 1)
-    private Integer completed;
+    @NotNull
+    private Boolean completed;
+
+    private String transNum;
 
     @Size(max = 50)
     private String channel;
@@ -64,17 +63,25 @@ public class WinDataDto implements BetResultData  {
     @NotNull
     private Long creationTimeMs;
 
+    private Long creationTime;
+
     @Size(max = 50)
     @Pattern(regexp = "^[A-Za-z0-9_,~().!\\*'\\:@;-]*$")
     private String extOperatorToken;
 
+
     @Override
     public String getExternalTransactionId() {
-        return betId;
+        return txnId;
     }
 
     @Override
     public String getVendorBetId() {
+        return betId;
+    }
+
+    @Override
+    public String getRoundId() {
         return betId;
     }
 
@@ -85,12 +92,12 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        return amount;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return amount;
+        return null;
     }
 
     @Override
@@ -125,11 +132,11 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return (getMetadata() != null && Boolean.TRUE.equals(getMetadata().getIsFreeGame())) ? 1 : 0;
     }
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

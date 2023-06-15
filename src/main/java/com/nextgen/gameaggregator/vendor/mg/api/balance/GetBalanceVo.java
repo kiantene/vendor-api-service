@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.mg.api.login;
+package com.nextgen.gameaggregator.vendor.mg.api.balance;
 
 import java.math.BigDecimal;
 
@@ -9,10 +9,9 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class LoginVo implements HttpResponse {
+public class GetBalanceVo implements HttpResponse {
     private String currency;
     private BigDecimal balance;
-    private String extOperatorToken;
 
     @Override
     public boolean hasError() {

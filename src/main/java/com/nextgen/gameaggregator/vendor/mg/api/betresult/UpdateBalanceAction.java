@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.mg.api.updateBalance;
+package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
 import java.math.BigDecimal;
 
@@ -35,11 +35,7 @@ public class UpdateBalanceAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
     
@@ -50,57 +46,63 @@ public class UpdateBalanceAction {
 
         // Get start time of request
         long startTime = System.currentTimeMillis();
-        // Get the request body and trace ID from the logging
-        String body = httpRequestLog.getRequestBody();
+        // Get the trace ID from the logging
         String traceId = httpRequestLog.getId();
-        HttpStatus status;
+        HttpStatus status = HttpStatus.OK;
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
-        status = HttpStatus.OK;
 
         try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
             // Convert the request body to a UpdateBalanceDto object
             UpdateBalanceDto dto = HttpService.convertJsonToDto(body, UpdateBalanceDto.class);
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Get GameSession by vendor player username
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
-            // Verify remaining parameters (Verify against database values)
-            this.doVerification(dto, gameSession);
-            status = HttpStatus.OK;
-            
             switch (dto.getTxnType()) {
                 case DEBIT -> {
+                    validationService.validateEligibleBet(gameSession, dto.getPlayerId());
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(betEvent.getLastBalance());
-                    break;
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    if (dto.getCompleted() == false) {
-                        walletService.processBetResult(traceId, gameSession, winDataDto,
-                            (dto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, httpRequestLog);
-                    } else {
-                        walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.END, vendorService, httpRequestLog);
-                    }
-                    break;
+                    ResultType resultType = determineResultType(dto);
+                    BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
+                    updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
+                    updateBalanceVo.setBalance(balance);
                 }
                 default -> {
                     status = HttpStatus.BAD_REQUEST;
                 }
             }
-            
-        } catch (JsonProcessingException| InvalidOperatorResponseException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException e){
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
-        } catch (InsufficientBalanceException e) {
+
+        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
+            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
+            DisabledGameException badRequestException) {
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
             status = HttpStatus.PAYMENT_REQUIRED;
-        } catch (AuthenticationException| BetNotFoundException e) {
+
+        } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException playerNotFoundException) {
             status = HttpStatus.NOT_FOUND;
-        } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException e) {
+
+        } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException internalErrorException) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (Exception exception) { // any other exception encountered
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            httpService.logError(httpRequestLog, exception);
+
+        } finally {
+            httpService.end(httpRequestLog, updateBalanceVo);
         }
 
         // Calculate response time and add it to the headers
@@ -113,20 +115,12 @@ public class UpdateBalanceAction {
         return new ResponseEntity<>(updateBalanceVo, headers, status);
     }
 
-    private void doValidation(UpdateBalanceDto dto) throws InvalidRequestException{
+    private void doValidation(UpdateBalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(UpdateBalanceDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
-        // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), AuthenticationException::new);
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+    private ResultType determineResultType(UpdateBalanceDto dto) {
+        return dto.getCompleted() ? ResultType.END : (dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE);
     }
 }
