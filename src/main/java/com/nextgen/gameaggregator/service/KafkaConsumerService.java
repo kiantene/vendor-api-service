@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.eventing.events.ResultBetOperatorFailEvent;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,11 +48,6 @@ public class KafkaConsumerService {
 
             //2. get agentPlayerUsername, currencyCode and gameCode into gameSession for walletBetResultAction.call
             GameSession gameSession = new GameSession(endRoundSettledBet);
-
-            //temp log, will delete
-            if(gameSession.getToken() == null){
-                log.warn("missing token roundId = "+endRoundSettledBet.getRoundId()+" betId = "+endRoundSettledBet.getVendorBetId()+ " gameSession = "+gameSession);
-            }
 
             //3. convert endRoundSettledBet back to settledBet
             SettledBet settledBet = new SettledBet(endRoundSettledBet);
