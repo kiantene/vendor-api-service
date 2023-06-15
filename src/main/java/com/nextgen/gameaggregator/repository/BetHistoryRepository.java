@@ -59,8 +59,11 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "bh.round_id AS externalRoundId, " +
             "bh.vendor_bet_id AS externalTransactionId, " +
             "ap.username AS username, " +
+            "bh.currency_id AS currencyId, " +
+            "vc.vendor_currency_code AS vendorCurrencyCode, " +
             "c.code AS currencyCode, " +
             "vg.code AS gameCode, " +
+            "bh.vendor_id AS vendorId, " +
             "v.code AS vendorCode, " +
             "gc.code AS gameCategoryCode, " +
             "bh.bet_amount AS betAmount, " +
@@ -81,6 +84,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "INNER JOIN vendor_games AS vg ON vg.id = bh.vendor_game_id " +
             "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
             "INNER JOIN game_categories AS gc ON gc.id = vg.game_category_id " +
+            "INNER JOIN vendor_currencies AS vc ON vc.vendor_id = bh.vendor_id AND vc.currency_id = bh.currency_id " +
             "WHERE bh.id = :betId AND bh.agent_id = :agentId", nativeQuery=true)
     IBetDetailUrlInfo findByIdAndAgentId (
             @Param("agentId") int agentId,
