@@ -82,7 +82,7 @@ public class HttpService {
                             requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
                         }
 
-                        log.info(requestLog.toString());
+                        log.info("HttpRequestLog -> (" + requestLog.getUrl() + ") - " + requestLog);
                         kafkaService.send(requestLog);
                         httpRequestLogRepository.save(requestLog);
 

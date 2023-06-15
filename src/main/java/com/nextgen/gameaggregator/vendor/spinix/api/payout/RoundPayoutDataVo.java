@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spinix.api.bet;
+package com.nextgen.gameaggregator.vendor.spinix.api.payout;
 
 import lombok.Data;
 
