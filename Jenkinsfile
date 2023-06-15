@@ -15,8 +15,8 @@ pipeline {
     options {
         // Keep up to 10 build logs
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        // Disable concurrent builds to avoid race conditions
-        disableConcurrentBuilds()
+        // Disable concurrent builds to avoid race conditions and aboard previous builds
+        disableConcurrentBuilds(abortPrevious: true)
         // Set a timeout of 1 hour
         timeout(time: 1, unit: 'HOURS')
         // Add timestamps to build output
@@ -59,43 +59,18 @@ pipeline {
         }
 
         stage('Build Project') {
-            when {
-                not {
-                    branch 'main'
-                }
-            }
             steps {
                 script {
-                    String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
-                    withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
-                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom.xml -DskipTests'
-                    }
-                }
-            }
-        }
+                    String branchName = env.BRANCH_NAME
+                    String couchbase_cert_file_id = getCouchbaseCertId(branchName)
+                    String pom_file = getPomFile(branchName)
 
-        stage('Copy jar file to QA') {
-            when {
-                branch 'qa'
-            }
-            steps {
-                script {
-                    sshagent(credentials: ['tokyo_key']) {
-                        sh "scp -o StrictHostKeyChecking=no ./target/*.jar ${QA_LOGIN_SERVER}:/root/vendor-api/app.jar"
-                    }
-                }
-            }
-        }
-
-        stage('Build Prod Project') {
-            when {
-                branch 'main'
-            }
-            steps {
-                script {
-                    String couchbase_cert_file_id = getCouchbaseCertId(env.BRANCH_NAME)
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
-                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem && mvn package spring-boot:repackage -U -f ./pom-deploy.xml -DskipTests'
+                        String versionTag = getVersionTag(branchName)
+
+                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
+                        sh "mvn versions:set -DnewVersion=$versionTag"
+                        sh "mvn clean package spring-boot:repackage -U -f ${pom_file} -DskipTests"
                     }
                 }
             }
@@ -115,14 +90,21 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image For QA') {
+        stage('Copy jar file to QA & Build Docker Image For QA & Deploy in QA Server') {
             when {
                 branch 'qa'
             }
             steps {
                 script {
                     sshagent(credentials: ['tokyo_key']) {
+                        // Copy jar file to Server
+                        sh "scp -o StrictHostKeyChecking=no ./target/*.jar ${QA_LOGIN_SERVER}:/root/vendor-api/app.jar"
+
                         sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
+
+                        sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa ${PORTAINER_SERVICE_NAME}'"
+                        // TODO: Temporary solution, need to remove when done callback migrate (This is /vendor service)
+                        sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa vendor-api_sub-service'"
                     }
                 }
             }
@@ -142,23 +124,6 @@ pipeline {
                         String login = ecrLogin()
                         sh("#!/bin/sh -e\n${login}") // hide logging
                         docker.image("${AWS_ECR_URL}:${packageVersion}").push()
-                    }
-                }
-            }
-        }
-
-        stage('Deploy in QA Server') {
-            when {
-                branch 'qa'
-            }
-            steps {
-                withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
-                    script {
-                        sshagent(credentials: ['tokyo_key']) {
-                            sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa ${PORTAINER_SERVICE_NAME}'"
-                            // TODO: Temporary solution, need to remove when done callback migrate (This is /vendor service)
-                            sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa vendor-api_sub-service'"
-                        }
                     }
                 }
             }
@@ -188,6 +153,22 @@ pipeline {
                                 sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        stage('Tagging') {
+            when {
+                branch 'stg'
+            }
+            steps {
+                script {
+                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
+                            String versionTag = getVersionTag('stg')
+                            String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
+                            sh "git tag -a ${versionTag} -m '${commitMessage}'"
+                            sh "git push origin ${versionTag}"
                     }
                 }
             }
@@ -240,7 +221,6 @@ String getRepoTag(String branchName) {
             break
     }
 
-    // String packageVersion = sh(script: "git describe --tags --always --dirty", returnStdout: true)
     return packageVersion
 }
 
@@ -254,25 +234,11 @@ def getECSConfig(String branchName) {
                 'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
             ]
             break
-        case 'qa':
-            config = [
-                'AWS_ECS_CLUSTER=qa',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=qa-vendor-api-service-td'
-            ]
-            break
         case 'pt':
             config = [
                 'AWS_ECS_CLUSTER=pt',
                 'AWS_ECS_SERVICE=vendor-api-service',
                 'AWS_ECS_TASK_DEFINITION=pt-vendor-api-service-td'
-            ]
-            break
-        case 'devops':
-            config = [
-                'AWS_ECS_CLUSTER=ga-ecs-cluster',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=devo-vendor-api-service-td'
             ]
             break
     }
@@ -289,10 +255,46 @@ String getCouchbaseCertId(String branchName) {
         case 'stg':
         case 'qa':
         case 'pt':
-        case 'devops':
             file = 'couchbase_cert_file'
             break
     }
 
     return file
+}
+
+String getPomFile(String branchName) {
+    String file = './pom.xml'
+
+    switch (branchName) {
+        case 'main':
+            file = './pom-deploy.xml'
+            break
+        case 'stg':
+        case 'qa':
+        case 'pt':
+            file = './pom.xml'
+            break
+    }
+
+    return file
+}
+
+String getVersionTag(String branchName) {
+    String versionTag = '0.0.1'
+
+    configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
+        String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+        switch (branchName) {
+            case 'main':
+                versionTag = "$VERSION_NUMBER"
+                break
+            case 'stg':
+            case 'qa':
+            case 'pt':
+                versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
+                break
+        }
+    }
+
+    return versionTag
 }
