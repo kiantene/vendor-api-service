@@ -34,8 +34,8 @@ spring:
       resolve-lazily: true
   datasource:
     hikari:
-      maximum-pool-size: 100
-      minimum-idle: 50
+      maximum-pool-size: 50
+      minimum-idle: 20
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       jdbc-url:
