@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spinix.api.bet;
+package com.nextgen.gameaggregator.vendor.spinix.api.payout;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;

@@ -4,6 +4,8 @@ public class EndPoints {
 
     public static final Integer TIMEOUT = 10000;
 
+    public static final String HEADER_SIGNATURE = "x-gaming-signature";
+
     public static final String PATH = "api/v1/spinix";
     public static final String BALANCE = "/users/getBalance";
     public static final String ROUND = "/round/payout";
