@@ -70,6 +70,7 @@ pipeline {
 
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                         sh "mvn versions:set -DnewVersion=$versionTag"
+                        sh "mvn -f pom-deploy.xml versions:set -DnewVersion=$versionTag"
                         sh "mvn clean package spring-boot:repackage -U -f ${pom_file} -DskipTests"
                     }
                 }
