@@ -96,7 +96,9 @@ public class AuthenticationAction {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
+            if(authenticationVo.getErrorDescription()==null) {
+                authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
+            }
             httpService.end(httpRequestLog, authenticationVo);
         }
         return authenticationVo;
