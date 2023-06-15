@@ -160,7 +160,7 @@ public class CreditAction extends CommonDto {
     }
 
     private ResultType getResultType(CreditDto dto) {
-        ResultType resultType = ResultType.LOSE;
+        ResultType resultType = ResultType.END;
 
         BigDecimal winAmount = Optional.ofNullable(dto.getWinAmount()).orElse(BigDecimal.ZERO);
 
