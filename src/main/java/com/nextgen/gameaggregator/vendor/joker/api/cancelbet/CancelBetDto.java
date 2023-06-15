@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.joker.api.cancelbet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import jakarta.validation.constraints.*;
@@ -8,10 +9,10 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CancelBetDto {
+public class CancelBetDto implements RollbackData {
 
-    @NotBlank(message = ResponseCodes.INVALID_APPID)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
@@ -42,5 +43,15 @@ public class CancelBetDto {
     @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String roundid;
+
+    @Override
+    public String getRollbackId() {
+        return String.valueOf(this.username + "_" + this.betid);
+    }
+
+    @Override
+    public Long getVendorSettledTime() {
+        return this.timestamp;
+    }
 
 }
