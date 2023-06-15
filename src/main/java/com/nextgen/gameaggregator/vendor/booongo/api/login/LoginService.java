@@ -6,16 +6,18 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
-import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -59,6 +61,8 @@ public class LoginService {
             // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(loginDto.getToken());
 
+            System.out.println(gameSession);
+
             // Verify remaining parameters (Verify against database values)
             this.doVerification(loginDto, gameSession);
 
@@ -85,8 +89,24 @@ public class LoginService {
             vo.setTag("");
 
         }catch (AuthenticationException e) {
-            error.setCode("INVALID_TOKEN");
+            error.setCode(ResponseCodes.INVALID_TOKEN);
             vo.setError(error);
+        }catch(InvalidRequestException e){
+
+            if (e.getValidation() != null) {
+                String violation = e.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse(ResponseCodes.INVALID_TOKEN); // if there's no value, set it to the default invalid request parameter
+                error.setCode(violation);
+            } else {
+                error.setCode(ResponseCodes.INVALID_TOKEN);
+            }
+
+            vo.setError(error);
+
         } catch (DisabledAgentPlayerException |
                  DisabledGameException |
                  DisabledVendorLineException |
@@ -94,9 +114,8 @@ public class LoginService {
                  InvalidOperatorResponseException |
                  JsonProcessingException |
                  CredentialNotFoundException |
-                 InvalidRequestException |
                  GameNotSupportedException e) {
-            error.setCode("GAME_NOT_ALLOWED");
+            error.setCode(ResponseCodes.GAME_NOT_ALLOWED);
             vo.setError(error);
         }
 //        catch (Exception exception) {

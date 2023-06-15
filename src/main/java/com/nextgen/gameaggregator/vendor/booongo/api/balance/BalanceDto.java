@@ -14,11 +14,13 @@ public class BalanceDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(max = 35)
     private String uid;
+
+    @NotBlank
     private String token;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 32)
+    @Size(min = 32, max = 32)
     private String session;
 
     @NotBlank

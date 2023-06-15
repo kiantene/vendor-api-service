@@ -28,7 +28,7 @@ public class TransactionDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 32)
+    @Size(min = 32, max = 32)
     private String session;
 
     @NotBlank

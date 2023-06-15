@@ -2,7 +2,11 @@ package com.nextgen.gameaggregator.vendor.booongo.api.login;
 
 
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.*;
+import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -21,7 +25,7 @@ public class LoginDto {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 32)
+    @Size(min = 32 , max = 32, message = ResponseCodes.GAME_NOT_ALLOWED)
     private String session;
 
     @NotBlank
