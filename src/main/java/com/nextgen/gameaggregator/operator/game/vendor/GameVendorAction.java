@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
-import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -57,11 +57,11 @@ public class GameVendorAction {
             ValidationUtils.validateRequest(dto);
 
             // 2. Check if api key is valid
-            String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
+            String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
             // 3. Validate the signature
-            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
             // 5. check if platform supported

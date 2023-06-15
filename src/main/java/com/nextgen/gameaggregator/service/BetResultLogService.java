@@ -87,12 +87,14 @@ public class BetResultLogService {
         return rawResultBetRepository.findById(mergeId).orElse(null);
     }
 
+    @CachePut(value = "rawResultLog", key = "{#betResultData.externalTransactionId, #betResultData.roundId, #gameSession.vendorGameId, #gameSession.vendorPlayerId}", cacheManager = "cacheManager")
     public RawBetResultLog create(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
         RawBetResultLog entity = this.newRawBetResultLog(traceId, betId, betResultData, gameSession, balance);
         rawBetResultLogRepository.save(entity);
         return entity;
     }
 
+    @Cacheable(value = "rawResultLog", key = "{#transactionId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
     public RawBetResultLog checkExists(String transactionId, String roundId, String vendorGameId, String vendorPlayerId) {
         String id = this.generateId(transactionId, roundId, vendorGameId, vendorPlayerId);
 

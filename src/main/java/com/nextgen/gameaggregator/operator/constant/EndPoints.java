@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.operator.constant;
 
-public class Endpoints {
+public class EndPoints {
 
     public static final Integer TIMEOUT = 10000;
     public static final String HEADER_API_KEY = "X-API-Key";

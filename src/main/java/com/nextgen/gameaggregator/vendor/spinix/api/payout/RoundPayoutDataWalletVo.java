@@ -1,11 +1,11 @@
-package com.nextgen.gameaggregator.vendor.spinix.api.balance;
+package com.nextgen.gameaggregator.vendor.spinix.api.payout;
 
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
-public class BalanceDataWalletVo {
+public class RoundPayoutDataWalletVo {
 
     private String currency;
     private BigDecimal balance;
