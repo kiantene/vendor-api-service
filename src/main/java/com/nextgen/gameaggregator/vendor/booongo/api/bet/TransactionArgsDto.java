@@ -2,7 +2,8 @@ package com.nextgen.gameaggregator.vendor.booongo.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.booongo.dto.PlayerDto;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigInteger;
@@ -11,7 +12,11 @@ import java.math.BigInteger;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransactionArgsDto {
 
+    @Pattern(regexp = "^\\d+(\\.\\d+)?$")
     private String bet;
+
+    @NotNull
+    @Pattern(regexp = "^\\d+(\\.\\d+)?$")
     private String win;
 
     @NotNull
@@ -22,7 +27,8 @@ public class TransactionArgsDto {
 
     @NotNull
     private BigInteger round_id;
-    private Object bonus;
+
+//    private Object bonus;
 
     @NotNull
     private PlayerDto player;

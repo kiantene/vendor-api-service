@@ -77,14 +77,6 @@ public class TransactionService {
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-        }catch (AuthenticationException e) {
-            errorVo.setCode(ResponseCodes.TIME_EXCEED);
-
-            balance = getCurrentBalance(traceId,gameSession);
-
-            // Retrieve current wallet balance
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            vo.setError(errorVo);
         }catch (InsufficientBalanceException e) {
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
@@ -112,6 +104,7 @@ public class TransactionService {
                 BetNotFoundException |
                 GameNotSupportedException |
                 JsonProcessingException |
+                AuthenticationException |
                 CredentialNotFoundException e) {
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
@@ -165,6 +158,9 @@ public class TransactionService {
     private void doValidation(TransactionDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        //check object inside the dto
+        ValidationUtils.validateRequest(dto.getArgs());
     }
 
     private void doVerification(TransactionDto dto, GameSession gameSession) throws DisabledVendorLineException,
@@ -173,9 +169,8 @@ public class TransactionService {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
 
-        // Verify vendor gameCode, currency and platform
+        // Verify vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
