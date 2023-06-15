@@ -16,8 +16,9 @@ public class TokenDto {
     @Size(min = 1, max = 64, message = ResponseCodes.INVALID_TOKEN)
     private String token;
 
+    //TODO check valid IP
     @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = "^[a-zA-Z0-9_.:-]+$", message = ResponseCodes.IP_NOT_ALLOWED)
+    @Pattern(regexp = "^[a-zA-Z0-9_.:-]+$", message = ResponseCodes.INVALID_PARAMETERS)
     private String ip;
 
     @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
@@ -25,7 +26,7 @@ public class TokenDto {
     private Long timestamp;
 
     @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
