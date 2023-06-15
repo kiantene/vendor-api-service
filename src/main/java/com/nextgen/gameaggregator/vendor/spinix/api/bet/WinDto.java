@@ -14,23 +14,43 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class WinDto implements BetResultData {
+
+    // Request Id sent by vendor
     private String reqId;
+
+    // Id of the round
     private String roundId;
+
+    // Id of the win transaction
     private String id;
+
+    // Amount of the win transaction
     private BigDecimal amount;
+
+    // Result type of the bet record
     private ResultType resultType;
+
+    // Valid turnover of the bet record
     private BigDecimal validTurnover;
+
+    // Id of vendor's game
     private String gameId;
+
+    // Time of win transaction
     private Long timestamp;
 
-    @Override
-    public String getExternalTransactionId() {
-        return this.roundId;
-    }
+    // Bet status of the win record
+    private BetStatus betStatus;
+
+    // Whether the transaction is a free spin
+    private Integer freeSpin;
+
+    // External transaction id of the bet record
+    private String externalTransactionId;
 
     @Override
     public String getVendorBetId() {
-        return this.id;
+        return this.roundId;
     }
 
     @Override
@@ -45,6 +65,10 @@ public class WinDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
+        if (this.getBetStatus() == BetStatus.UNSETTLED) {
+            // return win loss as 0 if bet still not settled
+            return BigDecimal.ZERO;
+        }
         return this.amount;
     }
 
@@ -75,15 +99,12 @@ public class WinDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return this.freeSpin;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return this.betStatus;
     }
 }
 
