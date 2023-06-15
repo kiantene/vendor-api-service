@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
+import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
@@ -86,6 +86,10 @@ public class RollbackAction {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid Hash");
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidFormatException e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            rollbackVo.setErrorDescription("Invalid Amount");
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException | DisabledGameException |
                  DisabledAgentPlayerException | CurrencyNotSupportedException | RecordNotFoundException |
                  InvalidPlayerException | InvalidAgentApiCredentialException | CredentialNotFoundException |
@@ -106,7 +110,7 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 
@@ -115,6 +119,9 @@ public class RollbackAction {
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+
+        // validate rollback amount and debit amount is tally
+        vendorService.verifyRollbackAmount(rollbackdto, gameSession);
     }
 }

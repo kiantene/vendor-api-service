@@ -1,13 +1,19 @@
 package com.nextgen.gameaggregator.vendor.ezugi.service;
 
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.vendor.ezugi.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -24,6 +30,9 @@ import java.util.Map;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    private UnsettledBetService unsettledBetService;
+
     public static String generateGameUrl(String lobbyUrl, String playerGameSessionToken, String operatorId, String languageCode, String gameCode) {
         // form query string
         String loginUrl = lobbyUrl + "?token=" + playerGameSessionToken + "&operatorId=" + operatorId + "&language=" + languageCode + "&openTable=" + gameCode;
@@ -46,27 +55,37 @@ public class VendorService extends BaseVendorService {
 
     public static String generateRequestToken(MultiValueMap<String, String> params, Map<String, String> credentials) throws NoSuchAlgorithmException {
         List<String> values = new ArrayList<>();
-        for (String key : params.keySet()){
+        for (String key : params.keySet()) {
             values.add(key + "=" + params.getFirst(key));
         }
-        String queryString = credentials.get(Credentials.API_ACCESS)+String.join("&", values);
+        String queryString = credentials.get(Credentials.API_ACCESS) + String.join("&", values);
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         byte[] digest = md.digest(queryString.getBytes(StandardCharsets.UTF_8));
         String sha256 = DatatypeConverter.printHexBinary(digest).toLowerCase();
         return sha256;
     }
-    public static boolean verifyDebitBetTypeId(Integer betTypeId) throws InvalidFormatException {
+
+    public static void verifyDebitBetTypeId(Integer betTypeId) throws InvalidFormatException {
         String betType = BetTypeID.VALID_DEBIT_BET_TYPE_ID.get(betTypeId);
-        if (betType == null){
+        if (betType == null) {
             throw new InvalidFormatException();
         }
-        return true;
     }
-    public static boolean verifyCreditBetTypeId(Integer betTypeId) throws InvalidFormatException {
+
+    public static void verifyCreditBetTypeId(Integer betTypeId) throws InvalidFormatException {
         String betType = BetTypeID.VALID_CREDIT_BET_TYPE_ID.get(betTypeId);
-        if (betType == null){
+        if (betType == null) {
             throw new InvalidFormatException();
         }
-        return true;
+    }
+
+    public void verifyRollbackAmount(RollbackDto rollbackDto, GameSession gameSession) throws InvalidFormatException, BetNotFoundException {
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        String externalTransactionId = rollbackDto.getTransactionId();
+        UnsettledBet unsettledBet = null;
+        unsettledBet = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        if (unsettledBet != null && (unsettledBet.getBetAmount().doubleValue() != rollbackDto.getRollbackAmount())) {
+            throw new InvalidFormatException();
+        }
     }
 }
