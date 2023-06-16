@@ -12,32 +12,32 @@ import lombok.Data;
 @Data
 public class LoginDto {
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     private String name;
 
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(max = 35)
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.GAME_NOT_ALLOWED)
+    @Size(max = 35, message = ResponseCodes.GAME_NOT_ALLOWED)
     private String uid;
 
     @NotBlank
     private String token;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @Size(min = 32 , max = 32, message = ResponseCodes.GAME_NOT_ALLOWED)
     private String session;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     private String game_id;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     private String game_name;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     private String provider_id;
 
-    @NotBlank
+    @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     private String provider_name;
 
     @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
@@ -50,6 +50,6 @@ public class LoginDto {
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+]\\d{2}:\\d{2})$", message = ResponseCodes.GAME_NOT_ALLOWED)
     private String sent_at;
 
-    @NotNull
+    @NotNull(message = ResponseCodes.GAME_NOT_ALLOWED)
     private LoginArgsDto args;
 }
