@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.vendor.booongo.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PlayerDto {
     @NotBlank
     private String id;

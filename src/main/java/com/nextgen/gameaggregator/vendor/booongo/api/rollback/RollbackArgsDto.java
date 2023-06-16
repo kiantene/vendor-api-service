@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.booongo.dto.PlayerDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigInteger;
@@ -14,7 +15,10 @@ public class RollbackArgsDto {
     @NotBlank
     private String transaction_uid;
 
+    @Pattern(regexp = "^\\d+(\\.\\d+)?$")
     private String bet;
+
+    @Pattern(regexp = "^\\d+(\\.\\d+)?$")
     private String win;
 
     @NotNull
@@ -29,6 +33,7 @@ public class RollbackArgsDto {
     @NotNull
     private PlayerDto player;
 
-    private Object bonus;
+//    private Object bonus;
+
     private String tag;
 }

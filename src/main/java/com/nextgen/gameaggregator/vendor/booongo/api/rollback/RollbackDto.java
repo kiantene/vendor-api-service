@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.rollback;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
@@ -8,6 +9,7 @@ import lombok.Data;
 import java.time.Instant;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RollbackDto implements RollbackData {
 
     @NotBlank
