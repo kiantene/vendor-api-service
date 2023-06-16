@@ -49,8 +49,6 @@ public class BalanceAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
         try{
             //Retrieve request body in original string format
@@ -65,11 +63,11 @@ public class BalanceAction {
             //get rawGameSession by player name in lowercase (vendor return in uppercase)
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername().toLowerCase());
 
-            //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
             //Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, balanceDto, gameSession);
+
+            //Get walletBalance
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -82,6 +80,7 @@ public class BalanceAction {
                 CredentialNotFoundException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -95,6 +94,7 @@ public class BalanceAction {
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

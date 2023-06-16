@@ -48,8 +48,6 @@ public class JackpotWinAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
         try{
             //Retrieve request body in original string format
@@ -68,7 +66,7 @@ public class JackpotWinAction {
             this.doVerification(httpRequestLog, jackpotWinDto, gameSession);
 
             //Process full bet data
-            ResultType resultType = jackpotWinDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            ResultType resultType = jackpotWinDto.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, jackpotWinDto, resultType, vendorService, httpRequestLog);
 
             //return double balance and success code
@@ -90,6 +88,7 @@ public class JackpotWinAction {
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -103,6 +102,7 @@ public class JackpotWinAction {
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

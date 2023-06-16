@@ -20,8 +20,8 @@ public class BalanceDto {
     @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_PARAMETERS)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.INVALID_APPID)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
