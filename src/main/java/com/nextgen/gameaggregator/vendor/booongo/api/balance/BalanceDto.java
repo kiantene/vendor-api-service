@@ -36,9 +36,11 @@ public class BalanceDto {
     private String provider_name;
 
     @NotBlank
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+]\\d{2}:\\d{2})$")
     private String c_at;
 
     @NotBlank
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+]\\d{2}:\\d{2})$")
     private String sent_at;
 
     @NotNull

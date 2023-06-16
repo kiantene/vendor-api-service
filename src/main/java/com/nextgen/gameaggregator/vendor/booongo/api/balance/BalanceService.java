@@ -72,7 +72,7 @@ public class BalanceService {
 
             vo.setBalance(balanceVo);
 
-        } catch (InvalidAgentApiCredentialException |
+        }catch (InvalidAgentApiCredentialException |
                  AuthenticationException |
                  InvalidOperatorResponseException |
                  JsonProcessingException |

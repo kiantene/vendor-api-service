@@ -42,12 +42,12 @@ public class LoginDto {
 
     @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     // check time format is ISO8061
-    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$", message = ResponseCodes.GAME_NOT_ALLOWED)
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+]\\d{2}:\\d{2})$", message = ResponseCodes.GAME_NOT_ALLOWED)
     private String c_at;
 
     @NotBlank(message = ResponseCodes.GAME_NOT_ALLOWED)
     // check time format is ISO8061
-    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$", message = ResponseCodes.GAME_NOT_ALLOWED)
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+]\\d{2}:\\d{2})$", message = ResponseCodes.GAME_NOT_ALLOWED)
     private String sent_at;
 
     @NotNull
