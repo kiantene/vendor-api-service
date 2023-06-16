@@ -15,7 +15,6 @@ public class TransactionArgsDto {
     @Pattern(regexp = "^\\d+(\\.\\d+)?$")
     private String bet;
 
-    @NotNull
     @Pattern(regexp = "^\\d+(\\.\\d+)?$")
     private String win;
 
