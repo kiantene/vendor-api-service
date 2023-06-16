@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 
 @RestController
@@ -53,7 +54,7 @@ public class CancelBetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
 
-        try{
+        try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -97,15 +98,22 @@ public class CancelBetAction {
             commonVo.setBalance((double) 0);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
-                commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
-            }else{
-                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            if (invalidRequestException.getValidation() != null) {
+                commonVo.setResponseCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.INVALID_PARAMETERS)
+                );
+            } else {
+                commonVo.setResponseCode(ResponseCodes.INVALID_PARAMETERS);
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             httpService.logError(httpRequestLog, exception);
-        }finally {
+        } finally {
             httpService.end(httpRequestLog, commonVo);
         }
 

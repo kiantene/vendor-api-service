@@ -15,46 +15,46 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SettleBetDto implements BetResultData {
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String hash;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String id;
 
-    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Range(min = 0, message = ResponseCodes.INVALID_PARAMETERS)
-    @Digits(integer = 12, fraction = 2, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotNull
+    @Range(min = 0)
+    @Digits(integer = 12, fraction = 2)
     private BigDecimal amount;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
-    @Size(min = 4, max = 32, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 4, max = 32)
     private String username;
 
-    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gamecode;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String roundid;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String description;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String type;
 
     private String betid;

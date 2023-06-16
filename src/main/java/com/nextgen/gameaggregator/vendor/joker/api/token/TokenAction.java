@@ -12,15 +12,16 @@ import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.joker.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -87,10 +88,17 @@ public class TokenAction {
             tokenVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
-                tokenVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
-            }else{
-                tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            if (invalidRequestException.getValidation() != null) {
+                tokenVo.setResponseCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.INVALID_PARAMETERS)
+                );
+            } else {
+                tokenVo.setResponseCode(ResponseCodes.INVALID_PARAMETERS);
             }
         } catch (Exception exception) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);

@@ -17,16 +17,16 @@ public class TokenDto {
     private String token;
 
     //TODO check valid IP
-    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = "^[a-zA-Z0-9_.:-]+$", message = ResponseCodes.INVALID_PARAMETERS)
+    @NotNull
+    @Pattern(regexp = "^[a-zA-Z0-9_.:-]+$")
     private String ip;
 
-    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)

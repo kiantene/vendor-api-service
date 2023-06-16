@@ -11,37 +11,37 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CancelBetDto implements RollbackData {
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
     private String hash;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$", message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
     private String id;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String betid;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
-    @Size(min = 4, max = 32, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 4, max = 32)
     private String username;
 
-    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gamecode;
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String roundid;
 
     @Override
