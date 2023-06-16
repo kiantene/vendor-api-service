@@ -43,6 +43,10 @@ public class CashTransferInOutAction {
 
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
@@ -66,6 +70,8 @@ public class CashTransferInOutAction {
             // 4. Process full bet data
             Integer isBet = 1;
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+
+            // 5. 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
