@@ -161,6 +161,9 @@ public class TransactionService {
 
         //check object inside the dto
         ValidationUtils.validateRequest(dto.getArgs());
+
+        //check object inside the dto
+        ValidationUtils.validateRequest(dto.getArgs().getPlayer());
     }
 
     private void doVerification(TransactionDto dto, GameSession gameSession) throws DisabledVendorLineException,

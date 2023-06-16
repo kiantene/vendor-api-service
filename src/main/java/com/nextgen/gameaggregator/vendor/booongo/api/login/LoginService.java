@@ -129,6 +129,9 @@ public class LoginService {
     private void doValidation(LoginDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        //check object inside the dto
+        ValidationUtils.validateRequest(dto.getArgs());
     }
 
     private void doVerification(LoginDto dto, GameSession gameSession) throws InvalidRequestException,

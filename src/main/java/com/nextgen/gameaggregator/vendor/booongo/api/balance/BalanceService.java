@@ -98,6 +98,12 @@ public class BalanceService {
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        //check object inside the dto
+        ValidationUtils.validateRequest(dto.getArgs());
+
+        //check object inside the dto
+        ValidationUtils.validateRequest(dto.getArgs().getPlayer());
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
