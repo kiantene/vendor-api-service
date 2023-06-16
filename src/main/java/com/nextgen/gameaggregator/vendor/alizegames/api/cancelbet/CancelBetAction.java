@@ -35,7 +35,7 @@ public class CancelBetAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
-    
+
     @PostMapping(path = Endpoints.CANCEL_BET)
     public CommonVo cancelBet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -71,7 +71,7 @@ public class CancelBetAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-            
+
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
@@ -80,7 +80,7 @@ public class CancelBetAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-            
+
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
@@ -97,10 +97,10 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-           responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-           responseVo.setResponseCode(ResponseCode.ERROR);
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
@@ -110,7 +110,7 @@ public class CancelBetAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
             responseVo.setResponseCode(ResponseCode.ERROR);
@@ -123,14 +123,14 @@ public class CancelBetAction {
     }
 
     private void doValidation(CancelBetDto dto) throws InvalidRequestException {
-            // General validation
-            ValidationUtils.validateRequest(dto);
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, CancelBetDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+    private void doVerification(HttpRequestLog request, CancelBetDto dto, GameSession gameSession)
+            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
+            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
-            validationService.validateEligibleBet(gameSession, dto.getUsername());
+        validationService.validateEligibleBet(gameSession, dto.getUsername());
     }
 }

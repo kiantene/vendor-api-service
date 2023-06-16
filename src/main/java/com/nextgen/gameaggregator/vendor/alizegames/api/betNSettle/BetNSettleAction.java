@@ -58,8 +58,10 @@ public class BetNSettleAction {
 
             // 5. Send win result to Operator
             Integer isBet = 1;
-            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(),
+                    dto.getJackpotAmount(), isBet);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService,
+                    httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
@@ -79,7 +81,7 @@ public class BetNSettleAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-            
+
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
@@ -106,13 +108,13 @@ public class BetNSettleAction {
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
-            
+
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
@@ -126,14 +128,14 @@ public class BetNSettleAction {
     }
 
     private void doValidation(BetNSettleDto dto) throws InvalidRequestException {
-            // General validation
-            ValidationUtils.validateRequest(dto);
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, BetNSettleDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+    private void doVerification(HttpRequestLog request, BetNSettleDto dto, GameSession gameSession)
+            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
+            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
-            validationService.validateEligibleBet(gameSession, dto.getUsername());
+        validationService.validateEligibleBet(gameSession, dto.getUsername());
     }
 }

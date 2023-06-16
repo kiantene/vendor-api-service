@@ -66,7 +66,7 @@ public class CancelBetNSettleAction {
             responseVo.setUsername(dto.getUsername());
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setTimestamp(System.currentTimeMillis());
-        
+
         } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
@@ -101,18 +101,18 @@ public class CancelBetNSettleAction {
         }
 
         return responseVo;
-      
+
     }
 
-     private void doValidation(CancelBetNSettleDto dto) throws InvalidRequestException {
-            // General validation
-            ValidationUtils.validateRequest(dto);
+    private void doValidation(CancelBetNSettleDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, CancelBetNSettleDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+    private void doVerification(HttpRequestLog request, CancelBetNSettleDto dto, GameSession gameSession)
+            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
+            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
-            validationService.validateEligibleBet(gameSession, dto.getUsername());
+        validationService.validateEligibleBet(gameSession, dto.getUsername());
     }
 }

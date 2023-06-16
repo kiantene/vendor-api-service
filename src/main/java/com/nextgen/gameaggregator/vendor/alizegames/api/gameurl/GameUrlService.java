@@ -40,7 +40,8 @@ public class GameUrlService implements GameUrl {
     private String profilesActive;
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
+            Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -57,7 +58,8 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
+            GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
         // Retrieve the API URL and key from the credentials map
@@ -117,7 +119,7 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private String getSignatureBody(MultiValueMap<String, String> formData, String apiKey){
+    private String getSignatureBody(MultiValueMap<String, String> formData, String apiKey) {
         Map<String, String> signatureBodyMap = new LinkedHashMap<>();
         signatureBodyMap.put("apikey", apiKey);
         signatureBodyMap.put("gamecode", formData.getFirst("gamecode"));

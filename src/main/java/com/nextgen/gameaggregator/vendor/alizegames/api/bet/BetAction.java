@@ -31,7 +31,7 @@ public class BetAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
-    
+
     @PostMapping(path = Endpoints.PLACE_BET)
     public CommonVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -79,28 +79,28 @@ public class BetAction {
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -117,9 +117,9 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession)
+            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
+            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
     }

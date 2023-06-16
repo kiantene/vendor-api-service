@@ -10,35 +10,35 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CancelBetNSettleDto implements RollbackData {
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String traceId;
 
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String betId;
 
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String roundId;
 
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String token;
 
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String gameCode;
 
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String username;
 
-    //@NotBlank
+    // @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX) // Only alphanumeric allowed
     private String operatorId;
 
-    //@NotNull
+    // @NotNull
     private Long timestamp;
 
     private String info;
@@ -47,6 +47,7 @@ public class CancelBetNSettleDto implements RollbackData {
     public String getRollbackId() {
         return betId;
     }
+
     @Override
     public Long getVendorSettledTime() {
         return timestamp;

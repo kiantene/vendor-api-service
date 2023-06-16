@@ -35,7 +35,7 @@ public class SettleAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
-    
+
     @PostMapping(path = Endpoints.SETTLE_BET)
     public CommonVo settle(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -58,7 +58,8 @@ public class SettleAction {
 
             // 5. Send bet request to Operator
             ResultType resultType = determineResultType(dto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService,
+                    httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
@@ -75,46 +76,46 @@ public class SettleAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-        
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -131,9 +132,9 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws
-            InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException, AuthenticationException, 
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession)
+            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
+            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
     }
