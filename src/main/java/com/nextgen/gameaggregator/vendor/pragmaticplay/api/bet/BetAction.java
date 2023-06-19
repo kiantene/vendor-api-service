@@ -107,9 +107,13 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            } else {
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
