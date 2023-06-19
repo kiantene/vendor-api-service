@@ -79,11 +79,19 @@ public class BetAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
 
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
+            } else {
+                betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
                  BetNotFoundException |
-                 InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException e) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);

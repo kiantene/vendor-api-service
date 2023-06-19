@@ -95,8 +95,15 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+            } else {
+                parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);

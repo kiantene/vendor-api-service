@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.joker.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @RestController
@@ -48,8 +47,6 @@ public class BetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
         try{
             //Retrieve request body in original string format
@@ -68,27 +65,26 @@ public class BetAction {
             this.doVerification(httpRequestLog, betDto, gameSession);
 
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
                 DisabledAgentPlayerException |
-                MergedBetDataIntegrityException |
                 DisabledGameException |
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
-                BetNotFoundException |
                 CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -102,6 +98,7 @@ public class BetAction {
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

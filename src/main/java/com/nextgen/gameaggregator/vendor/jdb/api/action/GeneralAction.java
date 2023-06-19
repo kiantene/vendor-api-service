@@ -71,7 +71,7 @@ public class GeneralAction {
             ValidationUtils.validateRequest(commonDto);
 
             // Get the first vendor line id from list
-            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.JDB_ID, id).get(0);
+            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.JDB_ID, id);
 
             // Get the key and iv value with vendorLineId
             String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);

@@ -2,22 +2,21 @@ package com.nextgen.gameaggregator.vendor.joker.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BetDto implements BetResultData {
 
-    @NotBlank(message = ResponseCodes.INVALID_APPID)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
@@ -77,17 +76,17 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return getBetAmount();
+        return null;
     }
 
     @Override
@@ -102,11 +101,11 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
-    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
+    public BigDecimal getJackpotAmount() { return null;}
 
     @Override
     public Integer getIsFreespin() {
@@ -118,6 +117,6 @@ public class BetDto implements BetResultData {
      */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

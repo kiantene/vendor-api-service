@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.joker.api.betdetail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
@@ -12,18 +12,23 @@ import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.joker.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.joker.constant.Formats;
 import com.nextgen.gameaggregator.vendor.joker.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
+import java.net.URI;
+import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -80,8 +85,8 @@ public class BetDetailService implements BetDetailUrl {
         log.info("Calling " + apiUrl + EndPoints.BET_DETAIL_URL);
         log.info(formData.toString());
 
-        //convert from data into mapper data
-        Map<String, String> convertFormMap = new HashMap<String, String>();
+        //convert from data into hashmap data
+        Map<String, Object> convertFormMap = new LinkedHashMap<>();
         convertFormMap.put("AppID", formData.getFirst("AppID"));
         convertFormMap.put("Username", formData.getFirst("Username"));
         convertFormMap.put("GameCode", formData.getFirst("GameCode"));
@@ -90,29 +95,32 @@ public class BetDetailService implements BetDetailUrl {
         convertFormMap.put("Language", formData.getFirst("Language"));
         convertFormMap.put("Hash", formData.getFirst("Hash"));
 
-        //convert mapper data into json string
-        String jsonFormString = "";
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            jsonFormString = objectMapper.writeValueAsString(convertFormMap);
-            log.info("Request Json : " + jsonFormString);
-        } catch (Exception exception) { // any other exception encountered
-            throw new InvalidVendorLineException("Json Convert Failed");
-        }
+        URI uri = UriComponentsBuilder.fromUriString(apiUrl)
+                .path(EndPoints.BET_DETAIL_URL)
+                .build()
+                .encode()
+                .toUri();
 
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        headerMap.add(HttpHeaders.CONTENT_TYPE, Formats.APPLICATION_JSON);
+        headerMap.add(HttpHeaders.ACCEPT, Formats.APPLICATION_JSON);
 
         //post request to vendor API with JSON string
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        ResponseEntity<String> apiResponse = WebClient.create()
                 .post()
-                .uri(EndPoints.BET_DETAIL_URL)
-                .contentType(MediaType.APPLICATION_JSON_UTF8)
-                .body(BodyInserters.fromObject(jsonFormString))
+                .uri(uri)
+                .headers(requestService.setHeaders(headerMap))
+                .bodyValue(new Gson().toJson(convertFormMap))
                 .retrieve()
+                // TODO: to catch more error codes
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
+                .retry(Formats.RETRY)
+                .timeout(Duration.ofMillis(Formats.TIMEOUT))
                 .block();
+
 
         long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
