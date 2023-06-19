@@ -162,6 +162,7 @@ public class WalletService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Integer vendorId = gameSession.getVendorId();
         ResultBetOperatorFailEvent resultBetOperatorFailEvent = null;
+        Integer isVendorEqualsToPGSOFT = 2;
 
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
 
@@ -175,6 +176,7 @@ public class WalletService {
             boolean isBetExistsForUnsettledBet = false;
             boolean isBetExistsForSettledBet = false;
             List<UnsettledBet> unsettledBetList = null;
+            String traceIdPGSOFT = traceId;
 
             if (isSettled) {
                 unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
@@ -187,11 +189,16 @@ public class WalletService {
                 }
 
                 if (isBetExistsForSettledBet) {
-                    httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                    balanceVo = walletBalanceAction.call(traceId, gameSession);
-                    httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
+                    if(gameSession.getVendorId() == isVendorEqualsToPGSOFT) {
+                        traceIdPGSOFT = settledBet.getInternalTransactionId();
+                    }
+                    else {
+                        httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
+                        balanceVo = walletBalanceAction.call(traceId, gameSession);
+                        httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
-                    return balanceVo.getData().getBalance();
+                        return balanceVo.getData().getBalance();
+                    }
                 }
 
                 switch (resultType) {
@@ -235,7 +242,8 @@ public class WalletService {
                     } // PGS
                     // PGS
                     case BET_WIN, BET_LOSE -> { // PGS
-                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
+                        String betAndResultTraceId = (gameSession.getVendorId() == isVendorEqualsToPGSOFT)?traceIdPGSOFT:traceId;
+                        unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, betAndResultTraceId, resultType.code);
                         settledBet = new SettledBet(unsettledBet, vendorService);
                     }
                     default -> log.warn("ProcessBetResult.exception -> result not handled");

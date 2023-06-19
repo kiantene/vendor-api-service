@@ -2,10 +2,13 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
+import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
@@ -71,7 +74,8 @@ public class CashTransferInOutAction {
             Integer isBet = 1;
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
 
-            // 5. 
+            // 5. check is settledBet is exists
+            this.doCheckExistsOnSettledBet(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             CashTransferInOutVo responseVo = new CashTransferInOutVo();
@@ -79,6 +83,14 @@ public class CashTransferInOutAction {
             responseVo.setUpdatedTime(dto.getVendorSettleTime());
             responseVo.setBalanceAmount(balance);
             responseVo.setCurrencyCode(dto.getCurrencyCode());
+
+        } catch (DataStillProcessingException dataStillProcessingException) {
+            parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
+
+        } catch (SettledBetIdempotentViolationException settledBetIdempotentViolationException) {
+            parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_PAY_OUT);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_PAY_OUT));
 
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
@@ -146,11 +158,35 @@ public class CashTransferInOutAction {
 
         } catch (BetResultIdempotentViolationException e) {
             // TODO: add handling logic
+
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
 
         return parentResponseVo;
+    }
+
+    private void doCheckExistsOnSettledBet(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws DataStillProcessingException, SettledBetIdempotentViolationException {
+        try{
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+
+            Integer isBetStillProcessing = 0;
+            Integer isBetDoneProcessing = 1;
+
+            if(settledBet.getOperatorStatus() == isBetStillProcessing){
+                throw new DataStillProcessingException();
+
+            } else if(settledBet.getOperatorStatus() == isBetDoneProcessing){
+                throw new SettledBetIdempotentViolationException();
+
+            } else {
+                //Bet is having error from operator.
+                //Will send the request again with previous transactionId to operator.
+            }
+
+        } catch (BetNotFoundException betNotFoundException){
+            //bet not found is valid.
+        }
     }
 
     private void doValidation(CashTransferInOutDto dto) throws InvalidRequestException, InvalidPlayerException {
