@@ -9,8 +9,11 @@ public interface IBetDetailUrlInfo {
     String getExternalTransactionId();
     String getExternalRoundId();
     String getUsername();
+    Integer getCurrencyId();
     String getCurrencyCode();
+    String getVendorCurrencyCode();
     String getGameCode();
+    Integer getVendorId();
     String getVendorCode();
     String getGameCategoryCode();
     BigDecimal getBetAmount();
@@ -24,6 +27,5 @@ public interface IBetDetailUrlInfo {
     Long getVendorSettleTime();
     Integer getVendorLineId();
     String getIsFreeSpin();
-
     String getVendorUsername();
 }

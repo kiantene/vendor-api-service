@@ -47,9 +47,6 @@ public class TokenAction {
 
         // Construct VO
         TokenVo tokenVo = new TokenVo();
-//        tokenVo.setResponseCode(ResponseCodes.SUCCESS);
-//        tokenVo.setUsername("TESTPLAYER001");
-//        tokenVo.setBalance(1000.00);
 
         try {
             //Retrieve request body in original string format
@@ -64,11 +61,11 @@ public class TokenAction {
             //get rawGameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.verifyToken(tokenDto.getToken());
 
-            //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
             //Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, tokenDto, gameSession);
+
+            //Get walletBalance
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             //return double balance and success code
             tokenVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -83,6 +80,7 @@ public class TokenAction {
                 CredentialNotFoundException exception
         ) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             tokenVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -96,6 +94,7 @@ public class TokenAction {
             }
         } catch (Exception exception) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, tokenVo);
         }
