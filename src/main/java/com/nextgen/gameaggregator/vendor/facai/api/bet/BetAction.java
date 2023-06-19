@@ -108,11 +108,19 @@ public class BetAction {
         } catch (
                 MergedBetDataIntegrityException |
                 CouchbaseDataIntegrityException |
-                InvalidOperatorResponseException |
                 InvalidAgentApiCredentialException |
                 BetNotFoundException cancelException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            } else {
+                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
