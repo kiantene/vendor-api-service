@@ -6,18 +6,11 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.NotNull;
+import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import jakarta.annotation.Nullable;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Digits;
-
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -108,22 +101,13 @@ public class EndWagerDto implements BetResultData {
     }
 
     @Override
-    public Long getVendorBetTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
-    }
+    public Long getVendorBetTime() { return null; }
 
     @Override
-    public Long getResultTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
-    }
+    public Long getResultTime() { return null; }
 
     @Override
-    public Long getVendorSettleTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
-    }
+    public Long getVendorSettleTime() { return null; }
 
     @Override
     public BigDecimal getJackpotAmount() {
