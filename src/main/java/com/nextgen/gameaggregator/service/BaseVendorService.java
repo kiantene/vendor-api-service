@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 
 import java.math.BigDecimal;
@@ -20,25 +19,6 @@ public abstract class BaseVendorService {
 
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
         return betInfo.getBetAmount();
-    }
-
-    public Integer calculateBetResultType(BetInformation betInfo) {
-
-        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
-
-        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
-        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
-
-        Integer betResultType = BetResultType.LOSE.code;
-
-        if (isJackpotAmountMoreThanZero) {
-            betResultType = BetResultType.JACKPOT.code;
-        } else if (isWinAmountMoreThanZero){
-            betResultType = BetResultType.WIN.code;
-        }
-
-        return betResultType;
     }
 
     //calculate ResultType for sending to operator

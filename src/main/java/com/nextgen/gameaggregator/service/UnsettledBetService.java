@@ -29,18 +29,14 @@ public class UnsettledBetService {
      * @throws BetNotFoundException If no bet record is found
      */
     @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException, CouchbaseDataIntegrityException {
+    public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
 
         String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
         UnsettledBet unsettledBet = null;
 
-        try {
-            unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
-            if (unsettledBet == null) { // No matching bet record for the given round Id
-                throw new BetNotFoundException("Cannot find round Id: " + roundId);
-            }
-        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
+        unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+        if (unsettledBet == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("Cannot find round Id: " + roundId);
         }
 
         return unsettledBet;
