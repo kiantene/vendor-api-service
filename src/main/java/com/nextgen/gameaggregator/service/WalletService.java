@@ -265,6 +265,7 @@ public class WalletService {
                     betResultDataForOperator = settledBet;
                 }
 
+                settledBet.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
                 settledBet.setOperatorStatus(0);
                 settledBetService.create(settledBet, rawData);
 
@@ -344,6 +345,7 @@ public class WalletService {
             httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
             if (isSettled) {
+                settledBet.setPlayerBalance(balanceVo.getData().getBalance());
                 settledBet.setOperatorStatus(operatorStatus);
                 settledBet.setResultType(vendorService.calculateBetResultType(settledBet));
 

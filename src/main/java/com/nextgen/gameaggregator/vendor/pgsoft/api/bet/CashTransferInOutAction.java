@@ -89,8 +89,11 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
 
         } catch (SettledBetIdempotentViolationException settledBetIdempotentViolationException) {
-            parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_PAY_OUT);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_PAY_OUT));
+            CashTransferInOutVo responseVo = new CashTransferInOutVo();
+            parentResponseVo.setData(responseVo);
+            responseVo.setUpdatedTime(settledBetIdempotentViolationException.getSettledBet().getVendorSettleTime());
+            responseVo.setBalanceAmount(settledBetIdempotentViolationException.getSettledBet().getPlayerBalance());
+            responseVo.setCurrencyCode(settledBetIdempotentViolationException.getSettledBet().getVendorCurrencyCode());
 
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
@@ -167,8 +170,11 @@ public class CashTransferInOutAction {
                 parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
 
             } else if (betResultLogOperatorStatus == isBetDoneProcessing){
-                parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_EXISTED);
-                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_EXISTED));
+                CashTransferInOutVo responseVo = new CashTransferInOutVo();
+                parentResponseVo.setData(responseVo);
+                responseVo.setUpdatedTime(betResultIdempotentViolationException.getBetResultLog().getVendorTime());
+                responseVo.setBalanceAmount(betResultIdempotentViolationException.getBetResultLog().getBalance());
+                responseVo.setCurrencyCode(betResultIdempotentViolationException.getBetResultLog().getVendorCurrencyCode());
 
             } else {
                 // unsettled bet was done processed, and hit error, should let it continue to send the unsettle request to operator
@@ -196,7 +202,9 @@ public class CashTransferInOutAction {
                 throw new DataStillProcessingException();
 
             } else if(settledBet.getOperatorStatus() == isBetDoneProcessing){
-                throw new SettledBetIdempotentViolationException();
+                SettledBetIdempotentViolationException settledBetIdempotentViolationException = new SettledBetIdempotentViolationException();
+                settledBetIdempotentViolationException.setSettledBet(settledBet);
+                throw settledBetIdempotentViolationException;
 
             } else {
                 //Bet is having error from operator.
