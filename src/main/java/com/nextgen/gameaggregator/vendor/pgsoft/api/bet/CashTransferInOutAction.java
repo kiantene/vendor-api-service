@@ -156,8 +156,27 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
 
-        } catch (BetResultIdempotentViolationException e) {
-            // TODO: add handling logic
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+
+            Integer isBetStillProcessing = 0;
+            Integer isBetDoneProcessing = 1;
+            Integer betResultLogOperatorStatus = betResultIdempotentViolationException.getBetResultLog().getOperatorStatus();
+
+            if(betResultLogOperatorStatus == isBetStillProcessing){
+                parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
+
+            } else if (betResultLogOperatorStatus == isBetDoneProcessing){
+                parentResponseVo.setErrorCode(ResponseCodes.BET_ALREADY_EXISTED);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_ALREADY_EXISTED));
+
+            } else {
+                // unsettled bet was done processed, and hit error, should let it continue to send the unsettle request to operator
+                // it should not be happening here but incase will return invalid operator status to let vendor resend.
+                parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+
+            }
 
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
