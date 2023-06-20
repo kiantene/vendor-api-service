@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.alizegames.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.alizegames.vo.CommonVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -33,9 +34,9 @@ public class AuthenticateAction {
     private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
-    public AuthenticateVo authenticate(HttpServletRequest request) {
+    public CommonVo authenticate(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        AuthenticateVo responseVo = new AuthenticateVo();
+        CommonVo responseVo = new CommonVo();
 
         try {
             // 1. Retrieve request body in original string format and convert into dto

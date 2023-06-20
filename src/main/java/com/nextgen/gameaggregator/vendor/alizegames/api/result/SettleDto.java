@@ -43,9 +43,11 @@ public class SettleDto implements BetResultData {
     private String operatorId;
 
     @NotNull
+    @PositiveOrZero
     private BigDecimal stake;
 
     @NotNull
+    @PositiveOrZero
     private BigDecimal payout;
 
     @NotNull

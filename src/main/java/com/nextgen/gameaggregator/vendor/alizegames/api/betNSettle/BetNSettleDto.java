@@ -43,12 +43,14 @@ public class BetNSettleDto implements BetResultData {
     private String operatorId;
 
     @NotNull
+    @PositiveOrZero
     private BigDecimal stake;
 
     @NotNull
     private BigDecimal winloss;
 
     @NotNull
+    @PositiveOrZero
     private BigDecimal payout;
 
     @NotNull
@@ -99,7 +101,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return stake;
     }
 
     @Override

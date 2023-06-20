@@ -43,6 +43,7 @@ public class BetDto implements BetResultData {
     private String operatorId;
 
     @NotNull
+    @PositiveOrZero
     private BigDecimal stake;
 
     @NotNull
