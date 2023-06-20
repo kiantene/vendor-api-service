@@ -126,7 +126,7 @@ public class RoundPayoutAction {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InvalidRequestException invalidRequestException) {
-            if(invalidRequestException.getMessage().equals(Exceptions.INVALID_AMOUNT)) {
+            if (invalidRequestException.getMessage() != null && invalidRequestException.getMessage().equals(Exceptions.INVALID_AMOUNT)) {
                 roundPayoutErrorVo.setCode(ResponseCodes.TRANSACTION_INVALID);
                 roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             } else {

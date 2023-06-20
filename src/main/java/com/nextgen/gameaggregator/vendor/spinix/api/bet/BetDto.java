@@ -61,7 +61,9 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() { return getBetAmount().negate(); }
+    public BigDecimal getWinLoss() {
+        return getBetAmount().negate();
+    }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
