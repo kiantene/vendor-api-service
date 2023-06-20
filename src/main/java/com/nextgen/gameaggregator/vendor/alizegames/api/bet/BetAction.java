@@ -75,6 +75,7 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {

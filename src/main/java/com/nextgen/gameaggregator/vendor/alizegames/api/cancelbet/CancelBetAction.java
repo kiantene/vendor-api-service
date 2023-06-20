@@ -100,6 +100,7 @@ public class CancelBetAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {

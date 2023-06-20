@@ -92,8 +92,8 @@ public class BetNSettleAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.ERROR);

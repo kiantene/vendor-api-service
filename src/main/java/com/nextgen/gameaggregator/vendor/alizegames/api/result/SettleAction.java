@@ -78,6 +78,7 @@ public class SettleAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
