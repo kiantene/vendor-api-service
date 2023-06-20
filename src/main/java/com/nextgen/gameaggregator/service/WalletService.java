@@ -224,6 +224,7 @@ public class WalletService {
             settledBet.setVendorSettleTime(betHistoryService.getVendorSettleTime(betResultData, unsettledBet));
             settledBet.setResultType(betHistoryService.getResultType(settledBet));
             settledBet.setOperatorStatus(statusProcessing);
+            settledBet.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
             settledBetService.save(settledBet, rawData);
 
             // send bet data to Operator
@@ -233,9 +234,10 @@ public class WalletService {
                 httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
                 cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
-                settledBet.setOperatorStatus(statusSuccess);
 
                 // update operator status after receiving response from operator
+                settledBet.setOperatorStatus(statusSuccess);
+                settledBet.setPlayerBalance(balanceVo.getData().getBalance());
                 settledBetService.save(settledBet, rawData);
 
                 // send settled bet to kafka
@@ -400,11 +402,9 @@ public class WalletService {
         try {
             if (isSettled) {
                 balanceVo = this.doSettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog);
-
             } else { // bets not settled yet
                 balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog);
             }
-
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //TODO: To discuss if Agent is disable, should we just remove the session of this player and return vendor with invalid bet request?
 //            resultBetOperatorFailEvent = new ResultBetOperatorFailEvent(unsettledBetResult, ResponseCodes.Status.SC_USER_DISABLED.code);
