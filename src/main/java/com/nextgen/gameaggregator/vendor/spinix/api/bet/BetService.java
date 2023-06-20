@@ -249,9 +249,18 @@ public class BetService {
         } catch (BetNotFoundException betNotFoundException) {
             roundPayoutVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, dto);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() != null && invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+                roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            } else {
+                roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
+                roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
+        } catch (Exception exception) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             if (roundPayoutVo.getStatus() == HttpStatus.SC_OK) {
                 roundPayoutVo.setData(roundPayoutDataVo);
