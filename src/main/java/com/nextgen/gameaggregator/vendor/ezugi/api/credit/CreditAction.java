@@ -112,9 +112,13 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Debit Transaction already processed");
             httpService.logError(httpRequestLog, e);
-        } catch (BetNotFoundException | InvalidRequestException e) {
+        } catch (BetNotFoundException e) {
             creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
             creditVo.setErrorDescription("Debit transaction ID not found");
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
         } catch (InvalidSignatureException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
@@ -144,12 +148,16 @@ public class CreditAction extends CommonDto {
     }
 
     private void doVerification(CreditDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException {
+            throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException {
         // Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
 
         // Verify received game id is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getTableId(), AuthenticationException::new);
+
+        // Verify Operator Id from vendor given
+        String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
+        ValidationUtils.isEquals(operatorId, String.valueOf(dto.getOperatorId()), InvalidRequestException::new);
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);

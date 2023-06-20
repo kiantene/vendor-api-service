@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
@@ -109,13 +110,14 @@ public class DebitAction {
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            debitVo.setErrorDescription("Invalid parameter");
             if (e.getValidation() != null) {
                 String violation = e.getValidation()
                         .entrySet()
                         .stream()
                         .findFirst()
                         .map(Map.Entry::getValue) // get the value of the first element
-                        .orElse(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode())); // if there's no value, set it to the default invalid request parameter
+                        .orElse("Invalid parameter"); // if there's no value, set it to the default invalid request parameter
                 debitVo.setErrorDescription(violation);
             }
             httpService.logError(httpRequestLog, e);
@@ -123,9 +125,13 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
-        } catch (BetResultIdempotentViolationException e){
+        } catch (BetResultIdempotentViolationException e) {
             debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setErrorDescription("Transaction already processed");
+            httpService.logError(httpRequestLog, e);
+        } catch (IOException e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            debitVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
@@ -149,13 +155,17 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
+
+        // Verify Operator Id from vendor given
+        String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
+        ValidationUtils.isEquals(operatorId, String.valueOf(debitDto.getOperatorId()), InvalidRequestException::new);
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);

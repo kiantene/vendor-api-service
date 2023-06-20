@@ -90,7 +90,11 @@ public class RollbackAction {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid Amount");
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException | DisabledGameException |
+        } catch (InvalidRequestException e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            rollbackVo.setErrorDescription("Invalid parameter");
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledGameException |
                  DisabledAgentPlayerException | CurrencyNotSupportedException | RecordNotFoundException |
                  InvalidPlayerException | InvalidAgentApiCredentialException | CredentialNotFoundException |
                  DisabledVendorLineException | InvalidKeyException | CouchbaseDataIntegrityException |
@@ -110,12 +114,16 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), rollbackdto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify Operator Id from vendor given
+        String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
+        ValidationUtils.isEquals(operatorId, String.valueOf(rollbackdto.getOperatorId()), InvalidRequestException::new);
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);

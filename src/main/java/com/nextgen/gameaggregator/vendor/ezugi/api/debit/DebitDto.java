@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DebitDto extends CommonDto implements BetResultData {
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(message = "User not found", regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -94,7 +94,7 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        if(betTypeID.equals(BetTypeID.DEBIT_TIP)){
+        if (betTypeID.equals(BetTypeID.DEBIT_TIP)) {
             return getTimestamp();
         }
         return null;
@@ -112,7 +112,7 @@ public class DebitDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if(betTypeID.equals(BetTypeID.DEBIT_TIP)){
+        if (betTypeID.equals(BetTypeID.DEBIT_TIP)) {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;
