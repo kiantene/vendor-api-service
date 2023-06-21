@@ -1,5 +1,10 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
+import java.math.BigDecimal;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
@@ -8,11 +13,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -20,10 +22,6 @@ public class BalanceService {
 
     @Autowired
     private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
     @Autowired

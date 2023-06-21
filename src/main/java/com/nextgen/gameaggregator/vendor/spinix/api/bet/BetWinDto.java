@@ -1,5 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -8,21 +11,48 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BetWinDto implements BetResultData {
+
+    // Request Id sent by vendor
     private String reqId;
+
+    // Id of the round
     private String roundId;
+
+    // Id of the bet transaction
     private String id;
+
+    // Amount of the bet transaction
     private BigDecimal betAmount;
+
+    // Amount of the win transaction
     private BigDecimal winAmount;
+
+    // Win loss amount of the bet record
+    private BigDecimal winLossAmount;
+
+    // Result type of the bet record
     private ResultType resultType;
+
+    // Valid turnover of the bet record
     private BigDecimal validTurnover;
+
+    // Id of vendor's game
     private String gameId;
+
+    // Time of bet transaction
     private Long timestamp;
 
-    @Override
-    public String getExternalTransactionId() {
-        return this.roundId;
-    }
+    // Bet status of the bet record
+    private BetStatus betStatus;
+
+    // Whether the transaction is a free spin
+    private Integer freeSpin;
+
+    // External transaction id of the bet record
+    private String externalTransactionId;
 
     @Override
     public String getVendorBetId() {
@@ -30,7 +60,9 @@ public class BetWinDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getBetAmount() { return this.betAmount; }
+    public BigDecimal getBetAmount() {
+        return this.betAmount;
+    }
 
     @Override
     public BigDecimal getWinAmount() {
@@ -39,7 +71,7 @@ public class BetWinDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.winAmount.subtract(this.betAmount);
+        return null;
     }
 
     @Override
@@ -69,15 +101,12 @@ public class BetWinDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return this.freeSpin;
     }
 
-    /**
-     * @return
-     */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return this.betStatus;
     }
 }
 

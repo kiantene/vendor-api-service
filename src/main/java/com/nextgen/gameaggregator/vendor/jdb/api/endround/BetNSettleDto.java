@@ -65,7 +65,7 @@ public class BetNSettleDto implements BetResultData {
     private String currency;
 
     @NotNull
-    @Negative
+    @NegativeOrZero
     private BigDecimal bet;
 
     @NotNull
@@ -101,45 +101,27 @@ public class BetNSettleDto implements BetResultData {
     @Size(max = 50)
     private String sessionNo;
 
-    @NotNull
     private BigDecimal mb;
 
-
     // Slot Only, gType = 0
-    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal jackpotWin;
 
-    @Negative
     private BigDecimal jackpotContribute;
 
-    @Min(value = 0)
-    @Max(value = 1)
     private Integer hasFreeGame;
 
-
     // Fish Only, gType = 7
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String roomType;
 
-
     // Slot and Arcade, gType = 0 OR gType = 9
-    @Min(value = 0)
-    @Max(value = 1)
     private Integer hasGamble;
 
-
     // Arcade and Lottery, gType = 9 OR gType = 12
-    @Min(value = 0)
-    @Max(value = 1)
     private Integer hasBonusGame;
 
     @Override
     public String getExternalTransactionId() {
         return transferId;
-    }
-
-    public void setExternalTransactionId(String transferId) {
-        this.transferId = transferId;
     }
 
     @Override
@@ -152,22 +134,14 @@ public class BetNSettleDto implements BetResultData {
         return gameSeqNo;
     }
 
-    public void setRoundId(String gameSeqNo) {
-        this.gameSeqNo = gameSeqNo;
-    }
-
     @Override
     public String getGameId() {
         return mType;
     }
 
-    public void setGameId(String mType) {
-        this.mType = mType;
-    }
-
     @Override
     public BigDecimal getBetAmount() {
-        return bet.abs();
+        return bet.negate();
     }
 
     @Override
@@ -175,15 +149,10 @@ public class BetNSettleDto implements BetResultData {
         return win;
     }
 
-    public void setWinAmount(BigDecimal win) {
-        this.win = win;
-    }
-
     @Override
     public BigDecimal getWinLoss() {
-        return netWin.abs();
+        return netWin.negate();
     }
-
 
     @Override
     public BigDecimal getEffectiveTurnover() {
@@ -193,10 +162,6 @@ public class BetNSettleDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
         return ts;
-    }
-
-    public void setVendorBetTime(Long ts) {
-        this.ts = ts;
     }
 
     @Override
@@ -211,12 +176,12 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return (getJackpotWin() != null) ? getJackpotWin() : BigDecimal.ZERO;
     }
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return (getHasFreeGame() != null) ? getHasFreeGame() : 0;
     }
 
     /**

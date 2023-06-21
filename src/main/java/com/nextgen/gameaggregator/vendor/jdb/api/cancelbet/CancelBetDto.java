@@ -52,8 +52,10 @@ public class CancelBetDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        // TODO: will throw null pointer if get(0) does not exists
-        return getRefTransferIds().get(0).toString();
+        if (refTransferIds != null && !refTransferIds.isEmpty()) {
+            return String.valueOf(refTransferIds.get(0));
+        }
+        return null;
     }
 
     @Override
