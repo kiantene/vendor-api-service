@@ -57,8 +57,7 @@ public class BetNSettleAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
-            Integer isBet = 1;
-            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 6. Set response data
@@ -98,10 +97,6 @@ public class BetNSettleAction {
 
         } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
-            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
