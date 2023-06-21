@@ -45,7 +45,7 @@ public class SettleService {
             this.doValidation(settleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getUid(), settleDto.getMType().toString());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(settleDto.getUid());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(settleDto, gameSession);
@@ -53,8 +53,8 @@ public class SettleService {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, 
-            (settleDto.getNetWin().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, actionDto.getHttpRequestLog());
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto,
+            (settleDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END, vendorService, actionDto.getHttpRequestLog());
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
@@ -82,8 +82,6 @@ public class SettleService {
             }
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
@@ -116,7 +114,9 @@ public class SettleService {
        validationService.validateEligibleBet(gameSession, dto.getUid());
 
        // Verify vendor gameCode, currency
-       ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+       String[] parts = gameSession.getVendorGameCode().split("_");
+       int mType = Integer.parseInt(parts[1]);
+       ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
        // Verify game category

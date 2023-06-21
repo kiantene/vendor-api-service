@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import com.nextgen.gameaggregator.entity.VendorLanguageCode;
@@ -25,16 +26,17 @@ public class BetDetailService implements BetDetailUrl {
     public MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials,
             IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'formDataBuilder'");
+            
+            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+            return formData; 
     }
 
     @Override
     public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
             IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'call'");
+        
+            return new com.nextgen.gameaggregator.vendor.spadegaming.api.betdetail.BetDetailUrlVo();
     }
     
 }

@@ -6,6 +6,7 @@ public class ResponseCodes {
     @AllArgsConstructor
     public enum Status {
 
+        SC_TRANSACTION_STILL_PROCESSING (0, "Transaction is still processing, please retry."),
         SC_OK (1, "Successful response."),
         SC_UNKNOWN_ERROR (2, "Generic status code for unknown errors."),
         SC_INVALID_REQUEST (3, "Wrong/missing parameters sent in request body."),

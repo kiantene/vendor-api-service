@@ -6,7 +6,6 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
@@ -40,7 +39,7 @@ public class SettleDto implements BetResultData {
     private String currency;
 
     @NotNull
-    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal amount;
 
     @Valid
@@ -82,7 +81,7 @@ public class SettleDto implements BetResultData {
     private String lastModifyTime;
 
     @NotNull
-    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal bet;
 
     @NotNull
@@ -97,7 +96,7 @@ public class SettleDto implements BetResultData {
     private BigDecimal netWin;
 
     @NotNull
-    @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
+    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal tax;
 
     @NotBlank
@@ -108,10 +107,6 @@ public class SettleDto implements BetResultData {
     @Override
     public String getExternalTransactionId() {
         return refTransferIds.get(0).toString();
-    }
-
-    public void setExternalTransactionId(String transferId) {
-        this.transferId = transferId;
     }
 
     @Override
@@ -132,10 +127,6 @@ public class SettleDto implements BetResultData {
         return mType;
     }
 
-    public void setGameId(String mType) {
-        this.mType = mType;
-    }
-
     @Override
     public BigDecimal getBetAmount() {
         return bet;
@@ -144,10 +135,6 @@ public class SettleDto implements BetResultData {
     @Override
     public BigDecimal getWinAmount() {
         return win;
-    }
-
-    public void setWinAmount(BigDecimal win) {
-        this.win = win;
     }
 
     @Override
@@ -163,10 +150,6 @@ public class SettleDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
         return ts;
-    }
-
-    public void setVendorBetTime(Long ts) {
-        this.ts = ts;
     }
 
     @Override

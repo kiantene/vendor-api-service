@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.math.BigDecimal;
 
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -14,13 +15,29 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BetDto implements BetResultData {
+
+    // Request Id sent by vendor
     private String reqId;
+
+    // Id of the round
     private String roundId;
+
+    // Id of the transaction
     private String id;
+
+    // Amount of the bet transaction
     private BigDecimal amount;
+
+    // The result type of the bet
     private ResultType resultType;
+
+    // Valid turnover of the bet
     private BigDecimal validTurnover;
+
+    // Id of vendor's game
     private String gameId;
+
+    // Time of bet transaction
     private Long timestamp;
 
     @Override
@@ -30,7 +47,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.id;
+        return this.roundId;
     }
 
     @Override
@@ -83,6 +100,6 @@ public class BetDto implements BetResultData {
      */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }

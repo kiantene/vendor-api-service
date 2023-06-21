@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.entity;
 
 import jakarta.persistence.Id;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
@@ -10,6 +11,7 @@ import org.springframework.data.couchbase.repository.Scope;
 @Scope("raw")
 @Collection("game_session")
 @Data
+@NoArgsConstructor
 public class GameSession {
     @Id
     private String id;
@@ -39,4 +41,11 @@ public class GameSession {
     private String ipAddress;
     private Long createTime;
     private Long terminateTime;
+
+    public GameSession(EndRoundSettledBet endRoundSettledBet){
+        this.agentPlayerUsername = endRoundSettledBet.getAgentPlayerUsername();
+        this.currencyCode = endRoundSettledBet.getCurrencyCode();
+        this.gameCode = endRoundSettledBet.getGameCode();
+        this.token = endRoundSettledBet.getGameSessionToken();
+    }
 }

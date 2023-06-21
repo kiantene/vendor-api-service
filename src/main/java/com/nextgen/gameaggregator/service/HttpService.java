@@ -36,6 +36,8 @@ public class HttpService {
     private Boolean enableHttpRequestLog;
     @Autowired
     private HttpRequestLogRepository httpRequestLogRepository;
+    @Autowired
+    private KafkaService kafkaService;
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
@@ -80,7 +82,10 @@ public class HttpService {
                             requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
                         }
 
+                        log.info("HttpRequestLog -> (" + requestLog.getUrl() + ") - " + requestLog);
+                        kafkaService.send(requestLog);
                         httpRequestLogRepository.save(requestLog);
+
                     } catch (Exception exception) {
                         log.error(exception.getMessage());
                         exception.printStackTrace();

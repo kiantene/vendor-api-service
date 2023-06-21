@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -114,7 +113,12 @@ public class BetAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            } else {
+                statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {

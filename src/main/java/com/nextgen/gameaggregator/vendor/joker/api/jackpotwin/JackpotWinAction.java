@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -48,10 +49,8 @@ public class JackpotWinAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
-        try{
+        try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -68,7 +67,7 @@ public class JackpotWinAction {
             this.doVerification(httpRequestLog, jackpotWinDto, gameSession);
 
             //Process full bet data
-            ResultType resultType = jackpotWinDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
+            ResultType resultType = jackpotWinDto.getJackpotAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, jackpotWinDto, resultType, vendorService, httpRequestLog);
 
             //return double balance and success code
@@ -84,25 +83,33 @@ public class JackpotWinAction {
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
                 BetNotFoundException |
-                CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
-                commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
-            }else{
-                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            if (invalidRequestException.getValidation() != null) {
+                commonVo.setResponseCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.INVALID_PARAMETERS)
+                );
+            } else {
+                commonVo.setResponseCode(ResponseCodes.INVALID_PARAMETERS);
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

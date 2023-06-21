@@ -20,8 +20,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -49,10 +51,8 @@ public class BalanceAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
-        try{
+        try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -65,11 +65,11 @@ public class BalanceAction {
             //get rawGameSession by player name in lowercase (vendor return in uppercase)
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername().toLowerCase());
 
-            //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
             //Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, balanceDto, gameSession);
+
+            //Get walletBalance
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -82,19 +82,28 @@ public class BalanceAction {
                 CredentialNotFoundException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
-                commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
-            }else{
-                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            if (invalidRequestException.getValidation() != null) {
+                commonVo.setResponseCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.INVALID_PARAMETERS)
+                );
+            } else {
+                commonVo.setResponseCode(ResponseCodes.INVALID_PARAMETERS);
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

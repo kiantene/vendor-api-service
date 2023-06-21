@@ -97,9 +97,9 @@ public class EndRoundAction {
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
-            Integer isBet = 0;
-            ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, httpRequestLog);
+            ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), false);
+            ProcessEndRoundDto processEndRoundDto = convertEndRoundDtoToProcessEndRoundDto(endRoundDto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, processEndRoundDto, resultType, vendorService, httpRequestLog);
 
             // Construct VO data
             CommonVo commonVo = new CommonVo();
@@ -213,5 +213,27 @@ public class EndRoundAction {
         checkFreeSpin = (checkFreeSpin > 0) ? 1 : 0;
 
         dto.setIsFreespin(checkFreeSpin);
+    }
+
+    private ProcessEndRoundDto convertEndRoundDtoToProcessEndRoundDto(EndRoundDto dto) {
+
+        ProcessEndRoundDto processEndRoundDto = new ProcessEndRoundDto();
+        processEndRoundDto.setExternalTransactionId(dto.getExternalTransactionId());
+        processEndRoundDto.setVendorBetId(dto.getVendorBetId());
+        processEndRoundDto.setRoundId(dto.getRoundId());
+        processEndRoundDto.setGameId(dto.getGameId());
+        processEndRoundDto.setBetAmount(dto.getBetAmount());
+        processEndRoundDto.setWinAmount(dto.getWinAmount());
+        processEndRoundDto.setWinLoss(dto.getWinLoss());
+        processEndRoundDto.setEffectiveTurnover(dto.getEffectiveTurnover());
+        processEndRoundDto.setVendorBetTime(dto.getVendorBetTime());
+        processEndRoundDto.setResultTime(dto.getResultTime());
+        processEndRoundDto.setVendorSettleTime(dto.getVendorSettleTime());
+        processEndRoundDto.setJackpotAmount(dto.getJackpotAmount());
+        processEndRoundDto.setIsFreespin(dto.getIsFreespin());
+        processEndRoundDto.setBetStatus(dto.getBetStatus());
+
+        return processEndRoundDto;
+
     }
 }

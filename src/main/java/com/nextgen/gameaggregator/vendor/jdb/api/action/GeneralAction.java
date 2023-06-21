@@ -1,10 +1,7 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
@@ -21,10 +18,7 @@ import com.nextgen.gameaggregator.vendor.jdb.api.cancelbet.CancelBetService;
 import com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle.CancelBetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.endround.BetNSettleService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleService;
-import com.nextgen.gameaggregator.vendor.jdb.constant.Actions;
-import com.nextgen.gameaggregator.vendor.jdb.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.jdb.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.jdb.constant.*;
 import com.nextgen.gameaggregator.vendor.jdb.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
@@ -76,8 +70,8 @@ public class GeneralAction {
             // Validate request parameters (Non-database related)
             ValidationUtils.validateRequest(commonDto);
 
-            // Get the vendor line id from table
-            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.JDB_ID, id);
+            // Get the first vendor line id from list
+            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.JDB_ID, id);
 
             // Get the key and iv value with vendorLineId
             String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.KEY);
