@@ -55,7 +55,8 @@ public class WinService {
             InsufficientBalanceException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            CouchbaseDataIntegrityException {
+            SettledBetIdempotentViolationException,
+            TransactionStillProcessingException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         WinDto winDto = new ModelMapper().map(callbackDto, WinDto.class);
@@ -63,7 +64,7 @@ public class WinService {
         this.doValidation(callbackDto);
         this.doVerification(callbackDto, gameSession, key);
 
-        ResultType resultType = vendorService.calculateResultType(winDto.getBetAmount(), winDto.getWinAmount(), winDto.getJackpotAmount(), 0);
+        ResultType resultType = vendorService.calculateResultType(winDto.getBetAmount(), winDto.getWinAmount(), winDto.getJackpotAmount(), false);
         BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, resultType, vendorService, httpRequestLog);
 
         ResponseDataVo responseDataVo = new ResponseDataVo();
