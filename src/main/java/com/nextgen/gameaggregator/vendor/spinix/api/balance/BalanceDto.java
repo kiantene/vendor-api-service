@@ -17,27 +17,33 @@ import jakarta.validation.constraints.Size;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BalanceDto {
 
+    // Request id sent by vendor
     @NotBlank
-    @Size(max =32)
+    @Size(max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String reqId;
 
+    // vendor player user name
     @NotBlank
     @Size(min = 3, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     public String userId;
 
+    // Game session token
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(max =50)
+    @Size(max = 50)
     public String userToken;
 
+    // Id of the vendor's game
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(max =24)
+    @Size(max = 24)
     public String gameId;
 
+    // Vendor's defined currency
     @NotBlank
-    @Size(min = 3, max =24)
+    @Size(min = 3, max = 24)
     @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
 

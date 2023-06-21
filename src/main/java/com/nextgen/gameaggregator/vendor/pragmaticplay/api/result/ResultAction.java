@@ -100,10 +100,6 @@ public class ResultAction {
         } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
 
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
-
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());

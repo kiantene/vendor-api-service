@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.*;
@@ -56,11 +56,11 @@ public class TransactionDetailAction {
             ValidationUtils.validateRequest(dto);
 
             // 2. Check if api key is valid
-            String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
+            String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
             // 3. Validate the signature
-            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
             // 4. check if platform supported

@@ -38,4 +38,10 @@ public class SettledBet extends BetInformation {
         this.setEffectiveTurnover(vendorService.calculateEffectiveTurnover(this));
         this.setStatus(BetStatus.SETTLED.code);
     }
+
+    public SettledBet(EndRoundSettledBet endRoundSettledBet) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(endRoundSettledBet, this);
+    }
 }
