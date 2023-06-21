@@ -88,8 +88,8 @@ public class BetResultLogService {
     }
 
     @CachePut(value = "rawResultLog", key = "{#betResultData.externalTransactionId, #betResultData.roundId, #gameSession.vendorGameId, #gameSession.vendorPlayerId}", cacheManager = "cacheManager")
-    public RawBetResultLog create(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
-        RawBetResultLog entity = this.newRawBetResultLog(traceId, betId, betResultData, gameSession, balance);
+    public RawBetResultLog create(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance, Integer operatorStatus) {
+        RawBetResultLog entity = this.newRawBetResultLog(traceId, betId, betResultData, gameSession, balance, operatorStatus);
         rawBetResultLogRepository.save(entity);
         return entity;
     }
@@ -108,7 +108,7 @@ public class BetResultLogService {
         return String.join(delimiter, list);
     }
 
-    private RawBetResultLog newRawBetResultLog(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance) {
+    private RawBetResultLog newRawBetResultLog(String traceId, String betId, BetResultData betResultData, GameSession gameSession, BigDecimal balance, Integer operatorStatus) {
         RawBetResultLog entity = new RawBetResultLog();
         String vendorGameId = gameSession.getVendorGameId().toString();
         String vendorPlayerId = gameSession.getVendorPlayerId().toString();
@@ -123,7 +123,7 @@ public class BetResultLogService {
         entity.setVendorPlayerId(gameSession.getVendorPlayerId());
         entity.setAgentPlayerId(gameSession.getAgentPlayerId());
         entity.setAgentId(gameSession.getAgentId());
-        entity.setOperatorStatus(0);
+        entity.setOperatorStatus(operatorStatus);
         entity.setVendorLineId(gameSession.getVendorLineId());
         entity.setCurrencyId(gameSession.getCurrencyId());
         entity.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());

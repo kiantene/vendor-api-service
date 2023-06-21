@@ -4,55 +4,34 @@ import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
-import com.nextgen.gameaggregator.exception.DisabledGameException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.UnableToFindCredentialsException;
-import com.nextgen.gameaggregator.service.AgentPlayerService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorGameService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AcctInfoVo;
 import com.nextgen.gameaggregator.vendor.spadegaming.vo.AuthBalanceVo;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 @Service
 public class AuthenticateService {
-
     @Autowired
     private HttpService httpService;
-
     @Autowired
     private VendorLineService vendorLineService;
-
     @Autowired
     private AgentPlayerService agentPlayerService;
-
     @Autowired
     private VendorGameService vendorGameService;
-
     @Autowired
     private GameSessionService gameSessionService;
-
     @Autowired
     private WalletService walletService;
     
@@ -74,8 +53,8 @@ public class AuthenticateService {
             authBalanceVo.setSerialNo(traceId);
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
-            // Verify the user token and get the corresponding game session
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            // Get game session with player username
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
@@ -93,42 +72,26 @@ public class AuthenticateService {
             authBalanceVo.setMerchantCode(dto.getMerchantCode());
             authBalanceVo.setResponseCode(ResponseCode.SUCCESS);
             authBalanceVo.setSerialNo(traceId);
-
-        } catch (InvalidRequestException invalidRequestException) {
-            authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-
-        } catch (DisabledVendorLineException | 
-                DisabledAgentPlayerException | 
-                DisabledGameException serviceException) {
-            authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (JsonProcessingException jsonProcessingException) {
-            authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
-
         } catch (AuthenticationException authenticationException) {
+            // token validation failed 
             authBalanceVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (CredentialNotFoundException | UnableToFindCredentialsException |
+                 DisabledVendorLineException | DisabledAgentPlayerException |
+                 DisabledGameException | InvalidAgentApiCredentialException e) {
+            // merchant not found or service inaccessible 
+            authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+        } catch (InvalidRequestException | InvalidOperatorResponseException e) {
+            // invalid request 
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
-
-        } catch (IllegalArgumentException illegalArgumentException) {
-            authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
-
-        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
-            authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
-
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
-            
-        } catch (InvalidPlayerException invalidPlayerException) {
+        } catch (JsonProcessingException | InvalidFormatException e) {
+            // invalid format 
+            authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
+        } catch (InvalidPlayerException e) {
+            // account not found 
             authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
-
-        } catch (InvalidFormatException invalidFormatException) {
-            authBalanceVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
-
+        } catch (IllegalArgumentException e) {  
+            // invalid parameter 
+            authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
         } finally {
            // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, authBalanceVo);

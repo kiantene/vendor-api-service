@@ -11,6 +11,7 @@ public enum ResponseCode {
     UNKNOWN_ERROR("UNKNOWN_ERROR", "Please contact Customer Support for assistanceError Code: 1049"),
     INVALID_PARAMETER("INVALID_PARAMETER", "Please contact Customer Support for assistanceError Code: 10002"),
     BET_DOES_NOT_EXIST("BET_DOES_NOT_EXIST", "Please contact Customer Support for assistanceError Code: 10005"),
+    BET_ALREADY_EXIST("BET_ALREADY_EXIST", "BET_ALREADY_EXIST"),
     INSUFFICIENT_FUNDS("INSUFFICIENT_FUNDS", "You do not have sufficient funds to place this betError Code: 10008");
 
     public final String status;

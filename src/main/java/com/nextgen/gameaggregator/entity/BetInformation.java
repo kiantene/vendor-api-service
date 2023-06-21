@@ -44,6 +44,8 @@ public abstract class BetInformation {
     private Long createTime;
     private Long resultTime;
     private Integer processingStatus;
+    private BigDecimal playerBalance;
+    private String vendorCurrencyCode;
     public BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
