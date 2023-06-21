@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.evolutionlive.api.check;
+package com.nextgen.gameaggregator.vendor.evolutionlive.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ChannelDto {
-    private String type;
+    private String type; // "M" for mobile clients, "P" for all other
 }

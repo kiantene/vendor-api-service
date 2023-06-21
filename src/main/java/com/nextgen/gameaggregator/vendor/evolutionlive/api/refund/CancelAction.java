@@ -1,14 +1,16 @@
-package com.nextgen.gameaggregator.vendor.evolutionlive.api.balance;
+package com.nextgen.gameaggregator.vendor.evolutionlive.api.refund;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.evolutionlive.dto.BasicDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +24,7 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class CancelAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -35,10 +37,13 @@ public class BalanceAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private RawUnsettledBetRepository rawUnsettledBetRepository;
 
-    @PostMapping(path = EndPoints.BALANCE)
-    public ResponseVo balanceAction(HttpServletRequest request) {
-
+    @PostMapping(path = EndPoints.CANCEL)
+    public ResponseVo cancelAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         ResponseVo responseVo = new ResponseVo();
@@ -47,27 +52,42 @@ public class BalanceAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            CancelDto cancelDto = HttpService.convertJsonToDto(body, CancelDto.class);
+
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(balanceDto);
+            this.doValidation(cancelDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getSid());
+            GameSession gameSession = gameSessionService.verifyToken(cancelDto.getSid());
 
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(cancelDto, gameSession);
 
-            // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // check if cancel bet exist in unsettled bet will not process rollback
+            String mergeId = cancelDto.getTransaction().getRefId() + '_' + cancelDto.getGame().getId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId();
+            UnsettledBet unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+            if (unsettledBet != null) {
+                throw new BetNotFoundException();
+            }
 
+            // 3. Send refund to Operator
+            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService);
+
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
             responseVo.setBalance(balance);
-            responseVo.setUuid(balanceDto.getUuid());
+            responseVo.setUuid(cancelDto.getUuid());
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_SID);
             httpService.logError(httpRequestLog, e);
+        } catch (RecordNotFoundException |
+                 BetNotFoundException e) {
+            responseVo.setResponseCode(ResponseCode.BET_DOES_NOT_EXIST);
+            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException |
                  InvalidRequestException |
+                 GameNotSupportedException |
+                 InvalidPlayerException |
                  CurrencyNotSupportedException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
@@ -75,7 +95,9 @@ public class BalanceAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException e) {
+                 InvalidOperatorResponseException |
+                 BetRefundIdempotentViolationException |
+                 CouchbaseDataIntegrityException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
@@ -85,27 +107,30 @@ public class BalanceAction {
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
+
     }
 
-    private void doValidation(BalanceDto balanceDto) throws InvalidRequestException {
+    private void doValidation(CancelDto cancelDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest((BasicDto) balanceDto);
-        ValidationUtils.validateRequest(balanceDto);
+        ValidationUtils.validateRequest(cancelDto);
+        ValidationUtils.validateRequest(cancelDto.getGame());
+        ValidationUtils.validateRequest(cancelDto.getTransaction());
     }
 
-    private void doVerification(BalanceDto balanceDto, GameSession gameSession)
+    private void doVerification(CancelDto cancelDto, GameSession gameSession)
             throws
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            CurrencyNotSupportedException {
+            GameNotSupportedException,
+            CurrencyNotSupportedException,
+            InvalidPlayerException {
 
-        // 1. Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getSid(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getUserId(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
+        // 1. Verify Username, GameCode, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

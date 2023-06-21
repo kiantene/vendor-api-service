@@ -1,14 +1,17 @@
-package com.nextgen.gameaggregator.vendor.evolutionlive.api.balance;
+package com.nextgen.gameaggregator.vendor.evolutionlive.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.evolutionlive.dto.BasicDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -17,28 +20,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class DebitAction {
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private ValidationService validationService;
 
-    @PostMapping(path = EndPoints.BALANCE)
-    public ResponseVo balanceAction(HttpServletRequest request) {
-
+    @PostMapping(path = EndPoints.DEBIT)
+    public ResponseVo debitAction(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         ResponseVo responseVo = new ResponseVo();
@@ -47,36 +43,42 @@ public class BalanceAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(balanceDto);
+            this.doValidation(debitDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getSid());
+            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
 
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(debitDto, gameSession);
 
-            // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // process bet
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
 
-            responseVo.setBalance(balance);
-            responseVo.setUuid(balanceDto.getUuid());
+            responseVo.setBalance(betEvent.getLastBalance());
+            responseVo.setUuid(debitDto.getUuid());
+
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_SID);
             httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException |
                  InvalidRequestException |
+                 GameNotSupportedException |
+                 InvalidPlayerException |
                  CurrencyNotSupportedException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
-                 InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException e) {
+                 InvalidOperatorResponseException |
+                 InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            responseVo.setResponseCode(ResponseCode.INSUFFICIENT_FUNDS);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
@@ -85,35 +87,32 @@ public class BalanceAction {
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
+
     }
 
-    private void doValidation(BalanceDto balanceDto) throws InvalidRequestException {
+    private void doValidation(DebitDto debitDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest((BasicDto) balanceDto);
-        ValidationUtils.validateRequest(balanceDto);
+        ValidationUtils.validateRequest(debitDto);
+        ValidationUtils.validateRequest(debitDto.getGame());
+        ValidationUtils.validateRequest(debitDto.getTransaction());
     }
 
-    private void doVerification(BalanceDto balanceDto, GameSession gameSession)
+    private void doVerification(DebitDto debitDto, GameSession gameSession)
             throws
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            CurrencyNotSupportedException {
+            GameNotSupportedException,
+            CurrencyNotSupportedException,
+            InvalidPlayerException {
 
-        // 1. Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getSid(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getUserId(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
+        // 1. Verify Username, GameCode, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), debitDto.getUserId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(debitDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
 
-        // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // 3. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 4. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // 2. validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, debitDto.getUserId());
     }
 }

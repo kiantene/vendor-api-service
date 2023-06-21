@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.evolutionlive.api.balance;
+package com.nextgen.gameaggregator.vendor.evolutionlive.api.authenticate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -17,12 +17,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class CheckAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -33,49 +31,40 @@ public class BalanceAction {
     private VendorGameService vendorGameService;
     @Autowired
     private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
 
-    @PostMapping(path = EndPoints.BALANCE)
-    public ResponseVo balanceAction(HttpServletRequest request) {
+    @PostMapping(path = {EndPoints.CHECK, EndPoints.SID})
+    public ResponseVo checkAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-
         ResponseVo responseVo = new ResponseVo();
         String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            CheckDto checkDto = HttpService.convertJsonToDto(body, CheckDto.class);
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(balanceDto);
+            this.doValidation(checkDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getSid());
+            GameSession gameSession = gameSessionService.verifyToken(checkDto.getSid());
 
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(checkDto, gameSession);
 
-            // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
-            responseVo.setBalance(balance);
-            responseVo.setUuid(balanceDto.getUuid());
+            responseVo.setSid(gameSession.getToken());
+            responseVo.setUuid(checkDto.getUuid());
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_SID);
             httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException |
-                 InvalidRequestException |
-                 CurrencyNotSupportedException e) {
+                 InvalidRequestException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException e) {
+                 DisabledGameException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
@@ -87,25 +76,18 @@ public class BalanceAction {
         return responseVo;
     }
 
-    private void doValidation(BalanceDto balanceDto) throws InvalidRequestException {
+    private void doValidation(CheckDto checkDto) throws InvalidRequestException {
         // General validation
-        ValidationUtils.validateRequest((BasicDto) balanceDto);
-        ValidationUtils.validateRequest(balanceDto);
+        ValidationUtils.validateRequest((BasicDto) checkDto);
+        ValidationUtils.validateRequest(checkDto);
     }
 
-    private void doVerification(BalanceDto balanceDto, GameSession gameSession)
-            throws
-            AuthenticationException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            CurrencyNotSupportedException {
+    private void doVerification(CheckDto checkDto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getSid(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getUserId(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), checkDto.getUserId(), AuthenticationException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
