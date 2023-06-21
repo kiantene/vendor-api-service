@@ -164,12 +164,13 @@ public class WalletService {
         Integer statusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer statusSuccess = ResponseCodes.Status.SC_OK.code;
         WalletBalanceVo balanceVo = null;
-        String previousBetId = null;
+        String previousBetId = traceId;
 
         try {
             settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
             if (isVendorPGSoft) {
                 previousBetId = settledBet.getBetId();
+                settledBetIdempotent = false;
             } else {
                 httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
                 balanceVo = walletBalanceAction.call(traceId, gameSession);
@@ -225,6 +226,7 @@ public class WalletService {
             settledBet.setResultType(betHistoryService.getResultType(settledBet));
             settledBet.setOperatorStatus(statusProcessing);
             settledBet.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
+            settledBet.setCreateTime(System.currentTimeMillis());
             settledBetService.save(settledBet, rawData);
 
             // send bet data to Operator
