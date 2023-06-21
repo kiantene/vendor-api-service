@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 
 import java.math.BigDecimal;
@@ -22,27 +21,8 @@ public abstract class BaseVendorService {
         return betInfo.getBetAmount();
     }
 
-    public Integer calculateBetResultType(BetInformation betInfo) {
-
-        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
-
-        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
-        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
-
-        Integer betResultType = BetResultType.LOSE.code;
-
-        if (isJackpotAmountMoreThanZero) {
-            betResultType = BetResultType.JACKPOT.code;
-        } else if (isWinAmountMoreThanZero){
-            betResultType = BetResultType.WIN.code;
-        }
-
-        return betResultType;
-    }
-
     //calculate ResultType for sending to operator
-    public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, Integer isBet) {
+    public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet) {
 
         winAmount = Optional.ofNullable(winAmount).orElse(BigDecimal.ZERO);
         jackpotAmount = Optional.ofNullable(jackpotAmount).orElse(BigDecimal.ZERO);
@@ -50,10 +30,10 @@ public abstract class BaseVendorService {
         boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
         boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
 
-        ResultType resultType = (isBet == 1) ? ResultType.BET_LOSE : ResultType.END;
+        ResultType resultType = (isBet) ? ResultType.BET_LOSE : ResultType.END;
 
         if (isWinAmountMoreThanZero || isJackpotAmountMoreThanZero) {
-            resultType = (isBet == 1) ? ResultType.BET_WIN : ResultType.WIN;
+            resultType = (isBet) ? ResultType.BET_WIN : ResultType.WIN;
         }
 
         return resultType;
