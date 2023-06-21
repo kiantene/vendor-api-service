@@ -235,6 +235,7 @@ public class WalletService {
             settledBet.setResultType(betHistoryService.getResultType(settledBet));
             settledBet.setOperatorStatus(statusProcessing);
 //            settledBet.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
+            settledBet.setCreateTime(System.currentTimeMillis());
             settledBetService.save(settledBet, rawData);
 
             httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
