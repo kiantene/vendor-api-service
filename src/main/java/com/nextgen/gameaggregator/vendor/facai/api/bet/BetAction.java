@@ -107,7 +107,6 @@ public class BetAction {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (
                 MergedBetDataIntegrityException |
-                CouchbaseDataIntegrityException |
                 InvalidOperatorResponseException |
                 InvalidAgentApiCredentialException |
                 BetNotFoundException cancelException
@@ -133,6 +132,7 @@ public class BetAction {
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

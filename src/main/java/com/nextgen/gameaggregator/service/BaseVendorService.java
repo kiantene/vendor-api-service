@@ -22,7 +22,7 @@ public abstract class BaseVendorService {
     }
 
     //calculate ResultType for sending to operator
-    public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, Integer isBet) {
+    public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet) {
 
         winAmount = Optional.ofNullable(winAmount).orElse(BigDecimal.ZERO);
         jackpotAmount = Optional.ofNullable(jackpotAmount).orElse(BigDecimal.ZERO);
@@ -30,10 +30,10 @@ public abstract class BaseVendorService {
         boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
         boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
 
-        ResultType resultType = (isBet == 1) ? ResultType.BET_LOSE : ResultType.END;
+        ResultType resultType = (isBet) ? ResultType.BET_LOSE : ResultType.END;
 
         if (isWinAmountMoreThanZero || isJackpotAmountMoreThanZero) {
-            resultType = (isBet == 1) ? ResultType.BET_WIN : ResultType.WIN;
+            resultType = (isBet) ? ResultType.BET_WIN : ResultType.WIN;
         }
 
         return resultType;

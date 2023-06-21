@@ -84,7 +84,6 @@ public class JackpotWinAction {
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
                 BetNotFoundException |
-                CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
@@ -103,6 +102,7 @@ public class JackpotWinAction {
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

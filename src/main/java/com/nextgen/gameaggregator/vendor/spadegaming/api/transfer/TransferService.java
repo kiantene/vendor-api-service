@@ -147,11 +147,12 @@ public class TransferService {
         } catch (CredentialNotFoundException credentialNotFoundException) {
             transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
 
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
         } catch (BetResultIdempotentViolationException e) {
             // TODO: add handling logic
+
+        } catch (Exception exception) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             httpService.end(httpRequestLog, transferVo);

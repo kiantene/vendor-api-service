@@ -107,7 +107,6 @@ public class EndWagerAction {
                 InvalidAgentApiCredentialException |
                 MergedBetDataIntegrityException |
                 InvalidOperatorResponseException |
-                CouchbaseDataIntegrityException |
                 JsonProcessingException e
         ) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

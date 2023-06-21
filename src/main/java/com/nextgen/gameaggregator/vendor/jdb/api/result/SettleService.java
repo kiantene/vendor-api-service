@@ -82,8 +82,6 @@ public class SettleService {
             }
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
