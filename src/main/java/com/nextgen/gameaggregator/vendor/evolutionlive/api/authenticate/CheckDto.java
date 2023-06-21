@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.evolutionlive.api.check;
+package com.nextgen.gameaggregator.vendor.evolutionlive.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.evolutionlive.dto.BasicDto;
