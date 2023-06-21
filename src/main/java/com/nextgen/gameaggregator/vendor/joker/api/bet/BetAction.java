@@ -77,15 +77,21 @@ public class BetAction {
                 AuthenticationException |
                 DisabledAgentPlayerException |
                 DisabledGameException |
-                InsufficientBalanceException |
-                InvalidOperatorResponseException |
                 CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                commonVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUND);
+            } else {
+                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            commonVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUND);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
