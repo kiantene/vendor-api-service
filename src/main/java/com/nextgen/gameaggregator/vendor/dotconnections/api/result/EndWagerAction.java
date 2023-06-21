@@ -112,7 +112,6 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
                  InvalidAgentApiCredentialException | MergedBetDataIntegrityException |
-                 CouchbaseDataIntegrityException |
                  JsonProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {

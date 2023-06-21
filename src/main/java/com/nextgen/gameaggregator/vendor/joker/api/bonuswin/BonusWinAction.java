@@ -82,7 +82,6 @@ public class BonusWinAction {
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
                 BetNotFoundException |
-                CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception

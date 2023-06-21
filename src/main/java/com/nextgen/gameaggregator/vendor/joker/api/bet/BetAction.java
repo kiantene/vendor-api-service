@@ -78,7 +78,6 @@ public class BetAction {
                 DisabledGameException |
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
-                CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
