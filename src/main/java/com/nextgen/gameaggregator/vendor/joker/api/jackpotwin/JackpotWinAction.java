@@ -83,7 +83,6 @@ public class JackpotWinAction {
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
                 BetNotFoundException |
-                CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
