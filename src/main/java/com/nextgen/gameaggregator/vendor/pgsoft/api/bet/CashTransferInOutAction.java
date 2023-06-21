@@ -51,13 +51,12 @@ public class CashTransferInOutAction {
         String traceId = httpRequestLog.getId();
         CashTransferInOutVo responseVo = new CashTransferInOutVo();
         parentResponseVo.setData(responseVo);
+        String vendorCurrencyCode = "";
 
         try {
             String body = httpRequestLog.getRequestBody();
             CashTransferInOutDto dto = HttpService.convertQueryStringToDto(body, CashTransferInOutDto.class);
-
-            responseVo.setCurrencyCode(dto.getCurrencyCode());
-            responseVo.setUpdatedTime(dto.getVendorSettleTime());
+            vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -74,6 +73,8 @@ public class CashTransferInOutAction {
             // 5. check is settledBet is exists
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
             responseVo.setBalanceAmount(balance);
+            responseVo.setCurrencyCode(vendorCurrencyCode);
+            responseVo.setUpdatedTime(dto.getVendorSettleTime());
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
@@ -84,6 +85,7 @@ public class CashTransferInOutAction {
 
             responseVo.setUpdatedTime(settledBet.getVendorSettleTime());
             responseVo.setBalanceAmount(settledBet.getPlayerBalance());
+            responseVo.setCurrencyCode(vendorCurrencyCode);
 
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
