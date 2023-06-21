@@ -146,26 +146,17 @@ public class WalletService {
         return unsettledBet;
     }
 
-    private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
-            throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
-            TransactionStillProcessingException, SettledBetIdempotentViolationException {
+    private SettledBet idempotentCheckForSettledBet(GameSession gameSession, BetResultData betResultData)
+            throws SettledBetIdempotentViolationException, TransactionStillProcessingException {
 
-        String rawData = httpRequestLog.getRequestBody();
         Integer vendorId = gameSession.getVendorId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
-        Integer vendorGameId = gameSession.getVendorGameId();
         String vendorBetId = betResultData.getVendorBetId();
         String roundId = betResultData.getRoundId();
-        Integer agentId = gameSession.getAgentId();
-        BetInformation walletBetResultData = null;
-        UnsettledBet unsettledBet = null;
-        SettledBet settledBet = null;
         Integer statusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer statusSuccess = ResponseCodes.Status.SC_OK.code;
-        WalletBalanceVo balanceVo = null;
-        boolean retry = false;
+        SettledBet settledBet = null;
 
-        // check for idempotency in settled_bet
         try {
             settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
 
@@ -181,14 +172,33 @@ public class WalletService {
                     idempotentViolationException.setSettledBet(settledBet);
 
                     throw idempotentViolationException;
-                } else {
-                    walletBetResultData = settledBet;
-                    retry = true;
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
             // proceed normally when bet not found
         }
+
+        return settledBet;
+    }
+
+    private WalletBalanceVo doSettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
+            throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
+            TransactionStillProcessingException, SettledBetIdempotentViolationException {
+
+        String rawData = httpRequestLog.getRequestBody();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer vendorGameId = gameSession.getVendorGameId();
+        String roundId = betResultData.getRoundId();
+        Integer agentId = gameSession.getAgentId();
+        BetInformation walletBetResultData = null;
+        UnsettledBet unsettledBet = null;
+        Integer statusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+        Integer statusSuccess = ResponseCodes.Status.SC_OK.code;
+        WalletBalanceVo balanceVo = null;
+
+        // check for idempotency in settled_bet
+        SettledBet settledBet = this.idempotentCheckForSettledBet(gameSession, betResultData);
+        boolean retry = settledBet != null;
 
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
 
