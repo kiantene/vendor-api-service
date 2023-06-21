@@ -11,6 +11,7 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -101,13 +102,22 @@ public class EndWagerDto implements BetResultData {
     }
 
     @Override
-    public Long getVendorBetTime() { return null; }
+    public Long getVendorBetTime() {
+        Instant instant = Instant.now();
+        return instant.toEpochMilli();
+    }
 
     @Override
-    public Long getResultTime() { return null; }
+    public Long getResultTime() {
+        Instant instant = Instant.now();
+        return instant.toEpochMilli();
+    }
 
     @Override
-    public Long getVendorSettleTime() { return null; }
+    public Long getVendorSettleTime() {
+        Instant instant = Instant.now();
+        return instant.toEpochMilli();
+    }
 
     @Override
     public BigDecimal getJackpotAmount() {

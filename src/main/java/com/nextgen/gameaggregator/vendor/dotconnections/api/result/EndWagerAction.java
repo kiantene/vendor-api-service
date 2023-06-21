@@ -72,29 +72,10 @@ public class EndWagerAction {
             this.doVerification(dto, gameSession);
 
             // if transaction amount has more than 0 means WIN else LOSE
-            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
-
-            //get unsettle record bet id
-            UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
-
-            // Set unsettle record bet id to locate the data
-            dto.setWagerId(unsettledBet.getVendorBetId());
+            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
 
             // Process bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
-
-            // Set as unsettled so the bet record figures can be merged
-            // dto.setBetStatus(BetStatus.UNSETTLED);
-
-            // Process bet
-            // walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
-
-            // Set amount as 0 and bet status as settled to settle the bet record
-            // dto.setAmount(BigDecimal.ZERO);
-            // dto.setBetStatus(BetStatus.SETTLED);
-
-            // Settled the bet
-            // BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
