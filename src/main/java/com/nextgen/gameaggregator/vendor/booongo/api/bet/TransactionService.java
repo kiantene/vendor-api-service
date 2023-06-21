@@ -77,46 +77,48 @@ public class TransactionService {
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-        }catch (InsufficientBalanceException e) {
+        } catch (InsufficientBalanceException e) {
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
-            balance = getCurrentBalance(traceId,gameSession);
+            balance = getCurrentBalance(traceId, gameSession);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        }catch(BetResultIdempotentViolationException e){
+        } catch (BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
-            balance = getCurrentBalance(traceId,gameSession);
+            balance = getCurrentBalance(traceId, gameSession);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-        }catch (InvalidOperatorResponseException |
-                CouchbaseDataIntegrityException |
-                DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                InvalidPlayerException |
-                CurrencyNotSupportedException |
-                DisabledAgentPlayerException |
-                MergedBetDataIntegrityException |
-                DisabledGameException |
-                InvalidRequestException |
-                BetNotFoundException |
-                GameNotSupportedException |
-                JsonProcessingException |
-                AuthenticationException |
-                CredentialNotFoundException e) {
+        } catch (InvalidOperatorResponseException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 CurrencyNotSupportedException |
+                 DisabledAgentPlayerException |
+                 MergedBetDataIntegrityException |
+                 DisabledGameException |
+                 InvalidRequestException |
+                 BetNotFoundException |
+                 GameNotSupportedException |
+                 JsonProcessingException |
+                 AuthenticationException |
+                 SettledBetIdempotentViolationException |
+                 TransactionStillProcessingException |
+                 CredentialNotFoundException e) {
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
-            balance = getCurrentBalance(traceId,gameSession);
+            balance = getCurrentBalance(traceId, gameSession);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
+        } catch(Exception exception) {
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+            vo.setError(errorVo);
+            httpService.logError(httpRequestLog, exception);
         }
-//        catch(Exception exception){
-//            httpService.logError(httpRequestLog, exception);
-//        }
         finally {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
@@ -141,14 +143,14 @@ public class TransactionService {
         return resultType;
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession){
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
 
         BigDecimal balance = BigDecimal.ZERO;
 
-        try{
+        try {
             balance = walletService.getBalance(traceId, gameSession);
 
-        }catch(Exception exception){
+        } catch (Exception exception) {
 
         }
 
