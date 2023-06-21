@@ -51,5 +51,4 @@ public class CancelBetDto implements RollbackData {
     public Long getVendorSettledTime() {
         return timestamp;
     }
-
 }

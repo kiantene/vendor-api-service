@@ -108,7 +108,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return (getStake().equals(BigDecimal.ZERO) ? 1 : 0);
     }
 
     @Override

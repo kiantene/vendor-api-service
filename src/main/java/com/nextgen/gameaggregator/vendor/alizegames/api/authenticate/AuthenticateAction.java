@@ -97,8 +97,7 @@ public class AuthenticateAction {
     private void doVerification(AuthenticateDto dto, GameSession gameSession) throws AuthenticationException,
             DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
         // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(),
-                AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         // Verify agent player is active

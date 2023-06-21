@@ -58,10 +58,8 @@ public class BetNSettleAction {
 
             // 5. Send win result to Operator
             Integer isBet = 1;
-            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(),
-                    dto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService,
-                    httpRequestLog);
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);

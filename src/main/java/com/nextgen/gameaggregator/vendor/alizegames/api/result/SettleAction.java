@@ -58,8 +58,7 @@ public class SettleAction {
 
             // 5. Send bet request to Operator
             ResultType resultType = determineResultType(dto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService,
-                    httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
