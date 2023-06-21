@@ -128,13 +128,21 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
-        } catch (MergedBetDataIntegrityException | RecordNotFoundException |
-                 InvalidAgentApiCredentialException | CredentialNotFoundException | InvalidKeyException |
-                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
+        } catch (SettledBetIdempotentViolationException settledBetIdempotentViolationException) {
+            // TODO: need to handle correct error code to vendor
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Invalid Bet Type");
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            // TODO: need to handle correct error code to vendor
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Invalid Bet Type");
+        } catch (MergedBetDataIntegrityException | RecordNotFoundException | InvalidAgentApiCredentialException |
+                 CredentialNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
+                 InvalidOperatorResponseException | CouchbaseDataIntegrityException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            if(creditVo.getErrorDescription()==null) {
+            if (creditVo.getErrorDescription() == null) {
                 creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));
             }
             httpService.end(httpRequestLog, creditVo);
