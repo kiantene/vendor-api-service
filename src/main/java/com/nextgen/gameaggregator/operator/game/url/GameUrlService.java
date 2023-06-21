@@ -71,7 +71,8 @@ public class GameUrlService {
                  InvalidVendorResponseException | InvalidFormatException
                 gameClassException) {
             gameClassException.printStackTrace();
-            log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
+            log.error("GAME CLASS ERROR :");
+            gameClassException.printStackTrace();
             throw new InvalidVendorResponseException();
         }
 

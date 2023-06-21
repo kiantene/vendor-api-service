@@ -98,8 +98,7 @@ public class TransferService {
             // merchant not found
             transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException |
-                 DisabledGameException | MergedBetDataIntegrityException |
-                 CouchbaseDataIntegrityException | BetResultIdempotentViolationException e) {
+                 DisabledGameException | MergedBetDataIntegrityException e) {
             // service inaccessible 
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
         } catch (CurrencyNotSupportedException e) {
@@ -114,11 +113,19 @@ public class TransferService {
         } catch (InvalidRequestException | InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException | GameNotSupportedException |
                  BetRefundIdempotentViolationException e) {
-            // invalid request 
+            // invalid request
             transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
         } catch (JsonProcessingException e) {
             // invalid format
             transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
+
+        } catch (BetResultIdempotentViolationException e) {
+            // TODO: add handling logic
+
+        } catch (Exception exception) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, transferVo);
         }
