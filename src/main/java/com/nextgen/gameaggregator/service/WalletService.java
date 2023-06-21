@@ -227,15 +227,16 @@ public class WalletService {
                     walletBetResultData = settledBet;
                 }
             }
+
+            // settledBet.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
+            settledBet.setVendorSettleTime(betHistoryService.getVendorSettleTime(betResultData, unsettledBet));
+            settledBet.setResultType(betHistoryService.getResultType(settledBet));
+            settledBet.setCreateTime(System.currentTimeMillis());
         }
 
         // send bet data to Operator
         try {
-            settledBet.setVendorSettleTime(betHistoryService.getVendorSettleTime(betResultData, unsettledBet));
-            settledBet.setResultType(betHistoryService.getResultType(settledBet));
             settledBet.setOperatorStatus(statusProcessing);
-//            settledBet.setVendorCurrencyCode(gameSession.getVendorCurrencyCode());
-            settledBet.setCreateTime(System.currentTimeMillis());
             settledBetService.save(settledBet, rawData);
 
             httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
