@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
+package com.nextgen.gameaggregator.vendor.joker.api.result;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;

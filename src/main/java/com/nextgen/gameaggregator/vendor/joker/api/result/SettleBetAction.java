@@ -1,8 +1,10 @@
-package com.nextgen.gameaggregator.vendor.joker.api.cancelbet;
+package com.nextgen.gameaggregator.vendor.joker.api.result;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
@@ -19,15 +21,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
-
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class CancelBetAction {
+public class SettleBetAction {
 
 
     @Autowired
@@ -41,14 +41,13 @@ public class CancelBetAction {
     @Autowired
     private ValidationService validationService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
     private VendorService vendorService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
 
-    @PostMapping(path = EndPoints.CANCEL_BET)
+    @PostMapping(path = EndPoints.SETTLE_BET)
     public CommonVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
         String traceId = httpRequestLog.getId();
 
         // Construct VO
@@ -59,30 +58,42 @@ public class CancelBetAction {
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into commonDto
-            CancelBetDto cancelBetDto = HttpService.convertQueryStringToDtoUrlDecode(body, CancelBetDto.class);
+            SettleBetDto settleBetDto = HttpService.convertQueryStringToDtoUrlDecode(body, SettleBetDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            this.doValidation(cancelBetDto);
+            this.doValidation(settleBetDto);
 
             //get rawGameSession by player name in lowercase (vendor return in uppercase) and vendor game id
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelBetDto.getUsername().toLowerCase(), cancelBetDto.getGamecode());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleBetDto.getUsername().toLowerCase(), settleBetDto.getGamecode());
 
-            //Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, cancelBetDto, gameSession);
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, settleBetDto, gameSession);
 
-            //Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
+            //get unsettle record bet id
+            UnsettledBet unsettledBet = this.getUnsettleBet(settleBetDto, gameSession);
+            settleBetDto.setBetid(unsettledBet.getVendorBetId());
+
+            //Process full bet data
+            ResultType resultType = settleBetDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, resultType, vendorService, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
             commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            //commonVo.setBalance(betRefundEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
+                DisabledAgentPlayerException |
+                MergedBetDataIntegrityException |
+                DisabledGameException |
+                InsufficientBalanceException |
                 InvalidOperatorResponseException |
-                CredentialNotFoundException exception
+                BetNotFoundException |
+                CouchbaseDataIntegrityException |
+                CredentialNotFoundException |
+                DisabledVendorLineException |
+                InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             httpService.logError(httpRequestLog, exception);
@@ -90,12 +101,6 @@ public class CancelBetAction {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
-        } catch (
-                RecordNotFoundException |
-                BetRefundIdempotentViolationException successException
-        ) {
-            commonVo.setResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setBalance((double) 0);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if (invalidRequestException.getValidation() != null) {
@@ -120,21 +125,39 @@ public class CancelBetAction {
         return commonVo;
     }
 
-    private void doValidation(CancelBetDto dto) throws InvalidRequestException {
+    private void doValidation(SettleBetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, CancelBetDto cancelBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(HttpRequestLog request, SettleBetDto settleBetDto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidSignatureException, AuthenticationException {
 
         //Verify received agent code is the same from credential
         String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-        ValidationUtils.isEquals(agentCode, cancelBetDto.getAppid(), NoAvailableLineException::new);
+        ValidationUtils.isEquals(agentCode, settleBetDto.getAppid(), NoAvailableLineException::new);
 
         //Verify received hash
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-        VendorService.verifyHash(URLDecoder.decode(request.getRequestBody(), StandardCharsets.UTF_8), secretKey);
+        VendorService.verifyHash(request.getRequestBody(), secretKey);
 
+        //Validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, settleBetDto.getUsername());
+    }
+
+    private UnsettledBet getUnsettleBet(SettleBetDto dto, GameSession gameSession) throws BetNotFoundException {
+        UnsettledBet unsettledBet = null;
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+        if (unsettledBetList.isEmpty()) {
+            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
+        }
+        boolean isMultipleBetsInSameRound = unsettledBetList.size() > 1;
+        if (isMultipleBetsInSameRound) {
+            unsettledBet = unsettledBetList.get(unsettledBetList.size() - 1);
+        } else {
+            unsettledBet = unsettledBetList.get(0);
+        }
+
+        return unsettledBet;
     }
 
 }

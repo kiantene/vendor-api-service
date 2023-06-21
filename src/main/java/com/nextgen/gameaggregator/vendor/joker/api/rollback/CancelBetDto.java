@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.joker.api.cancelbet;
+package com.nextgen.gameaggregator.vendor.joker.api.rollback;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;

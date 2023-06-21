@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.joker.api.token;
+package com.nextgen.gameaggregator.vendor.joker.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
