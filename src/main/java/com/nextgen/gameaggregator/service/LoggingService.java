@@ -12,7 +12,13 @@ public class LoggingService {
     @Value("${logging.process-time:true}")
     private Boolean enableProcessTime;
 
-    public void logProcessTime(String functionName, Long startTime, String traceId) {
+    private Long startTime;
+
+    public void logStart() {
+        this.startTime = System.currentTimeMillis();
+    }
+
+    public void logProcessTime(String functionName, String traceId) {
 
         //TODO ENABLE BASED ON enableProcessTime STATUS
 //        if (!enableProcessTime) return;
@@ -22,9 +28,9 @@ public class LoggingService {
         HashMap<String, Object> logInfo = new HashMap<>();
         logInfo.put("FunctionName: ", functionName);
         logInfo.put("TraceId: ", traceId);
-        logInfo.put("StartTime: ", startTime);
+        logInfo.put("StartTime: ", this.startTime);
         logInfo.put("EndTime: ", endTime);
-        logInfo.put("TotalProcessMs: ", endTime - startTime);
+        logInfo.put("TotalProcessMs: ", endTime - this.startTime);
         log.info(gson.toJson(logInfo));
     }
 }
