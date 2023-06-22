@@ -134,11 +134,18 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            // SC_INSUFFICIENT_FUNDS
+            if (e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                debitVo.setErrorCode(ResponseCodes.INSUFFICIENT_FUNDS);
+            }
+            httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
                  InvalidAgentApiCredentialException |
                  DisabledVendorLineException | CredentialNotFoundException | InvalidKeyException |
-                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
+                 CouchbaseDataIntegrityException | NoSuchAlgorithmException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {

@@ -129,13 +129,11 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
         } catch (SettledBetIdempotentViolationException settledBetIdempotentViolationException) {
-            // TODO: need to handle correct error code to vendor
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
-            creditVo.setErrorDescription("Invalid Bet Type");
+            creditVo.setErrorDescription("Debit transaction already processed");
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            // TODO: need to handle correct error code to vendor
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
-            creditVo.setErrorDescription("Invalid Bet Type");
+            creditVo.setErrorDescription("Credit transaction is still processing");
         } catch (MergedBetDataIntegrityException | RecordNotFoundException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
                  InvalidOperatorResponseException | CouchbaseDataIntegrityException e) {
