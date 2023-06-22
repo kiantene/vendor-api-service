@@ -127,12 +127,7 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        } catch(Exception exception) {
-            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-            vo.setError(errorVo);
-            httpService.logError(httpRequestLog, exception);
-        }
-        finally {
+        }finally {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
             vo.setBalance(balanceVo);
