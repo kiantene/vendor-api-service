@@ -650,13 +650,13 @@ public class WalletService {
     private UnsettledBet newUnsettledBet(GameSession gameSession, String rawData,
                                          BetResultData betResultData, String traceId, Integer resultType) {
 
-        UnsettledBet unsettledBet = new UnsettledBet();
+        UnsettledBet unsettledBet = new UnsettledBet(betResultData);
 
         unsettledBet.setId(betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId());
         unsettledBet.setInternalTransactionId(traceId);
         unsettledBet.setBetId(traceId);
-        unsettledBet.setExternalTransactionId(betResultData.getExternalTransactionId());
-        unsettledBet.setRoundId(betResultData.getRoundId());
+//        unsettledBet.setExternalTransactionId(betResultData.getExternalTransactionId());
+//        unsettledBet.setRoundId(betResultData.getRoundId());
         unsettledBet.setVendorGameId(gameSession.getVendorGameId());
         unsettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
         unsettledBet.setVendorId(gameSession.getVendorId());
@@ -665,20 +665,20 @@ public class WalletService {
         unsettledBet.setVendorLineId(gameSession.getVendorLineId());
         unsettledBet.setGameCategoryId(gameSession.getGameCategoryId());
         unsettledBet.setCurrencyId(gameSession.getCurrencyId());
-        unsettledBet.setBetAmount(betResultData.getBetAmount());
+//        unsettledBet.setBetAmount(betResultData.getBetAmount());
         unsettledBet.setGameSessionToken(gameSession.getToken());
         unsettledBet.setResultType(resultType);
-        unsettledBet.setVendorBetTime(betResultData.getVendorBetTime());
+//        unsettledBet.setVendorBetTime(betResultData.getVendorBetTime());
         unsettledBet.setGameSessionToken(gameSession.getToken());
         unsettledBet.setOperatorStatus(1);
         unsettledBet.setRawData(rawData);
-        unsettledBet.setWinAmount(betResultData.getWinAmount());
-        unsettledBet.setWinLoss(betResultData.getWinLoss());
-        unsettledBet.setEffectiveTurnover(betResultData.getEffectiveTurnover());
-        unsettledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
-        unsettledBet.setResultTime(betResultData.getResultTime());
-        unsettledBet.setVendorBetId(betResultData.getVendorBetId());
-        unsettledBet.setJackpotAmount(betResultData.getJackpotAmount());
+//        unsettledBet.setWinAmount(betResultData.getWinAmount());
+//        unsettledBet.setWinLoss(betResultData.getWinLoss());
+//        unsettledBet.setEffectiveTurnover(betResultData.getEffectiveTurnover());
+//        unsettledBet.setVendorSettleTime(betResultData.getVendorSettleTime());
+//        unsettledBet.setResultTime(betResultData.getResultTime());
+//        unsettledBet.setVendorBetId(betResultData.getVendorBetId());
+//        unsettledBet.setJackpotAmount(betResultData.getJackpotAmount());
         unsettledBet.setIsFreespin(Optional.ofNullable(betResultData.getIsFreespin()).orElse(0));
         unsettledBet.setStatus(betResultData.getBetStatus().code);
 

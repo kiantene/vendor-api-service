@@ -24,6 +24,7 @@ public class SettledBet extends BetInformation {
 
     public SettledBet(BetResultData betResultData, String traceId) {
         super(betResultData);
+        this.setId(this.generateId());
         this.setInternalTransactionId(traceId);
         this.setStatus(BetStatus.SETTLED.code);
         this.calculateResultType();
@@ -54,6 +55,10 @@ public class SettledBet extends BetInformation {
         modelMapper.map(endRoundSettledBet, this);
         this.calculateResultType();
         this.setCreateTime(System.currentTimeMillis());
+    }
+
+    public String generateId() {
+        return this.getVendorBetId() + '_' + this.getRoundId() + '_' + this.getVendorGameId() + '_' + this.getVendorPlayerId();
     }
 
     public void calculateResultType() {
