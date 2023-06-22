@@ -165,11 +165,13 @@ public class WalletService {
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
                 // throw idempotent exception if status is processing or success
-                // if status is error, we will resend to Operator with same betId
                 if (operatorStatus.equals(operatorStatusProcessing)) {
+                    log.warn("idempotentCheckForSettledBet.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new TransactionStillProcessingException();
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                    log.warn("idempotentCheckForSettledBet.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+
                     SettledBetIdempotentViolationException idempotentViolationException = new SettledBetIdempotentViolationException();
                     idempotentViolationException.setSettledBet(settledBet);
 
