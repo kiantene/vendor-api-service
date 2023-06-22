@@ -174,6 +174,9 @@ public class WalletService {
                     idempotentViolationException.setSettledBet(settledBet);
 
                     throw idempotentViolationException;
+                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                    settledBet.setOperatorStatus(operatorStatusProcessing);
+                    settledBetService.save(settledBet, settledBet.getRawData());
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
