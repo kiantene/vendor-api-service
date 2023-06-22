@@ -49,6 +49,8 @@ public class WalletService {
     private KafkaService kafkaService;
     @Autowired
     private CachingService cachingService;
+    @Autowired
+    private LoggingService loggingService;
 
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
@@ -197,10 +199,15 @@ public class WalletService {
         WalletBalanceVo balanceVo = null;
 
         // check for idempotency in settled_bet
+        Long startTime = System.currentTimeMillis();
         SettledBet settledBet = this.idempotentCheckForSettledBet(gameSession, betResultData);
+        loggingService.logProcessTime("doSettledBetResult ｜ walletService.idempotentCheckForSettledBet", startTime, traceId);
+
         boolean retry = settledBet != null;
 
+        startTime = System.currentTimeMillis();
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+        loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", startTime, traceId);
 
         if (!retry) {
             switch (resultType) {
@@ -247,31 +254,46 @@ public class WalletService {
         // send bet data to Operator
         try {
             settledBet.setOperatorStatus(statusProcessing);
+
+            startTime = System.currentTimeMillis();
             settledBetService.save(settledBet, rawData);
+            loggingService.logProcessTime("doSettledBetResult ｜ before walletBetResultAction.call, settledBetService.save", startTime, traceId);
 
             httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
             balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType);
             httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
+            startTime = System.currentTimeMillis();
             cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
+            loggingService.logProcessTime("doSettledBetResult ｜ cachingService.storePlayerLatestBalanceToRedis", startTime, traceId);
 
             // update operator status after receiving response from operator
             settledBet.setOperatorStatus(statusSuccess);
             settledBet.setPlayerBalance(balanceVo.getData().getBalance());
+
+            startTime = System.currentTimeMillis();
             settledBetService.save(settledBet, rawData);
+            loggingService.logProcessTime("doSettledBetResult ｜ , after walletBetResultAction.call, settledBetService.save", startTime, traceId);
 
             // send settled bet to kafka
             BetHistory betHistory = new BetHistory(settledBet);
+
+            startTime = System.currentTimeMillis();
             kafkaService.produceBetHistory(betHistory, settledBet);
+            loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", startTime, traceId);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             settledBet.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());
             // update operator status after receiving response from operator
+            startTime = System.currentTimeMillis();
             settledBetService.save(settledBet, rawData);
+            loggingService.logProcessTime("doSettledBetResult ｜ when invalidOperatorResponseException, kafkaService.produceBetHistory", startTime, traceId);
             throw invalidOperatorResponseException;
         }
 
+        startTime = System.currentTimeMillis();
         this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession);
+        loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", startTime, traceId);
 
         return balanceVo;
     }
@@ -353,14 +375,20 @@ public class WalletService {
         walletBetResultData.setInternalTransactionId(traceId);
 
         // Idempotent checks
+        Long startTime = System.currentTimeMillis();
         this.idempotentCheckForBetResult(gameSession, betResultData);
+        loggingService.logProcessTime("doUnsettledBetResult ｜ walletService.idempotentCheckForBetResult", startTime, traceId);
 
         // create bet result log first with betId = 0
+        startTime = System.currentTimeMillis();
         betResultLogService.create(traceId, "0", betResultData, gameSession, BigDecimal.ZERO, statusProcessing);
+        loggingService.logProcessTime("doUnsettledBetResult ｜ before walletBetResultAction, betResultLogService.create", startTime, traceId);
 
         switch (resultType) {
             case WIN, LOSE -> { // PP Win
+                startTime = System.currentTimeMillis();
                 List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getByRoundId", startTime, traceId);
 
                 unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
                 this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
@@ -372,7 +400,10 @@ public class WalletService {
             }
             case BET_WIN, BET_LOSE -> {
                 try {
+                    startTime = System.currentTimeMillis();
                     unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+                    loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getUnsettledBetByRoundId", startTime, traceId);
+
                     boolean operatorHasError = unsettledBet.getOperatorStatus() > 1;
                     boolean isVendorPGSoft = gameSession.getVendorId() == 2;
 
@@ -393,7 +424,9 @@ public class WalletService {
 
         // create unsettledBet first with betId = 0
         unsettledBet.setOperatorStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
+        startTime = System.currentTimeMillis();
         unsettledBetService.update(unsettledBet);
+        loggingService.logProcessTime("doUnsettledBetResult ｜ before walletBetResultAction, unsettledBetService.update", startTime, traceId);
 
         // send bet data to Operator
         try {
@@ -409,20 +442,38 @@ public class WalletService {
             httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
             // Create result_log record in couchbase for idempotent checks
+            startTime = System.currentTimeMillis();
             betResultLogService.create(traceId, unsettledBet.getBetId(), betResultData, gameSession, balanceVo.getData().getBalance(), statusSuccess);
+            loggingService.logProcessTime("doUnsettledBetResult ｜ after walletBetResultAction, betResultLogService.create", startTime, traceId);
 
             unsettledBet.setOperatorStatus(statusSuccess);
             switch (resultType) {
-                case WIN, LOSE -> unsettledBetService.update(unsettledBet);
-                case BET_WIN, BET_LOSE -> betHistoryService.createUnsettledBet(unsettledBet);
+                case WIN, LOSE -> {
+                    startTime = System.currentTimeMillis();
+                    unsettledBetService.update(unsettledBet);
+                    loggingService.logProcessTime("doUnsettledBetResult ｜ after walletBetResultAction, unsettledBetService.update", startTime, traceId);
+                }
+
+                case BET_WIN, BET_LOSE -> {
+                    startTime = System.currentTimeMillis();
+                    betHistoryService.createUnsettledBet(unsettledBet);
+                    loggingService.logProcessTime("doUnsettledBetResult ｜ after walletBetResultAction, unsettledBetService.createUnsettledBet", startTime, traceId);
+                }
             }
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
             // record status code from operator if they return an error
             Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
+
+            startTime = System.currentTimeMillis();
             betResultLogService.create(traceId, "0", betResultData, gameSession, BigDecimal.ZERO, operatorStatus);
+            loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.create", startTime, traceId);
+
             unsettledBet.setOperatorStatus(operatorStatus);
+
+            startTime = System.currentTimeMillis();
             unsettledBetService.update(unsettledBet);
+            loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.update", startTime, traceId);
 
             throw invalidOperatorResponseException;
         }

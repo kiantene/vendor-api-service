@@ -1,0 +1,30 @@
+package com.nextgen.gameaggregator.service;
+
+import com.google.gson.Gson;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import java.util.*;
+
+@Service
+@Slf4j
+public class LoggingService {
+    @Value("${logging.process-time:true}")
+    private Boolean enableProcessTime;
+
+    public void logProcessTime(String functionName, Long startTime, String traceId) {
+
+        //TODO ENABLE BASED ON enableProcessTime STATUS
+//        if (!enableProcessTime) return;
+
+        Long endTime = System.currentTimeMillis();
+        Gson gson = new Gson();
+        HashMap<String, Object> logInfo = new HashMap<>();
+        logInfo.put("FunctionName: ", functionName);
+        logInfo.put("TraceId: ", traceId);
+        logInfo.put("StartTime: ", startTime);
+        logInfo.put("EndTime: ", endTime);
+        logInfo.put("TotalProcessMs: ", endTime - startTime);
+        log.info(gson.toJson(logInfo));
+    }
+}
