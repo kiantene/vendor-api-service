@@ -97,6 +97,13 @@ public class VendorService extends BaseVendorService {
         return vendorLanguageCode;
     }
 
+    public VendorLanguageCode getFirstVendorLanguageCode(Vendor vendor) throws VendorLanguageNotSupportedException {
+        VendorLanguageCode vendorLanguageCode = vendorLanguageCodeRepository.findTop1ByVendorIdAndStatus(vendor.getId(), Status.ACTIVE.code);
+        Optional.ofNullable(vendorLanguageCode).orElseThrow(VendorLanguageNotSupportedException::new);
+
+        return vendorLanguageCode;
+    }
+
     public VendorCurrency findVendorCurrency(Vendor vendor, Currency currency) throws VendorCurrencyNotSupportException {
         VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendor.getId(), currency.getId());
 

@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidUrlException;
+import com.nextgen.gameaggregator.operator.apiverification.agentinfo.AgentInfoVo;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,5 +33,24 @@ public class AgentApiCredentialService {
         }
 
         return credential;
+    }
+
+    public AgentInfoVo getAgentApiCredentialForIntegrationTest(Integer agentId, AgentInfoVo agentInfoVo) throws InvalidAgentApiCredentialException {
+
+        AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
+        Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
+        //UPDATE PG : TEMP WHITELIST LOCALHOST
+        try{
+            if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
+                ValidationUtils.isValidUrl(credential.getCallbackUrl());
+            }
+        }catch (InvalidUrlException invalidUrlException){
+            throw new InvalidAgentApiCredentialException();
+        }
+
+        agentInfoVo.setApiSecret(credential.getApiSecret());
+        agentInfoVo.setApiKey(credential.getApiKey());
+        agentInfoVo.setCurrency(credential.getAgent().getCurrency().getCode());
+        return agentInfoVo;
     }
 }
