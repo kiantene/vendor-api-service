@@ -2,13 +2,11 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
 import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -67,15 +65,6 @@ public class UnsettledBetService {
     }
 
     public List<UnsettledBet> getByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) {
-        List<UnsettledBet> unsettledBetLists = null;
-
-        try {
-            unsettledBetLists = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
-
-        } catch (Exception e) {
-            //TODO ERROR HANDLING IF CONNECTION TO COUCHBASE IS FAILED
-            log.error("getBetDataListByRoundId ERROR, details : " + e);
-        }
-        return unsettledBetLists;
+        return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
     }
 }

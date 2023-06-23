@@ -32,10 +32,6 @@ public class SettledBetService {
             settledBet.setRawData(DigestUtils.md5Hex(rawData));
         }
 
-        if (settledBet.getCreateTime() == 0) {
-            settledBet.setCreateTime(System.currentTimeMillis());
-        }
-
         settledBet.setProcessingStatus(0);
         rawSettledBetRepository.save(settledBet);
 

@@ -72,9 +72,8 @@ public class ResultAction {
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
-            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
-            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
-            responseVo.setCash(rawBetResultLog.getBalance());
+            responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
+            responseVo.setCash(idempotentViolationException.getBalance());
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);

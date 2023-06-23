@@ -19,6 +19,7 @@ public class UnsettledBet extends BetInformation {
 
     public UnsettledBet(BetResultData betResultData) {
         super(betResultData);
+        this.setId(this.generateId());
         this.setStatus(BetStatus.UNSETTLED.code);
     }
 
@@ -32,5 +33,9 @@ public class UnsettledBet extends BetInformation {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(betInformation, this);
+    }
+
+    public String generateId() {
+        return this.getVendorBetId() + '_' + this.getRoundId() + '_' + this.getVendorGameId() + '_' + this.getVendorPlayerId();
     }
 }
