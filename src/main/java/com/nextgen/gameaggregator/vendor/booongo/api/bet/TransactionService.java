@@ -104,7 +104,6 @@ public class TransactionService {
                  GameNotSupportedException |
                  JsonProcessingException |
                  AuthenticationException |
-                 SettledBetIdempotentViolationException |
                  TransactionStillProcessingException |
                  CredentialNotFoundException e) {
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);

@@ -125,7 +125,7 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
-        } catch (BetResultIdempotentViolationException | SettledBetIdempotentViolationException |
+        } catch (BetResultIdempotentViolationException |
                 TransactionStillProcessingException e) {
             debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setErrorDescription("Transaction already processed");
