@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
-import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -28,7 +27,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -47,25 +45,6 @@ public class BetHistoryService {
 
     @Autowired
     private VendorLineService vendorLineService;
-
-    public Integer getResultType(BetInformation betInfo) {
-
-        BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
-        BigDecimal jackpotAmount = Optional.ofNullable(betInfo.getJackpotAmount()).orElse(BigDecimal.ZERO);
-
-        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
-        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
-
-        Integer betResultType = BetResultType.LOSE.code;
-
-        if (isJackpotAmountMoreThanZero) {
-            betResultType = BetResultType.JACKPOT.code;
-        } else if (isWinAmountMoreThanZero){
-            betResultType = BetResultType.WIN.code;
-        }
-
-        return betResultType;
-    }
 
     public Long getVendorSettleTime(BetResultData betResultData, UnsettledBet unsettledBet) {
         long settledTime = System.currentTimeMillis();

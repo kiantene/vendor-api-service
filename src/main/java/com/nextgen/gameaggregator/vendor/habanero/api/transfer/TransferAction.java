@@ -312,7 +312,7 @@ public class TransferAction {
     private boolean processBonusAndSettle(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, String gameId, Integer type, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog)
             throws BetNotFoundException, InvalidOperatorResponseException, TransactionStillProcessingException,
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
-            BetResultIdempotentViolationException, SettledBetIdempotentViolationException {
+            BetResultIdempotentViolationException {
 
         // Construct bet Dto
         BetDto betDto = new BetDto();

@@ -1,9 +1,16 @@
 package com.nextgen.gameaggregator.exception;
 
+import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
+
+import java.math.BigDecimal;
 
 public class BetResultIdempotentViolationException extends Exception {
-    private RawBetResultLog betResultLog;
+//    private RawBetResultLog betResultLog;
+    private Long vendorSettleTime;
+    private BigDecimal balance;
+    private String transactionId;
 
     public BetResultIdempotentViolationException() {
         super();
@@ -13,11 +20,23 @@ public class BetResultIdempotentViolationException extends Exception {
         super(message);
     }
 
-    public void setBetResultLog(RawBetResultLog betResultLog) {
-        this.betResultLog = betResultLog;
+    public BetResultIdempotentViolationException(BetInformation betInformation) {
+        super();
+
+        this.vendorSettleTime = betInformation.getVendorSettleTime();
+        this.balance = betInformation.getBalance();
     }
 
-    public RawBetResultLog getBetResultLog() {
-        return this.betResultLog;
+    public BetResultIdempotentViolationException(RawBetResultLog rawBetResultLog) {
+        super();
+
+        this.vendorSettleTime = System.currentTimeMillis();
+        this.balance = rawBetResultLog.getBalance();
+        this.transactionId = rawBetResultLog.getResultLogId();
     }
+
+    public Long getVendorSettleTime() { return this.vendorSettleTime; }
+    public BigDecimal getBalance() { return this.balance; }
+
+    public String getTransactionId() { return this.transactionId; }
 }
