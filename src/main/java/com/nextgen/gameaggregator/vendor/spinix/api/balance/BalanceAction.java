@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -84,32 +85,34 @@ public class BalanceAction {
             balanceDataVo.setWallet(balanceDataWalletVo);
             balanceVo.setStatus(status);
 
-        } catch(AuthenticationException | InvalidVendorLineException |  CredentialNotFoundException tokenNotFoundOrInvalidException) {
+        } catch (AuthenticationException | InvalidVendorLineException |
+                 CredentialNotFoundException tokenNotFoundOrInvalidException) {
             balanceErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
             balanceVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
-        } catch(GameNotSupportedException gameNotSupportedException) {
+        } catch (GameNotSupportedException gameNotSupportedException) {
             balanceErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch(DisabledGameException disabledGameException) {
+        } catch (DisabledGameException disabledGameException) {
             balanceErrorVo.setCode(ResponseCodes.GAME_NOT_AVAILABLE);
             balanceVo.setStatus(HttpStatus.SC_FORBIDDEN);
-        } catch(InvalidRequestException | CurrencyNotSupportedException | JsonProcessingException parameterInvalidException) {
+        } catch (InvalidRequestException | CurrencyNotSupportedException |
+                 JsonProcessingException parameterInvalidException) {
             balanceErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-        } catch(InvalidAgentApiCredentialException | DisabledVendorLineException |
+        } catch (InvalidAgentApiCredentialException | DisabledVendorLineException |
                  DisabledAgentPlayerException | InvalidPlayerException userNotFoundException) {
             balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch(InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             balanceErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } catch(Exception exception) {
+        } catch (Exception exception) {
             balanceErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
-            if(balanceVo.getStatus() == HttpStatus.SC_OK) {
+            if (balanceVo.getStatus() == HttpStatus.SC_OK) {
                 balanceVo.setData(balanceDataVo);
             } else {
                 status = balanceVo.getStatus();

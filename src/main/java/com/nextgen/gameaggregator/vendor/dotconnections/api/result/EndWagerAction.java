@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -78,25 +77,6 @@ public class EndWagerAction {
             // Process bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            //get unsettle record bet id
-            // UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
-
-            // Set unsettle record bet id to locate the data
-            // dto.setWagerId(unsettledBet.getVendorBetId());
-
-            // Set as unsettled so the bet record figures can be merged
-            // dto.setBetStatus(BetStatus.UNSETTLED);
-
-            // Process bet
-            // walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
-
-            // Set amount as 0 and bet status as settled to settle the bet record
-            // dto.setAmount(BigDecimal.ZERO);
-            // dto.setBetStatus(BetStatus.SETTLED);
-
-            // Settled the bet
-            // BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
-
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -132,7 +112,6 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
                  InvalidAgentApiCredentialException | MergedBetDataIntegrityException |
-                 CouchbaseDataIntegrityException |
                  JsonProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
@@ -180,17 +159,5 @@ public class EndWagerAction {
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
-
-//    private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {
-//        UnsettledBet unsettledBet = null;
-//        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-//        if (unsettledBetList.isEmpty()) {
-//            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
-//        }
-//
-//        unsettledBet = unsettledBetList.get(0);
-//
-//        return unsettledBet;
-//    }
 
 }

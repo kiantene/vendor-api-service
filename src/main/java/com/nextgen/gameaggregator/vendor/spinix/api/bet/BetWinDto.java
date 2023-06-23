@@ -70,7 +70,9 @@ public class BetWinDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() { return null; }
+    public BigDecimal getWinLoss() {
+        return null;
+    }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
