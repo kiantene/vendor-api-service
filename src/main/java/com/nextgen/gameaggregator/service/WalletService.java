@@ -201,6 +201,8 @@ public class WalletService {
             // save the data into couchbase first for idempotency checks
             SettledBet processingSettledBet = new SettledBet(betResultData, traceId);
             processingSettledBet.setOperatorStatus(operatorStatusProcessing);
+            processingSettledBet.setVendorId(gameSession.getVendorId());
+            processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
             settledBetService.save(processingSettledBet, "");
         }
 
