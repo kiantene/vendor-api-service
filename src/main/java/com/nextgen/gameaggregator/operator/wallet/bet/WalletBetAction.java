@@ -65,6 +65,7 @@ public class WalletBetAction {
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
+
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)
