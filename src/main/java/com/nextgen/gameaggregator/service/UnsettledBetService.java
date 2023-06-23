@@ -65,15 +65,6 @@ public class UnsettledBetService {
     }
 
     public List<UnsettledBet> getByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) {
-        List<UnsettledBet> unsettledBetLists = null;
-
-        try {
-            unsettledBetLists = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
-
-        } catch (Exception e) {
-            //TODO ERROR HANDLING IF CONNECTION TO COUCHBASE IS FAILED
-            log.error("getBetDataListByRoundId ERROR, details : " + e);
-        }
-        return unsettledBetLists;
+        return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
     }
 }

@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
-import jakarta.persistence.Entity;
+import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.Data;
 import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;

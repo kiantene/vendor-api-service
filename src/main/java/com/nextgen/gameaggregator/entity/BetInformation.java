@@ -8,7 +8,6 @@ import org.modelmapper.convention.MatchingStrategies;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -45,7 +44,7 @@ public abstract class BetInformation {
     private Long createTime;
     private Long resultTime;
     private Integer processingStatus;
-    private BigDecimal playerBalance;
+    private BigDecimal balance;
 
     public BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();

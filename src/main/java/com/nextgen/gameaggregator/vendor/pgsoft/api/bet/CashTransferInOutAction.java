@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -80,11 +79,9 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
 
-        } catch (SettledBetIdempotentViolationException settledBetIdempotentViolationException) {
-            SettledBet settledBet = settledBetIdempotentViolationException.getSettledBet();
-
-            responseVo.setUpdatedTime(settledBet.getVendorSettleTime());
-            responseVo.setBalanceAmount(settledBet.getPlayerBalance());
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            responseVo.setUpdatedTime(betResultIdempotentViolationException.getVendorSettleTime());
+            responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
             responseVo.setCurrencyCode(vendorCurrencyCode);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -108,8 +105,10 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+
+//            invalidOperatorResponseException.getOperatorStatus()
+            parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.constant;
 
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -82,4 +83,12 @@ public class ResponseCodes {
         put(TRANSACTION_DOES_NOT_EXIST, "Transaction does not exist");
         put(NOT_ENOUGH_CASH_BALANCE_TO_BET, "Not enough cash balance to bet");
     }};
+
+//    public Integer getResponseCodeByOperatorStatus(InvalidOperatorResponseException exception) {
+//        switch (exception.getOperatorStatus()) {
+//            case ResponseCodes.Status.SC_UNKNOWN_ERROR.code -> {
+//
+//            }
+//        }
+//    }
 }
