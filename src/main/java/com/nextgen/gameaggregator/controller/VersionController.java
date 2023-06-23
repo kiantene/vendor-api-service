@@ -69,7 +69,7 @@ public class VersionController {
             e.printStackTrace();
         }
         String message = String.format(
-                "Build Version: %s<br>Checksum: %s<br>Build Time: %s", version, checksum, timezoneTimestamp);
+                "Build Version: %s<br>Build Time: %s", version, timezoneTimestamp);
         return message;
     }
 }

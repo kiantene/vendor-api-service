@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -39,6 +41,8 @@ public class SettleBetAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
 
     @PostMapping(path = EndPoints.SETTLE_BET)
     public CommonVo balance(HttpServletRequest request) {
@@ -47,8 +51,6 @@ public class SettleBetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
         try {
             //Retrieve request body in original string format
@@ -66,8 +68,13 @@ public class SettleBetAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, settleBetDto, gameSession);
 
+            //get unsettle record bet id
+            UnsettledBet unsettledBet = this.getUnsettleBet(settleBetDto, gameSession);
+            settleBetDto.setBetid(unsettledBet.getVendorBetId());
+
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, ResultType.BET_WIN, vendorService, httpRequestLog);
+            ResultType resultType = settleBetDto.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleBetDto, resultType, vendorService, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
@@ -87,6 +94,7 @@ public class SettleBetAction {
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
@@ -125,6 +133,22 @@ public class SettleBetAction {
 
         //Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, settleBetDto.getUsername());
+    }
+
+    private UnsettledBet getUnsettleBet(SettleBetDto dto, GameSession gameSession) throws BetNotFoundException {
+        UnsettledBet unsettledBet = null;
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+        if (unsettledBetList.isEmpty()) {
+            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
+        }
+        boolean isMultipleBetsInSameRound = unsettledBetList.size() > 1;
+        if (isMultipleBetsInSameRound) {
+            unsettledBet = unsettledBetList.get(unsettledBetList.size() - 1);
+        } else {
+            unsettledBet = unsettledBetList.get(0);
+        }
+
+        return unsettledBet;
     }
 
 }

@@ -2,22 +2,21 @@ package com.nextgen.gameaggregator.vendor.joker.api.settlebet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SettleBetDto implements BetResultData {
 
-    @NotBlank(message = ResponseCodes.INVALID_APPID)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
@@ -58,14 +57,16 @@ public class SettleBetDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String type;
 
+    private String betid;
+
     @Override
     public String getExternalTransactionId() {
-        return this.username + "_" + this.id;
+        return this.betid;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.username + "_" + this.id;
+        return this.betid;
     }
 
     @Override
@@ -80,7 +81,7 @@ public class SettleBetDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
@@ -90,17 +91,17 @@ public class SettleBetDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return (this.amount.subtract(this.getBetAmount()));
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.valueOf(0);
+        return null;
     }
 
     @Override
     public Long getVendorBetTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override

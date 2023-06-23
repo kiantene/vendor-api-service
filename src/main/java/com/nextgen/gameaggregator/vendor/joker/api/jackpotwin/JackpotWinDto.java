@@ -15,8 +15,8 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class JackpotWinDto implements BetResultData {
 
-    @NotBlank(message = ResponseCodes.INVALID_APPID)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
+    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)

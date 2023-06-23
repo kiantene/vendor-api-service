@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.joker.api.cancelbet;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -20,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 
 
 @RestController
@@ -40,6 +41,8 @@ public class CancelBetAction {
     private ValidationService validationService;
     @Autowired
     private BetHistoryService betHistoryService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public CommonVo balance(HttpServletRequest request) {
@@ -49,8 +52,6 @@ public class CancelBetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
         try{
             //Retrieve request body in original string format
@@ -65,33 +66,35 @@ public class CancelBetAction {
             //get rawGameSession by player name in lowercase (vendor return in uppercase) and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelBetDto.getUsername().toLowerCase(), cancelBetDto.getGamecode());
 
-            //Gather require data
-            BetHistory betHistory = betHistoryService.getBetTransactionByVendorTransactionId(cancelBetDto.getUsername() + "_" + cancelBetDto.getBetid(), gameSession.getVendorId());
-
             //Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, cancelBetDto, gameSession);
 
             //Send refund to Operator
-            //BetRefundEvent betRefundEvent = walletService.processRollback(traceId, cancelBetDto.getBetid(), rawGameSession, body);
-            BigDecimal betRefundEvent = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setBalance(betRefundEvent.setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             //commonVo.setBalance(betRefundEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
-                BetNotFoundException |
                 InvalidOperatorResponseException |
                 CredentialNotFoundException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
+        } catch (
+                RecordNotFoundException |
+                BetRefundIdempotentViolationException successException
+        ) {
+            commonVo.setResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setBalance((double) 0);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if(invalidRequestException.getValidation() != null) {
@@ -101,7 +104,8 @@ public class CancelBetAction {
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-        } finally {
+            httpService.logError(httpRequestLog, exception);
+        }finally {
             httpService.end(httpRequestLog, commonVo);
         }
 
@@ -121,7 +125,7 @@ public class CancelBetAction {
 
         //Verify received hash
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-        VendorService.verifyHash(request.getRequestBody(), secretKey);
+        VendorService.verifyHash(URLDecoder.decode(request.getRequestBody(), StandardCharsets.UTF_8), secretKey);
 
     }
 
