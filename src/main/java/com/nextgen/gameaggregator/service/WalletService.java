@@ -406,7 +406,7 @@ public class WalletService {
             loggingService.logStart();
             UnsettledBet newUnsettledBet = this.newUnsettledBet(gameSession, "", betResultData, traceId, ResultType.BET.code);
             betHistoryService.createUnsettledBet(newUnsettledBet);
-            loggingService.logProcessTime("idempotentCheckForBetResult ｜ before walletBetResultAction, betResultLogService.create", traceId);
+            loggingService.logProcessTime("idempotentCheckForBetResult ｜ before walletBetResultAction, betHistoryService.createUnsettledBet", traceId);
         }
 
         return unsettledBet;
@@ -479,7 +479,7 @@ public class WalletService {
 
                     unsettledBet.setOperatorStatus(operatorStatus);
                     unsettledBetService.update(unsettledBet);
-                    loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.create", traceId);
+                    loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.update", traceId);
                     throw invalidOperatorResponseException;
                 }
             }
@@ -494,7 +494,7 @@ public class WalletService {
                     unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
                     loggingService.logStart();
                     betHistoryService.createUnsettledBet(unsettledBet);
-                    loggingService.logProcessTime("doUnsettledBetResult ｜ before walletBetResultAction, unsettledBetService.update", traceId);
+                    loggingService.logProcessTime("doUnsettledBetResult ｜ before walletBetResultAction, betHistoryService.createUnsettledBet", traceId);
                 }
                 walletBetResultData = unsettledBet;
                 BigDecimal balance;
@@ -518,7 +518,7 @@ public class WalletService {
                     loggingService.logStart();
                     unsettledBet.setOperatorStatus(operatorStatus);
                     unsettledBetService.update(unsettledBet);
-                    loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.create", traceId);
+                    loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.update", traceId);
                     throw invalidOperatorResponseException;
                 }
             }
