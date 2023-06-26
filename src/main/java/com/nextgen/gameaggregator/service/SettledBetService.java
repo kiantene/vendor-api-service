@@ -81,6 +81,7 @@ public class SettledBetService {
             throws BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         Integer vendorId = gameSession.getVendorId();
+        Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String vendorBetId = betResultData.getVendorBetId();
         String roundId = betResultData.getRoundId();
@@ -110,7 +111,7 @@ public class SettledBetService {
         } catch (BetNotFoundException betNotFoundException) {
             // bet not found is expected
             // save the data into couchbase first for idempotency checks
-            SettledBet processingSettledBet = new SettledBet(betResultData, traceId);
+            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId);
             processingSettledBet.setOperatorStatus(operatorStatusProcessing);
             processingSettledBet.setVendorId(gameSession.getVendorId());
             processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());

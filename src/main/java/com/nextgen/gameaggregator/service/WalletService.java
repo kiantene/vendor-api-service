@@ -208,7 +208,7 @@ public class WalletService {
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
 
                     //do not send aggregated settledBet as betResultDataForOperator for settled and win scenario
-                    walletBetResultData = new SettledBet(betResultData, traceId);
+                    walletBetResultData = new SettledBet(betResultData, traceId, unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId());
                     walletBetResultData.setBetAmount(BigDecimal.ZERO);
                     walletBetResultData.setBetId(settledBet.getBetId());
                     walletBetResultData.setVendorBetTime(settledBet.getVendorBetTime());
@@ -298,7 +298,7 @@ public class WalletService {
         Integer vendorGameId = gameSession.getVendorGameId();
         String roundId = betResultData.getRoundId();
         Integer agentId = gameSession.getAgentId();
-        UnsettledBet unsettledBet = new UnsettledBet(betResultData);
+        UnsettledBet unsettledBet = new UnsettledBet(betResultData, vendorGameId, vendorPlayerId);
         WalletBalanceVo balanceVo = null;
 
         BetInformation walletBetResultData = unsettledBet;

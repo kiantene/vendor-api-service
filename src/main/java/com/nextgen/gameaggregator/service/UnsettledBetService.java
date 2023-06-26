@@ -144,7 +144,9 @@ public class UnsettledBetService {
                                          BetResultData betResultData, String traceId, Integer resultType) {
 
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
-        UnsettledBet unsettledBet = new UnsettledBet(betResultData);
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        UnsettledBet unsettledBet = new UnsettledBet(betResultData, vendorGameId, vendorPlayerId);
 
         unsettledBet.setInternalTransactionId(traceId);
         unsettledBet.setBetId(traceId);
