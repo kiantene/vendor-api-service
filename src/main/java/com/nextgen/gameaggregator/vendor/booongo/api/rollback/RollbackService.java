@@ -84,7 +84,6 @@ public class RollbackService {
                  RecordNotFoundException |
                  AuthenticationException |
                  InvalidOperatorResponseException |
-                 BetNotFoundException |
                  CouchbaseDataIntegrityException |
                  JsonProcessingException |
                  InvalidPlayerException |
@@ -98,7 +97,9 @@ public class RollbackService {
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
-        }catch(BetRefundIdempotentViolationException e){
+            httpService.logError(httpRequestLog, e);
+        }catch(BetNotFoundException |
+               BetRefundIdempotentViolationException e){
             balance = getCurrentBalance(traceId, gameSession);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
