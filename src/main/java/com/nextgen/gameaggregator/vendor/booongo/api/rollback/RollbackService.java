@@ -52,6 +52,12 @@ public class RollbackService {
         BalanceVo balanceVo = new BalanceVo();
         ErrorVo error = new ErrorVo();
 
+        BigDecimal balance = null;
+
+        GameSession gameSession = new GameSession();
+
+        long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
+
         try{
             // Retrieve request body in original string format
             rollbackDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), RollbackDto.class);
@@ -60,15 +66,13 @@ public class RollbackService {
             this.doValidation(rollbackDto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+            gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
-
-            long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
+            balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
 
             // Construct response data into vo
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -79,7 +83,6 @@ public class RollbackService {
         } catch (InvalidAgentApiCredentialException |
                  RecordNotFoundException |
                  AuthenticationException |
-                 BetRefundIdempotentViolationException |
                  InvalidOperatorResponseException |
                  BetNotFoundException |
                  CouchbaseDataIntegrityException |
@@ -95,6 +98,13 @@ public class RollbackService {
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
+        }catch(BetRefundIdempotentViolationException e){
+            balance = getCurrentBalance(traceId, gameSession);
+
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            balanceVo.setVersion(BigInteger.valueOf(unixTime));
+
+            vo.setBalance(balanceVo);
         }
 //        catch(Exception exception){
 //            httpService.logError(httpRequestLog, exception);
@@ -140,5 +150,19 @@ public class RollbackService {
         //Verify received brand is same with credential
         String brand = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJECT_NAME);
         ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try {
+            balance = walletService.getBalance(traceId, gameSession);
+
+        } catch (Exception exception) {
+
+        }
+
+        return balance;
     }
 }
