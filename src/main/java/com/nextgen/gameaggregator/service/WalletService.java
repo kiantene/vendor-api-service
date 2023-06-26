@@ -733,7 +733,7 @@ public class WalletService {
         unsettledBet.setResultType(resultType);
 //        unsettledBet.setVendorBetTime(betResultData.getVendorBetTime());
         unsettledBet.setGameSessionToken(gameSession.getToken());
-        unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
+        unsettledBet.setOperatorStatus(this.operatorStatusProcessing);
         unsettledBet.setRawData(rawData);
 //        unsettledBet.setWinAmount(betResultData.getWinAmount());
 //        unsettledBet.setWinLoss(betResultData.getWinLoss());
