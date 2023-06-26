@@ -28,6 +28,7 @@ public class BetResultLogService {
     @Autowired
     private CachingService cachingService;
 
+    @CachePut(value = "rawResultLog", key = "{#rawBetResultLog.externalTransactionId, #rawBetResultLog.roundId, #rawBetResultLog.vendorGameId, #rawBetResultLog.vendorPlayerId}", cacheManager = "cacheManager")
     public void save(RawBetResultLog rawBetResultLog) {
         rawBetResultLogRepository.save(rawBetResultLog);
     }
