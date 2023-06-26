@@ -332,23 +332,23 @@ public class WalletService {
     private RawBetResultLog idempotentCheckForBetResultLog(String traceId, GameSession gameSession, BetResultData betResultData)
             throws BetResultIdempotentViolationException, TransactionStillProcessingException {
 
-        String transactionId = betResultData.getExternalTransactionId();
+        String externalTransactionId = betResultData.getExternalTransactionId();
         String roundId = betResultData.getRoundId();
         String vendorGameId = gameSession.getVendorGameId().toString();
         String vendorPlayerId = gameSession.getVendorPlayerId().toString();
 
-        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(transactionId, roundId, vendorGameId, vendorPlayerId);
+        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(externalTransactionId, roundId, vendorGameId, vendorPlayerId);
 
         if (rawBetResultLog != null) {
             Integer operatorStatus = rawBetResultLog.getOperatorStatus();
 
             // throw idempotent exception if status is processing or success
             if (operatorStatus.equals(operatorStatusProcessing)) {
-                log.warn("idempotentCheckForBetResultLog.processing [" + traceId + "]: transactionId (" + transactionId + ") roundId (" + roundId + ")");
+                log.warn("idempotentCheckForBetResultLog.processing [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + transactionId + ") roundId (" + roundId + ")");
+                log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
 
                 BigDecimal newBalance = cachingService.getPlayerLatestBalanceFromRedis(gameSession).getBalance();
                 if (newBalance != null) {

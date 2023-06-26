@@ -55,8 +55,8 @@ public class BetResultLogService {
     }
 
     @Cacheable(value = "rawResultLog", key = "{#transactionId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public RawBetResultLog checkExists(String transactionId, String roundId, String vendorGameId, String vendorPlayerId) {
-        String id = this.generateId(transactionId, roundId, vendorGameId, vendorPlayerId);
+    public RawBetResultLog checkExists(String externalTransactionId, String roundId, String vendorGameId, String vendorPlayerId) {
+        String id = this.generateId(externalTransactionId, roundId, vendorGameId, vendorPlayerId);
 
         return rawBetResultLogRepository.findById(id).orElse(null);
     }
