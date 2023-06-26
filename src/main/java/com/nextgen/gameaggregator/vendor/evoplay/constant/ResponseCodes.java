@@ -5,7 +5,10 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum ResponseCodes {
     SUCCESS("ok", "OK"),
-    ERROR("error", "{{error}}");
+    ERROR("error", "{{error}}"),
+    TEMPORARY_ERROR("error", "Temporary Error"),
+    INSUFFICIENT_BALANCE_ERROR("error", "Insufficient Balance"),
+    UNKNOWN_ERROR("error", "Unknown Error");
 
     public final String status;
     public final String message;

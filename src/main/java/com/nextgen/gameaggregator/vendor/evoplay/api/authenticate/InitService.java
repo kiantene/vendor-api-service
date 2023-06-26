@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
 import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,12 +43,9 @@ public class InitService {
         // Retrieve the latest wallet balance from Operator
         BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-        ResponseDataVo responseDataVo = new ResponseDataVo();
-        responseDataVo.setBalance(balance);
-        responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-
         ResponseVo responseVo = new ResponseVo();
-        responseVo.setData(responseDataVo);
+        responseVo.getData().setBalance(balance);
+        responseVo.getData().setCurrency(gameSession.getVendorCurrencyCode());
 
         return responseVo;
     }

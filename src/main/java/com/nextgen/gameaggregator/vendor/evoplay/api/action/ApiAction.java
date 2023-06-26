@@ -2,8 +2,7 @@ package com.nextgen.gameaggregator.vendor.evoplay.api.action;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -17,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.evoplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
 import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
-import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,14 +86,40 @@ public class ApiAction {
                 }
             }
 
-        } catch (Exception e) {
-            ResponseDataVo responseDataVo = new ResponseDataVo();
-            responseDataVo.setScope("internal");
-            responseDataVo.setNo_refund(1);
-            responseDataVo.setMessage(ResponseCodes.ERROR.message);
+        } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCodes.ERROR);
-            responseVo.setError(responseDataVo);
 
+        } catch (InsufficientBalanceException e) {
+            responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE_ERROR);
+
+        } catch (TransactionStillProcessingException e) {
+            responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
+
+        } catch (InvalidOperatorResponseException e) {
+            System.out.println("InvalidOperatorResponseException");
+        } catch (CurrencyNotSupportedException e) {
+            System.out.println("CurrencyNotSupportedException");
+        } catch (DisabledGameException |
+                 DisabledAgentPlayerException |
+                 DisabledVendorLineException e) {
+            throw new RuntimeException(e);
+        } catch (InvalidRequestException |
+                 InvalidVendorLineException |
+                 InvalidPlayerException |
+                 InvalidAgentApiCredentialException |
+                 CredentialNotFoundException |
+                 GameNotSupportedException e) {
+            System.out.println("asd");
+        } catch (BetNotFoundException |
+                 RecordNotFoundException e) {
+            System.out.println("RecordNotFoundException");
+        } catch (SettledBetIdempotentViolationException |
+                 BetRefundIdempotentViolationException |
+                 BetResultIdempotentViolationException e) {
+            System.out.println("Idempotent");
+        } catch (Exception e) {
+            responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
+            responseVo.getError().setNo_refund(Formats.RESEND_CALLBACK);
             httpService.logError(httpRequestLog, e);
         } finally {
             // End the HTTP request logging and return the ResponseVo object

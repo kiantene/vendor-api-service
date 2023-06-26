@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.evoplay.vo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
+import com.nextgen.gameaggregator.vendor.evoplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.ResponseCodes;
 import lombok.Data;
 
@@ -23,10 +24,19 @@ public class ResponseVo implements HttpResponse {
     public void setResponseCode(ResponseCodes responseCode) {
         this.responseCode = responseCode;
         this.status = responseCode.status;
+        ResponseDataVo responseDataVo = new ResponseDataVo();
+        if (!this.responseCode.equals(ResponseCodes.SUCCESS)) {
+            responseDataVo.setNo_refund(Formats.NO_RESEND_CALLBACK);
+            responseDataVo.setScope(Formats.SCOPE_INTERNAL);
+            responseDataVo.setMessage(responseCode.message);
+            this.setError(responseDataVo);
+        } else {
+            this.setData(responseDataVo);
+        }
     }
 
     @Override
     public boolean hasError() {
-        return this.responseCode.equals(ResponseCodes.ERROR);
+        return !this.responseCode.equals(ResponseCodes.SUCCESS);
     }
 }
