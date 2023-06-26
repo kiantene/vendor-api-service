@@ -40,7 +40,7 @@ public class BetService {
             InvalidPlayerException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            DisabledVendorLineException {
+            DisabledVendorLineException, BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         BetDto betDto = new ModelMapper().map(callbackDto, BetDto.class);
