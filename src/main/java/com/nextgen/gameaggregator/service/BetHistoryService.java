@@ -97,33 +97,6 @@ public class BetHistoryService {
         return entity;
     }
 
-    /**
-     * Creates a unsettled bet record of the given RawUnsettledBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
-     * @return RawUnsettledBet entity object after a successful save
-     */
-    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public UnsettledBet createUnsettledBet(UnsettledBet entity) {
-        // Set default values
-        entity.setCreateTime(System.currentTimeMillis());
-        rawUnsettledBetRepository.save(entity);
-
-        return entity;
-    }
-
-    /**
-     * Creates a unsettled bet record of the given RawUnsettledBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
-     */
-    @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public void deleteUnsettledBet(UnsettledBet entity) {
-        rawUnsettledBetRepository.delete(entity);
-    }
-
     @Transactional
     public BetHistory jdbcCreate(BetHistory entity) {
 

@@ -1,12 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.BetResultLogRepository;
 import com.nextgen.gameaggregator.repository.RawBetResultLogRepository;
-import com.nextgen.gameaggregator.repository.RawResultBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -23,27 +24,11 @@ public class BetResultLogService {
     @Autowired
     private BetResultLogRepository betResultLogRepository;
     @Autowired
-    private RawResultBetRepository rawResultBetRepository;
-    @Autowired
     private RawBetResultLogRepository rawBetResultLogRepository;
+    @Autowired
+    private CachingService cachingService;
 
-    /**
-     * Creates a database record of the given BetResultLog entity object.
-     * This function will also populate default values of certain fields.
-     * Every time a Bet Result is received, a new record will be created.
-     *
-     * @param entity BetResultLog entity object containing the result of a previous bet
-     * @return BetResultLog entity object after a successful save
-     */
-    public BetResultLog create(BetResultLog entity) {
-        // Set default values
-        entity.setStatus(1); // TODO: refactor, map to constant/enum value
-        entity.setCreateTime(System.currentTimeMillis());
-
-        return betResultLogRepository.save(entity);
-    }
-
-    public void update(RawBetResultLog rawBetResultLog) {
+    public void save(RawBetResultLog rawBetResultLog) {
         rawBetResultLogRepository.save(rawBetResultLog);
     }
 
@@ -59,6 +44,47 @@ public class BetResultLogService {
         String id = this.generateId(externalTransactionId, roundId, vendorGameId, vendorPlayerId);
 
         return rawBetResultLogRepository.findById(id).orElse(null);
+    }
+
+    public RawBetResultLog idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+
+        String externalTransactionId = betResultData.getExternalTransactionId();
+        String roundId = betResultData.getRoundId();
+        String vendorGameId = gameSession.getVendorGameId().toString();
+        String vendorPlayerId = gameSession.getVendorPlayerId().toString();
+        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+        RawBetResultLog rawBetResultLog = this.checkExists(externalTransactionId, roundId, vendorGameId, vendorPlayerId);
+
+        if (rawBetResultLog != null) {
+            Integer operatorStatus = rawBetResultLog.getOperatorStatus();
+
+            // throw idempotent exception if status is processing or success
+            if (operatorStatus.equals(operatorStatusProcessing)) {
+                log.warn("idempotentCheckForBetResultLog.processing [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
+                throw new TransactionStillProcessingException();
+
+            } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
+
+                BigDecimal newBalance = cachingService.getPlayerLatestBalanceFromRedis(gameSession).getBalance();
+                if (newBalance != null) {
+                    rawBetResultLog.setBalance(newBalance);
+                }
+                throw new BetResultIdempotentViolationException(rawBetResultLog);
+
+            } else { // when bet result found and operator status is error, set status back to processing and resend txn to operator
+                rawBetResultLog.setOperatorStatus(operatorStatusProcessing);
+                this.save(rawBetResultLog);
+            }
+        } else {
+            // create bet result log first with betId = 0
+            rawBetResultLog = this.create(traceId, "0", betResultData, gameSession, BigDecimal.ZERO, operatorStatusProcessing);
+        }
+
+        return rawBetResultLog;
     }
 
     private String generateId(String transactionId, String roundId, String vendorGameId, String vendorPlayerId) {
