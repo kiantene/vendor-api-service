@@ -134,15 +134,15 @@ public class UnsettledBetService {
                 this.save(unsettledBet);
             }
         } catch (BetNotFoundException betNotFoundException) {
-            UnsettledBet newUnsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
-            this.create(newUnsettledBet);
+            unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
+            this.create(unsettledBet);
         }
 
         return unsettledBet;
     }
 
     public UnsettledBet newUnsettledBet(GameSession gameSession, String rawData,
-                                         BetResultData betResultData, String traceId, Integer resultType) {
+                                        BetResultData betResultData, String traceId, Integer resultType) {
 
         Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
         Integer vendorGameId = gameSession.getVendorGameId();

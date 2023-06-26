@@ -82,12 +82,11 @@ public class WalletService {
         log.info("processBet (" + traceId + "): " + betResultData);
         if (httpRequestLog != null) httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
 
-        BetEvent betEvent;
-
         loggingService.logStart();
         UnsettledBet unsettledBet = unsettledBetService.idempotentCheck(traceId, gameSession, betResultData, rawData, ResultType.BET);
         loggingService.logProcessTime("processBet ｜ unsettledBetService.idempotentCheck", traceId);
 
+        BetEvent betEvent;
         try {
             // record operator processing time
             if (httpRequestLog != null) httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
@@ -241,23 +240,24 @@ public class WalletService {
     }
 
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
-        if (unsettledBetList.size() > 0) { // multiple bets within same round
-            for (UnsettledBet betRecord : unsettledBetList) {
-                if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
-                    String traceId = UUID.randomUUID().toString();
-                    SettledBet newSettledBet = new SettledBet(betRecord, vendorService, traceId);
-                    newSettledBet.setVendorSettleTime(settledBet.getVendorSettleTime());
+        if (unsettledBetList.isEmpty()) return;
 
-                    //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
-                    EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
-                            gameSession.getCurrencyCode(), gameSession.getGameCode());
+        // multiple bets within same round
+        for (UnsettledBet betRecord : unsettledBetList) {
+            if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
+                String traceId = UUID.randomUUID().toString();
+                SettledBet newSettledBet = new SettledBet(betRecord, vendorService, traceId);
+                newSettledBet.setVendorSettleTime(settledBet.getVendorSettleTime());
 
-                    kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
-                }
+                //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
+                EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
+                        gameSession.getCurrencyCode(), gameSession.getGameCode());
 
-                //no matter match or not, will perform delete unsettled bet data with same round Id
-                unsettledBetService.delete(betRecord);
+                kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
             }
+
+            //no matter match or not, will perform delete unsettled bet data with same round Id
+            unsettledBetService.delete(betRecord);
         }
     }
 
@@ -375,7 +375,7 @@ public class WalletService {
      * @param httpRequestLog HttpRequest data object containing all information about the requests
      * @return ResultBetEvent An event object containing Bet and Bet Result information as well as the last balance
      * that can be used for further processing, if required
-     * @throws BetNotFoundException            If no bet record is found
+     * @throws BetNotFoundException If no bet record is found
      */
     public BigDecimal processBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
             throws BetNotFoundException, InvalidOperatorResponseException,

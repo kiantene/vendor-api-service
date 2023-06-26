@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.UnsettledBet;
 import java.math.BigDecimal;
 
 public class BetResultIdempotentViolationException extends Exception {
-//    private RawBetResultLog betResultLog;
     private Long vendorSettleTime;
     private BigDecimal balance;
     private String transactionId;
