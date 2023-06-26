@@ -160,16 +160,4 @@ public class EndWagerAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
-    private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {
-        UnsettledBet unsettledBet = null;
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-        if (unsettledBetList.isEmpty()) {
-            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
-        }
-
-        unsettledBet = unsettledBetList.get(unsettledBetList.size() - 1);
-
-        return unsettledBet;
-    }
-
 }

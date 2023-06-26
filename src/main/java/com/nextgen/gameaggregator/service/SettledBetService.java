@@ -1,7 +1,12 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -30,10 +35,6 @@ public class SettledBetService {
 
         if (settledBet.getRawData() == null) {
             settledBet.setRawData(DigestUtils.md5Hex(rawData));
-        }
-
-        if (settledBet.getCreateTime() == 0) {
-            settledBet.setCreateTime(System.currentTimeMillis());
         }
 
         settledBet.setProcessingStatus(0);
@@ -76,12 +77,47 @@ public class SettledBetService {
         }
     }
 
-//    public boolean isBetExists(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) {
-//        try {
-//            settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
-//            isBetExistsForSettledBet = true;
-//        } catch (BetNotFoundException betNotFoundException) {
-//            isBetExistsForSettledBet = false;
-//        }
-//    }
+    public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
+            throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+
+        Integer vendorId = gameSession.getVendorId();
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        String vendorBetId = betResultData.getVendorBetId();
+        String roundId = betResultData.getRoundId();
+        SettledBet settledBet = null;
+        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+        try {
+            settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+
+            if (settledBet != null) { // duplicate request found in settled_bet
+                Integer operatorStatus = settledBet.getOperatorStatus();
+                // throw idempotent exception if status is processing or success
+                if (operatorStatus.equals(operatorStatusProcessing)) {
+                    log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                    throw new TransactionStillProcessingException();
+
+                } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                    log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                    throw new BetResultIdempotentViolationException(settledBet);
+
+                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                    settledBet.setOperatorStatus(operatorStatusProcessing);
+                    this.save(settledBet, settledBet.getRawData());
+                }
+            }
+        } catch (BetNotFoundException betNotFoundException) {
+            // bet not found is expected
+            // save the data into couchbase first for idempotency checks
+            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId);
+            processingSettledBet.setOperatorStatus(operatorStatusProcessing);
+            processingSettledBet.setVendorId(gameSession.getVendorId());
+            processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
+            this.save(processingSettledBet, "");
+        }
+
+        return settledBet;
+    }
 }

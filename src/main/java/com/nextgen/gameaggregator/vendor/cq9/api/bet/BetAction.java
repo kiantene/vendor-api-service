@@ -6,10 +6,7 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.cq9.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.cq9.constant.Formats;
-import com.nextgen.gameaggregator.vendor.cq9.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.cq9.constant.*;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
@@ -33,19 +30,11 @@ import java.util.Optional;
 @Slf4j
 public class BetAction {
     @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private Environment environment;
-    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private HttpService httpService;
     @Autowired
     private ValidationService validationService;
-    @Autowired
-    private VendorGameService vendorGameService;
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
@@ -54,7 +43,7 @@ public class BetAction {
     @PostMapping(path = EndPoints.BET)
     public ResponseVo<CommonVo> bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        
+
         String traceId = httpRequestLog.getId();
         String wToken = request.getHeader("wtoken");
 
@@ -80,13 +69,18 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             // Construct VO
             CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betEvent.getLastBalance());
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(commonVo);
+
+        } catch (TransactionStillProcessingException |
+                 BetResultIdempotentViolationException IdempotentException) {
+
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -113,12 +107,7 @@ public class BetAction {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //SC_INSUFFICIENT_FUNDS
-            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
-                statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
-            } else {
-                statusVo.setCode(ResponseCodes.SERVER_ERROR);
-            }
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
