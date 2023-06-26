@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -103,7 +104,7 @@ public class UnsettledBetService {
         return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
     }
 
-    public UnsettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
+    public UnsettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData, String rawData, ResultType resultType)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         String transactionId = betResultData.getExternalTransactionId();
@@ -133,7 +134,7 @@ public class UnsettledBetService {
                 this.save(unsettledBet);
             }
         } catch (BetNotFoundException betNotFoundException) {
-            UnsettledBet newUnsettledBet = this.newUnsettledBet(gameSession, "", betResultData, traceId, ResultType.BET.code);
+            UnsettledBet newUnsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
             this.create(newUnsettledBet);
         }
 
@@ -164,6 +165,7 @@ public class UnsettledBetService {
         unsettledBet.setOperatorStatus(operatorStatusProcessing);
         unsettledBet.setRawData(rawData);
         unsettledBet.setIsFreespin(Optional.ofNullable(betResultData.getIsFreespin()).orElse(0));
+        unsettledBet.setBalance(BigDecimal.ZERO);
         unsettledBet.setStatus(betResultData.getBetStatus().code);
 
         return unsettledBet;

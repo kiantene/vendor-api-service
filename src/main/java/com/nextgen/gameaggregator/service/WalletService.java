@@ -77,69 +77,41 @@ public class WalletService {
      */
     public BetEvent processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData, HttpRequestLog httpRequestLog) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
-            InvalidAgentApiCredentialException {
+            InvalidAgentApiCredentialException, BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         log.info("processBet (" + traceId + "): " + betResultData);
         if (httpRequestLog != null) httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
 
-        Integer agentId = gameSession.getAgentId();
-        UnsettledBetOperatorFailEvent unsettledBetOperatorFailEvent = null;
-        UnsettledBet unsettledBet = null;
-        String vendorBetId = betResultData.getVendorBetId();
-        String roundId = betResultData.getRoundId();
-        Integer vendorGameId = gameSession.getVendorGameId();
-        Long vendorPlayerId = gameSession.getVendorPlayerId();
-        boolean isBetExists = true;
-        BigDecimal balance;
-        BetEvent betEvent = new BetEvent(null, BigDecimal.ZERO);
+        BetEvent betEvent;
+
+        loggingService.logStart();
+        UnsettledBet unsettledBet = unsettledBetService.idempotentCheck(traceId, gameSession, betResultData, rawData, ResultType.BET);
+        loggingService.logProcessTime("processBet ｜ unsettledBetService.idempotentCheck", traceId);
 
         try {
-            // checking if unsettled_bets table contains duplicate
-            loggingService.logStart();
-            unsettledBet = unsettledBetService.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
-            loggingService.logProcessTime("processBet ｜ unsettledBetService.getUnsettledBetByRoundId", traceId);
+            // record operator processing time
+            if (httpRequestLog != null) httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
+            WalletBalanceVo balanceVo = walletBetAction.call(traceId, gameSession, unsettledBet);
+            if (httpRequestLog != null) httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
-            // Existing bet transaction found (idempotent), do not process again but get the latest balance from operator
-            // TODO: add try-catch in case operator fails
-            balance = this.getBalance(traceId, gameSession);
+            BigDecimal balance = balanceVo.getData().getBalance();
+            unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
+            unsettledBet.setBalance(balance);
+            unsettledBetService.save(unsettledBet);
             betEvent = new BetEvent(unsettledBet, balance);
 
-        } catch (BetNotFoundException betNotFoundException) { // no bets found, can proceed to process this bet txn
-            isBetExists = false;
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+
+            // record status code from operator if they return an error
+            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
+            unsettledBet.setOperatorStatus(operatorStatus);
+
+            loggingService.logStart();
+            unsettledBetService.save(unsettledBet);
+            loggingService.logProcessTime("processBet ｜ when invalidOperatorResponseException, unsettledBetService.save", traceId);
+            throw invalidOperatorResponseException;
         }
 
-        // no record in database, will proceed to send as bet request and insert as unsettled_bet data to couchbase
-        if (!isBetExists) {
-            try {
-                // Send bet transaction to Operator to update player wallet
-                if (httpRequestLog != null) httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                WalletBalanceVo balanceVo = walletBetAction.call(traceId, agentId, gameSession, betResultData);
-                if (httpRequestLog != null) httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
-                balance = balanceVo.getData().getBalance();
-
-                // Generate rawUnsettledBet and insert into couchbase unsettled_bets table
-                unsettledBet = unsettledBetService.newUnsettledBet(gameSession, rawData, betResultData, traceId, ResultType.BET.code);
-                loggingService.logStart();
-                unsettledBetService.create(unsettledBet);
-                loggingService.logProcessTime("processBet ｜ unsettledBetService.create", traceId);
-                betEvent = new BetEvent(unsettledBet, balance);
-
-            } catch (InsufficientBalanceException insufficientBalanceException) {
-                unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
-                throw insufficientBalanceException;
-
-            } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-                unsettledBetOperatorFailEvent = new UnsettledBetOperatorFailEvent(unsettledBet, invalidOperatorResponseException.getOperatorStatus());
-                throw invalidOperatorResponseException;
-
-            } finally {
-                boolean isOperatorFailed = unsettledBetOperatorFailEvent != null;
-                if (isOperatorFailed) {
-                    // TODO: if operator failed, we just resend and does not need to update any status on unsettled bet, so eventing is not needed anymore
-                    //EventDispatcherSystem.emitAsync(unsettledBetOperatorFailEvent);
-                }
-            }
-        }
         if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
 
         return betEvent;
@@ -148,7 +120,7 @@ public class WalletService {
     // This function will be deprecated, all vendor files must use processBet with httpRequestLog
     public BetEvent processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
-            InvalidAgentApiCredentialException {
+            InvalidAgentApiCredentialException, BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         return this.processBet(traceId, gameSession, betResultData, rawData, null);
     }
@@ -362,16 +334,8 @@ public class WalletService {
             case BET_WIN, BET_LOSE -> { // data contains bet and result
                 // Idempotency checks on unsettled_bet
                 loggingService.logStart();
-                unsettledBet = unsettledBetService.idempotentCheck(traceId, gameSession, betResultData);
+                unsettledBet = unsettledBetService.idempotentCheck(traceId, gameSession, betResultData, rawData, resultType);
                 loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.idempotentCheck", traceId);
-
-                boolean retry = unsettledBet != null;
-                if (!retry) {
-                    unsettledBet = unsettledBetService.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
-                    loggingService.logStart();
-                    unsettledBetService.create(unsettledBet);
-                    loggingService.logProcessTime("doUnsettledBetResult ｜ before walletBetResultAction, unsettledBetService.create", traceId);
-                }
                 walletBetResultData = unsettledBet;
 
                 try {
