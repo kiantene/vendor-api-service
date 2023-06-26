@@ -27,7 +27,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping(EndPoints.PATH)
-public class ApiAction {
+public class CallbackAction {
 
     @Autowired
     private HttpService httpService;
@@ -46,7 +46,7 @@ public class ApiAction {
 
     // Handle incoming API requests
     @PostMapping
-    public ResponseVo handleApiCall(HttpServletRequest request) {
+    public ResponseVo callback(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseVo responseVo = new ResponseVo();
@@ -86,9 +86,6 @@ public class ApiAction {
                 }
             }
 
-        } catch (AuthenticationException e) {
-            responseVo.setResponseCode(ResponseCodes.ERROR);
-
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE_ERROR);
 
@@ -96,27 +93,34 @@ public class ApiAction {
             responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
 
         } catch (InvalidOperatorResponseException e) {
-            System.out.println("InvalidOperatorResponseException");
-        } catch (CurrencyNotSupportedException e) {
-            System.out.println("CurrencyNotSupportedException");
-        } catch (DisabledGameException |
+            if (e.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE_ERROR);
+            } else {
+                responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+            }
+
+        } catch (AuthenticationException |
+                 DisabledGameException |
                  DisabledAgentPlayerException |
-                 DisabledVendorLineException e) {
-            throw new RuntimeException(e);
+                 DisabledVendorLineException |
+                 BetNotFoundException |
+                 RecordNotFoundException e) {
+            responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+
         } catch (InvalidRequestException |
                  InvalidVendorLineException |
                  InvalidPlayerException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException |
-                 GameNotSupportedException e) {
-            System.out.println("asd");
-        } catch (BetNotFoundException |
-                 RecordNotFoundException e) {
-            System.out.println("RecordNotFoundException");
+                 GameNotSupportedException |
+                 CurrencyNotSupportedException e) {
+            responseVo.setResponseCode(ResponseCodes.INVALID_REQUEST_ERROR);
+
         } catch (SettledBetIdempotentViolationException |
                  BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
-            System.out.println("Idempotent");
+            responseVo.setResponseCode(ResponseCodes.IDEMPOTENT_ERROR);
+
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
             responseVo.getError().setNo_refund(Formats.RESEND_CALLBACK);

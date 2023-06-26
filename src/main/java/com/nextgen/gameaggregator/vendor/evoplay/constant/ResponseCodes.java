@@ -5,7 +5,11 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum ResponseCodes {
     SUCCESS("ok", "OK"),
-    ERROR("error", "{{error}}"),
+    ERROR("error", "Error"),
+    INVALID_REQUEST_ERROR("error", "Invalid Request"),
+    PROCESSING_ERROR("error", "Processing Error"),
+    IDEMPOTENT_ERROR("error", "Duplicate Request Error"),
+
     TEMPORARY_ERROR("error", "Temporary Error"),
     INSUFFICIENT_BALANCE_ERROR("error", "Insufficient Balance"),
     UNKNOWN_ERROR("error", "Unknown Error");
@@ -14,16 +18,3 @@ public enum ResponseCodes {
     public final String message;
 
 }
-
-//public class ResponseCodes {
-//    public static final String SUCCESS = "ok";
-//    public static final String ERROR = "error";
-//    public static final String INTERNAL = "internal";
-//    public static final String USER = "user";
-//    public static final Integer INTERNAL_SERVER_ERROR = 500;
-//
-//
-//    public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
-//        put(INTERNAL_SERVER_ERROR, "Internal server error");
-//    }};
-//}
