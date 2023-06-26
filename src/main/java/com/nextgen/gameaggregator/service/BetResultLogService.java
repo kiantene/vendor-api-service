@@ -43,6 +43,7 @@ public class BetResultLogService {
         return betResultLogRepository.save(entity);
     }
 
+    @CachePut(value = "rawResultLog", key = "{#rawBetResultLog.externalTransactionId, #rawBetResultLog.roundId, #rawBetResultLog.vendorGameId, #rawBetResultLog.vendorPlayerId}", cacheManager = "cacheManager")
     public void update(RawBetResultLog rawBetResultLog) {
         rawBetResultLogRepository.save(rawBetResultLog);
     }
