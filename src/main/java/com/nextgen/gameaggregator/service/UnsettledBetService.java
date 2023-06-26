@@ -16,7 +16,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,8 +24,6 @@ import java.util.Optional;
 public class UnsettledBetService {
     @Autowired
     private RawUnsettledBetRepository rawUnsettledBetRepository;
-    @Autowired
-    private CachingService cachingService;
 
     /**
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
@@ -129,11 +126,6 @@ public class UnsettledBetService {
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
                 log.warn("idempotentCheck.success [" + traceId + "]: transactionId (" + transactionId + ") roundId (" + roundId + ")");
-
-                BigDecimal newBalance = cachingService.getPlayerLatestBalanceFromRedis(gameSession).getBalance();
-                if (newBalance != null) {
-                    unsettledBet.setBalance(newBalance);
-                }
                 throw new BetResultIdempotentViolationException(unsettledBet);
 
             } else { // when bet result found and operator status is error, set status back to processing and resend txn to operator

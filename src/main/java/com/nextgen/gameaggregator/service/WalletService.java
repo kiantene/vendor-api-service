@@ -328,15 +328,14 @@ public class WalletService {
 
                 walletBetResultData.setBetId(unsettledBet.getBetId());
                 walletBetResultData.setVendorBetTime(unsettledBet.getVendorBetTime());
-                BigDecimal balance;
 
                 try {
                     // record operator processing time
                     httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
                     balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType);
-                    balance = balanceVo.getData().getBalance();
-                    cachingService.storePlayerLatestBalanceToRedis(gameSession, balance);
                     httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
+
+                    BigDecimal balance = balanceVo.getData().getBalance();
 
                     rawBetResultLog.setOperatorStatus(this.operatorStatusSuccess);
                     rawBetResultLog.setBalance(balance);
@@ -350,11 +349,11 @@ public class WalletService {
 
                     // record status code from operator if they return an error
                     Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
-                    loggingService.logStart();
                     rawBetResultLog.setOperatorStatus(operatorStatus);
-                    betResultLogService.save(rawBetResultLog);
-
                     unsettledBet.setOperatorStatus(operatorStatus);
+
+                    loggingService.logStart();
+                    betResultLogService.save(rawBetResultLog);
                     unsettledBetService.save(unsettledBet);
                     loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.save", traceId);
                     throw invalidOperatorResponseException;
@@ -374,26 +373,24 @@ public class WalletService {
                     loggingService.logProcessTime("doUnsettledBetResult ｜ before walletBetResultAction, unsettledBetService.create", traceId);
                 }
                 walletBetResultData = unsettledBet;
-                BigDecimal balance;
 
                 try {
                     // record operator processing time
                     httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
                     balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType);
-                    balance = balanceVo.getData().getBalance();
-                    cachingService.storePlayerLatestBalanceToRedis(gameSession, balance);
                     httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
-                    unsettledBet.setBalance(balance);
+                    unsettledBet.setBalance(balanceVo.getData().getBalance());
                     unsettledBetService.save(unsettledBet);
 
                 } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
                     // record status code from operator if they return an error
                     Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
-                    loggingService.logStart();
                     unsettledBet.setOperatorStatus(operatorStatus);
+
+                    loggingService.logStart();
                     unsettledBetService.save(unsettledBet);
                     loggingService.logProcessTime("doUnsettledBetResult ｜ when invalidOperatorResponseException, unsettledBetService.save", traceId);
                     throw invalidOperatorResponseException;

@@ -25,8 +25,6 @@ public class BetResultLogService {
     private BetResultLogRepository betResultLogRepository;
     @Autowired
     private RawBetResultLogRepository rawBetResultLogRepository;
-    @Autowired
-    private CachingService cachingService;
 
     @CachePut(value = "rawResultLog", key = "{#rawBetResultLog.externalTransactionId, #rawBetResultLog.roundId, #rawBetResultLog.vendorGameId, #rawBetResultLog.vendorPlayerId}", cacheManager = "cacheManager")
     public void save(RawBetResultLog rawBetResultLog) {
@@ -69,11 +67,6 @@ public class BetResultLogService {
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
                 log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
-
-                BigDecimal newBalance = cachingService.getPlayerLatestBalanceFromRedis(gameSession).getBalance();
-                if (newBalance != null) {
-                    rawBetResultLog.setBalance(newBalance);
-                }
                 throw new BetResultIdempotentViolationException(rawBetResultLog);
 
             } else { // when bet result found and operator status is error, set status back to processing and resend txn to operator
