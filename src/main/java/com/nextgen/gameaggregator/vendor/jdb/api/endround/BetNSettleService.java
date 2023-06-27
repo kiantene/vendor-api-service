@@ -63,7 +63,6 @@ public class BetNSettleService {
                  InvalidPlayerException playerNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
         } catch (BetNotFoundException |
-                 CouchbaseDataIntegrityException |
                  MergedBetDataIntegrityException |
                  DisabledAgentPlayerException |
                  DisabledVendorLineException |

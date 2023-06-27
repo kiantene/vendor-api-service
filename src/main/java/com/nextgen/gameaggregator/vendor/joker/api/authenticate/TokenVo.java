@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.joker.api.token;
+package com.nextgen.gameaggregator.vendor.joker.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

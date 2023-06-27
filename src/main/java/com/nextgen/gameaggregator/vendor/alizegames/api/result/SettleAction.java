@@ -80,9 +80,6 @@ public class SettleAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 

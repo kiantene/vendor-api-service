@@ -15,7 +15,7 @@ public class EndRoundSettledBet extends BetInformation {
     private String gameCode;
     private Integer gaResultType;
 
-    public EndRoundSettledBet(SettledBet settledBet, String agentPlayerUsername, String currencyCode, String gameCode, Integer gaResultType){
+    public EndRoundSettledBet(SettledBet settledBet, String agentPlayerUsername, String currencyCode, String gameCode) {
 
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
@@ -25,7 +25,7 @@ public class EndRoundSettledBet extends BetInformation {
         this.agentPlayerUsername = agentPlayerUsername;
         this.currencyCode = currencyCode;
         this.gameCode = gameCode;
-        this.gaResultType = gaResultType;
+        this.gaResultType = settledBet.getResultType();
     }
 
 }

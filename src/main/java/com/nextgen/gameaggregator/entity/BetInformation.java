@@ -7,7 +7,7 @@ import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 
 import java.math.BigDecimal;
-import java.util.UUID;
+import java.util.Optional;
 
 @Data
 @NoArgsConstructor
@@ -44,17 +44,20 @@ public abstract class BetInformation {
     private Long createTime;
     private Long resultTime;
     private Integer processingStatus;
+    private BigDecimal balance;
+
     public BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(betResultData, this);
 
-        if (this.internalTransactionId == null) this.internalTransactionId = UUID.randomUUID().toString();
         if (this.isFreespin == null) this.isFreespin = 0;
         if (this.betAmount == null) this.betAmount = BigDecimal.ZERO;
         if (this.winAmount == null) this.winAmount = BigDecimal.ZERO;
         if (this.jackpotAmount == null) this.jackpotAmount = BigDecimal.ZERO;
         if (this.winLoss == null) this.winLoss = BigDecimal.ZERO;
         if (this.effectiveTurnover == null) this.effectiveTurnover = BigDecimal.ZERO;
+
+        this.vendorSettleTime = Optional.ofNullable(betResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
     }
 }
