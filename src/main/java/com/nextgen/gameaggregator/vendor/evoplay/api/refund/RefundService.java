@@ -71,7 +71,7 @@ public class RefundService {
         return responseVo;
     }
 
-    private void doValidation(RefundDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
+    private void doValidation(RefundDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getData());

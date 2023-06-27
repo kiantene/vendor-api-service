@@ -43,7 +43,7 @@ public class WinDto extends CallbackDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.getData().getAmount();
+        return new BigDecimal(this.getData().getAmount());
     }
 
     @Override
@@ -83,7 +83,7 @@ public class WinDto extends CallbackDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (this.getData().getFinal_action().equals(1)) {
+        if (this.getData().getFinal_action().equals("1")) {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;

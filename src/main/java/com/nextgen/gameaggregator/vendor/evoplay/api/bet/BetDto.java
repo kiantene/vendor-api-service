@@ -37,7 +37,7 @@ public class BetDto extends CallbackDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getData().getAmount();
+        return new BigDecimal(this.getData().getAmount());
     }
 
     @Override

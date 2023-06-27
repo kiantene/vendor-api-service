@@ -3,13 +3,9 @@ package com.nextgen.gameaggregator.vendor.evoplay.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
-import org.hibernate.validator.constraints.Range;
-
-import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -35,11 +31,10 @@ public class DataDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String refund_callback_id;
 
-    @Range(min = 0, max = 1)
-    private Integer final_action;
+    private String final_action;
 
-    @NotNull
-    private BigDecimal amount;
+    @NotBlank
+    private String amount;
 
     @NotBlank
     @Size(max = 4)
