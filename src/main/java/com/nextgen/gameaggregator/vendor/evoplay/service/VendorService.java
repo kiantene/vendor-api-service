@@ -118,7 +118,10 @@ public class VendorService extends BaseVendorService {
     public static <O> String generateSignature(O Object, String key) {
         Map<String, Object> mapData = rearrangeMap(convertObjectToMap(Object, LinkedHashMap.class));
         mapData.remove("signature");
-        ((Map<String, Object>) mapData.get("data")).remove("detailsDto");
+        Map<String, Object> innerMap = (Map<String, Object>) mapData.get("data");
+        if (innerMap != null) {
+            innerMap.remove("detailsDto");
+        }
         MultiValueMap<String, String> formData = flattenMapIntoMultiValueMap(mapData, "");
         return md5(buildSignature(formData, key));
     }
