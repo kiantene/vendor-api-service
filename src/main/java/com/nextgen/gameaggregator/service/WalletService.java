@@ -384,22 +384,14 @@ public class WalletService {
 
         httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
         log.info("processBetResult:" + resultType + " (" + traceId + ") :" + betResultData);
-        ;
+
         WalletBalanceVo balanceVo;
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
 
-        try {
-            if (isSettled) {
-                balanceVo = this.doSettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog);
-            } else { // bets not settled yet
-                balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog);
-            }
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            //TODO: To discuss if Agent is disable, should we just remove the session of this player and return vendor with invalid bet request?
-//            resultBetOperatorFailEvent = new ResultBetOperatorFailEvent(unsettledBetResult, ResponseCodes.Status.SC_USER_DISABLED.code);
-
-            throw invalidAgentApiCredentialException;
-
+        if (isSettled) {
+            balanceVo = this.doSettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog);
+        } else { // bets not settled yet
+            balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog);
         }
         httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
 
