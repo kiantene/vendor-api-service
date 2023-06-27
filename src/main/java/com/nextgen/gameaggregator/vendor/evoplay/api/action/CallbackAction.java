@@ -116,8 +116,7 @@ public class CallbackAction {
                  CurrencyNotSupportedException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_REQUEST_ERROR);
 
-        } catch (SettledBetIdempotentViolationException |
-                 BetRefundIdempotentViolationException |
+        } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCodes.IDEMPOTENT_ERROR);
 

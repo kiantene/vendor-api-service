@@ -55,7 +55,6 @@ public class WinService {
             InsufficientBalanceException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            SettledBetIdempotentViolationException,
             TransactionStillProcessingException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
