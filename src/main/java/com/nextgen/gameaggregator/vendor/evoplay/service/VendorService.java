@@ -118,14 +118,12 @@ public class VendorService extends BaseVendorService {
     public static <O> String generateSignature(O Object, String key) {
         Map<String, Object> mapData = rearrangeMap(convertObjectToMap(Object, LinkedHashMap.class));
         mapData.remove("signature");
+        ((Map<String, Object>) mapData.get("data")).remove("detailsDto");
         MultiValueMap<String, String> formData = flattenMapIntoMultiValueMap(mapData, "");
         return md5(buildSignature(formData, key));
     }
 
-    public static Long generateTimestamp(String time){
-        if(time != null){
-            return Long.valueOf(time);
-        }
+    public static Long generateTimestamp() {
         return Instant.now().toEpochMilli();
     }
 

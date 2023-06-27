@@ -19,18 +19,20 @@ public class DataDto {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String round_id;
 
-    @NotBlank
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String refund_round_id;
 
+    @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String action_id;
 
+    @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String refund_action_id;
 
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max = 50)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String refund_callback_id;
 
     @Range(min = 0, max = 1)

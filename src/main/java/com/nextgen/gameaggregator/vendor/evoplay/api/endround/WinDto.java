@@ -58,17 +58,17 @@ public class WinDto extends CallbackDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return VendorService.generateTimestamp(this.getData().getDetailsDto().getDetails().getTime());
+        return VendorService.generateTimestamp();
     }
 
     @Override
     public Long getResultTime() {
-        return VendorService.generateTimestamp(this.getData().getDetailsDto().getDetails().getTime());
+        return VendorService.generateTimestamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.generateTimestamp(this.getData().getDetailsDto().getDetails().getTime());
+        return VendorService.generateTimestamp();
     }
 
     @Override

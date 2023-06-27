@@ -24,14 +24,12 @@ public class ResponseVo implements HttpResponse {
     public void setResponseCode(ResponseCodes responseCode) {
         this.responseCode = responseCode;
         this.status = responseCode.status;
-        ResponseDataVo responseDataVo = new ResponseDataVo();
         if (!this.responseCode.equals(ResponseCodes.SUCCESS)) {
-            responseDataVo.setNo_refund(Formats.NO_RESEND_CALLBACK);
-            responseDataVo.setScope(Formats.SCOPE_INTERNAL);
-            responseDataVo.setMessage(responseCode.message);
-            this.setError(responseDataVo);
-        } else {
-            this.setData(responseDataVo);
+            ResponseDataVo errorDataVo = new ResponseDataVo();
+            errorDataVo.setNo_refund(Formats.NO_RESEND_CALLBACK);
+            errorDataVo.setScope(Formats.SCOPE_INTERNAL);
+            errorDataVo.setMessage(responseCode.message);
+            this.setError(errorDataVo);
         }
     }
 
