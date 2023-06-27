@@ -81,9 +81,6 @@ public class BetService {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
-            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
@@ -91,6 +88,9 @@ public class BetService {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (Exception exception) {
+            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } finally {
             if (roundPayoutVo.getStatus() != HttpStatus.SC_OK) {
                 roundPayoutErrorVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(roundPayoutErrorVo.getCode()));
@@ -158,8 +158,7 @@ public class BetService {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (BetResultIdempotentViolationException | MergedBetDataIntegrityException |
-                 CouchbaseDataIntegrityException parameterInvalidException) {
+        } catch (BetResultIdempotentViolationException | MergedBetDataIntegrityException parameterInvalidException) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -171,6 +170,11 @@ public class BetService {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (Exception exception) {
+            // TODO: catch IdempotentException
+            roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             if (roundPayoutVo.getStatus() == HttpStatus.SC_OK) {
                 roundPayoutVo.setData(roundPayoutDataVo);
@@ -223,7 +227,7 @@ public class BetService {
             }
 
             // Get result type
-            ResultType resultType = vendorService.calculateResultType(betWinDto.getBetAmount(), betWinDto.getWinAmount(), BigDecimal.ZERO, 1);
+            ResultType resultType = vendorService.calculateResultType(betWinDto.getBetAmount(), betWinDto.getWinAmount(), BigDecimal.ZERO, true);
 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betWinDto, resultType, vendorService, httpRequestLog);
 
@@ -239,7 +243,7 @@ public class BetService {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (CouchbaseDataIntegrityException | MergedBetDataIntegrityException |
+        } catch (MergedBetDataIntegrityException |
                  BetResultIdempotentViolationException parameterInvalidException) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);

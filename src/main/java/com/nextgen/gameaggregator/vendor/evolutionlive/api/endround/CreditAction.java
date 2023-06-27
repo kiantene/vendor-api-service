@@ -57,7 +57,7 @@ public class CreditAction {
             this.doVerification(creditDto, gameSession);
 
             // 3.
-            ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), 0);
+            ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setBalance(balance);

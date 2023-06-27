@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -25,24 +24,16 @@ import jakarta.servlet.http.HttpServletRequest;
 public class TransferService {
     @Autowired
     private HttpService httpService;
-
     @Autowired
     private VendorLineService vendorLineService;
-
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-
-    @Autowired
-    private VendorGameService vendorGameService;
-
     @Autowired
     private GameSessionService gameSessionService;
-
     @Autowired
     private WalletService walletService;
-
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private ValidationService validationService;
 
     public TransferVo transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -85,10 +76,8 @@ public class TransferService {
                     String type = Optional.ofNullable(dto.getSpecialGame()) // Check type in SpecialGame
                             .map(SpecialGameDto::getType) // Map with dto
                             .orElse(null);
-                    BigDecimal payoutBalance = (type != null && type.equals("Free")) // If free spin, use BET_WIN
-                            ? walletService.processBetResult(traceId, gameSession, winDataDto, ResultType.BET_WIN, vendorService, httpRequestLog)
-                            : walletService.processBetResult(traceId, gameSession, winDataDto, // Else determine WIN or LOSE
-                            (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE, vendorService, httpRequestLog);
+                    ResultType resultType = determineResultType(type, winDataDto);
+                    BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
@@ -96,62 +85,46 @@ public class TransferService {
                 case Actions.BONUS -> transferVo.setResponseCode(ResponseCode.SUCCESS);
                 default -> transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             }
-
             transferVo.setTransferId(dto.getTransferId());
             transferVo.setMerchantCode(dto.getMerchantCode());
             transferVo.setMerchantTxId(gameSession.getToken());
             transferVo.setAcctId(gameSession.getVendorPlayerUsername());
             transferVo.setSerialNo(traceId);
-
-        } catch (InvalidRequestException |
-                 GameNotSupportedException |
-                 InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException |
-                 BetRefundIdempotentViolationException invalidException
-        ) {
-            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-
-        } catch (DisabledVendorLineException disabledVendorLineException) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (DisabledGameException disabledGameException) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            transferVo.setResponseCode(ResponseCode.CURRENCY_INVALID);
-
-        } catch (JsonProcessingException jsonProcessingException) {
-            transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
-
-        } catch (AuthenticationException authenticationException) {
+        } catch (AuthenticationException e) {
+            // account not found 
             transferVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
-
-        } catch (InsufficientBalanceException insufficientBalanceException) {
+        } catch (CredentialNotFoundException | UnableToFindCredentialsException |
+                 InvalidPlayerException e) {
+            // merchant not found
+            transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+        } catch (DisabledVendorLineException | DisabledAgentPlayerException |
+                 DisabledGameException | MergedBetDataIntegrityException e) {
+            // service inaccessible 
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+        } catch (CurrencyNotSupportedException e) {
+            // invalid currency
+            transferVo.setResponseCode(ResponseCode.CURRENCY_INVALID);
+        } catch (InsufficientBalanceException e) {
+            // insufficient balance
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
-
-        } catch (BetNotFoundException betNotFoundException) {
+        } catch (BetNotFoundException | RecordNotFoundException e) {
+            // record ID not found
             transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
-
-        } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-
-        } catch (RecordNotFoundException recordNotFoundException) {
-            transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
-
-        } catch (UnableToFindCredentialsException unableToFindCredentialsException) {
-            transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
-
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
-
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+        } catch (InvalidRequestException | InvalidOperatorResponseException |
+                 InvalidAgentApiCredentialException | GameNotSupportedException |
+                 BetRefundIdempotentViolationException e) {
+            // invalid request
+            transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+        } catch (JsonProcessingException e) {
+            // invalid format
+            transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
 
         } catch (BetResultIdempotentViolationException e) {
             // TODO: add handling logic
+
+        } catch (Exception exception) {
+            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+            httpService.logError(httpRequestLog, exception);
 
         } finally {
             httpService.end(httpRequestLog, transferVo);
@@ -174,7 +147,7 @@ public class TransferService {
             DisabledGameException,
             GameNotSupportedException,
             CurrencyNotSupportedException,
-            InvalidRequestException {
+            InvalidRequestException, InvalidPlayerException {
 
         // Verify received merchant code is same from Credentials merchant code 
         ValidationUtils.isEquals(merchantCode, dto.getMerchantCode(), UnableToFindCredentialsException::new);
@@ -186,17 +159,16 @@ public class TransferService {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getAcctId());
 
         // Verify channel
         if (!Channel.list.contains(dto.getChannel())) throw new InvalidRequestException();
+    }
 
+    private ResultType determineResultType(String type, WinDataDto winDataDto) {
+        return (type != null && type.equals("Free")) 
+            ? (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE // If free spin, use BET_WIN / BET_LOSE
+            : (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;  // Else WIN / END
     }
 }

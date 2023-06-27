@@ -66,7 +66,9 @@ public class EndRoundAction {
         // Construct Vo
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
+        CommonVo commonVo = new CommonVo();
         responseVo.setStatus(statusVo);
+        String vendorCurrencyCode = "";
 
         try {
             // Retrieve request body in original string format
@@ -89,6 +91,7 @@ public class EndRoundAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(unsettledBet.getGameSessionToken());
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(endRoundDto, gameSession, wToken);
@@ -97,16 +100,22 @@ public class EndRoundAction {
             this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
 
             // 6. Process result settle data
-            Integer isBet = 0;
-            ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), isBet);
+            ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), false);
             ProcessEndRoundDto processEndRoundDto = convertEndRoundDtoToProcessEndRoundDto(endRoundDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, processEndRoundDto, resultType, vendorService, httpRequestLog);
 
             // Construct VO data
-            CommonVo commonVo = new CommonVo();
             commonVo.setBalance(balance);
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(vendorCurrencyCode);
             responseVo.setData(commonVo);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            commonVo.setBalance(betResultIdempotentViolationException.getBalance());
+            commonVo.setCurrency(vendorCurrencyCode);
+            responseVo.setData(commonVo);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);

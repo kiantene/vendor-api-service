@@ -2,24 +2,17 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 
-import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
-
-import com.nextgen.gameaggregator.enums.BetStatus;
 import org.hibernate.validator.constraints.Range;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -161,18 +154,18 @@ public class TransferDto implements BetResultData, RollbackData {
     }
 
     public Long getTimestamp() {
-        Instant instant = LocalDateTime.now().atZone(ZoneOffset.UTC).toInstant();
-        long epochSecond = instant.getEpochSecond();
-        return epochSecond;
+        Instant instant = Instant.now();
+        long epochMilli = instant.toEpochMilli();
+        return epochMilli;
     }
 
     @Override
     public String getRollbackId() {
-        return this.transferId;
+        return this.referenceId;
     }
 
     @Override
     public Long getVendorSettledTime() {
-        return null;
+        return getTimestamp();
     }
 }

@@ -42,11 +42,15 @@ public class BetNSettleAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
+        String username = "";
+        String vendorCurrencyCode = "";
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             BetNSettleDto dto = HttpService.convertJsonToDto(body, BetNSettleDto.class);
+            username = dto.getUsername();
+            vendorCurrencyCode = dto.getCurrency();
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -57,24 +61,22 @@ public class BetNSettleAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send win result to Operator
-            Integer isBet = 1;
-            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
             responseVo.setBalance(balance);
-            responseVo.setUsername(dto.getUsername());
-            responseVo.setCurrency(dto.getCurrency());
+            responseVo.setUsername(username);
+            responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // Return original result when idempotent
-            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
             responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setBalance(rawBetResultLog.getBalance());
-            responseVo.setUsername(String.valueOf(rawBetResultLog.getAgentPlayerId()));
-            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            responseVo.setBalance(idempotentViolationException.getBalance());
+            responseVo.setUsername(username);
+            responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -98,10 +100,6 @@ public class BetNSettleAction {
 
         } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
-            httpRequestLog.setErrorMessage(couchbaseDataIntegrityException.getMessage());
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);

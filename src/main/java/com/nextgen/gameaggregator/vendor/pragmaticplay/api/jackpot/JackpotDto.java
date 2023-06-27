@@ -1,12 +1,8 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.jackpot;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetResultLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
 

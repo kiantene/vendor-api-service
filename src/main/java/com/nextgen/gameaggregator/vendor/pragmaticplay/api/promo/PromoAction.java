@@ -45,12 +45,14 @@ public class PromoAction {
 
         PromoVo responseVo = new PromoVo();
         String traceId = httpRequestLog.getId();
+        String vendorCurrencyCode = "";
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             //TODO: refine dto
             PromoDto dto = HttpService.convertQueryStringToDto(body, PromoDto.class);
+            vendorCurrencyCode = dto.getCurrency();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -73,10 +75,9 @@ public class PromoAction {
 
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
-            RawBetResultLog rawBetResultLog = idempotentViolationException.getBetResultLog();
-            responseVo.setTransactionId(VendorService.getTransactionId(rawBetResultLog.getResultLogId()));
-            responseVo.setCash(rawBetResultLog.getBalance());
-            responseVo.setCurrency(rawBetResultLog.getVendorCurrencyCode());
+            responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
+            responseVo.setCash(idempotentViolationException.getBalance());
+            responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (InvalidRequestException invalidRequestException) {
