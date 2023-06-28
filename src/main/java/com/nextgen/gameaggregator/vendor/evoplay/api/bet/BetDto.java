@@ -41,10 +41,14 @@ public class BetDto extends CallbackDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinAmount() { return null; }
+    public BigDecimal getWinAmount() {
+        return null;
+    }
 
     @Override
-    public BigDecimal getWinLoss() { return null; }
+    public BigDecimal getWinLoss() {
+        return null;
+    }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
@@ -73,7 +77,7 @@ public class BetDto extends CallbackDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return Boolean.valueOf(this.getData().getDetailsDto().getFreespin()) ? 1 : 0;
     }
 
     @Override
