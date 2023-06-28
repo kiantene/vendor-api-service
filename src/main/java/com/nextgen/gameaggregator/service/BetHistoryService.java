@@ -73,7 +73,6 @@ public class BetHistoryService {
         entity.setEffectiveTurnover(BigDecimal.ZERO);
         entity.setResultType(ResultType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
-        entity.setCreateTime(System.currentTimeMillis());
 
         try {
             betHistoryRepository.save(entity);
@@ -109,7 +108,6 @@ public class BetHistoryService {
         entity.setEffectiveTurnover(BigDecimal.ZERO);
         entity.setResultType(ResultType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
-        entity.setCreateTime(System.currentTimeMillis());
 
         jdbcTemplate.update("INSERT INTO bet_history (id, external_transaction_id, round_id, vendor_game_id, " +
                 "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
@@ -122,7 +120,7 @@ public class BetHistoryService {
                 entity.getGameSessionToken(), entity.getGameCategoryId(),
                 entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(),
                 entity.getEffectiveTurnover(), entity.getResultType(), entity.getStatus(),
-                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime());
+                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getResultTime());
 
         return entity;
     }
