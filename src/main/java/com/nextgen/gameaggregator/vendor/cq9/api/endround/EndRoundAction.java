@@ -83,24 +83,18 @@ public class EndRoundAction {
             // 1. Validate request parameters from vendor
             this.doValidation(endRoundDto, endRoundDataDtoList, wToken);
 
-            // 2. Gather require data
-            VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(endRoundDto.getAccount());
-            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(endRoundDto.getGamecode(), vendorPlayer.getVendorId());
-            UnsettledBet unsettledBet = betHistoryService.getRawUnsettledBetByBetIdAndRoundIdAndGameIdAndPlayerId(endRoundDto.getVendorBetId(),
-                    endRoundDto.getRoundId(), vendorGame.getId(), vendorPlayer.getId());
-
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(unsettledBet.getGameSessionToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(endRoundDto.getAccount(), endRoundDto.getGamecode());
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(endRoundDto, gameSession, wToken);
 
             // 5. Process extra endRoundDto bet data
-            this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto, unsettledBet);
+            this.doProcessExtraEndRoundDto(endRoundDataDtoList, endRoundDto);
 
             // 6. Process result settle data
-            ResultType resultType = vendorService.calculateResultType(unsettledBet.getBetAmount(), endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), false);
+            ResultType resultType = vendorService.calculateResultType(BigDecimal.ZERO, endRoundDto.getWinAmount(), endRoundDto.getJackpotAmount(), false);
             ProcessEndRoundDto processEndRoundDto = convertEndRoundDtoToProcessEndRoundDto(endRoundDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, processEndRoundDto, resultType, vendorService, httpRequestLog);
 
@@ -115,7 +109,7 @@ public class EndRoundAction {
             responseVo.setData(commonVo);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
@@ -128,9 +122,6 @@ public class EndRoundAction {
 
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
-
-        } catch (GameNotSupportedException gameNotSupportedException) {
-            statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -204,7 +195,7 @@ public class EndRoundAction {
         return resultType;
     }
 
-    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto, UnsettledBet unsettledBet) {
+    private void doProcessExtraEndRoundDto(List<EndRoundDataDto> endRoundDataDtoList, EndRoundDto dto) {
 
         Instant instant = Instant.parse(endRoundDataDtoList.get(0).getEventtime());
         Long resultTime = instant.toEpochMilli();
@@ -213,15 +204,10 @@ public class EndRoundAction {
         dto.setVendorSettleTime(dto.getResultTime());
 
         BigDecimal getJackpot = (dto.getJackpot() == null) ? BigDecimal.ZERO : dto.getJackpot();
-
         dto.setWinAmount(endRoundDataDtoList.get(0).getAmount().subtract(getJackpot));
-        dto.setEffectiveTurnover(unsettledBet.getBetAmount());
-        dto.setWinLoss(dto.getWinAmount().subtract(unsettledBet.getBetAmount()));
-        dto.setResultType(this.getResultType(dto, dto.getWinAmount()));
 
-        Integer checkFreeSpin = (dto.getFreegame() == null) ? 0 : dto.getFreegame().intValue();
+        int checkFreeSpin = (dto.getFreegame() == null) ? 0 : dto.getFreegame().intValue();
         checkFreeSpin = (checkFreeSpin > 0) ? 1 : 0;
-
         dto.setIsFreespin(checkFreeSpin);
     }
 
@@ -229,7 +215,7 @@ public class EndRoundAction {
 
         ProcessEndRoundDto processEndRoundDto = new ProcessEndRoundDto();
         processEndRoundDto.setExternalTransactionId(dto.getExternalTransactionId());
-        processEndRoundDto.setVendorBetId(dto.getVendorBetId());
+        processEndRoundDto.setVendorBetId(dto.getExternalTransactionId());
         processEndRoundDto.setRoundId(dto.getRoundId());
         processEndRoundDto.setGameId(dto.getGameId());
         processEndRoundDto.setBetAmount(dto.getBetAmount());
