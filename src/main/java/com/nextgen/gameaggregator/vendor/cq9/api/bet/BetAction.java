@@ -84,7 +84,7 @@ public class BetAction {
             responseVo.setData(commonVo);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
