@@ -73,7 +73,7 @@ public class EndWagerDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.roundId;
+        return this.wagerId;
     }
 
     @Override
