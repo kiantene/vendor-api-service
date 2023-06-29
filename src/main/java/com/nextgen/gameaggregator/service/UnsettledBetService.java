@@ -101,7 +101,7 @@ public class UnsettledBetService {
     }
 
     public List<UnsettledBet> getByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) {
-        return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorGameId, vendorPlayerId);
+        return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(roundId, vendorGameId, vendorPlayerId);
     }
 
     public UnsettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData, String rawData, ResultType resultType)
