@@ -444,6 +444,7 @@ public class WalletService {
             InvalidOperatorResponseException, BetRefundIdempotentViolationException, CouchbaseDataIntegrityException, BetNotFoundException {
 
         log.info("processRollback (" + traceId + "): " + rollbackData);
+        //do changes
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         BigDecimal balance = BigDecimal.ZERO;
