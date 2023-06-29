@@ -99,7 +99,7 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
-        } catch (RecordNotFoundException | BetNotFoundException betRecordNotExistException) {
+        } catch (BetNotFoundException betRecordNotExistException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
@@ -108,8 +108,7 @@ public class CancelWagerAction {
             responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException | JsonProcessingException |
-                 CouchbaseDataIntegrityException systemErrorException) {
+                 InvalidAgentApiCredentialException | JsonProcessingException | RecordNotFoundException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, systemErrorException);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
