@@ -2,13 +2,12 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -61,7 +60,6 @@ public class EndRoundDto implements BetResultData {
     private BigDecimal winAmount;
     private Long resultTime;
     private Long vendorSettleTime;
-    private ResultType resultType;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
     private Integer IsFreespin;
@@ -71,17 +69,9 @@ public class EndRoundDto implements BetResultData {
         return this.externalTransactionId;
     }
 
-    public void setExternalTransactionId(String externalTransactionId) {
-        this.externalTransactionId = externalTransactionId;
-    }
-
     @Override
     public String getVendorBetId() {
         return this.roundid;
-    }
-
-    public void setVendorBetId(String betId){
-        this.betId = betId;
     }
 
     @Override
@@ -104,26 +94,14 @@ public class EndRoundDto implements BetResultData {
         return this.winAmount;
     }
 
-    public void setWinAmount(BigDecimal winAmount) {
-        this.winAmount = winAmount;
-    }
-
     @Override
     public BigDecimal getWinLoss() {
-        return this.winLoss;
-    }
-
-    public void setWinLoss(BigDecimal winLoss) {
-        this.winLoss = winLoss;
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.effectiveTurnover;
-    }
-
-    public void setEffectiveTurnover(BigDecimal effectiveTurnover) {
-        this.effectiveTurnover = effectiveTurnover;
+        return null;
     }
 
     @Override
@@ -131,17 +109,9 @@ public class EndRoundDto implements BetResultData {
         return null;
     }
 
-    public void setResultType(ResultType resultType) {
-        this.resultType = resultType;
-    }
-
     @Override
     public Long getResultTime() {
         return this.resultTime;
-    }
-
-    public void setResultTime(Long resultTime) {
-        this.resultTime = resultTime;
     }
 
     @Override
@@ -157,18 +127,8 @@ public class EndRoundDto implements BetResultData {
     @Override
     public Integer getIsFreespin() { return this.IsFreespin;}
 
-    public void setIsFreespin(Integer isFreespin) {
-        this.IsFreespin = isFreespin;
-    }
-
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
-
-    public void setVendorSettleTime(Long vendorSettleTime) {
-        this.vendorSettleTime = vendorSettleTime;
-    }
-
-
 }
