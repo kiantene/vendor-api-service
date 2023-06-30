@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.booongo.api.rollback;
+package com.nextgen.gameaggregator.vendor.booongo.api.refund;
 
 import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;

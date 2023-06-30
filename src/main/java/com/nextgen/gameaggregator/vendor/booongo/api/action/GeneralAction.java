@@ -3,27 +3,23 @@ package com.nextgen.gameaggregator.vendor.booongo.api.action;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.booongo.api.bet.TransactionService;
 import com.nextgen.gameaggregator.vendor.booongo.api.login.LoginService;
-import com.nextgen.gameaggregator.vendor.booongo.api.rollback.RollbackService;
+import com.nextgen.gameaggregator.vendor.booongo.api.refund.RollbackService;
+import com.nextgen.gameaggregator.vendor.booongo.constant.Actions;
 import com.nextgen.gameaggregator.vendor.booongo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
-import com.nextgen.gameaggregator.vendor.booongo.constant.Actions;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -31,12 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 public class GeneralAction {
 
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
     private HttpService httpService;
-
-    @Autowired
-    private VendorLineService vendorLineService;
 
     @Autowired
     private LoginService loginService;

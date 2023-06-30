@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.booongo.api.rollback;
+package com.nextgen.gameaggregator.vendor.booongo.api.refund;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.vendor.booongo.dto.PlayerDto;

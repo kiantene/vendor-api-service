@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.booongo.api.rollback;
+package com.nextgen.gameaggregator.vendor.booongo.api.refund;
 
 import lombok.Data;
 import java.math.BigInteger;

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.booongo.api.rollback;
+package com.nextgen.gameaggregator.vendor.booongo.api.refund;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
@@ -29,11 +29,7 @@ public class RollbackService {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -97,7 +93,6 @@ public class RollbackService {
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
-            httpService.logError(httpRequestLog, e);
         }catch(BetNotFoundException |
                BetRefundIdempotentViolationException e){
             balance = getCurrentBalance(traceId, gameSession);
@@ -106,10 +101,12 @@ public class RollbackService {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
 
             vo.setBalance(balanceVo);
+        }catch(Exception exception){
+            httpService.logError(httpRequestLog, exception);
+            // vendor did not provide any error code, so using back general transaction error
+            error.setCode(ResponseCodes.OTHER_EXCEED);
+            vo.setError(error);
         }
-//        catch(Exception exception){
-//            httpService.logError(httpRequestLog, exception);
-//        }
          finally{
             vo.setUid(rollbackDto.getUid());
         }
@@ -130,8 +127,6 @@ public class RollbackService {
 
     private void doVerification(RollbackDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
             DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);

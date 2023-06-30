@@ -27,11 +27,7 @@ public class BalanceService {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -88,6 +84,11 @@ public class BalanceService {
             // vendor did not provide any error code, so using back general transaction error
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
+        }catch(Exception exception){
+            httpService.logError(httpRequestLog, exception);
+            // vendor did not provide any error code, so using back general transaction error
+            error.setCode(ResponseCodes.OTHER_EXCEED);
+            vo.setError(error);
         }finally{
             vo.setUid(balanceDto.getUid());
         }
@@ -108,8 +109,6 @@ public class BalanceService {
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws InvalidPlayerException, InvalidRequestException,
             DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, CurrencyNotSupportedException, CredentialNotFoundException, GameNotSupportedException {
-        //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getArgs().getPlayer().getId());
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
