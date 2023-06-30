@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.habanero.constant.GameStateMode;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
@@ -72,7 +73,7 @@ public class TransferAction {
             GameSession gameSession = new GameSession();
             if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null) {
                 //check 1st fundinfo gamestatemode value
-                if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0].getGameStateMode() != 3) {
+                if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0].getGameStateMode() != GameStateMode.EXPIRE) {
                     //Get GameSession by token
                     gameSession = gameSessionService.verifyToken(transferDto.getFundTransferRequestDto().getToken());
                 } else {
@@ -99,7 +100,7 @@ public class TransferAction {
             if (!transferDto.getFundTransferRequestDto().getIsRetry()) {
                 //Loop bet info
                 for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-                    if (fundInfoDto.getGameStateMode() == 1) {
+                    if (fundInfoDto.getGameStateMode() == GameStateMode.BET) {
                         //process bet result into unsettle bet when gamestatemode = 1(game round start)
                         Boolean betResult = processBet(fundInfoDto, transferDto.getFundTransferRequestDto(), transferDto.getBaseGame().getKeyName(), gameSession, traceId, body);
                         //setup debit and credit bet type respond message
@@ -128,7 +129,7 @@ public class TransferAction {
                     fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
 
                     //check settle bet available
-                    settleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), null, fundInfoDto.getInitialDebitTransferId(), "", "SETTLE_BET");
+                    settleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), null, fundInfoDto.getOriginalTransferId(), "", "SETTLE_BET");
                     if (!settleBetAvailable) {
                         //check unsettle bet result available
                         unsettleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), gameSession.getVendorGameId(), fundInfoDto.getOriginalTransferId(), transferDto.getFundTransferRequestDto().getGameInstanceId(), "UNSETTLE_BET_RESULT");
@@ -137,8 +138,10 @@ public class TransferAction {
                             Boolean settleResult = processBonusAndSettle(fundInfoDto, transferDto.getFundTransferRequestDto(), transferDto.getBaseGame().getKeyName(), fundInfoDto.getGameStateMode(), gameSession, traceId, httpRequestLog);
                         }
                     } else {
-                        //return error when settle bet available
-                        throw new BetNotFoundException();
+                        if(fundInfoDto.getGameStateMode() != GameStateMode.CREDIT_ENDROUND) {
+                            //return error when settle bet available with not endround recredit
+                            throw new BetNotFoundException();
+                        }
                     }
 
                 } else {
@@ -329,7 +332,7 @@ public class TransferAction {
 
 
         ResultType resultType = ResultType.WIN;
-        if (type == 2 || type == 3) {
+        if (type == GameStateMode.CREDIT_ENDROUND || type == GameStateMode.EXPIRE) {
             //handle settle bet and bonus free spin
             betDto.setWinAmount(dto.getAmount().abs());
             betDto.setJackpotAmount(null);
