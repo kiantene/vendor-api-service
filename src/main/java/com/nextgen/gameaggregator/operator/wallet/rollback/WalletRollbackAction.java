@@ -46,7 +46,7 @@ public class WalletRollbackAction {
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp)
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
@@ -59,7 +59,7 @@ public class WalletRollbackAction {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
-        WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, vendorBetId, roundId, gameSession, rollbackTimestamp);
+        WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, vendorBetId, roundId, gameSession, rollbackTimestamp, internalTransactionId);
         log.info("[" + apiUrl + EndPoints.WALLET_ROLLBACK + "] Request: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -123,10 +123,10 @@ public class WalletRollbackAction {
     }
 
     private WalletRollbackDto newWalletRollbackDto(
-            String traceId, String betId, String vendorBetId, String roundId, GameSession gameSession, Long rollbackTimestamp) {
+            String traceId, String betId, String vendorBetId, String roundId, GameSession gameSession, Long rollbackTimestamp, String internalTransactionId) {
         WalletRollbackDto walletRollbackDto = new WalletRollbackDto();
         walletRollbackDto.setTraceId(traceId);
-        walletRollbackDto.setTransactionId(traceId);
+        walletRollbackDto.setTransactionId(internalTransactionId);
         walletRollbackDto.setBetId(betId);
         walletRollbackDto.setExternalTransactionId(vendorBetId);
         walletRollbackDto.setRoundId(roundId);
