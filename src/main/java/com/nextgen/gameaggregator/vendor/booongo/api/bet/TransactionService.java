@@ -79,14 +79,26 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        } catch (BetResultIdempotentViolationException e) {
+        }catch (BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
             balance = getCurrentBalance(traceId, gameSession);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+        }catch(InvalidOperatorResponseException e){
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+
+            // check the status is insufficient code or not
+            if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
+                errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
+            }
+
+            balance = getCurrentBalance(traceId, gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
         }catch (DisabledVendorLineException |
-                 InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  CurrencyNotSupportedException |
@@ -117,21 +129,6 @@ public class TransactionService {
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
         }
-//        catch(InvalidOperatorResponseException e){
-//
-//            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-//
-//            // check the status is insufficient code or not
-//            if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
-//                errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
-//            }
-//
-//            balance = getCurrentBalance(traceId, gameSession);
-//
-//            // Retrieve current wallet balance
-//            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-//            vo.setError(errorVo);
-//        }
         finally {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
             vo.setUid(transactionDto.getUid());
