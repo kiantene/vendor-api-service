@@ -243,51 +243,50 @@ public class WalletService {
 
         SettledBet settledBet = null;
 
-        try{
-            loggingService.logStart();
-            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
-            loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+        loggingService.logStart();
+        settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
 
-            if (settledBet != null) { // duplicate request found in settled_bet
-                Integer operatorStatus = settledBet.getOperatorStatus();
-                // throw idempotent exception if status is processing or success
-                if (operatorStatus.equals(operatorStatusProcessing)) {
-                    log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
-                    throw new TransactionStillProcessingException();
+        if (settledBet != null) { // duplicate request found in settled_bet
+            Integer operatorStatus = settledBet.getOperatorStatus();
+            // throw idempotent exception if status is processing or success
+            if (operatorStatus.equals(operatorStatusProcessing)) {
+                log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                throw new TransactionStillProcessingException();
 
-                } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
-                    throw new BetResultIdempotentViolationException(settledBet);
+            } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                throw new BetResultIdempotentViolationException(settledBet);
 
-                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
-                    settledBet.setOperatorStatus(operatorStatusProcessing);
-                    settledBet.setVendorSettleTime(Optional.ofNullable(vendorSettledTime).orElse(settledBet.getVendorSettleTime()));
+            } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                settledBet.setOperatorStatus(operatorStatusProcessing);
 
-                    if(settledBet.getStatus() != BetStatus.REFUNDED.code || settledBet.getStatus() != BetStatus.CANCELLED.code){
-                        //this is normal settledBet but due to error from operator, then will need to send this tx to operator to cancel this bet
-                        settledBet.setInternalTransactionId(traceId);
-                        settledBet.setStatus(BetStatus.CANCELLED.code);
-
-                    } else {
-                        //else if the betStatus is either refund or cancel, which is retry request from vendor, so we need to retain internalTransactionId when send to operator
-                    }
-
-                    settledBetService.save(settledBet, settledBet.getRawData());
+                if(vendorSettledTime != null){
+                    //will be priority of using rollbackData vendorSettleTime if available.
+                    settledBet.setVendorSettleTime(vendorSettledTime);
                 }
-            }
-            return settledBet;
 
-        } catch (BetNotFoundException betNotFoundException) {
-            //bet not found is valid case, so when bet not found, we will proceed to check for unsettled/betrefundlog for refund scenario
-            throw new BetNotFoundException();
+                if (settledBet.getStatus() == BetStatus.SETTLED.code) {
+                    //this is normal settledBet but due to error from operator, then will need to send this tx to operator to cancel this bet
+                    settledBet.setInternalTransactionId(traceId);
+                    settledBet.setStatus(BetStatus.CANCELLED.code);
+
+                } else {
+                    //else if the betStatus is either refund or cancel, which is retry request from vendor, so we need to retain internalTransactionId when send to operator
+                }
+
+                settledBetService.save(settledBet, settledBet.getRawData());
+            }
         }
+        return settledBet;
+
     }
 
     private SettledBet doCheckBetExistsInUnsettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         SettledBet settledBet = null;
 
-        try{
+        try {
             loggingService.logStart();
             UnsettledBet unsettledBet = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
             loggingService.logProcessTime("doCheckBetExistsInUnsettledBet ｜ unsettledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
@@ -316,6 +315,7 @@ public class WalletService {
 
         } catch (BetNotFoundException betNotFoundException) {
             //bet not found is valid case, so when bet not found, we will notify vendor to drop this request
+            //TODO ADD BET NOT FOUND DATA STORING
             throw new BetNotFoundException();
         }
     }
@@ -536,9 +536,10 @@ public class WalletService {
         String roundId = unsettledBet.getRoundId();
         Integer agentId = gameSession.getAgentId();
         String vendorBetId = unsettledBet.getVendorBetId();
+        SettledBet settledBet = null;
 
-        SettledBet settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
-        if(settledBet == null){
+        settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
+        if (settledBet == null) {
             settledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
         }
 
@@ -561,16 +562,20 @@ public class WalletService {
         kafkaService.produceBetHistory(betHistory, settledBet);
         loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 
-        if(settledBet.getStatus() == BetStatus.REFUNDED.code) {
+        if (settledBet.getStatus() == BetStatus.REFUNDED.code) {
             //only refund request need to insert into betRefundLog and delete unsettledBet
             RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
+            loggingService.logStart();
             betRefundLogService.create(rawBetRefundLog);
+            loggingService.logProcessTime("processRollback ｜ betRefundLogService.create", traceId);
 
             //TODO INSERT INTO KAFKA
             BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
             log.info(new Gson().toJson(rawBetRefundLog));
 
+            loggingService.logStart();
             unsettledBetService.delete(unsettledBet);
+            loggingService.logProcessTime("processRollback ｜ unsettledBetService.delete", traceId);
         }
 
         return balance;
