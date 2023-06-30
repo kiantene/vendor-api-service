@@ -239,6 +239,72 @@ public class WalletService {
         return balanceVo;
     }
 
+    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
+
+        SettledBet settledBet = null;
+
+        try{
+            loggingService.logStart();
+            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+            loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+
+            if (settledBet != null) { // duplicate request found in settled_bet
+                Integer operatorStatus = settledBet.getOperatorStatus();
+                // throw idempotent exception if status is processing or success
+                if (operatorStatus.equals(operatorStatusProcessing)) {
+                    log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                    throw new TransactionStillProcessingException();
+
+                } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                    log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                    throw new BetResultIdempotentViolationException(settledBet);
+
+                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                    settledBet.setOperatorStatus(operatorStatusProcessing);
+                    settledBetService.save(settledBet, settledBet.getRawData());
+                }
+            }
+            return settledBet;
+
+        } catch (BetNotFoundException betNotFoundException) {
+            //bet not found is valid case, so when bet not found, we will proceed to check for unsettled/betrefundlog for refund scenario
+            throw new BetNotFoundException();
+        }
+    }
+
+    private SettledBet doCheckBetExistsInUnsettledBet(Long vendorPlayerId, String externalTransactionId, String traceId) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
+
+        SettledBet settledBet = null;
+
+        try{
+            loggingService.logStart();
+            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+            loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+
+            if (settledBet != null) { // duplicate request found in settled_bet
+                Integer operatorStatus = settledBet.getOperatorStatus();
+                // throw idempotent exception if status is processing or success
+                if (operatorStatus.equals(operatorStatusProcessing)) {
+                    log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                    throw new TransactionStillProcessingException();
+
+                } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                    log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                    throw new BetResultIdempotentViolationException(settledBet);
+
+                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                    settledBet.setOperatorStatus(operatorStatusProcessing);
+                    settledBetService.save(settledBet, settledBet.getRawData());
+                }
+            }
+
+        } catch (BetNotFoundException betNotFoundException) {
+            //bet not found is valid case, so when bet not found, we will proceed to check for unsettled/betrefundlog for refund scenario
+        }
+
+        return settledBet;
+    }
+
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
         if (unsettledBetList.isEmpty()) return;
 
