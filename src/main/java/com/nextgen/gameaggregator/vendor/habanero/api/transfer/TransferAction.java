@@ -284,7 +284,7 @@ public class TransferAction {
 
     private boolean processBet(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, String gameId, GameSession gameSession, String traceId, String body)
             throws InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
-            InvalidAgentApiCredentialException {
+            InvalidAgentApiCredentialException, BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         // Construct bet Dto
         BetDto betDto = new BetDto();
@@ -310,7 +310,7 @@ public class TransferAction {
     }
 
     private boolean processBonusAndSettle(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, String gameId, Integer type, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog)
-            throws BetNotFoundException, InvalidOperatorResponseException, CouchbaseDataIntegrityException,
+            throws BetNotFoundException, InvalidOperatorResponseException, TransactionStillProcessingException,
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
             BetResultIdempotentViolationException {
 

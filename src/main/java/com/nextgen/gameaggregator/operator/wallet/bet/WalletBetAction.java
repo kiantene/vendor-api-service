@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -45,7 +46,7 @@ public class WalletBetAction {
     @Autowired
     AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetResultData betResultData)
+    public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation)
             throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
@@ -55,16 +56,18 @@ public class WalletBetAction {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
+        Integer agentId = gameSession.getAgentId();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
-        WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betResultData);
+        WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betInformation);
         log.info("[" + apiUrl + EndPoints.WALLET_BET + "] Request: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
+
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -118,8 +121,13 @@ public class WalletBetAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
+            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
+            if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                throw new InsufficientBalanceException();
+            } else {
+                throw new InvalidOperatorResponseException(operatorStatus);
+            }
         } catch (Exception exception) {
             RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -127,22 +135,21 @@ public class WalletBetAction {
         return responseVo;
     }
 
-    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetResultData betResultData) {
-        BigDecimal amount = new BigDecimal(betResultData.getBetAmount().stripTrailingZeros().toPlainString());
+    private WalletBetDto newWalletBetDto(String traceId, GameSession gameSession, BetInformation betInformation) {
+        BigDecimal amount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
 
         WalletBetDto walletBetDto = new WalletBetDto();
         walletBetDto.setTraceId(traceId);
-        walletBetDto.setBetId(traceId);
-        walletBetDto.setTransactionId(traceId);
+        walletBetDto.setBetId(betInformation.getBetId());
+        walletBetDto.setTransactionId(betInformation.getInternalTransactionId());
         walletBetDto.setUsername(gameSession.getAgentPlayerUsername());
         walletBetDto.setCurrency(gameSession.getCurrencyCode());
         walletBetDto.setToken(gameSession.getToken());
-        //UPDATE PG : USE VENDORBETID
-        walletBetDto.setExternalTransactionId(betResultData.getVendorBetId());
+        walletBetDto.setExternalTransactionId(betInformation.getVendorBetId());
         walletBetDto.setAmount(amount);
         walletBetDto.setGameCode(gameSession.getGameCode());
-        walletBetDto.setRoundId(betResultData.getRoundId());
-        walletBetDto.setTimestamp(betResultData.getVendorBetTime());
+        walletBetDto.setRoundId(betInformation.getRoundId());
+        walletBetDto.setTimestamp(betInformation.getVendorBetTime());
 
         return walletBetDto;
     }

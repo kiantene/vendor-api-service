@@ -51,7 +51,7 @@ public class WalletRollbackAction {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
-            return operatorRequestService.responseOperatorSub();
+            return requestService.responseOperatorSub();
         }
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -66,6 +66,7 @@ public class WalletRollbackAction {
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
+
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)

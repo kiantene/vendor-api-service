@@ -63,7 +63,7 @@ public class KafkaConsumerService {
             settledBet.setResultType(endRoundSettledBet.getGaResultType());
 
             //6. create temp settleBet on couchbase
-            settledBetService.create(settledBet, settledBet.getRawData());
+            settledBetService.save(settledBet, settledBet.getRawData());
 
             BetHistory betHistory = new BetHistory(settledBet);
 

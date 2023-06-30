@@ -13,4 +13,6 @@ public interface RawSettledBetRepository extends CouchbaseRepository<SettledBet,
     SettledBet findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
 
     SettledBet findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId);
+
+    SettledBet findByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId);
 }

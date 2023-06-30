@@ -81,9 +81,7 @@ public class CancelBetService {
 
         } catch (BetNotFoundException betNotFoundException) {
             roundPayoutVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, dto);
-        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
-            roundPayoutVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, dto);
-        } catch(TransactionInvalidException transactionInvalidException) {
+        } catch (BetRefundIdempotentViolationException | TransactionInvalidException transactionInvalidException) {
             roundPayoutErrorVo.setCode(ResponseCodes.TRANSACTION_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
         } catch (GameNotSupportedException gameNotSupportedException) {
@@ -92,13 +90,14 @@ public class CancelBetService {
         } catch (JsonProcessingException | CouchbaseDataIntegrityException parameterInvalidException) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-        } catch (RecordNotFoundException | InvalidPlayerException | InvalidAgentApiCredentialException | InvalidOperatorResponseException userNotFoundException) {
+        } catch (RecordNotFoundException | InvalidPlayerException | InvalidAgentApiCredentialException |
+                 InvalidOperatorResponseException userNotFoundException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, userNotFoundException);
         } catch (Exception exception) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
-            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
             if (roundPayoutVo.getStatus() != HttpStatus.SC_OK) {
@@ -115,7 +114,7 @@ public class CancelBetService {
         try {
             SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
-            if(settledBet != null && settledBet.getStatus() == BetStatus.REFUNDED.code) {
+            if (settledBet != null && settledBet.getStatus() == BetStatus.REFUNDED.code) {
                 // if refunded already, return success
                 throw new BetRefundIdempotentViolationException();
             }
@@ -123,7 +122,7 @@ public class CancelBetService {
             // if has not refunded before and bet already settled throw error
             throw new TransactionInvalidException();
 
-        } catch(BetNotFoundException e) {
+        } catch (BetNotFoundException e) {
             // does nothing
         }
     }
@@ -146,7 +145,7 @@ public class CancelBetService {
         RoundPayoutTransactionDto unsettledWin = txnMap.get(TransactionType.WIN);
 
         // Throw transaction invalid exception if there is a win transaction
-        if(unsettledWin != null) {
+        if (unsettledWin != null) {
             throw new TransactionInvalidException();
         }
     }
