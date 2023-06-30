@@ -124,7 +124,7 @@ public class BetAction {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
             } else {
-                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
