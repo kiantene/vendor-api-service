@@ -1,0 +1,16 @@
+package com.nextgen.gameaggregator.vendor.alize.constant;
+
+public class Endpoints {
+
+    public static final Integer TIMEOUT = 10000;
+
+    public static final String PATH = "api/v1/alize/";
+    public static final String GAME_URL = "geturl";
+    public static final String AUTHENTICATE = "authenticate";
+    public static final String BALANCE = "balance";
+    public static final String BET_N_SETTLE = "betNSettle";
+    public static final String CANCEL_BET_N_SETTLE = "cancelBetNSettle";
+    public static final String PLACE_BET = "placeBet";
+    public static final String SETTLE_BET = "settleBet";
+    public static final String CANCEL_BET = "cancelBet";
+}

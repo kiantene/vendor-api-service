@@ -1,22 +1,22 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.CouchbaseDataIntegrityException;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.math.BigDecimal;
 
 @Service
 @Slf4j
@@ -24,21 +24,48 @@ public class SettledBetService {
 
     @Autowired
     RawSettledBetRepository rawSettledBetRepository;
-    @Autowired
-    BetHistoryRepository betHistoryRepository;
-    @Autowired
-    private BetHistoryService betHistoryService;
 
-    @Caching( put = {
-            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}" , cacheManager = "cacheManager"),
+    @Caching(put = {
+            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
             @CachePut(value = "SettledBet", key = "{#settledBet.vendorBetId, #settledBet.roundId, #settledBet.vendorId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
     })
-    public SettledBet create(SettledBet settledBet, String rawData) {
-        settledBet.setResettleNum(Optional.ofNullable(settledBet.getResettleNum()).orElse(0));
-        settledBet.setRawData(Optional.ofNullable(settledBet.getRawData()).orElse(DigestUtils.md5Hex(rawData)));
-        settledBet.setCreateTime(System.currentTimeMillis());
+    public SettledBet save(SettledBet settledBet, String rawData) {
+
+        if (settledBet.getResettleNum() == null) {
+            settledBet.setResettleNum(0);
+        }
+
+        if (settledBet.getRawData() == null) {
+            settledBet.setRawData(DigestUtils.md5Hex(rawData));
+        }
+
         settledBet.setProcessingStatus(0);
         rawSettledBetRepository.save(settledBet);
+
+        return settledBet;
+    }
+
+    public SettledBet update(Integer operatorStatus, BigDecimal balance, String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {
+        SettledBet settledBet = new SettledBet();
+        settledBet.setVendorBetId(vendorBetId);
+        settledBet.setRoundId(roundId);
+        settledBet.setVendorGameId(vendorGameId);
+        settledBet.setVendorPlayerId(vendorPlayerId);
+        settledBet.setId(settledBet.generateId());
+        settledBet.setBalance(balance);
+        settledBet.setOperatorStatus(operatorStatus);
+
+        rawSettledBetRepository.save(settledBet);
+        this.updateSettleBetCaching(settledBet);
+
+        return settledBet;
+    }
+
+    @Caching(put = {
+            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "SettledBet", key = "{#settledBet.vendorBetId, #settledBet.roundId, #settledBet.vendorId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    })
+    public SettledBet updateSettleBetCaching(SettledBet settledBet){
         return settledBet;
     }
 
@@ -56,6 +83,8 @@ public class SettledBetService {
     public SettledBet getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
 
         SettledBet settledBet = rawSettledBetRepository.findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+
+        System.out.println("vendorBetId = " + vendorBetId +" | roundId = " + roundId+" | vendorId = " + vendorId+" | vendorPlayerId = " + vendorPlayerId);
         if (settledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId");
         }
@@ -65,63 +94,62 @@ public class SettledBetService {
 
     /**
      * Delete settled bet record of the given settleBet entity object after successful inserted into kafka.
+     *
      * @param settledBet entity object containing information of a single settled bet
      */
-    public void delete(SettledBet settledBet){
+    public void delete(SettledBet settledBet) {
         try {
             rawSettledBetRepository.delete(settledBet);
-        } catch (Exception e){
+        } catch (Exception e) {
             log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
         }
     }
 
-    /**
-     * Create a Settled bet record of the given RawSettledBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param entity RawSettledBet entity object containing information of a single settled bet
-     * @return RawSettledBet entity object after a successful save
-     */
-    @CachePut(value = "SettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public SettledBet createSettledBet(SettledBet entity) throws CouchbaseDataIntegrityException {
-        // Set default values
-        entity.setStatus(2); // TODO: refactor, map to constant/enum value
-        entity.setCreateTime(System.currentTimeMillis());
-
-        try {
-            rawSettledBetRepository.save(entity);
-        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-
-            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
-        }
-
-        return entity;
+    public String generateId(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId) {
+        return betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + vendorGameId.toString() + '_' + vendorPlayerId.toString();
     }
 
-    /**
-     * Create a Settled bet record of the given RawSettledBet entity object to MariaDB.
-     * This function will also populate default values of certain fields.
-     *
-     * @param entity RawSettledBet entity object containing information of a single settled bet
-     */
-//    public void createSettleBetMariaDB(SettledBet entity) throws MergedBetDataIntegrityException, CouchbaseDataIntegrityException {
-//
-//        try {
-//            BetHistory betHistory = new BetHistory();
-//            BeanUtils.copyProperties(betHistory, entity);
-//            betHistory.setRawData(entity.getMd5RawSettledResult());
-//            //TODO REMOVING OPERATORSTATUS
-//            betHistory.setOperatorStatus(1);
-//            betHistory.setId(entity.getInternalTransactionId());
-//
-//            betHistoryRepository.save(betHistory);
-//
-//        } catch (IllegalAccessException illegalAccessException) {
-//            throw new MergedBetDataIntegrityException("copyProperties invalid : " + illegalAccessException.getMessage());
-//        } catch (InvocationTargetException invocationTargetException) {
-//            throw new MergedBetDataIntegrityException("copyProperties invalid : " + invocationTargetException.getMessage());
-//        } catch (DataIntegrityViolationException dataIntegrityViolationException) {
-//            throw new CouchbaseDataIntegrityException("Data incorrect : " + dataIntegrityViolationException.getMessage());
-//        }
-//    }
+    public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)
+            throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+
+        Integer vendorId = gameSession.getVendorId();
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        String vendorBetId = betResultData.getVendorBetId();
+        String roundId = betResultData.getRoundId();
+        SettledBet settledBet = null;
+        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+        try {
+            settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+
+            if (settledBet != null) { // duplicate request found in settled_bet
+                Integer operatorStatus = settledBet.getOperatorStatus();
+                // throw idempotent exception if status is processing or success
+                if (operatorStatus.equals(operatorStatusProcessing)) {
+                    log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                    throw new TransactionStillProcessingException();
+
+                } else if (operatorStatus.equals(operatorStatusSuccess)) {
+                    log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                    throw new BetResultIdempotentViolationException(settledBet);
+
+                } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
+                    settledBet.setOperatorStatus(operatorStatusProcessing);
+                    this.save(settledBet, settledBet.getRawData());
+                }
+            }
+        } catch (BetNotFoundException betNotFoundException) {
+            // bet not found is expected
+            // save the data into couchbase first for idempotency checks
+            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId);
+            processingSettledBet.setOperatorStatus(operatorStatusProcessing);
+            processingSettledBet.setVendorId(gameSession.getVendorId());
+            processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
+            this.save(processingSettledBet, "");
+        }
+
+        return settledBet;
+    }
 }

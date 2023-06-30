@@ -71,7 +71,9 @@ public class GameUrlService {
                  InvalidVendorResponseException | InvalidFormatException
                 gameClassException) {
             gameClassException.printStackTrace();
-            log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
+
+            log.error("GAME CLASS ERROR :");
+            gameClassException.printStackTrace();
             throw new InvalidVendorResponseException();
         }
 
@@ -84,8 +86,6 @@ public class GameUrlService {
         return platform;
 
     }
-
-
 
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
@@ -118,6 +118,16 @@ public class GameUrlService {
         }
 
         return vendorGameCodeMatched;
+    }
+
+    public VendorGameCode getFirstVendorGameCode(VendorGame vendorGame) throws GameNotSupportedException {
+
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findTop1ByVendorGameIdAndStatus(vendorGame.getId(), Status.ACTIVE.code);
+        //not vendor game id and language matched
+        Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
+
+        return vendorGameCode;
+
     }
 
     public String getVendorPlatformCode(String className, Integer platformId) throws VendorPlatformNotSupportedException {
@@ -161,7 +171,7 @@ public class GameUrlService {
             agentPlayerRepository.save(agentPlayer);
         } else {
 
-            if(agentPlayer.getStatus().equals(Status.INACTIVE.code)){
+            if (agentPlayer.getStatus().equals(Status.INACTIVE.code)) {
                 throw new DisabledAgentPlayerException();
             }
 

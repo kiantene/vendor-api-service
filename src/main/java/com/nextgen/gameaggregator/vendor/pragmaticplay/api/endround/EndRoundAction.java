@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.ResultBetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
@@ -68,6 +68,13 @@ public class EndRoundAction {
             responseVo.setCash(balance);
             responseVo.setBonus(BigDecimal.ZERO);
 
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            responseVo.setCash(betResultIdempotentViolationException.getBalance());
+            responseVo.setBonus(BigDecimal.ZERO);
+
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
@@ -84,9 +91,7 @@ public class EndRoundAction {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //Set balance to zero if agent credential is disabled
-            responseVo.setCash(BigDecimal.ZERO);
-            responseVo.setBonus(BigDecimal.ZERO);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
