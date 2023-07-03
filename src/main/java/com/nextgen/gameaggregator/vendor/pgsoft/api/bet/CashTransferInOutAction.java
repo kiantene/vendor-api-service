@@ -95,6 +95,7 @@ public class CashTransferInOutAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+            parentResponseVo.setData(null);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
@@ -109,6 +110,7 @@ public class CashTransferInOutAction {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
                 parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+                parentResponseVo.setData(null);
             } else {
                 parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
                 parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
