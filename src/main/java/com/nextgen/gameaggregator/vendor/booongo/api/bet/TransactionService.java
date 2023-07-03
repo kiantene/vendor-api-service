@@ -57,11 +57,11 @@ public class TransactionService {
             // Retrieve request body in original string format
             transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
-            // Validate request parameters from vendor (Non-database related)
-            this.doValidation(transactionDto);
-
             // Verify session token
             gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(transactionDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionDto, gameSession);
