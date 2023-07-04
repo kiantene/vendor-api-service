@@ -96,18 +96,11 @@ public class WagerAction {
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException |
-                 JsonProcessingException systemErrorException) {
+                 InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if (invalidOperatorResponseException.getOperatorStatus() != null && invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
-                // get current balance
-                responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
-                responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
-            } else {
-                responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            }
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
         } catch (Exception e) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
