@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.evoplay.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -133,5 +136,32 @@ public class VendorService extends BaseVendorService {
     @Override
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
         return betInfo.getEffectiveTurnover();
+    }
+
+    public ResultType calculateResultType(BetStatus betStatus, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet) {
+
+        winAmount = Optional.ofNullable(winAmount).orElse(BigDecimal.ZERO);
+        jackpotAmount = Optional.ofNullable(jackpotAmount).orElse(BigDecimal.ZERO);
+
+        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
+        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
+
+        ResultType resultType = null;
+
+        if (isBet) {
+            resultType = ResultType.BET_LOSE;
+        } else {
+            if (betStatus.equals(BetStatus.UNSETTLED)) {
+                resultType = ResultType.LOSE;
+            } else {
+                resultType = ResultType.END;
+            }
+        }
+
+        if (isWinAmountMoreThanZero || isJackpotAmountMoreThanZero) {
+            resultType = (isBet) ? ResultType.BET_WIN : ResultType.WIN;
+        }
+
+        return resultType;
     }
 }

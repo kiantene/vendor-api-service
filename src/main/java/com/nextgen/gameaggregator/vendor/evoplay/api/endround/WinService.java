@@ -63,7 +63,7 @@ public class WinService {
         this.doValidation(callbackDto);
         this.doVerification(callbackDto, gameSession, key);
 
-        ResultType resultType = vendorService.calculateResultType(winDto.getBetAmount(), winDto.getWinAmount(), winDto.getJackpotAmount(), false);
+        ResultType resultType = vendorService.calculateResultType(winDto.getBetStatus(), winDto.getWinAmount(), winDto.getJackpotAmount(), false);
         BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, resultType, vendorService, httpRequestLog);
 
         ResponseDataVo responseDataVo = new ResponseDataVo();

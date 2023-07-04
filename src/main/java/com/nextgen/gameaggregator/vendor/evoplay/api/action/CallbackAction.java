@@ -67,7 +67,7 @@ public class CallbackAction {
             callbackDto.setProject(projId);
             callbackDto.setVersion(Formats.CALLBACK_VERSION);
 
-            switch (callbackDto.getName()) {
+            switch (callbackDto.getName().toLowerCase()) {
                 case "init" -> {
                     responseVo = initService.init(callbackDto, gameSession, traceId, key);
                 }
