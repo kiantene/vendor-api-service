@@ -149,8 +149,7 @@ public class WalletService {
         BetInformation walletBetResultData = null;
         UnsettledBet unsettledBet = null;
         WalletBalanceVo balanceVo = null;
-        String updateOperatorStatusVendorBetId = "";
-        String updateOperatorStatusRoundId = "";
+        SettledBet updateCachingSettledBet = new SettledBet();
 
         // check for idempotency in settled_bet
         loggingService.logStart();
@@ -164,8 +163,7 @@ public class WalletService {
             if (resultType != ResultType.LOSE && resultType != ResultType.END) {
                 retry = true;
             }
-            updateOperatorStatusVendorBetId = settledBet.getVendorBetId();
-            updateOperatorStatusRoundId = settledBet.getRoundId();
+            updateCachingSettledBet = settledBet;
         }
 
         loggingService.logStart();
@@ -182,8 +180,11 @@ public class WalletService {
                     unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1) ? betResultData.getIsFreespin() : unsettledBet.getIsFreespin());
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                     walletBetResultData = settledBet;
-                    updateOperatorStatusVendorBetId = betResultData.getVendorBetId();
-                    updateOperatorStatusRoundId = betResultData.getRoundId();
+
+                    updateCachingSettledBet = new SettledBet(unsettledBet, vendorService, traceId);
+                    updateCachingSettledBet.setVendorBetId(betResultData.getVendorBetId());
+                    updateCachingSettledBet.setRoundId(betResultData.getRoundId());
+
                 }
                 case WIN -> { // CQ9
 
@@ -198,16 +199,16 @@ public class WalletService {
                     walletBetResultData.setVendorBetTime(settledBet.getVendorBetTime());
                     walletBetResultData.setWinLoss(settledBet.getWinLoss());
                     walletBetResultData.setEffectiveTurnover(settledBet.getEffectiveTurnover());
-                    updateOperatorStatusVendorBetId = settledBet.getVendorBetId();
-                    updateOperatorStatusRoundId = settledBet.getRoundId();
+                    updateCachingSettledBet = settledBet;
+
                 }
                 case BET_WIN, BET_LOSE -> { // PGSoft
 
                     unsettledBet = unsettledBetService.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                     walletBetResultData = settledBet;
-                    updateOperatorStatusVendorBetId = settledBet.getVendorBetId();
-                    updateOperatorStatusRoundId = settledBet.getRoundId();
+                    updateCachingSettledBet = settledBet;
+
                 }
             }
         } else {
@@ -242,7 +243,7 @@ public class WalletService {
 
             if (resultType == ResultType.LOSE || resultType == ResultType.END) {
                 loggingService.logStart();
-                settledBetService.update(operatorStatusSuccess, balanceVo.getData().getBalance(), updateOperatorStatusVendorBetId, updateOperatorStatusRoundId, gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                updateCachingSettledBet = settledBetService.update(operatorStatusSuccess, balanceVo.getData().getBalance(), updateCachingSettledBet);
                 loggingService.logProcessTime("doSettledBetResult ｜ settledBetService.update", traceId);
             }
 
@@ -251,7 +252,7 @@ public class WalletService {
             // update operator status after receiving response from operator
             if (resultType == ResultType.LOSE || resultType == ResultType.END) {
                 loggingService.logStart();
-                settledBetService.update(invalidOperatorResponseException.getOperatorStatus(), BigDecimal.ZERO, updateOperatorStatusVendorBetId, updateOperatorStatusRoundId, gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                settledBetService.update(invalidOperatorResponseException.getOperatorStatus(), BigDecimal.ZERO, updateCachingSettledBet);
                 loggingService.logProcessTime("doSettledBetResult ｜ when invalidOperatorResponseException, settledBetService.update", traceId);
             } else {
                 settledBetService.save(settledBet, rawData);
