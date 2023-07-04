@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.evolutionlive.api.refund;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.*;
@@ -64,16 +63,16 @@ public class CancelAction {
             this.doVerification(cancelDto, gameSession);
 
             // check if cancel bet exist in unsettled bet will not process rollback
-            String mergeId = cancelDto.getTransaction().getRefId() + '_' + cancelDto.getGame().getId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId();
-            UnsettledBet unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
-            if (unsettledBet != null) {
-                throw new BetNotFoundException();
-            }
+//            String mergeId = cancelDto.getTransaction().getRefId() + '_' + cancelDto.getGame().getId() + '_' + gameSession.getVendorGameId() + '_' + gameSession.getVendorPlayerId();
+//            UnsettledBet unsettledBet = rawUnsettledBetRepository.findById(mergeId).orElse(null);
+//            if (unsettledBet != null) {
+//                throw new BetNotFoundException();
+//            }
 
             // 3. Send refund to Operator
             BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService);
 
-            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
+//            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
             responseVo.setBalance(balance);
             responseVo.setUuid(cancelDto.getUuid());
 
@@ -95,11 +94,11 @@ public class CancelAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException |
-                 BetRefundIdempotentViolationException |
-                 CouchbaseDataIntegrityException e) {
+                 InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
+        } catch (BetRefundIdempotentViolationException e) {
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
