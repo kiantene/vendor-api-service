@@ -50,7 +50,6 @@ public class CashGetAction {
         // Construct Vo
         ResponseVo<CashGetVo> parentResponseVo = new ResponseVo<>();
         CashGetVo responseVo = new CashGetVo();
-        parentResponseVo.setData(responseVo);
 
         try {
             // Retrieve request body in original string format
@@ -75,6 +74,7 @@ public class CashGetAction {
             // 6. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
             // Fill VO required values
+            parentResponseVo.setData(responseVo);
             responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
             responseVo.setBalanceAmount(balance);
             responseVo.setUpdatedTime(Instant.now().toEpochMilli());
