@@ -52,14 +52,24 @@ public class WalletService {
     @Autowired
     private LoggingService loggingService;
 
-    private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
-    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
-        WalletBalanceVo balanceVo = walletBalanceAction.call(traceId, gameSession);
+    public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+        if (httpRequestLog != null) {
+            httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
+            httpRequestLog.setVendorId(gameSession.getVendorId());
+            httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+        }
+        WalletBalanceVo balanceVo = walletBalanceAction.call(traceId, gameSession, httpRequestLog);
         // TODO: to handle balance returned with more than 4 decimals
         // TODO: implement error handling
+        if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
+
         return balanceVo.getData().getBalance();
+    }
+
+    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+        return this.getBalance(traceId, gameSession, null);
     }
 
     /**
@@ -80,7 +90,12 @@ public class WalletService {
             InvalidAgentApiCredentialException, BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         log.info("processBet (" + traceId + "): " + betResultData);
-        if (httpRequestLog != null) httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+        if (httpRequestLog != null) {
+            httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
+            httpRequestLog.setVendorId(gameSession.getVendorId());
+            httpRequestLog.setRoundId(betResultData.getRoundId());
+            httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+        }
 
         loggingService.logStart();
         UnsettledBet unsettledBet = unsettledBetService.idempotentCheck(traceId, gameSession, betResultData, rawData, ResultType.BET);
@@ -89,9 +104,7 @@ public class WalletService {
         BetEvent betEvent;
         try {
             // record operator processing time
-            if (httpRequestLog != null) httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
-            WalletBalanceVo balanceVo = walletBetAction.call(traceId, gameSession, unsettledBet);
-            if (httpRequestLog != null) httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
+            WalletBalanceVo balanceVo = walletBetAction.call(traceId, gameSession, unsettledBet, httpRequestLog);
 
             BigDecimal balance = balanceVo.getData().getBalance();
             unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
@@ -218,9 +231,7 @@ public class WalletService {
 
         // send bet data to Operator
         try {
-            httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
-            balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType);
-            httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
+            balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog);
 
             loggingService.logStart();
             cachingService.storePlayerLatestBalanceToRedis(gameSession, balanceVo.getData().getBalance());
@@ -331,10 +342,7 @@ public class WalletService {
 
                 try {
                     // record operator processing time
-                    httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType);
-                    httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
-
+                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog);
                     BigDecimal balance = balanceVo.getData().getBalance();
 
                     rawBetResultLog.setOperatorStatus(this.operatorStatusSuccess);
@@ -367,10 +375,7 @@ public class WalletService {
                 walletBetResultData = unsettledBet;
 
                 try {
-                    // record operator processing time
-                    httpRequestLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType);
-                    httpRequestLog.setOperatorProcessEndTime(System.currentTimeMillis());
+                    balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog);
 
                     unsettledBet.setOperatorStatus(this.operatorStatusSuccess);
                     unsettledBet.setBalance(balanceVo.getData().getBalance());
@@ -410,7 +415,11 @@ public class WalletService {
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
             TransactionStillProcessingException, BetResultIdempotentViolationException {
 
+        httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
+        httpRequestLog.setVendorId(gameSession.getVendorId());
+        httpRequestLog.setRoundId(betResultData.getRoundId());
         httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+
         log.info("processBetResult:" + resultType + " (" + traceId + ") :" + betResultData);
 
         WalletBalanceVo balanceVo;
