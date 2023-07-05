@@ -5,6 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.exception.*;
@@ -50,7 +51,7 @@ public class WalletBetResultAction {
     @Autowired
     AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType)
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
@@ -64,12 +65,16 @@ public class WalletBetResultAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
-        log.info("[" + apiUrl + EndPoints.WALLET_BET_RESULT + "] Request: " + dto);
+        log.info("Request [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
+        if (httpRequestLog != null) {
+            httpRequestLog.setOperatorProcessStartTime(startTime);
+            httpRequestLog.setOperatorData(dto.toString());
+        }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
@@ -84,13 +89,19 @@ public class WalletBetResultAction {
                 .block();
 
         long endTime = System.currentTimeMillis();
+        if (httpRequestLog != null) {
+            if (apiResponse != null) {
+                httpRequestLog.setOperatorResponse(apiResponse.toString());
+            }
+            httpRequestLog.setOperatorProcessEndTime(endTime);
+        }
 
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {
-            log.info("[" + apiUrl + EndPoints.WALLET_BET_RESULT + "] Response: " + apiResponse);
+            log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);

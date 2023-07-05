@@ -60,7 +60,7 @@ public class BalanceAction {
 
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setCash(balance);
