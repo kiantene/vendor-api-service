@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -78,6 +79,29 @@ public class CancelBetAction {
             cancelBetVo.setTxId(traceId);
 //            cancelBetVo.setToken(rawGameSession.getToken());
 
+        } catch (BetNotFoundException betNotFoundException) {
+            cancelBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                //insufficient balance
+            } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
+                //Operator Bet not found
+            } else {
+                //Other operator errors
+            }
+            cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
@@ -90,7 +114,6 @@ public class CancelBetAction {
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
-                 InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException e) {
             cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
 

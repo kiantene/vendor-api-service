@@ -96,8 +96,7 @@ public class CancelAction {
                  DisabledGameException |
                  InvalidAgentApiCredentialException |
                  InvalidOperatorResponseException |
-                 BetRefundIdempotentViolationException |
-                 CouchbaseDataIntegrityException e) {
+                 BetRefundIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
