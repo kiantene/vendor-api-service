@@ -72,7 +72,7 @@ public class CashGetAction {
             // 5. Validate request operatorToken and secretKey
             VendorService.validateOperatorTokenAndSecretKey(dto.getOperatorToken(), dto.getSecretKey(), operatorToken, secretKey);
             // 6. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             // Fill VO required values
             parentResponseVo.setData(responseVo);
             responseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());

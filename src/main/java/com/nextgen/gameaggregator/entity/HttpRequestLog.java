@@ -13,11 +13,16 @@ import org.springframework.data.couchbase.repository.Scope;
 public class HttpRequestLog {
     @Id
     private String id;
+    private Integer vendorId;
+    private String operatorUsername;
     private String url;
+    private String roundId;
     private String method;
     private String headers;
     private String requestBody;
     private String responseBody;
+    private String operatorData;
+    private String operatorResponse;
     private String errorMessage;
     private Integer status;
     private String requestIp;

@@ -47,14 +47,6 @@ public class EndRoundAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private Environment environment;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.END_ROUND, consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)

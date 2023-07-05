@@ -74,7 +74,7 @@ public class BalanceAction {
             this.doVerification(dto, gameSession, sign, body);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             BalanceDataWalletVo balanceDataWalletVo = new BalanceDataWalletVo();
 
             // Set Balance and Currency
