@@ -82,15 +82,17 @@ public class FreeSpinAction {
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
-        } catch (InvalidPlayerException invalidPlayerException) {
+        } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
-        } catch (InvalidSignatureException | AuthenticationException signErrorException) {
+        } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
                  InvalidAgentApiCredentialException | JsonProcessingException systemErrorException) {
