@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.credit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -21,11 +23,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -52,7 +56,7 @@ public class CreditAction extends CommonDto {
     private VendorPlayerService vendorPlayerService;
 
     @PostMapping(path = EndPoints.CREDIT)
-    public CommonVo credit(HttpServletRequest request) throws JsonProcessingException {
+    public CommonVo credit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
@@ -116,7 +120,7 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
             creditVo.setErrorDescription("Debit transaction ID not found");
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e) {
+        } catch (InvalidRequestException | IOException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
@@ -136,6 +140,9 @@ public class CreditAction extends CommonDto {
                  InvalidOperatorResponseException | CouchbaseDataIntegrityException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
         } finally {
             if (creditVo.getErrorDescription() == null) {
                 creditVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(creditVo.getErrorCode()));
@@ -145,13 +152,16 @@ public class CreditAction extends CommonDto {
         return creditVo;
     }
 
-    private void doValidation(CreditDto creditDto) throws InvalidRequestException, InvalidPlayerException, DateTimeParseException {
+    private void doValidation(CreditDto creditDto) throws
+            InvalidRequestException, InvalidPlayerException, DateTimeParseException {
         // General validation
         ValidationUtils.validateRequest(creditDto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException {
+    private void doVerification(CreditDto dto, GameSession gameSession, HttpRequestLog
+            httpRequestLog, HttpServletRequest request)
+            throws
+            InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException {
         // Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
 
@@ -162,9 +172,13 @@ public class CreditAction extends CommonDto {
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(dto.getOperatorId()), InvalidRequestException::new);
 
+        // Convert Body to Map for signature check
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
+
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        com.nextgen.gameaggregator.vendor.ezugi.service.VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
 
         // Verify valid bet type id
         VendorService.verifyCreditBetTypeId(dto.getBetTypeID());

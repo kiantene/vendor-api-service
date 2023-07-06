@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.debit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -56,7 +58,7 @@ public class DebitAction {
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.DEBIT)
-    public CommonVo debit(HttpServletRequest request) throws JsonProcessingException {
+    public CommonVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
@@ -126,7 +128,7 @@ public class DebitAction {
             debitVo.setErrorDescription("Invalid Bet Type");
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException |
-                TransactionStillProcessingException e) {
+                 TransactionStillProcessingException e) {
             debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setErrorDescription("Transaction already processed");
             httpService.logError(httpRequestLog, e);
@@ -148,6 +150,9 @@ public class DebitAction {
                  CouchbaseDataIntegrityException | NoSuchAlgorithmException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
         } finally {
             if (debitVo.getErrorDescription() == null) {
                 debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
@@ -163,7 +168,7 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
@@ -175,9 +180,13 @@ public class DebitAction {
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(debitDto.getOperatorId()), InvalidRequestException::new);
 
+        // Convert Body to Map for signature check
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
+
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
 
         // Verify valid bet type id
         VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());

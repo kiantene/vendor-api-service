@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -18,10 +20,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -78,7 +82,7 @@ public class RollbackAction {
         } catch (BetNotFoundException e) {
             rollbackVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (BetRefundIdempotentViolationException e){
+        } catch (BetRefundIdempotentViolationException e) {
             rollbackVo.setErrorCode(ResponseCodes.OK);
             rollbackVo.setErrorDescription("Transaction already processed");
             httpService.logError(httpRequestLog, e);
@@ -90,19 +94,21 @@ public class RollbackAction {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid Amount");
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e) {
+        } catch (InvalidRequestException | IOException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
-        } catch (DisabledGameException |
-                 DisabledAgentPlayerException | CurrencyNotSupportedException | RecordNotFoundException |
-                 InvalidPlayerException | InvalidAgentApiCredentialException | CredentialNotFoundException |
-                 DisabledVendorLineException | InvalidKeyException | CouchbaseDataIntegrityException |
-                 NoSuchAlgorithmException | InvalidOperatorResponseException e) {
+        } catch (DisabledGameException | DisabledAgentPlayerException | CurrencyNotSupportedException |
+                 RecordNotFoundException | InvalidPlayerException | InvalidAgentApiCredentialException |
+                 CredentialNotFoundException | DisabledVendorLineException | InvalidKeyException |
+                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            if(rollbackVo.getErrorDescription()==null) {
+            if (rollbackVo.getErrorDescription() == null) {
                 rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION_ROLLBACK.get(rollbackVo.getErrorCode()));
             }
             httpService.end(httpRequestLog, rollbackVo);
@@ -114,7 +120,7 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException, JsonProcessingException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 
@@ -125,9 +131,13 @@ public class RollbackAction {
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(rollbackdto.getOperatorId()), InvalidRequestException::new);
 
+        // Convert Body to Map for signature check
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
+
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
 
         // validate rollback amount and debit amount is tally
         vendorService.verifyRollbackAmount(rollbackdto, gameSession);
