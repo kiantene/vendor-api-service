@@ -89,7 +89,7 @@ public class AppendWagerDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return null;
+        return this.gameId.toString();
     }
 
     @Override

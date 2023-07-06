@@ -76,7 +76,7 @@ public class PromoPayoutAction {
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
+            // Set ResponseVo Object
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
