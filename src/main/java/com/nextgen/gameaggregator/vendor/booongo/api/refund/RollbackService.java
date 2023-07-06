@@ -80,7 +80,6 @@ public class RollbackService {
                  RecordNotFoundException |
                  AuthenticationException |
                  InvalidOperatorResponseException |
-                 CouchbaseDataIntegrityException |
                  JsonProcessingException |
                  InvalidPlayerException |
                  CurrencyNotSupportedException |
