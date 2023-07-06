@@ -103,7 +103,6 @@ public class TransactionService {
                  InvalidPlayerException |
                  CurrencyNotSupportedException |
                  DisabledAgentPlayerException |
-                 MergedBetDataIntegrityException |
                  DisabledGameException |
                  InvalidRequestException |
                  BetNotFoundException |
