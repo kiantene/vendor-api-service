@@ -1,0 +1,74 @@
+package com.nextgen.gameaggregator.vendor.yesbingo.constant;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class ResponseCodes {
+    public static final String SUCCEED = "0000";
+    public static final String FAILED = "9999";
+    public static final String NO_AUTHORIZED_ACCESS = "9001";
+    public static final String INVALID_DOMAIN = "9002";
+    public static final String FAILED_DOMAIN_VALIDATION = "9003";
+    public static final String INVALID_ENCRYPTED_DATA = "9004";
+    public static final String FAILED_TIMESTAMP_VALIDATION = "9005";
+    public static final String EXTRACT_PARAMETERS_FROM_ENCRYPTED_DATA_FAILED = "9006";
+    public static final String UNKNOWN_ACTION = "9007";
+    public static final String SAME_VALUE_AS_BEFORE = "9008";
+    public static final String TIME_OUT = "9009";
+    public static final String READ_TIMEOUT = "9010";
+    public static final String DUPLICATE_TRANSACTIONS = "9011";
+    public static final String TRY_AGAIN = "9012";
+    public static final String SYSTEM_MAINTENANCE = "9013";
+    public static final String MULTIPLE_ACCOUNT_LOGIN_DETECTED = "9014";
+    public static final String DATA_NOT_EXIST = "9015";
+    public static final String WORK_IN_PROCESS = "9017";
+    public static final String PARAMETER_INPUT_ERROR = "8000";
+    public static final String PARAMETER_EMPTY = "8001";
+    public static final String PARAMETER_MUST_BE_POSITIVE_INTEGER = "8002";
+    public static final String PARAMETER_CANNOT_BE_NEGATIVE = "8003";
+    public static final String WRONG_DATE_SECOND_FORMAT = "8005";
+    public static final String TIME_DOES_NOT_MEET = "8006";
+    public static final String PARAMETER_CAN_ONLY_USE_NUMBERS = "8007";
+    public static final String PARAMETER_CANNOT_BE_FOUND = "8008";
+    public static final String TIME_INTERVAL_EXCEEDS = "8009";
+    public static final String PARAMETER_LENGTH_TOO_LONG = "8010";
+    public static final String PARENT_ID_NOT_FOUND = "7001";
+    public static final String PARENT_SUSPENDED = "7002";
+    public static final String PARENT_LOCKED = "7003";
+    public static final String PARENT_CLOSED = "7004";
+
+    public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
+        put(SUCCEED, "Succeed");
+        put(FAILED, "Failed.");
+        put(NO_AUTHORIZED_ACCESS, "No authorized access.");
+        put(INVALID_DOMAIN, "Domain is null or the length of domain less than 2.");
+        put(FAILED_DOMAIN_VALIDATION, "Failed to pass the domain validation.");
+        put(INVALID_ENCRYPTED_DATA, "The encrypted data is null or the length of the encrypted data is equal to 0.");
+        put(FAILED_TIMESTAMP_VALIDATION, "Assertion(SAML) didn't pass the timestamp validation.");
+        put(EXTRACT_PARAMETERS_FROM_ENCRYPTED_DATA_FAILED, "Failed to extract the SAML parameters from the encrypted data.");
+        put(UNKNOWN_ACTION, "Unknown action.");
+        put(SAME_VALUE_AS_BEFORE, "The same value as before.");
+        put(TIME_OUT, "Time out.");
+        put(READ_TIMEOUT, "Read timeout.");
+        put(DUPLICATE_TRANSACTIONS, "Duplicate transactions.");
+        put(TRY_AGAIN, "Please try again later.");
+        put(SYSTEM_MAINTENANCE, "System is under maintenance.");
+        put(MULTIPLE_ACCOUNT_LOGIN_DETECTED, "Multiple account login detected.");
+        put(DATA_NOT_EXIST, "Data does not exist.");
+        put(WORK_IN_PROCESS, "Work in process, please try again later.");
+        put(PARAMETER_INPUT_ERROR, "The parameter of input error, please check if your parameter is correct or not.");
+        put(PARAMETER_EMPTY, "The parameter cannot be empty.");
+        put(PARAMETER_MUST_BE_POSITIVE_INTEGER, "The parameter must be a positive integer.");
+        put(PARAMETER_CANNOT_BE_NEGATIVE, "The parameter cannot be negative.");
+        put(WRONG_DATE_SECOND_FORMAT, "Wrong date second format.");
+        put(TIME_DOES_NOT_MEET, "Time does not meet.");
+        put(PARAMETER_CAN_ONLY_USE_NUMBERS, "The parameter only can use numbers.");
+        put(PARAMETER_CANNOT_BE_FOUND, "The parameter cannot be found.");
+        put(TIME_INTERVAL_EXCEEDS, "Time interval exceeds the allowable range.");
+        put(PARAMETER_LENGTH_TOO_LONG, "The length of the parameter is too long.");
+        put(PARENT_ID_NOT_FOUND, "The specified parent ID cannot be found.");
+        put(PARENT_SUSPENDED, "Parent is suspended.");
+        put(PARENT_LOCKED, "Parent is locked.");
+        put(PARENT_CLOSED, "Parent is closed.");
+    }};
+}
