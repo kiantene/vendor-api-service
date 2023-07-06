@@ -4,10 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -15,16 +12,13 @@ import lombok.Data;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class BalanceDto {
 
-    // an id to request balance
-    @NotBlank
-    @Size(max = 32)
-    @Positive
-    public int action;
+    // Already validated in GeneralAction. Action id to get balance
+    public Integer action;
 
     // timestamp
-    @NotBlank
+    @NotNull
     @Positive
-    public long ts;
+    public Long ts;
 
     // player id
     @NotBlank

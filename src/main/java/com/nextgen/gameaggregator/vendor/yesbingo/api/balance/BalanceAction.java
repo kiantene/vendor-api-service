@@ -1,16 +1,15 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.balance;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.yesbingo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yesbingo.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
@@ -32,7 +31,6 @@ public class BalanceAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    @PostMapping(path = EndPoints.PATH)
     public ResponseVo balance(HttpRequestLog httpRequestLog, String traceId, String body) {
 
         ResponseVo responseVo = new ResponseVo();
@@ -57,6 +55,15 @@ public class BalanceAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
+        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+                 CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
+                 DisabledVendorLineException e) {
+            responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+        } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
+            responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+        } catch (InvalidOperatorResponseException exception) {
+            responseVo.setStatus(ResponseCodes.FAILED);
+            httpService.logError(httpRequestLog, exception);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);

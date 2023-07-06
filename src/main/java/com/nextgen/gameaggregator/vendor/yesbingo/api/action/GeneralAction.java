@@ -26,7 +26,7 @@ public class GeneralAction {
     @Autowired
     private BalanceAction balanceAction;
 
-    @PostMapping(path = EndPoints.PATH)
+    @PostMapping
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -51,6 +51,8 @@ public class GeneralAction {
                 }
             }
 
+        } catch (InvalidRequestException invalidRequestException) {
+            responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.service.HttpResponse;
-import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -25,7 +25,10 @@ public class ResponseVo implements HttpResponse {
 
     public void setStatus(String responseCode) {
         this.status = responseCode;
-        this.errText = ResponseCodes.RESPONSE_DESCRIPTION.get(this.status);
+        this.errText = null;
+        if(!this.status.equals(ResponseCodes.SUCCEED)) {
+            this.errText = ResponseCodes.RESPONSE_DESCRIPTION.get(this.status);
+        }
     }
 
 }
