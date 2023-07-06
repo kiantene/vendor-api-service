@@ -18,12 +18,12 @@ public class WinDto extends CallbackDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getData().getRound_id();
+        return this.getData().getAction_id();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.getData().getRound_id();
+        return this.getData().getAction_id();
     }
 
     @Override

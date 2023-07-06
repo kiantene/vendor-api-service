@@ -11,7 +11,7 @@ public class RefundDto extends CallbackDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return this.getData().getRefund_round_id();
+        return this.getData().getRefund_action_id();
     }
 
     @Override
