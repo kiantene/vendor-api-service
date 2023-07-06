@@ -45,27 +45,17 @@ public class SettledBetService {
         return settledBet;
     }
 
-    public SettledBet update(Integer operatorStatus, BigDecimal balance, String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) {
-        SettledBet settledBet = new SettledBet();
-        settledBet.setVendorBetId(vendorBetId);
-        settledBet.setRoundId(roundId);
-        settledBet.setVendorGameId(vendorGameId);
-        settledBet.setVendorPlayerId(vendorPlayerId);
-        settledBet.setId(settledBet.generateId());
-        settledBet.setBalance(balance);
-        settledBet.setOperatorStatus(operatorStatus);
-
-        rawSettledBetRepository.save(settledBet);
-        this.updateSettleBetCaching(settledBet);
-
-        return settledBet;
-    }
-
     @Caching(put = {
             @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
             @CachePut(value = "SettledBet", key = "{#settledBet.vendorBetId, #settledBet.roundId, #settledBet.vendorId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
     })
-    public SettledBet updateSettleBetCaching(SettledBet settledBet){
+    public SettledBet update(Integer operatorStatus, BigDecimal balance, SettledBet settledBet) {
+        settledBet.setBalance(balance);
+        settledBet.setOperatorStatus(operatorStatus);
+        settledBet.setId(settledBet.generateId());
+
+        rawSettledBetRepository.save(settledBet);
+
         return settledBet;
     }
 
@@ -84,7 +74,6 @@ public class SettledBetService {
 
         SettledBet settledBet = rawSettledBetRepository.findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
 
-        System.out.println("vendorBetId = " + vendorBetId +" | roundId = " + roundId+" | vendorId = " + vendorId+" | vendorPlayerId = " + vendorPlayerId);
         if (settledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId");
         }

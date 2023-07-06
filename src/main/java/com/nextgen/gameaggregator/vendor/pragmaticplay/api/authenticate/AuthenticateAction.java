@@ -60,7 +60,7 @@ public class AuthenticateAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Emit event for additional asynchronous processing
 //            eventDispatcher.emit(getClass(), body);

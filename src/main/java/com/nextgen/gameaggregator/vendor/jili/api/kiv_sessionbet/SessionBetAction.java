@@ -66,7 +66,7 @@ public class SessionBetAction {
 
             switch (sessionBetDto.getType()) {
                 case Formats.SESSION_BET_TYPE_BET -> {
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body);
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, sessionBetDto, body, httpRequestLog);
                     sessionBetVo.setBalance(betEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {

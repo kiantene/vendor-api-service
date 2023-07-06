@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -26,8 +27,6 @@ public class AuthAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
@@ -37,12 +36,12 @@ public class AuthAction {
     private WalletService walletService;
 
     @PostMapping(path = EndPoints.AUTH)
-    public AuthVo AuthAction (HttpServletRequest request) {
+    public AuthVo AuthAction(HttpServletRequest request) {
 
-            HttpRequestLog httpRequestLog = httpService.start(request);
+        HttpRequestLog httpRequestLog = httpService.start(request);
 
-            AuthVo authVo = new AuthVo();
-            String traceId = httpRequestLog.getId();
+        AuthVo authVo = new AuthVo();
+        String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -58,7 +57,7 @@ public class AuthAction {
             this.doVerification(dto, gameSession);
 
             // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             authVo.setUsername(gameSession.getVendorPlayerUsername());
             authVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -92,8 +91,9 @@ public class AuthAction {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
+
     private void doVerification(AuthDto dto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException{
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException

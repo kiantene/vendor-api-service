@@ -129,10 +129,10 @@ public class TransferAction {
                     fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
 
                     //check settle bet available
-                    settleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), null, fundInfoDto.getOriginalTransferId(), "", "SETTLE_BET");
+                    settleBetAvailable = checkBetAvailable(gameSession.getVendorId(), gameSession.getVendorPlayerId(), null, null, transferDto.getFundTransferRequestDto().getFriendlyGameInstanceId(), transferDto.getFundTransferRequestDto().getGameInstanceId(), "SETTLE_BET");
                     if (!settleBetAvailable) {
                         //check unsettle bet result available
-                        unsettleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), gameSession.getVendorGameId(), fundInfoDto.getOriginalTransferId(), transferDto.getFundTransferRequestDto().getGameInstanceId(), "UNSETTLE_BET_RESULT");
+                        unsettleBetAvailable = checkBetAvailable(null, gameSession.getVendorPlayerId(), gameSession.getVendorGameId(), fundInfoDto.getOriginalTransferId(), null ,transferDto.getFundTransferRequestDto().getGameInstanceId(), "UNSETTLE_BET_RESULT");
                         if (!unsettleBetAvailable) {
                             //when no unsettle bet result found, recredit to player
                             Boolean settleResult = processBonusAndSettle(fundInfoDto, transferDto.getFundTransferRequestDto(), transferDto.getBaseGame().getKeyName(), fundInfoDto.getGameStateMode(), gameSession, traceId, httpRequestLog);
@@ -147,11 +147,10 @@ public class TransferAction {
                 } else {
                     //handle refund condition
                     //check settle bet available
-                    settleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), null, transferDto.getFundTransferRequestDto().getFundDto().getRefundDto().getOriginalTransferId(), "", "SETTLE_BET");
-
+                    settleBetAvailable = checkBetAvailable(gameSession.getVendorId(), gameSession.getVendorPlayerId(), null, null, transferDto.getFundTransferRequestDto().getFriendlyGameInstanceId(), transferDto.getFundTransferRequestDto().getGameInstanceId(), "SETTLE_BET");
                     if (!settleBetAvailable) {
                         //check unsettle bet available
-                        unsettleBetAvailable = checkBetAvailable(gameSession.getVendorPlayerId(), null, transferDto.getFundTransferRequestDto().getFundDto().getRefundDto().getOriginalTransferId(), "", "UNSETTLE_BET");
+                        unsettleBetAvailable = checkBetAvailable(null, gameSession.getVendorPlayerId(), null, transferDto.getFundTransferRequestDto().getFundDto().getRefundDto().getOriginalTransferId(), null, null, "UNSETTLE_BET");
 
                         if (unsettleBetAvailable) {
                             //handle when unsettle bet available, refund and void the game
@@ -374,12 +373,13 @@ public class TransferAction {
         return true;
     }
 
-    private Boolean checkBetAvailable(Long vendorPlayerId, Integer vendorGameId, String transactionId, String roundId, String type) {
+    private Boolean checkBetAvailable(Integer vendorId, Long vendorPlayerId, Integer vendorGameId, String transactionId, String betId, String roundId, String type) {
 
         if (type == "SETTLE_BET") {
             try {
                 //check settle bet available
-                SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, transactionId);
+                //SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, transactionId);
+                SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(betId, roundId, vendorId, vendorPlayerId);
                 return true;
             } catch (BetNotFoundException betNotFoundException) {
                 return false;
