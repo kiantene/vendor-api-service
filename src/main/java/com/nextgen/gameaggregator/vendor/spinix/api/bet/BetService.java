@@ -63,7 +63,7 @@ public class BetService {
             betDto.setTimestamp(bet.getConvertedTimestamp());
 
             // process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             // get balance
             BigDecimal balance = betEvent.getLastBalance();

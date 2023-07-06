@@ -53,7 +53,7 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Send bet request to Operator
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);
@@ -69,9 +69,6 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
