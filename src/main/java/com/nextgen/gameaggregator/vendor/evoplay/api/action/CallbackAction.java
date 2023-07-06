@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.authenticate.InitService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinService;
@@ -16,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.evoplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.evoplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
 import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
+import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,8 @@ public class CallbackAction {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private WalletService walletService;
 
     // Handle incoming API requests
     @PostMapping
@@ -52,11 +56,12 @@ public class CallbackAction {
         ResponseVo responseVo = new ResponseVo();
 
         String traceId = httpRequestLog.getId();
+        GameSession gameSession = new GameSession();
 
         try {
             String body = httpRequestLog.getRequestBody();
             CallbackDto callbackDto = VendorService.convertBodyToDto(body, CallbackDto.class);
-            GameSession gameSession = gameSessionService.verifyToken(callbackDto.getToken());
+            gameSession = gameSessionService.verifyToken(callbackDto.getToken());
 
             String projId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJ_ID);
             String key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.KEY);
@@ -92,18 +97,12 @@ public class CallbackAction {
         } catch (TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
 
-        } catch (InvalidOperatorResponseException e) {
-            if (e.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE_ERROR);
-            } else {
-                responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
-            }
-
         } catch (AuthenticationException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
                  DisabledVendorLineException |
                  BetNotFoundException |
+                 InvalidOperatorResponseException |
                  RecordNotFoundException e) {
             responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
 
@@ -118,7 +117,7 @@ public class CallbackAction {
 
         } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
-            responseVo.setResponseCode(ResponseCodes.IDEMPOTENT_ERROR);
+            idempotentSetBalance(traceId, gameSession, responseVo);
 
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
@@ -129,5 +128,18 @@ public class CallbackAction {
             httpService.end(httpRequestLog, responseVo);
         }
         return responseVo;
+    }
+
+    private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo) {
+        try {
+            ResponseDataVo responseDataVo = new ResponseDataVo();
+            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession));
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setData(responseDataVo);
+        } catch (InvalidOperatorResponseException e) {
+            responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+        } catch (Exception e) {
+            responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
+        }
     }
 }
