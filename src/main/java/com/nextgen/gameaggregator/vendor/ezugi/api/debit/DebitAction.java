@@ -1,8 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.debit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -180,13 +178,9 @@ public class DebitAction {
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(debitDto.getOperatorId()), InvalidRequestException::new);
 
-        // Convert Body to Map for signature check
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
-
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
         // Verify valid bet type id
         VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());

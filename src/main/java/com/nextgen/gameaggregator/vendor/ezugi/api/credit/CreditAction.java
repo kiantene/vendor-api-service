@@ -1,9 +1,8 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.credit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -29,7 +28,6 @@ import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
-import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -172,13 +170,9 @@ public class CreditAction extends CommonDto {
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(dto.getOperatorId()), InvalidRequestException::new);
 
-        // Convert Body to Map for signature check
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
-
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
         // Verify valid bet type id
         VendorService.verifyCreditBetTypeId(dto.getBetTypeID());

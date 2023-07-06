@@ -1,17 +1,15 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +23,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -131,13 +128,9 @@ public class RollbackAction {
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(rollbackdto.getOperatorId()), InvalidRequestException::new);
 
-        // Convert Body to Map for signature check
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
-
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
         // validate rollback amount and debit amount is tally
         vendorService.verifyRollbackAmount(rollbackdto, gameSession);

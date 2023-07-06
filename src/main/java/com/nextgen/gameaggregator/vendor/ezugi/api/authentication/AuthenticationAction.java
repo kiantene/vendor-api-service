@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.authentication;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -24,7 +22,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -137,13 +134,9 @@ public class AuthenticationAction {
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(authenticationDto.getOperatorId()), InvalidRequestException::new);
-
-        // Convert Body to Map for signature check
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
-
+        
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
-        VendorService.verifyHash(hashKey, new Gson().toJson(bodyObj), request.getHeader("hash"));
+        VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
     }
 }
