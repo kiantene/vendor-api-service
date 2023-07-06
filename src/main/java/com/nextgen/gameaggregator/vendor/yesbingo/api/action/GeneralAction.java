@@ -2,9 +2,10 @@ package com.nextgen.gameaggregator.vendor.yesbingo.api.action;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.api.balance.BalanceAction;
+import com.nextgen.gameaggregator.vendor.yesbingo.api.bet.BetAction;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Actions;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
@@ -25,6 +26,8 @@ public class GeneralAction {
     private HttpService httpService;
     @Autowired
     private BalanceAction balanceAction;
+    @Autowired
+    private BetAction betAction;
 
     @PostMapping
     public ResponseVo balance(HttpServletRequest request) {
@@ -44,6 +47,9 @@ public class GeneralAction {
             switch (dto.getAction()) {
                 case Actions.BALANCE -> {
                     responseVo = balanceAction.balance(httpRequestLog, traceId, body);
+                }
+                case Actions.BET -> {
+                    responseVo = betAction.bet(httpRequestLog, traceId, body);
                 }
                 // If the header does not match any of the expected values, return an error response
                 default -> {
