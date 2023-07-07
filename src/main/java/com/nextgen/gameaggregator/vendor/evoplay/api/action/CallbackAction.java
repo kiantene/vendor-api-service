@@ -102,7 +102,6 @@ public class CallbackAction {
 
         } catch (TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
-            responseVo.getError().setNo_refund(Formats.RESEND_CALLBACK);
 
         } catch (AuthenticationException |
                  DisabledGameException |
@@ -128,7 +127,6 @@ public class CallbackAction {
 
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
-            responseVo.getError().setNo_refund(Formats.RESEND_CALLBACK);
             httpService.logError(httpRequestLog, e);
 
         } finally {

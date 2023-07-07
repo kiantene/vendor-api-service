@@ -10,8 +10,8 @@ public class Formats {
 
     // callback response
     // no_refund
-    public static final Integer NO_RESEND_CALLBACK = 1; // 1 - callback should not be resent
-    public static final Integer RESEND_CALLBACK = 0; // 0 - callback can be resent
+    public static final Integer NO_REFUND = 1; // 1 - won't trigger refund
+    public static final Integer REFUND = 0; // 0 - will trigger refund
     // scope
     public static final String SCOPE_INTERNAL = "internal"; // internal - error message is not available to user
     public static final String SCOPE_USER = "user"; // user - error message seen by user

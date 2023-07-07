@@ -26,7 +26,7 @@ public class ResponseVo implements HttpResponse {
         this.status = responseCode.status;
         if (!this.responseCode.equals(ResponseCodes.SUCCESS)) {
             ResponseDataVo errorDataVo = new ResponseDataVo();
-            errorDataVo.setNo_refund(Formats.NO_RESEND_CALLBACK);
+            errorDataVo.setNo_refund(Formats.NO_REFUND);
             errorDataVo.setScope(Formats.SCOPE_INTERNAL);
             errorDataVo.setMessage(responseCode.message);
             this.setError(errorDataVo);
