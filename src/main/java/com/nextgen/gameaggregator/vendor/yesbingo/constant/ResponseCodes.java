@@ -7,7 +7,7 @@ public class ResponseCodes {
     public static final String SUCCEED = "0000";
     public static final String FAILED = "9999";
     public static final String NO_AUTHORIZED_ACCESS = "9001";
-    public static final String INVALID_DOMAIN = "9002";
+    public static final String DOMAIN_IS_NULL = "9002";
     public static final String FAILED_DOMAIN_VALIDATION = "9003";
     public static final String INVALID_ENCRYPTED_DATA = "9004";
     public static final String FAILED_TIMESTAMP_VALIDATION = "9005";
@@ -36,12 +36,29 @@ public class ResponseCodes {
     public static final String PARENT_SUSPENDED = "7002";
     public static final String PARENT_LOCKED = "7003";
     public static final String PARENT_CLOSED = "7004";
+    public static final String YOU_HAVE_BEEN_LOGGED_OUT = "7405";
+    public static final String USER_ID_CANNOT_BE_FOUND = "7501";
+    public static final String USER_SUSPENDED = "7502";
+    public static final String USER_LOCKED = "7503";
+    public static final String USER_CLOSED = "7504";
+    public static final String USER_NOT_PLAYING = "7505";
+    public static final String INVALID_USESR_ID = "7601";
+    public static final String ACCOUNT_ALREADY_EXISTS = "7602";
+    public static final String INVALID_USERNAME = "7603";
+    public static final String INVALID_PASSWORD = "7604";
+    public static final String INVALID_OPERATION_CODE = "7605";
+    public static final String SYSTEM_BUSY = "6001";
+    public static final String USER_BALANCE_IS_ZERO = "6002";
+    public static final String WITHDRAW_NEGATIVE_AMOUNT = "6003";
+    public static final String DUPLICATE_SERIAL_NUMBER = "6005";
+    public static final String CASH_BALANCE_NOT_ENOUGH = "6006";
+    public static final String TRANSFER_BALANCE_NOT_ALLOW = "6901";
 
     public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(SUCCEED, "Succeed");
         put(FAILED, "Failed.");
         put(NO_AUTHORIZED_ACCESS, "No authorized access.");
-        put(INVALID_DOMAIN, "Domain is null or the length of domain less than 2.");
+        put(DOMAIN_IS_NULL, "Domain is null or the length of domain less than 2.");
         put(FAILED_DOMAIN_VALIDATION, "Failed to pass the domain validation.");
         put(INVALID_ENCRYPTED_DATA, "The encrypted data is null or the length of the encrypted data is equal to 0.");
         put(FAILED_TIMESTAMP_VALIDATION, "Assertion(SAML) didn't pass the timestamp validation.");
@@ -70,5 +87,22 @@ public class ResponseCodes {
         put(PARENT_SUSPENDED, "Parent is suspended.");
         put(PARENT_LOCKED, "Parent is locked.");
         put(PARENT_CLOSED, "Parent is closed.");
+        put(YOU_HAVE_BEEN_LOGGED_OUT, "You have been logged out.");
+        put(USER_ID_CANNOT_BE_FOUND, "User ID cannot be found.");
+        put(USER_SUSPENDED, "User is suspended.");
+        put(USER_LOCKED, "User is locked.");
+        put(USER_CLOSED, "User is closed.");
+        put(USER_NOT_PLAYING, "User is not playing.");
+        put(INVALID_USESR_ID, "Invalid User ID. Please only use characters between a-z, 0-9.");
+        put(ACCOUNT_ALREADY_EXISTS, "This account already exists. Please choose other User ID");
+        put(INVALID_USERNAME, "Invalid username.");
+        put(INVALID_PASSWORD, "The password must have at least 6 characters, with 1 alphabet and 1 number.");
+        put(INVALID_OPERATION_CODE, "Invalid operation_code. Please only use number 2, 3, 4, 5.");
+        put(SYSTEM_BUSY, "System busy.");
+        put(USER_BALANCE_IS_ZERO, "User balance is zero.");
+        put(WITHDRAW_NEGATIVE_AMOUNT, "Withdraw negative amounts.");
+        put(DUPLICATE_SERIAL_NUMBER, "Duplicate serial number.");
+        put(CASH_BALANCE_NOT_ENOUGH, "Your cash balance is not enough.");
+        put(TRANSFER_BALANCE_NOT_ALLOW, "User is playing, and does not allow transfer balance.");
     }};
 }

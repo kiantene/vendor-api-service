@@ -62,15 +62,21 @@ public class BetAction {
 
         } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
-                 DisabledVendorLineException e) {
+                 DisabledVendorLineException | GameNotSupportedException e) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (DateTimeParseException dateTimeParseException) {
             responseVo.setStatus(ResponseCodes.WRONG_DATE_SECOND_FORMAT);
-        } catch (InvalidOperatorResponseException exception) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
-            httpService.logError(httpRequestLog, exception);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
