@@ -56,7 +56,7 @@ public class TransactionsListAction {
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getId());
+            TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getAgent().getId());
             responseVo.setData(transactionsListData);
 
 
