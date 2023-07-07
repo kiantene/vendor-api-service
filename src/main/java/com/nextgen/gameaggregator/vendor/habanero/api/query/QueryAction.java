@@ -113,7 +113,8 @@ public class QueryAction {
 
         try {
             //check settle bet available
-            SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), queryRequestDto.getInitialDebitTransferId());
+           // SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), queryRequestDto.getInitialDebitTransferId());
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
         } catch (BetNotFoundException betNotFoundException) {
             try {
                 //check unsettle bet available
