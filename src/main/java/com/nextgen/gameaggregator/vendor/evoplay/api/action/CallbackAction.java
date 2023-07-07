@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evoplay.api.authenticate.InitService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinService;
@@ -20,11 +21,15 @@ import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -60,30 +65,31 @@ public class CallbackAction {
 
         try {
             String body = httpRequestLog.getRequestBody();
-            CallbackDto callbackDto = VendorService.convertBodyToDto(body, CallbackDto.class);
+
+            // convert body into raw Map data
+            Map<String, Object> rawData = VendorService.convertBodyToDto(body, LinkedHashMap.class);
+
+            // Mapping raw Map data into Dto
+            CallbackDto callbackDto = new ModelMapper().map(rawData, CallbackDto.class);
+
+            // get gameSession
             gameSession = gameSessionService.verifyToken(callbackDto.getToken());
 
-            String projId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJ_ID);
-            String key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.KEY);
-
-            Optional.ofNullable(projId).orElseThrow(InvalidVendorLineException::new);
-            Optional.ofNullable(key).orElseThrow(InvalidVendorLineException::new);
-
-            callbackDto.setProject(projId);
-            callbackDto.setVersion(Formats.CALLBACK_VERSION);
+            // use raw body Map data verify signature
+            verifySignature(gameSession, rawData, callbackDto);
 
             switch (callbackDto.getName().toLowerCase()) {
                 case "init" -> {
-                    responseVo = initService.init(callbackDto, gameSession, traceId, key);
+                    responseVo = initService.init(callbackDto, gameSession, traceId);
                 }
                 case "bet" -> {
-                    responseVo = betService.bet(callbackDto, gameSession, body, traceId, key);
+                    responseVo = betService.bet(callbackDto, gameSession, body, traceId);
                 }
                 case "win" -> {
-                    responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId, key);
+                    responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId);
                 }
                 case "refund" -> {
-                    responseVo = refundService.refund(callbackDto, gameSession, traceId, key);
+                    responseVo = refundService.refund(callbackDto, gameSession, traceId);
                 }
                 // If the header does not match any of the expected values, return an error response
                 default -> {
@@ -96,6 +102,7 @@ public class CallbackAction {
 
         } catch (TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
+            responseVo.getError().setNo_refund(Formats.RESEND_CALLBACK);
 
         } catch (AuthenticationException |
                  DisabledGameException |
@@ -123,6 +130,7 @@ public class CallbackAction {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
             responseVo.getError().setNo_refund(Formats.RESEND_CALLBACK);
             httpService.logError(httpRequestLog, e);
+
         } finally {
             // End the HTTP request logging and return the ResponseVo object
             httpService.end(httpRequestLog, responseVo);
@@ -141,5 +149,28 @@ public class CallbackAction {
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
         }
+    }
+
+    private void verifySignature(GameSession gameSession, Map<String, Object> rawData, CallbackDto callbackDto) throws
+            InvalidVendorLineException,
+            CredentialNotFoundException,
+            AuthenticationException {
+
+        String projId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PROJ_ID);
+        String key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.KEY);
+
+        Optional.ofNullable(projId).orElseThrow(InvalidVendorLineException::new);
+        Optional.ofNullable(key).orElseThrow(InvalidVendorLineException::new);
+
+        // Verify Signature
+        rawData.remove("signature");
+        rawData.put("project", projId);
+        rawData.put("version", Formats.CALLBACK_VERSION);
+        VendorService.rearrangeMap(rawData);
+
+        MultiValueMap<String, String> formData = VendorService.flattenMapIntoMultiValueMap(rawData, "");
+        String signature = VendorService.md5(VendorService.buildSignature(formData, key));
+
+        ValidationUtils.isEquals(signature, callbackDto.getSignature(), AuthenticationException::new);
     }
 }

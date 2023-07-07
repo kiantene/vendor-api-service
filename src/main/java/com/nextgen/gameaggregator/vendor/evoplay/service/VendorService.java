@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.evoplay.service;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -102,7 +101,7 @@ public class VendorService extends BaseVendorService {
         currentMap.put(keys[keys.length - 1], value);
     }
 
-    public static Map<String, Object> rearrangeMap(Map<String, Object> originalMap) {
+    public static void rearrangeMap(Map<String, Object> originalMap) {
         String[] specificKeys = {"project", "version"};
         Map<String, Object> rearrangedMap = new LinkedHashMap<>();
 
@@ -114,29 +113,18 @@ public class VendorService extends BaseVendorService {
         }
 
         rearrangedMap.putAll(originalMap);
-
-        return rearrangedMap;
+        originalMap.clear();
+        originalMap.putAll(rearrangedMap);
     }
-
-    public static <O> String generateSignature(O Object, String key) {
-        Map<String, Object> mapData = rearrangeMap(convertObjectToMap(Object, LinkedHashMap.class));
-        mapData.remove("signature");
-        Map<String, Object> innerMap = (Map<String, Object>) mapData.get("data");
-        if (innerMap != null) {
-            innerMap.remove("detailsDto");
-        }
-        MultiValueMap<String, String> formData = flattenMapIntoMultiValueMap(mapData, "");
-        return md5(buildSignature(formData, key));
-    }
-
+    
     public static Long generateTimestamp() {
         return Instant.now().toEpochMilli();
     }
 
-    @Override
-    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
-        return betInfo.getEffectiveTurnover();
-    }
+//    @Override
+//    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+//        return betInfo.getEffectiveTurnover();
+//    }
 
     public ResultType calculateResultType(BetStatus betStatus, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet) {
 
