@@ -94,13 +94,20 @@ public class CancelBetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 //insufficient balance
+                cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
                 //Operator Bet not found
+                cancelBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             } else {
                 //Other operator errors
+                cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             }
-            cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidRequestException |
                  JsonProcessingException |

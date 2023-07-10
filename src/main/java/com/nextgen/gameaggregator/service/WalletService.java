@@ -54,6 +54,7 @@ public class WalletService {
 
     private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+    private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
 
     public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         WalletBalanceVo balanceVo = walletBalanceAction.call(traceId, gameSession);
@@ -608,14 +609,14 @@ public class WalletService {
             return balance;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            settledBet.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());
             // update operator status after receiving response from operator
+            settledBet.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());
             settledBetService.save(settledBet, "");
             throw invalidOperatorResponseException;
 
         } catch (Exception exception) {
-            settledBet.setOperatorStatus(operatorStatusProcessing);
-            // update operator status after receiving response from operator
+            // put as unknown error code if there is any other error, so the rollback will expect to process again
+            settledBet.setOperatorStatus(internalServerError);
             settledBetService.save(settledBet, "");
             throw exception;
         }
