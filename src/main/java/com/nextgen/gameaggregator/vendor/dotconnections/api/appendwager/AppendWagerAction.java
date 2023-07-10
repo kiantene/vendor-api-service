@@ -68,8 +68,8 @@ public class AppendWagerAction {
 
             this.doVerification(dto, gameSession);
 
-            // Process jackpot as BET_WIN
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_WIN, vendorService, httpRequestLog);
+            // Process jackpot as WIN
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());

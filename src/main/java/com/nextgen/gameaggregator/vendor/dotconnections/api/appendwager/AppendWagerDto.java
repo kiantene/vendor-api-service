@@ -142,6 +142,6 @@ public class AppendWagerDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return BetStatus.UNSETTLED;
     }
 }
