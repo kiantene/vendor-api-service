@@ -53,6 +53,8 @@ public class WalletService {
     private LoggingService loggingService;
 
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+
+    private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
@@ -572,8 +574,13 @@ public class WalletService {
                 unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
                 settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                 settledBet.setOperatorStatus(operatorStatusProcessing);
-                settledBet.setVendorSettleTime(Optional.ofNullable(vendorSettledTime).orElse(settledBet.getVendorSettleTime()));
                 settledBet.setStatus(BetStatus.REFUNDED.code);
+
+                if(vendorSettledTime != null){
+                    //will be priority of using rollbackData vendorSettleTime if available.
+                    settledBet.setVendorSettleTime(vendorSettledTime);
+                }
+
                 settledBetService.save(settledBet, settledBet.getRawData());
             }
 
@@ -624,11 +631,7 @@ public class WalletService {
             settledBetService.save(settledBet, "");
             throw invalidOperatorResponseException;
 
-        } catch (Exception exception) {
-            // put as unknown error code if there is any other error, so the rollback will expect to process again
-            settledBet.setOperatorStatus(internalServerError);
-            settledBetService.save(settledBet, "");
-            throw exception;
         }
+        //need to catch all other exception?
     }
 }
