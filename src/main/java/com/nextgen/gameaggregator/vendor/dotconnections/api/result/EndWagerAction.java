@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -71,6 +72,14 @@ public class EndWagerAction {
 
             // if transaction amount has more than 0 means WIN else LOSE
             ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
+
+            // Default end wager as unsettled
+            dto.setBetStatus(BetStatus.UNSETTLED);
+
+            // Determine if bet is settled
+            if (dto.isEndround.equals("true")) {
+                dto.setBetStatus(BetStatus.SETTLED);
+            }
 
             // Process bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);

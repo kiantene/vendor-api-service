@@ -66,6 +66,8 @@ public class EndWagerDto implements BetResultData {
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
 
+    public BetStatus betStatus;
+
     @Override
     public String getExternalTransactionId() {
         return this.wagerId;
@@ -131,6 +133,6 @@ public class EndWagerDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        return this.betStatus;
     }
 }

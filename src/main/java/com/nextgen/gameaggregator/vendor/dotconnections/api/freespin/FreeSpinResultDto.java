@@ -87,7 +87,7 @@ public class FreeSpinResultDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return null;
+        return this.gameId.toString();
     }
 
     @Override

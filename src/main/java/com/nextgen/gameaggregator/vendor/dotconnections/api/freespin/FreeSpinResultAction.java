@@ -87,9 +87,9 @@ public class FreeSpinResultAction {
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+            // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
 
         } catch (AuthenticationException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
