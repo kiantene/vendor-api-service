@@ -25,6 +25,7 @@ public class BetResultIdempotentViolationException extends Exception {
         this.vendorSettleTime = betInformation.getVendorSettleTime();
         this.balance = betInformation.getBalance();
         this.betId = betInformation.getBetId();
+        this.transactionId = betInformation.getInternalTransactionId();
     }
 
     public BetResultIdempotentViolationException(RawBetResultLog rawBetResultLog) {

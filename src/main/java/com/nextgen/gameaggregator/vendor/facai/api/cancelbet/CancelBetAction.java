@@ -86,24 +86,26 @@ public class CancelBetAction {
 
             //confirm cancel bet if found transaction id
             //commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(0d);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 //insufficient balance
-
+                commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
+                commonVo.setMainPoints(0d);
 
             } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
                 //Operator Bet not found
@@ -111,7 +113,7 @@ public class CancelBetAction {
 
             } else {
                 //Other operator errors
-
+                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
 
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
@@ -126,16 +128,16 @@ public class CancelBetAction {
                 CredentialNotFoundException |
                 DisabledGameException |
                 InvalidAgentApiCredentialException |
-                AuthenticationException notExistException
-        ) {
+                AuthenticationException otherException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (BetRefundIdempotentViolationException successException) {
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints((double) 0);
+
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
-        }finally {
+            httpService.logError(httpRequestLog, exception);
+
+        } finally {
             httpService.end(httpRequestLog, commonVo);
+
         }
 
         return commonVo;

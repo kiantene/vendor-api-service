@@ -285,11 +285,11 @@ public class WalletService {
 
         SettledBet settledBet = null;
 
-        loggingService.logStart();
-        settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
-        loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
+        try{
+            loggingService.logStart();
+            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+            loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
 
-        if (settledBet != null) { // duplicate request found in settled_bet
             Integer operatorStatus = settledBet.getOperatorStatus();
             // throw idempotent exception if status is processing or success
             if (operatorStatus.equals(operatorStatusProcessing)) {
@@ -319,7 +319,11 @@ public class WalletService {
 
                 settledBetService.save(settledBet, settledBet.getRawData());
             }
+
+        } catch (BetNotFoundException betNotFoundException){
+            //return settleBet = null;
         }
+
         return settledBet;
 
     }
@@ -579,6 +583,14 @@ public class WalletService {
                 if(vendorSettledTime != null){
                     //will be priority of using rollbackData vendorSettleTime if available.
                     settledBet.setVendorSettleTime(vendorSettledTime);
+                } else {
+                    vendorSettledTime = settledBet.getVendorSettleTime();
+                }
+
+                if(settledBet.getVendorSettleTime() == null){
+                    //if still null for vendorSettleTime, will use current system time as vendorSettleTime
+                    settledBet.setVendorSettleTime(System.currentTimeMillis());
+                    vendorSettledTime = settledBet.getVendorSettleTime();
                 }
 
                 settledBetService.save(settledBet, settledBet.getRawData());

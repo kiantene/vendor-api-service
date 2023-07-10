@@ -43,6 +43,7 @@ public class RefundAction {
 
         RefundVo responseVo = new RefundVo();
         String traceId = httpRequestLog.getId();
+        String transactionId = null;
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -61,12 +62,30 @@ public class RefundAction {
             // 4. Send refund to Operator
             walletService.processRollback(traceId, dto, gameSession, vendorService);
 
-            String transactionId = VendorService.getTransactionId(traceId);
+            transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
 
-        } catch (BetRefundIdempotentViolationException idempotentViolationException) {
-            RawBetRefundLog rawBetRefundLog = idempotentViolationException.getBetRefundLog();
-            responseVo.setTransactionId(VendorService.getTransactionId(rawBetRefundLog.getBetRefundLogId()));
+        } catch (BetNotFoundException betNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            transactionId = betResultIdempotentViolationException.getTransactionId();
+            responseVo.setTransactionId(transactionId);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 15) {
+                //Operator Bet not found
+                responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            } else {
+                //Other operator errors
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            }
+
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -85,19 +104,11 @@ public class RefundAction {
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
-
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (InvalidAgentApiCredentialException | RecordNotFoundException e) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
