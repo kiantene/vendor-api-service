@@ -49,7 +49,6 @@ public class CashTransferInOutAction {
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
         String traceId = httpRequestLog.getId();
         CashTransferInOutVo responseVo = new CashTransferInOutVo();
-        parentResponseVo.setData(responseVo);
         String vendorCurrencyCode = "";
 
         try {
@@ -71,6 +70,7 @@ public class CashTransferInOutAction {
 
             // 5. check is settledBet is exists
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            parentResponseVo.setData(responseVo);
             responseVo.setBalanceAmount(balance);
             responseVo.setCurrencyCode(vendorCurrencyCode);
             responseVo.setUpdatedTime(dto.getVendorSettleTime());
@@ -80,6 +80,7 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            parentResponseVo.setData(responseVo);
             responseVo.setUpdatedTime(betResultIdempotentViolationException.getVendorSettleTime());
             responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
             responseVo.setCurrencyCode(vendorCurrencyCode);

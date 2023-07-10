@@ -37,12 +37,6 @@ public class BetAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
