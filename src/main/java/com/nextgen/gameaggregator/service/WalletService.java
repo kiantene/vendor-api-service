@@ -555,17 +555,17 @@ public class WalletService {
         UnsettledBet unsettledBet = null;
         Long vendorSettledTime = rollbackData.getVendorSettledTime();
 
-        settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
-        if (settledBet == null) {
-            unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
-            settledBet = new SettledBet(unsettledBet, vendorService, traceId);
-            settledBet.setOperatorStatus(operatorStatusProcessing);
-            settledBet.setVendorSettleTime(Optional.ofNullable(vendorSettledTime).orElse(settledBet.getVendorSettleTime()));
-            settledBet.setStatus(BetStatus.REFUNDED.code);
-            settledBetService.save(settledBet, settledBet.getRawData());
-        }
-
         try {
+            settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
+            if (settledBet == null) {
+                unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
+                settledBet = new SettledBet(unsettledBet, vendorService, traceId);
+                settledBet.setOperatorStatus(operatorStatusProcessing);
+                settledBet.setVendorSettleTime(Optional.ofNullable(vendorSettledTime).orElse(settledBet.getVendorSettleTime()));
+                settledBet.setStatus(BetStatus.REFUNDED.code);
+                settledBetService.save(settledBet, settledBet.getRawData());
+            }
+
             String betId = settledBet.getBetId();
             String roundId = settledBet.getRoundId();
             Integer agentId = gameSession.getAgentId();
@@ -612,6 +612,12 @@ public class WalletService {
             // update operator status after receiving response from operator
             settledBetService.save(settledBet, "");
             throw invalidOperatorResponseException;
+
+        } catch (Exception exception) {
+            settledBet.setOperatorStatus(operatorStatusProcessing);
+            // update operator status after receiving response from operator
+            settledBetService.save(settledBet, "");
+            throw exception;
         }
     }
 }
