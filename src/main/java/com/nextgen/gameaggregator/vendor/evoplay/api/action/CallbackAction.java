@@ -61,6 +61,7 @@ public class CallbackAction {
         ResponseVo responseVo = new ResponseVo();
 
         String traceId = httpRequestLog.getId();
+        CallbackDto callbackDto = new CallbackDto();
         GameSession gameSession = new GameSession();
 
         try {
@@ -70,7 +71,7 @@ public class CallbackAction {
             Map<String, Object> rawData = VendorService.convertBodyToDto(body, LinkedHashMap.class);
 
             // Mapping raw Map data into Dto
-            CallbackDto callbackDto = new ModelMapper().map(rawData, CallbackDto.class);
+            callbackDto = new ModelMapper().map(rawData, CallbackDto.class);
 
             // get gameSession
             gameSession = gameSessionService.verifyToken(callbackDto.getToken());
@@ -103,12 +104,18 @@ public class CallbackAction {
         } catch (TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
 
+        } catch (InvalidOperatorResponseException e) {
+            if (e.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code) && callbackDto.getName().equalsIgnoreCase("refund")) {
+                idempotentSetBalance(traceId, gameSession, responseVo);
+            } else {
+                responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+            }
+            
         } catch (AuthenticationException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
                  DisabledVendorLineException |
                  BetNotFoundException |
-                 InvalidOperatorResponseException |
                  RecordNotFoundException e) {
             responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
 
