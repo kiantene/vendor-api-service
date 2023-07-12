@@ -7,4 +7,5 @@ public class Credentials {
     public static final String DC = "dc";
     public static final String IS_SHOW_DOLLAR_SIGN = "isShowDollarSign";
     public static final String AGENT = "agent";
+    public static final String YESBINGO_ID = "yesbingoId";
 }

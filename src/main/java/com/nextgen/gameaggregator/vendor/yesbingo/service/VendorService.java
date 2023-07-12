@@ -42,10 +42,10 @@ public class VendorService extends BaseVendorService {
     @Autowired
     private WalletService walletService;
 
-    public static String encrypt(String str, byte[] key, byte[] iv) throws Exception {
+    public static String encrypt(String str, String key, String iv) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
-        SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
-        IvParameterSpec ivSpec = new IvParameterSpec(iv);
+        SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes(StandardCharsets.UTF_8));
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
 
         byte[] encrypted = cipher.doFinal(padString(str).getBytes(StandardCharsets.UTF_8));
@@ -53,6 +53,18 @@ public class VendorService extends BaseVendorService {
         String data = encoded.replace("+", "-").replace("/", "_").replace("=", "");
 
         return data;
+    }
+
+    public static String decrypt(String code, String key, String iv) throws Exception {
+        code = code.replace('-', '+').replace('_', '/');
+        byte[] decodedBytes = Base64.getDecoder().decode(code);
+        SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes(StandardCharsets.UTF_8));
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+        byte[] decryptedBytes = cipher.doFinal(decodedBytes);
+        String decrypted = new String(decryptedBytes, StandardCharsets.UTF_8).trim();
+        return decrypted;
     }
 
     private static String padString(String str) {

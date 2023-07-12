@@ -26,7 +26,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
@@ -85,7 +84,7 @@ public class GameUrlService implements GameUrl {
             params.addProperty("mType", mType);
             params.addProperty("isShowDollarSign", isShowDollarSign);
 
-            encrypted = VendorService.encrypt(params.toString(), aesKey.getBytes(StandardCharsets.UTF_8), aesIv.getBytes(StandardCharsets.UTF_8));
+            encrypted = VendorService.encrypt(params.toString(), aesKey, aesIv);
 
         } catch (Exception exception) {
             throw new InvalidVendorLineException();
