@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.yesbingo.api.action;
+package com.nextgen.gameaggregator.vendor.yesbingo.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

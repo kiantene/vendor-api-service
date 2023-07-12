@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.yesbingo.constant.Actions;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.yesbingo.dto.VendorRequestDto;
 import com.nextgen.gameaggregator.vendor.yesbingo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.yesbingo.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,7 +38,7 @@ public class GeneralAction {
     @Autowired
     private BetAction betAction;
 
-    @PostMapping(path = EndPoints.PATH + "/{id}")
+    @PostMapping(path = EndPoints.ACTION + "/{id}")
     public ResponseVo balance(HttpServletRequest request, @PathVariable String id) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -45,9 +46,6 @@ public class GeneralAction {
         String traceId = httpRequestLog.getId();
 
         try {
-            //Get vendor line id by agent code from vendor line credential
-            // Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue();
-
 
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -65,19 +63,24 @@ public class GeneralAction {
             String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_KEY);
             String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_IV);
 
-            ActionDto dto = HttpService.convertJsonToDto(body, ActionDto.class);
+            // Decrypt data
+            String decryptedData = VendorService.decrypt(vendorRequestDto.getX(), key, iv);
 
+            // Update the requestBody for easier debugging purposes
+            httpRequestLog.setRequestBody(body + "&json=" + decryptedData.toString());
 
+            // Map the decrypted data
+            ActionDto dto = HttpService.convertJsonToDto(decryptedData, ActionDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             switch (dto.getAction()) {
                 case Actions.BALANCE -> {
-                    responseVo = balanceAction.balance(httpRequestLog, traceId, body);
+                    responseVo = balanceAction.balance(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.BET -> {
-                    responseVo = betAction.bet(httpRequestLog, traceId, body);
+                    responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
                 }
                 // If the header does not match any of the expected values, return an error response
                 default -> {

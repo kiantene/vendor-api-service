@@ -31,13 +31,13 @@ public class BalanceAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo balance(HttpRequestLog httpRequestLog, String traceId, String body) {
+    public ResponseVo balance(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
 
         ResponseVo responseVo = new ResponseVo();
 
         try {
 
-            BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            BalanceDto dto = HttpService.convertJsonToDto(decryptedData, BalanceDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);

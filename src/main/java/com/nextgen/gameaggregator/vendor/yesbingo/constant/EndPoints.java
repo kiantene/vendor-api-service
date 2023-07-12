@@ -6,6 +6,8 @@ public class EndPoints {
 
     public static final String PATH = "api/v1/yesbingo";
 
+    public static final String ACTION = "action";
+
     public static final String GAME_URL_ACTION = "21";
 
 

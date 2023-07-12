@@ -35,13 +35,13 @@ public class BetAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo bet(HttpRequestLog httpRequestLog, String traceId, String body) {
+    public ResponseVo bet(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
 
         ResponseVo responseVo = new ResponseVo();
 
         try {
 
-            BetDto dto = HttpService.convertJsonToDto(body, BetDto.class);
+            BetDto dto = HttpService.convertJsonToDto(decryptedData, BetDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -53,7 +53,7 @@ public class BetAction {
             this.doVerification(dto, gameSession);
 
             // Process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, decryptedData);
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Balance and Currency
