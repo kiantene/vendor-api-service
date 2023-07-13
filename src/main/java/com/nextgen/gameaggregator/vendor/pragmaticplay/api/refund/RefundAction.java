@@ -66,7 +66,7 @@ public class RefundAction {
             responseVo.setTransactionId(transactionId);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             transactionId = betResultIdempotentViolationException.getTransactionId();
@@ -79,7 +79,7 @@ public class RefundAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 15) {
                 //Operator Bet not found
-                responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             } else {
                 //Other operator errors
                 responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
