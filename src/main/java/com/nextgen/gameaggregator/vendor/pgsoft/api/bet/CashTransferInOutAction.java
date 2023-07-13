@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -180,11 +181,19 @@ public class CashTransferInOutAction {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerName());
 
-
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
         // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+        VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+
+        //update session games while player is using session that is not matched with the game which played.
+        if (vendorGame.getId() != gameSession.getVendorGameId()) {
+            gameSession.setVendorGameId(vendorGame.getId());
+            gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+            gameSession.setGameCode(vendorGame.getCode());
+            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+            gameSessionService.updateSession(gameSession);
+        }
 
         // 3. Verify vendor currency code is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
