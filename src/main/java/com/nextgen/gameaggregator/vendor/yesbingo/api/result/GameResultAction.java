@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.yesbingo.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Formats;
@@ -34,6 +34,8 @@ public class GameResultAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     public ResponseVo gameResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
 
@@ -52,9 +54,8 @@ public class GameResultAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, decryptedData);
-            BigDecimal balance = betEvent.getLastBalance();
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // Set Balance and Currency
             responseVo.setBalance(balance);

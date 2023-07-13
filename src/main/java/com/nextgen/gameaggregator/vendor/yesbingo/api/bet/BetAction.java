@@ -53,7 +53,7 @@ public class BetAction {
             this.doVerification(dto, gameSession);
 
             // Process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, decryptedData);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody());
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Balance and Currency

@@ -70,7 +70,7 @@ public class GeneralAction {
             String decryptedData = VendorService.decrypt(vendorRequestDto.getX(), key, iv);
 
             // Update the requestBody for easier debugging purposes
-            httpRequestLog.setRequestBody(body + "&json=" + decryptedData.toString());
+            httpRequestLog.setRequestBody(body + "&json=" + decryptedData);
 
             // Map the decrypted data
             ActionDto dto = HttpService.convertJsonToDto(decryptedData, ActionDto.class);
