@@ -5,5 +5,5 @@ public class Actions {
     public static final int BET = 3;
     public static final int CANCEL_BET = 4;
     public static final int GAME_RESULT = 8;
-    public static final int GAME_DETAILS = 9;
+    public static final int GAME_DETAIL_RESULT = 9;
 }

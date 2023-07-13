@@ -20,7 +20,7 @@ import java.time.format.DateTimeParseException;
 
 @RestController
 @Slf4j
-public class GameResultAction {
+public class GameDetailResultAction {
 
     @Autowired
     private HttpService httpService;
@@ -37,7 +37,7 @@ public class GameResultAction {
     @Autowired
     private VendorService vendorService;
 
-    public ResponseVo gameResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
+    public ResponseVo gameDetailResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
 
         ResponseVo responseVo = new ResponseVo();
 

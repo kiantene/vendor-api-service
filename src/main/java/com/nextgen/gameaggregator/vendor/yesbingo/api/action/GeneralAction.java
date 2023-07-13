@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.api.balance.BalanceAction;
 import com.nextgen.gameaggregator.vendor.yesbingo.api.bet.BetAction;
+import com.nextgen.gameaggregator.vendor.yesbingo.api.result.GameDetailResultAction;
 import com.nextgen.gameaggregator.vendor.yesbingo.api.result.GameResultAction;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Actions;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Credentials;
@@ -40,6 +41,8 @@ public class GeneralAction {
     private BetAction betAction;
     @Autowired
     private GameResultAction gameResultAction;
+    @Autowired
+    private GameDetailResultAction gameDetailResultAction;
 
     @PostMapping(path = EndPoints.ACTION + "/{id}")
     public ResponseVo balance(HttpServletRequest request, @PathVariable String id) {
@@ -83,10 +86,16 @@ public class GeneralAction {
                     responseVo = balanceAction.balance(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.BET -> {
+                    // For Bingo & Slot = Bet
                     responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.GAME_RESULT -> {
+                    // For Bingo & Slot = Win
                     responseVo = gameResultAction.gameResult(httpRequestLog, traceId, decryptedData);
+                }
+                case Actions.GAME_DETAIL_RESULT -> {
+                    // For fish game is Bet + Win
+                    responseVo = gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData);
                 }
                 // If the header does not match any of the expected values, return an error response
                 default -> {

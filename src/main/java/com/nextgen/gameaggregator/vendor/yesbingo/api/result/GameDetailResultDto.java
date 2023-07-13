@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import jakarta.validation.constraints.*;
 import lombok.Data;
-import org.hibernate.validator.constraints.Range;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -14,7 +13,7 @@ import java.time.Instant;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GameResultDto implements BetResultData {
+public class GameDetailResultDto implements BetResultData {
 
     // Already validated in GeneralAction. Action id to bet
     public Integer action;
@@ -63,27 +62,24 @@ public class GameResultDto implements BetResultData {
     @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
 
-    // Bet amount
+    // Required bet amount
     @NotNull
     @NegativeOrZero
-    public BigDecimal bet;
+    public BigDecimal reqBet;
 
-    // Win amount
+    // Total bet amount
+    @NotNull
+    @NegativeOrZero
+    public BigDecimal totalBet;
+
+    // Total win amount
     @NotNull
     @PositiveOrZero
-    public BigDecimal win;
+    public BigDecimal totalWin;
 
     // Net win amount
     @NotNull
     public BigDecimal netWin;
-
-    @NotNull
-    @Range(min = 0, max = 1)
-    public Integer hasFreeGame;
-
-    @NotNull
-    @Range(min = 0, max = 1)
-    public Integer hasBonusGame;
 
     // Participated in Mystery Prizes
     @NotNull
@@ -95,20 +91,8 @@ public class GameResultDto implements BetResultData {
     public String lastModifyTime;
 
 
-    // ----- For Slot game (gType = 1) -----------
-    // Jackpot Contribution
-    @PositiveOrZero
-    public BigDecimal jackpotWin;
-
-    @NegativeOrZero
-    public BigDecimal jackpotContribute;
-
-    // ----- For Bingo game (gType = 3) -----------
-    @PositiveOrZero
-    public Long playSeq;
-
-    @PositiveOrZero
-    public Integer round;
+    // ----- For Fish game (gType = 2) -----------
+    public Integer roomType;
 
     @Override
     public String getExternalTransactionId() {
@@ -132,12 +116,12 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.bet;
+        return this.totalBet;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.win;
+        return this.totalWin;
     }
 
     @Override
@@ -147,7 +131,7 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.ZERO;
+        return this.totalBet;
     }
 
     @Override
