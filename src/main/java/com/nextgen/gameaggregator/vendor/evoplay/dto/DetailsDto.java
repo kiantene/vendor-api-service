@@ -33,5 +33,7 @@ public class DetailsDto {
     private String total_bet_for_action_in_money;
     private String total_win_for_action_in_money;
     private RoundDto round;
+    private String extrabonus_type;
+    private ExtraBonusDto extrabonus;
 
 }
