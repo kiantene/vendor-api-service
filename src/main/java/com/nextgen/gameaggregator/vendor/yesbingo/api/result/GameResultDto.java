@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.yesbingo.api.bet;
+package com.nextgen.gameaggregator.vendor.yesbingo.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -14,7 +14,7 @@ import java.time.Instant;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto implements BetResultData {
+public class GameResultDto implements BetResultData {
 
     // Already validated in GeneralAction. Action id to bet
     public Integer action;
@@ -52,9 +52,6 @@ public class BetDto implements BetResultData {
     // Game Date ISO 8601
     @NotBlank
     public String gameDate;
-
-    @NotBlank
-    public String reportDate;
 
     // Vendor's defined currency
     @NotBlank

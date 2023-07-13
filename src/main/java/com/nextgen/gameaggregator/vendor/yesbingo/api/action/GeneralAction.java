@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.api.balance.BalanceAction;
 import com.nextgen.gameaggregator.vendor.yesbingo.api.bet.BetAction;
+import com.nextgen.gameaggregator.vendor.yesbingo.api.result.GameResultAction;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Actions;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.EndPoints;
@@ -37,6 +38,8 @@ public class GeneralAction {
     private BalanceAction balanceAction;
     @Autowired
     private BetAction betAction;
+    @Autowired
+    private GameResultAction gameResultAction;
 
     @PostMapping(path = EndPoints.ACTION + "/{id}")
     public ResponseVo balance(HttpServletRequest request, @PathVariable String id) {
@@ -81,6 +84,9 @@ public class GeneralAction {
                 }
                 case Actions.BET -> {
                     responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
+                }
+                case Actions.GAME_RESULT -> {
+                    responseVo = gameResultAction.gameResult(httpRequestLog, traceId, decryptedData);
                 }
                 // If the header does not match any of the expected values, return an error response
                 default -> {
