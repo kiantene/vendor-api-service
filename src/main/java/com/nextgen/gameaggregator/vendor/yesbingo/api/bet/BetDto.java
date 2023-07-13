@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -53,9 +52,6 @@ public class BetDto implements BetResultData {
     @NotBlank
     public String gameDate;
 
-    @NotBlank
-    public String reportDate;
-
     // Vendor's defined currency
     @NotBlank
     @Size(min = 3, max = 3)
@@ -67,18 +63,19 @@ public class BetDto implements BetResultData {
     @NegativeOrZero
     public BigDecimal bet;
 
-    // Jackpot Contribution
-    @NotNull
-    @NegativeOrZero
-    public BigDecimal jackpotContribute;
-
     // Participated in Mystery Prizes
     @NotNull
     @Pattern(regexp = "^true$|^false$")
     public String isJoinMysteryJackpot;
 
-    // Play Sequence for (Bingo games)
-    @Nullable
+    // ----- For Slot game (gType = 1) -----------
+    // Jackpot Contribution
+    @NotNull
+    @NegativeOrZero
+    public BigDecimal jackpotContribute;
+
+    // ----- For Bingo game (gType = 3) -----------
+    @NotNull
     @Positive
     public Long playSeq;
 

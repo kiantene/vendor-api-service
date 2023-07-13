@@ -6,8 +6,8 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import org.hibernate.validator.constraints.Range;
 
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -53,6 +53,10 @@ public class GameResultDto implements BetResultData {
     @NotBlank
     public String gameDate;
 
+    // Report Date ISO 8601
+    @NotBlank
+    public String reportDate;
+
     // Vendor's defined currency
     @NotBlank
     @Size(min = 3, max = 3)
@@ -64,20 +68,47 @@ public class GameResultDto implements BetResultData {
     @NegativeOrZero
     public BigDecimal bet;
 
-    // Jackpot Contribution
+    // Win amount
     @NotNull
-    @NegativeOrZero
-    public BigDecimal jackpotContribute;
+    @PositiveOrZero
+    public BigDecimal win;
+
+    // Net win amount
+    @NotNull
+    public BigDecimal netWin;
+
+    @NotNull
+    @Range(min = 0, max = 1)
+    public Integer hasFreeGame;
+
+    @NotNull
+    @Range(min = 0, max = 1)
+    public Integer hasBonusGame;
 
     // Participated in Mystery Prizes
     @NotNull
     @Pattern(regexp = "^true$|^false$")
     public String isJoinMysteryJackpot;
 
-    // Play Sequence for (Bingo games)
-    @Nullable
+    // Last modify time ISO 8601
+    @NotBlank
+    public String lastModifyTime;
+
+
+    // ----- For Slot game (gType = 1) -----------
+    // Jackpot Contribution
+    @PositiveOrZero
+    public BigDecimal jackpotWin;
+
+    @NegativeOrZero
+    public BigDecimal jackpotContribute;
+
+    // ----- For Bingo game (gType = 3) -----------
     @Positive
     public Long playSeq;
+
+    @Positive
+    public Integer round;
 
     @Override
     public String getExternalTransactionId() {
@@ -106,17 +137,17 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return BigDecimal.ZERO;
+        return this.win;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return BigDecimal.ZERO;
+        return this.netWin;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.bet;
+        return BigDecimal.ZERO;
     }
 
     @Override
@@ -146,6 +177,6 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }
