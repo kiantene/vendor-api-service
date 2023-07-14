@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -84,18 +85,23 @@ public class CancelBetAction {
 
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService);
 
-            //confirm cancel bet if found transaction id
-            //commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-            commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (BetNotFoundException betNotFoundException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(0d);
-            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+                commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);

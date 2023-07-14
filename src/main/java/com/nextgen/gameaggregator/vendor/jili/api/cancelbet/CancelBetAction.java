@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.jili.api.cancelbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -51,7 +52,8 @@ public class CancelBetAction {
 
         CancelBetVo cancelBetVo = new CancelBetVo();
         String traceId = httpRequestLog.getId();
-
+        String vendorPlayerUsername = null;
+        String vendorCurrencyCode = null;
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -63,33 +65,39 @@ public class CancelBetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(cancelBetDto.getToken());
+            vendorPlayerUsername = gameSession.getVendorPlayerUsername();
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. get Bet History for checking
-            // TODO : (need change to get by betId)
-//            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelBetDto.getRound()), rawGameSession.getVendorGameId(), rawGameSession.getVendorPlayerId());
-
             this.doVerification(cancelBetDto, gameSession);
 
             // 4. Send refund to Operator
             BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
 
-            cancelBetVo.setUsername(gameSession.getVendorPlayerUsername());
-            cancelBetVo.setCurrency(gameSession.getVendorCurrencyCode());
+            cancelBetVo.setUsername(vendorPlayerUsername);
+            cancelBetVo.setCurrency(vendorCurrencyCode);
             cancelBetVo.setBalance(balance);
             cancelBetVo.setTxId(traceId);
-//            cancelBetVo.setToken(rawGameSession.getToken());
 
         } catch (BetNotFoundException betNotFoundException) {
             cancelBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
-            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
-            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                cancelBetVo.setUsername(vendorPlayerUsername);
+                cancelBetVo.setCurrency(vendorCurrencyCode);
+                cancelBetVo.setBalance(betResultIdempotentViolationException.getBalance());
+                cancelBetVo.setTxId(traceId);
+
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
-            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {

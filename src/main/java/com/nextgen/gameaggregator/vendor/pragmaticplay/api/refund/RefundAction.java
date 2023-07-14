@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.RawBetRefundLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -69,14 +70,23 @@ public class RefundAction {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            transactionId = betResultIdempotentViolationException.getTransactionId();
-            responseVo.setTransactionId(transactionId);
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                transactionId = betResultIdempotentViolationException.getTransactionId();
+                responseVo.setTransactionId(transactionId);
+
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (
+                InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 15) {
                 //Operator Bet not found
                 responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -87,7 +97,8 @@ public class RefundAction {
 
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidRequestException invalidRequestException) {
+        } catch (
+                InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 String validations = invalidRequestException.getValidation().toString();
@@ -95,22 +106,28 @@ public class RefundAction {
                 httpRequestLog.setErrorMessage(validations);
             }
 
-        } catch (InvalidPlayerException invalidPlayerException) {
+        } catch (
+                InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
 
-        } catch (AuthenticationException authenticationException) {
+        } catch (
+                AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
-        } catch (InvalidSignatureException invalidSignatureException) {
+        } catch (
+                InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
 
-        } catch (CredentialNotFoundException credentialNotFoundException) {
+        } catch (
+                CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+        } catch (
+                InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
 
-        } catch (Exception exception) { // any other exception encountered
+        } catch (
+                Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
         }

@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -93,9 +94,17 @@ public class RefundAction {
             statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            commonVo.setBalance(betResultIdempotentViolationException.getBalance());
-            commonVo.setCurrency(vendorCurrencyCode);
-            responseVo.setData(commonVo);
+            //if found the bet in settled status
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                statusVo.setCode(ResponseCodes.SERVER_ERROR);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                commonVo.setBalance(betResultIdempotentViolationException.getBalance());
+                commonVo.setCurrency(vendorCurrencyCode);
+                responseVo.setData(commonVo);
+
+            }
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

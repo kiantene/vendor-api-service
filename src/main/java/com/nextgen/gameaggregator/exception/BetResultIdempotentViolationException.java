@@ -10,6 +10,7 @@ public class BetResultIdempotentViolationException extends Exception {
     private BigDecimal balance;
     private String transactionId;
     private String betId;
+    private Integer status;
 
     public BetResultIdempotentViolationException() {
         super();
@@ -26,6 +27,7 @@ public class BetResultIdempotentViolationException extends Exception {
         this.balance = betInformation.getBalance();
         this.betId = betInformation.getBetId();
         this.transactionId = betInformation.getInternalTransactionId();
+        this.status = betInformation.getStatus();
     }
 
     public BetResultIdempotentViolationException(RawBetResultLog rawBetResultLog) {
@@ -38,7 +40,7 @@ public class BetResultIdempotentViolationException extends Exception {
 
     public Long getVendorSettleTime() { return this.vendorSettleTime; }
     public BigDecimal getBalance() { return this.balance; }
-
     public String getBetId() { return this.betId; }
     public String getTransactionId() { return this.transactionId; }
+    public Integer getStatus() { return this.status; }
 }
