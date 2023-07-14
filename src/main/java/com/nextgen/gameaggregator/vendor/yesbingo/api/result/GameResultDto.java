@@ -122,7 +122,7 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.transferId.toString();
+        return this.gameSeqNo.toString();
     }
 
     @Override
