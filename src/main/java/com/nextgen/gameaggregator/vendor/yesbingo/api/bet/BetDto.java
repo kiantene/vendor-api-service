@@ -70,14 +70,12 @@ public class BetDto implements BetResultData {
 
     // ----- For Slot game (gType = 1) -----------
     // Jackpot Contribution
-    @NotNull
     @NegativeOrZero
     public BigDecimal jackpotContribute;
 
     // ----- For Bingo game (gType = 3) -----------
-    @NotNull
     @Positive
-    public Long playSeq;
+    private Long playSeq;
 
     @Override
     public String getExternalTransactionId() {

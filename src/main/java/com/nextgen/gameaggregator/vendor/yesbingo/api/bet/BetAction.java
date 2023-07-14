@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Formats;
+import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yesbingo.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -93,6 +94,12 @@ public class BetAction {
 
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        if(dto.getGType() == GameTypes.SLOT && dto.getJackpotContribute() == null) {
+            throw new InvalidRequestException();
+        } else if(dto.getGType() == GameTypes.BINGO && dto.getPlaySeq() == null) {
+            throw new InvalidRequestException();
+        }
     }
 
     private void doVerification(BetDto dto, GameSession gameSession)
