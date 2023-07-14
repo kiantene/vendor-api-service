@@ -42,7 +42,7 @@ public class ResponseCodes {
     public static final String USER_LOCKED = "7503";
     public static final String USER_CLOSED = "7504";
     public static final String USER_NOT_PLAYING = "7505";
-    public static final String INVALID_USESR_ID = "7601";
+    public static final String INVALID_USER_ID = "7601";
     public static final String ACCOUNT_ALREADY_EXISTS = "7602";
     public static final String INVALID_USERNAME = "7603";
     public static final String INVALID_PASSWORD = "7604";
@@ -93,7 +93,7 @@ public class ResponseCodes {
         put(USER_LOCKED, "User is locked.");
         put(USER_CLOSED, "User is closed.");
         put(USER_NOT_PLAYING, "User is not playing.");
-        put(INVALID_USESR_ID, "Invalid User ID. Please only use characters between a-z, 0-9.");
+        put(INVALID_USER_ID, "Invalid User ID. Please only use characters between a-z, 0-9.");
         put(ACCOUNT_ALREADY_EXISTS, "This account already exists. Please choose other User ID");
         put(INVALID_USERNAME, "Invalid username.");
         put(INVALID_PASSWORD, "The password must have at least 6 characters, with 1 alphabet and 1 number.");

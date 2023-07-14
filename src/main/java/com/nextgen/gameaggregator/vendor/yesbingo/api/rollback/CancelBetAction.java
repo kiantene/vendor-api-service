@@ -57,12 +57,16 @@ public class CancelBetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException e) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+        } catch (BetRefundIdempotentViolationException e) {
+            responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+        } catch (BetNotFoundException e) {
+            responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
