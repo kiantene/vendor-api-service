@@ -76,6 +76,8 @@ public class GameResultAction {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
+        } catch(BetNotFoundException betNotFoundException) {
+            responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);

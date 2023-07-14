@@ -131,9 +131,7 @@ public class GameResultDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getBetAmount() {
-        return this.bet;
-    }
+    public BigDecimal getBetAmount() { return BigDecimal.ZERO; }
 
     @Override
     public BigDecimal getWinAmount() {
@@ -141,14 +139,10 @@ public class GameResultDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() {
-        return this.netWin;
-    }
+    public BigDecimal getWinLoss() { return null; }
 
     @Override
-    public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.ZERO;
-    }
+    public BigDecimal getEffectiveTurnover() { return BigDecimal.ZERO; }
 
     @Override
     public Long getVendorBetTime() {
@@ -167,12 +161,12 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
+        return (getJackpotWin() != null) ? getJackpotWin() : BigDecimal.ZERO;
     }
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return (getHasFreeGame() != null) ? getHasFreeGame() : 0;
     }
 
     @Override

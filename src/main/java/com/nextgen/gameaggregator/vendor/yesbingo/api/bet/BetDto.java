@@ -98,9 +98,7 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getBetAmount() {
-        return this.bet;
-    }
+    public BigDecimal getBetAmount() { return this.bet.negate(); }
 
     @Override
     public BigDecimal getWinAmount() {
@@ -108,13 +106,11 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() {
-        return BigDecimal.ZERO;
-    }
+    public BigDecimal getWinLoss() { return getBetAmount().negate(); }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.bet;
+        return getBetAmount();
     }
 
     @Override
