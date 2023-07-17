@@ -92,6 +92,8 @@ public class GameDetailResultDto implements BetResultData {
 
 
     // ----- For Fish game (gType = 2) -----------
+    @NotNull
+    @PositiveOrZero
     public Integer roomType;
 
     @Override
