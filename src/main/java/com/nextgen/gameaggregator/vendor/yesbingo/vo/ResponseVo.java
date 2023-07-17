@@ -26,9 +26,14 @@ public class ResponseVo implements HttpResponse {
     public void setStatus(String responseCode) {
         this.status = responseCode;
         this.errText = null;
-        if(!this.status.equals(ResponseCodes.SUCCEED)) {
+
+        if (!this.status.equals(ResponseCodes.SUCCEED)) {
             this.errText = ResponseCodes.RESPONSE_DESCRIPTION.get(this.status);
         }
+    }
+    public void setStatus(String responseCode, String errorMsg) {
+        this.status = responseCode;
+        this.errText = errorMsg;
     }
 
 }

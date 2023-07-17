@@ -65,19 +65,20 @@ public class GameResultAction {
         } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException e) {
-            responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_AUTHORIZED_ACCESS));
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
-            responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PARAMETER_INPUT_ERROR));
         } catch (DateTimeParseException dateTimeParseException) {
-            responseVo.setStatus(ResponseCodes.WRONG_DATE_SECOND_FORMAT);
+            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.WRONG_DATE_SECOND_FORMAT));
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
+            // 6001-The system is busy (vendor proceeds to cancel the bet)
+            responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
         } catch(BetNotFoundException betNotFoundException) {
-            responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
+            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.DATA_NOT_EXIST));
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
