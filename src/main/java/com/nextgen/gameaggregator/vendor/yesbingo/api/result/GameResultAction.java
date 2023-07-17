@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.result;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Formats;
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -41,7 +44,6 @@ public class GameResultAction {
 
         try {
 
-            /*
             GameResultDto dto = HttpService.convertJsonToDto(decryptedData, GameResultDto.class);
 
             // Validate request parameters (Non-database calls)
@@ -60,10 +62,7 @@ public class GameResultAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-             */
-            throw new TransactionStillProcessingException();
-
-        } /*catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException e) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
@@ -75,14 +74,14 @@ public class GameResultAction {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
-        } */catch (TransactionStillProcessingException transactionStillProcessingException) {
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
-        } /*catch(BetNotFoundException betNotFoundException) {
+        } catch(BetNotFoundException betNotFoundException) {
             responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } */catch (Exception exception) {
+        } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
         }
