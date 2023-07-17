@@ -74,14 +74,13 @@ public class VendorService extends BaseVendorService {
 
     public static <T> T convertBodyToDto(String queryString, Type type) {
         Map<String, Object> resultMap = new LinkedHashMap<>();
-        queryString = URLDecoder.decode(queryString, StandardCharsets.UTF_8);
 
         String[] params = queryString.split("&");
         for (String param : params) {
             String[] keyValue = param.split("=", 2);
             if (keyValue.length == 2) {
-                String key = keyValue[0];
-                String value = keyValue[1];
+                String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                String value = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
                 populateNestedMap(resultMap, key, value);
             }
         }
