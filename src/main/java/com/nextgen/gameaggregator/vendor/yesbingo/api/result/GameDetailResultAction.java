@@ -43,7 +43,7 @@ public class GameDetailResultAction {
 
         try {
 
-            GameResultDto dto = HttpService.convertJsonToDto(decryptedData, GameResultDto.class);
+            GameDetailResultDto dto = HttpService.convertJsonToDto(decryptedData, GameDetailResultDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -63,7 +63,7 @@ public class GameDetailResultAction {
 
         } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
-                 DisabledVendorLineException | GameNotSupportedException e) {
+                 DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_AUTHORIZED_ACCESS));
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PARAMETER_INPUT_ERROR));
@@ -88,7 +88,7 @@ public class GameDetailResultAction {
 
     }
 
-    private void doValidation(GameResultDto dto) throws InvalidRequestException, DateTimeParseException {
+    private void doValidation(GameDetailResultDto dto) throws InvalidRequestException, DateTimeParseException {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
         formatter.parse(dto.getGameDate());
@@ -99,7 +99,7 @@ public class GameDetailResultAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameResultDto dto, GameSession gameSession)
+    private void doVerification(GameDetailResultDto dto, GameSession gameSession)
             throws InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 

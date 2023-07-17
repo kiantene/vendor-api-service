@@ -59,7 +59,7 @@ public class CancelBetAction {
 
         } catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
-                 DisabledVendorLineException e) {
+                 DisabledVendorLineException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_AUTHORIZED_ACCESS));
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PARAMETER_INPUT_ERROR));

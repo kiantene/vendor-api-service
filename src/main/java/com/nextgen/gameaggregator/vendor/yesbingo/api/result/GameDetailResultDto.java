@@ -116,7 +116,7 @@ public class GameDetailResultDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.totalBet;
+        return this.totalBet.negate();
     }
 
     @Override
@@ -126,12 +126,12 @@ public class GameDetailResultDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.netWin;
+        return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.totalBet;
+        return this.totalBet.negate();
     }
 
     @Override

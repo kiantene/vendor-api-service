@@ -63,7 +63,7 @@ public class BetAction {
 
         } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
-                 DisabledVendorLineException | GameNotSupportedException e) {
+                 DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_AUTHORIZED_ACCESS));
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PARAMETER_INPUT_ERROR));
