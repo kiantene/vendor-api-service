@@ -74,7 +74,7 @@ public class TransferAction {
             this.doValidation(transferDto);
 
             //Get GameSession
-            GameSession gameSession = this.getGameSession(transferDto);
+            GameSession gameSession = gameSessionService.verifyToken(transferDto.getFundTransferRequestDto().getToken());
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(transferDto, gameSession);
@@ -212,6 +212,10 @@ public class TransferAction {
                 if (fundInfoDto.getGameStateMode() == GameStateMode.BET) {
                     //process bet result into unsettle bet when gamestatemode = 1(game round start)
                     responseVo = betService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, traceId, body, httpRequestLog);
+                    if(!responseVo.getFundTransferResponseVo().getStatusVo().getSuccess()){
+                        //stop loop and return error respond when debit and credit condition
+                        return responseVo;
+                    }
                 } else {
                     //process bet result into settle bet when gamestatemode = 2(game round end/ bonus free spin) or 0(free spin/jackpot) or 3(expire bet round end)
                     responseVo = resultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), fundInfoDto.getGameStateMode(), gameSession, traceId, httpRequestLog);
