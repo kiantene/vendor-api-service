@@ -50,7 +50,7 @@ public class RefundService {
             statusVo.setMessage(ResponseCodes.TRANSFER_FAIL);
         } catch (
                 RecordNotFoundException |
-                 BetNotFoundException betNotFoundException
+                BetNotFoundException betNotFoundException
         ) {
             //handle when unsettle bet not available, no action and void the game
             statusVo.setRefundStatus(2);

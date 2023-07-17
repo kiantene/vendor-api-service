@@ -1,25 +1,19 @@
-package com.nextgen.gameaggregator.vendor.dotconnections.api.appendwager;
+package com.nextgen.gameaggregator.vendor.dotconnections.api.promo;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
-
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Digits;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class AppendWagerDto implements BetResultData {
+public class PromoPayoutDto implements BetResultData {
 
     @NotBlank
     @Size(max = 7)
@@ -47,49 +41,36 @@ public class AppendWagerDto implements BetResultData {
     public BigDecimal amount;
 
     @NotNull
-    @Digits(integer = Integer.MAX_VALUE, fraction = 0)
-    public Integer gameId;
+    @Size(max = 36)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    public String promotionId;
 
     @NotBlank
-    @Size(max = 50)
-    public String gameName;
-
-    @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    public String roundId;
-
-    @NotBlank
-    @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    public String wagerId;
+    @Size(max = 128)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    public String transId;
 
     @NotBlank
     @Size(max = 20)
     @Pattern(regexp = "^[a-z]+$")
     public String provider;
 
-    @Size(max = 100)
-    public String description;
-
-    @NotNull
-    @Pattern(regexp = "^true$|^false$")
-    // 0= Unfinished, 1= Round Finish
-    public String isEndround;
-
     @Override
     public String getExternalTransactionId() {
-        return this.wagerId;
+        return this.transId;
     }
 
     @Override
+    public String getRoundId() { return this.promotionId; }
+
+    @Override
     public String getVendorBetId() {
-        return this.wagerId;
+        return this.transId;
     }
 
     @Override
     public String getGameId() {
-        return this.gameId.toString();
+        return null;
     }
 
     @Override
@@ -142,6 +123,6 @@ public class AppendWagerDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }

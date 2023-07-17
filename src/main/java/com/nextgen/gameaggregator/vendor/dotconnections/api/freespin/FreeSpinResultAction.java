@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.freespin;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
@@ -25,7 +27,7 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class FreeSpinAction {
+public class FreeSpinResultAction {
 
     @Autowired
     private HttpService httpService;
@@ -37,6 +39,8 @@ public class FreeSpinAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.FREE_SPIN_RESULT)
     public ResponseVo balance(HttpServletRequest request) {
@@ -54,10 +58,10 @@ public class FreeSpinAction {
             /*
             TODO: This endpoint will only be triggered if Free Spin Campaign is set up.
              To update this endpoint if Free Spin Campaign is required to set up.
-             This endpoint only return current balance for now
+             Simulating a free spin result for vendor's test cases for now
              */
 
-            FreeSpinDto dto = HttpService.convertJsonToDto(body, FreeSpinDto.class);
+            FreeSpinResultDto dto = HttpService.convertJsonToDto(body, FreeSpinResultDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -68,32 +72,51 @@ public class FreeSpinAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // Default bet status as UNSETTLED until end round
+            dto.setBetStatus(BetStatus.UNSETTLED);
+
+            if(dto.getIsEndround().equals("true")) {
+                dto.setBetStatus(BetStatus.SETTLED);
+            }
+
+            // Process free spin result as BET_WIN
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.BET_WIN, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
-            responseVo.setMsg(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.SUCCESS));
+            // Set data for response vo
             responseVo.setCode(ResponseCodes.SUCCESS);
+            responseVo.setData(responseDataVo);
 
+        } catch (AuthenticationException | InvalidSignatureException signErrorException) {
+            responseVo.setCode(ResponseCodes.SIGN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+        } catch (BetNotFoundException betNotFoundException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
-        } catch (InvalidSignatureException | AuthenticationException signErrorException) {
-            responseVo.setCode(ResponseCodes.SIGN_ERROR);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException | JsonProcessingException systemErrorException) {
+                 InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
@@ -109,12 +132,12 @@ public class FreeSpinAction {
 
     }
 
-    private void doValidation(FreeSpinDto dto) throws InvalidRequestException {
+    private void doValidation(FreeSpinResultDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(FreeSpinDto dto, GameSession gameSession)
+    private void doVerification(FreeSpinResultDto dto, GameSession gameSession)
             throws InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException,
             AuthenticationException, InvalidSignatureException, InvalidRequestException, InvalidProviderException {
