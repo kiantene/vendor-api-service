@@ -53,6 +53,9 @@ public class BetAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
+            // Update round id and bet id accordingly based on different game type
+            this.setRoundIdAndBetIdByGameType(dto);
+
             // Process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody());
             BigDecimal balance = betEvent.getLastBalance();
@@ -124,5 +127,18 @@ public class BetAction {
 
         // Verify Game id
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+    }
+
+    private void setRoundIdAndBetIdByGameType(BetDto dto) {
+        switch(dto.getGType()) {
+            case GameTypes.SLOT -> {
+                dto.setRoundId(dto.getGameSeqNo());
+                dto.setBetId(dto.getTransferId().toString());
+            }
+            case GameTypes.BINGO -> {
+                dto.setRoundId(dto.getPlaySeq().toString());
+                dto.setBetId(dto.getGameSeqNo().toString());
+            }
+        }
     }
 }

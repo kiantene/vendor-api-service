@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Formats;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.yesbingo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.yesbingo.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,9 @@ public class GameResultAction {
 
             // Verify data
             this.doVerification(dto, gameSession);
+
+            // Update round id and bet id accordingly based on different game type
+            this.setRoundIdAndBetIdByGameType(dto);
 
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
@@ -135,5 +139,18 @@ public class GameResultAction {
 
         // Verify Game id
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+    }
+
+    private void setRoundIdAndBetIdByGameType(GameResultDto dto) {
+        switch(dto.getGType()) {
+            case GameTypes.SLOT -> {
+                dto.setRoundId(dto.getGameSeqNo());
+                dto.setBetId(dto.getTransferId().toString());
+            }
+            case GameTypes.BINGO -> {
+                dto.setRoundId(dto.getPlaySeq().toString());
+                dto.setBetId(dto.getGameSeqNo().toString());
+            }
+        }
     }
 }

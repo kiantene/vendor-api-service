@@ -24,6 +24,7 @@ public class GameDetailResultDto implements BetResultData {
     public Long ts;
 
     // This is the bet id
+    // The value used for refund
     @NotNull
     @Positive
     public Long transferId;
@@ -34,6 +35,7 @@ public class GameDetailResultDto implements BetResultData {
     public String uid;
 
     // Game serial number (unique value according to game type)
+    // The value used to search from vendor's BO
     @NotNull
     @Positive
     public String gameSeqNo;

@@ -25,6 +25,7 @@ public class GameResultDto implements BetResultData {
     public Long ts;
 
     // This is the bet id
+    // The value used for refund
     @NotNull
     @Positive
     public Long transferId;
@@ -34,7 +35,8 @@ public class GameResultDto implements BetResultData {
     @Pattern(regexp = "^[a-z0-9]+$")
     public String uid;
 
-    // Game serial number (unique value according to game type)
+    // Game serial number (unique value according to game type) - round id for Slot
+    // The value used to search from vendor's BO
     @NotNull
     @Positive
     public String gameSeqNo;
@@ -104,11 +106,19 @@ public class GameResultDto implements BetResultData {
     public BigDecimal jackpotContribute;
 
     // ----- For Bingo game (gType = 3) -----------
+
+    // round id for Bingo games
     @PositiveOrZero
     public Long playSeq;
 
     @PositiveOrZero
     public Integer round;
+
+    // This is used to change round id between Slot and Bingo
+    public String roundId;
+
+    // This is used to change vendor bet id between Slot and Bingo
+    public String betId;
 
     @Override
     public String getExternalTransactionId() {
@@ -116,14 +126,10 @@ public class GameResultDto implements BetResultData {
     }
 
     @Override
-    public String getVendorBetId() {
-        return this.transferId.toString();
-    }
+    public String getVendorBetId() { return this.betId; }
 
     @Override
-    public String getRoundId() {
-        return this.gameSeqNo.toString();
-    }
+    public String getRoundId() { return this.roundId; }
 
     @Override
     public String getGameId() {
