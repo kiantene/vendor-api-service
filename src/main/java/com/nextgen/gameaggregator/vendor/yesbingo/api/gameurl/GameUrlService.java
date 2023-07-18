@@ -131,6 +131,8 @@ public class GameUrlService implements GameUrl {
         RequestLogVo requestLogVo = requestService.createRequestLogVo(apiUrl, requestBody, formData, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
+        log.info("YBNGO Response Body: " + apiResponse.getBody());
+
         try {
 
             // 1. validate HTTP Response Code
