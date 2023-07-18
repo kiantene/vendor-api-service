@@ -79,7 +79,6 @@ public class AuthenticationAction {
             authenticationVo.setCurrency(newGameSession.getVendorCurrencyCode());
             authenticationVo.setErrorCode(ResponseCodes.OK);
             authenticationVo.setTimestamp(System.currentTimeMillis());
-
         } catch (AuthenticationException e) {
             authenticationVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -97,9 +96,9 @@ public class AuthenticationAction {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             authenticationVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidOperatorResponseException | NoSuchAlgorithmException |
-                 InvalidKeyException | DisabledVendorLineException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException | DisabledGameException e) {
+        } catch (InvalidOperatorResponseException | NoSuchAlgorithmException | InvalidKeyException |
+                 DisabledVendorLineException | CredentialNotFoundException | InvalidAgentApiCredentialException |
+                 DisabledGameException e) {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
@@ -119,8 +118,7 @@ public class AuthenticationAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request, AuthenticationDto authenticationDto)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException, InvalidRequestException {
+    private void doVerification(GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request, AuthenticationDto authenticationDto) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException, InvalidRequestException {
         // Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), authenticationDto.getToken(), AuthenticationException::new);
