@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.bet;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -15,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -42,6 +39,7 @@ public class BetAction {
 
         try {
 
+            /*
             BetDto dto = HttpService.convertJsonToDto(decryptedData, BetDto.class);
 
             // Validate request parameters (Non-database calls)
@@ -64,7 +62,11 @@ public class BetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+             */
+
+            throw new TransactionStillProcessingException();
+
+        } /*catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_AUTHORIZED_ACCESS));
@@ -76,13 +78,13 @@ public class BetAction {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
-        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+        } */catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 6001-The system is busy (vendor proceeds to cancel the bet)
             responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } /*catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } catch (Exception exception) {
+        } */catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
         }
