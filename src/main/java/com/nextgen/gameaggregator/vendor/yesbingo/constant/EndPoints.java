@@ -12,5 +12,5 @@ public class EndPoints {
 
 
     // API url call to vendor
-    public static final String GAME_RESULT = "/dcs/getReplay";
+    public static final String BET_DETAIL = "54";
 }
