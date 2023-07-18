@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -58,25 +59,27 @@ public class AuthenticationAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(authenticationDto);
 
-            // Remove last 2 char LT to get our session token, because the session and launch token cannot be same
-            String token = authenticationDto.getToken().substring(0, authenticationDto.getToken().length() - 2);
-
-            // Get GameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.verifyToken(token);
+            // Verify launch token
+            GameSession gameSession = gameSessionService.verifyToken(authenticationDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(token, gameSession, httpRequestLog, request, authenticationDto);
+            this.doVerification(gameSession, httpRequestLog, request, authenticationDto);
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
 
-            authenticationVo.setToken(gameSession.getToken());
+            // Regenerate token for session token (launch token only can be use once time)
+            String newToken = UUID.randomUUID().toString();
+            GameSession newGameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
+
+            authenticationVo.setToken(newGameSession.getToken());
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
-            authenticationVo.setUid(gameSession.getVendorPlayerUsername());
+            authenticationVo.setUid(newGameSession.getVendorPlayerUsername());
             authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            authenticationVo.setCurrency(gameSession.getVendorCurrencyCode());
+            authenticationVo.setCurrency(newGameSession.getVendorCurrencyCode());
             authenticationVo.setErrorCode(ResponseCodes.OK);
             authenticationVo.setTimestamp(System.currentTimeMillis());
+
         } catch (AuthenticationException e) {
             authenticationVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -116,11 +119,14 @@ public class AuthenticationAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(String token, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request, AuthenticationDto authenticationDto)
+    private void doVerification(GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request, AuthenticationDto authenticationDto)
             throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, InvalidPlayerException, IOException, InvalidSignatureException, InvalidRequestException {
         // Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), token, AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getToken(), authenticationDto.getToken(), AuthenticationException::new);
+
+        // Verify token status is active
+        vendorService.verifyTokenStatus(gameSession.getStatus());
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -134,7 +140,7 @@ public class AuthenticationAction {
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(authenticationDto.getOperatorId()), InvalidRequestException::new);
-        
+
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));

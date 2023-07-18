@@ -2,6 +2,8 @@ package com.nextgen.gameaggregator.vendor.ezugi.service;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
@@ -86,6 +88,12 @@ public class VendorService extends BaseVendorService {
         unsettledBet = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (unsettledBet != null && (unsettledBet.getBetAmount().doubleValue() != rollbackDto.getRollbackAmount())) {
             throw new InvalidFormatException();
+        }
+    }
+
+    public void verifyTokenStatus(Integer status) throws AuthenticationException {
+        if (status != Status.ACTIVE.code) {
+            throw new AuthenticationException();
         }
     }
 }

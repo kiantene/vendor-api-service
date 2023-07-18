@@ -35,7 +35,7 @@ public class GameUrlService implements GameUrl {
         String language = formData.get("language").get(0);
         // Generate game session token to embed into urlScheme and save into game session table
         // Add LT to define launch token, because session and launch token cannot be same)
-        String token = formData.get("token").get(0) + "LT";
+        String token = formData.get("token").get(0);
         // Retrieve Operator Id as it is required to form the Game URL
         String operatorId = credentials.get(Credentials.OPERATOR_ID);
         // Construct the Game URL
