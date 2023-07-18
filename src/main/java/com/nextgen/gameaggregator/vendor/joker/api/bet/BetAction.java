@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.joker.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.joker.constant.Credentials;
@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -48,10 +48,8 @@ public class BetAction {
 
         // Construct VO
         CommonVo commonVo = new CommonVo();
-//        commonVo.setResponseCode(ResponseCodes.SUCCESS);
-//        commonVo.setBalance(1000.00);
 
-        try{
+        try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -68,40 +66,52 @@ public class BetAction {
             this.doVerification(httpRequestLog, betDto, gameSession);
 
             //Process full bet data
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            commonVo.setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (
                 InvalidAgentApiCredentialException |
                 AuthenticationException |
                 DisabledAgentPlayerException |
-                MergedBetDataIntegrityException |
                 DisabledGameException |
-                InsufficientBalanceException |
-                InvalidOperatorResponseException |
-                BetNotFoundException |
-                CouchbaseDataIntegrityException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                commonVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUND);
+            } else {
+                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            commonVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUND);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_APPID);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
-            if(invalidRequestException.getValidation() != null) {
-                commonVo.setResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.OTHER_MESSAGE));
-            }else{
-                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            if (invalidRequestException.getValidation() != null) {
+                commonVo.setResponseCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.INVALID_PARAMETERS)
+                );
+            } else {
+                commonVo.setResponseCode(ResponseCodes.INVALID_PARAMETERS);
             }
         } catch (Exception exception) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

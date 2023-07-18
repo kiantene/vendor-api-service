@@ -13,7 +13,9 @@ server:
     threads:
       min-spare: 150 # Default: 10 (Minimum amount of worker threads.)
       max: 150 # Default: 200 (Maximum amount of worker threads.)
-mavenTimestamp: @timestamp@
+mavenTimestamp: '@timestamp@'
+version: '@project.version@'
+checksumPath: target/game-aggregator-vendor-api-service-0.0.1-SNAPSHOT.jar
 sas:
   enabled: false
 spring:
@@ -32,8 +34,8 @@ spring:
       resolve-lazily: true
   datasource:
     hikari:
-      maximum-pool-size: 100
-      minimum-idle: 50
+      maximum-pool-size: 50
+      minimum-idle: 15
     maria-default:
       driver-class-name: org.mariadb.jdbc.Driver
       jdbc-url:
@@ -51,6 +53,8 @@ spring:
     bucketName: 
     scopeName: 
   data:
+    rest:
+      detection-strategy: annotated
     redis:
       mode:
       nodehosts:
@@ -99,6 +103,7 @@ springdoc:
   paths-to-match: /**
 logging:
   http-request: true
+  process-time: false
 logstash:
   host: 
   port: 

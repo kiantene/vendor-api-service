@@ -14,11 +14,14 @@ import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Optional;
@@ -42,91 +45,84 @@ public class BalanceAction {
     private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.BALANCE)
-    public BalanceVo balance(HttpServletRequest request) {
+    public ResponseEntity<BalanceVo> balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         BalanceVo balanceVo = new BalanceVo();
         BalanceErrorVo balanceErrorVo = new BalanceErrorVo();
         BalanceDataVo balanceDataVo = new BalanceDataVo();
         String traceId = httpRequestLog.getId();
-        String sign = request.getHeader("x-gaming-signature");
+        String sign = request.getHeader(EndPoints.HEADER_SIGNATURE);
         String body = httpRequestLog.getRequestBody();
+        Integer status = HttpStatus.SC_OK;
 
         try {
 
             BalanceDto dto = HttpService.convertJsonToDto(body, BalanceDto.class);
-            String reqId = dto.getReqId();
 
-            // 1. Validate request parameters (Non-database calls)
+            // Get and set req id
+            String reqId = dto.getReqId();
+            balanceVo.setReqId(reqId);
+
+            // Validate request parameters (Non-database calls)
             this.doValidation(dto, sign);
 
-            // 2. Verify session token
+            // Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getUserToken());
-            ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
-            this.doVerification(dto, gameSession, sign, bodyObj);
 
-            // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // Verify request parameters
+            this.doVerification(dto, gameSession, sign, body);
+
+            // Retrieve the latest wallet balance from Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             BalanceDataWalletVo balanceDataWalletVo = new BalanceDataWalletVo();
 
-            // 4. Set Balance and Currency
+            // Set Balance and Currency
             balanceDataWalletVo.setBalance(balance);
             balanceDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
 
-            // 5. Set BalanceDataWalletVo Object
+            // Set BalanceDataWalletVo Object
             balanceDataVo.setWallet(balanceDataWalletVo);
-            balanceVo.setReqId(reqId);
-            balanceVo.setStatus(HttpStatus.SC_OK);
+            balanceVo.setStatus(status);
 
-        } catch (InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException |
-                 DisabledVendorLineException |
-                 InvalidPlayerException e
-        ) {
-            balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
-            balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (AuthenticationException |
-                 InvalidVendorLineException |
-                 CredentialNotFoundException e
-        ) {
+        } catch (AuthenticationException | InvalidVendorLineException |
+                 CredentialNotFoundException tokenNotFoundOrInvalidException) {
             balanceErrorVo.setCode(ResponseCodes.USER_TOKEN_NOT_FOUND_OR_INVALID);
             balanceVo.setStatus(HttpStatus.SC_UNAUTHORIZED);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledAgentPlayerException e) {
-            balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
-            balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (GameNotSupportedException e) {
+        } catch (GameNotSupportedException gameNotSupportedException) {
             balanceErrorVo.setCode(ResponseCodes.GAME_NOT_FOUND);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledGameException e) {
+        } catch (DisabledGameException disabledGameException) {
             balanceErrorVo.setCode(ResponseCodes.GAME_NOT_AVAILABLE);
             balanceVo.setStatus(HttpStatus.SC_FORBIDDEN);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException |
-                 CurrencyNotSupportedException e
-        ) {
+        } catch (InvalidRequestException | CurrencyNotSupportedException |
+                 JsonProcessingException parameterInvalidException) {
             balanceErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            httpService.logError(httpRequestLog, e);
-        } catch (JsonProcessingException e) {
+        } catch (InvalidAgentApiCredentialException | DisabledVendorLineException |
+                 DisabledAgentPlayerException | InvalidPlayerException userNotFoundException) {
+            balanceErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
+            balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             balanceErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             balanceVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (Exception exception) {
+            balanceErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
+            balanceVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            httpService.logError(httpRequestLog, exception);
         } finally {
-            if(balanceVo.getStatus() == HttpStatus.SC_OK) {
+            if (balanceVo.getStatus() == HttpStatus.SC_OK) {
                 balanceVo.setData(balanceDataVo);
             } else {
+                status = balanceVo.getStatus();
                 balanceErrorVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(balanceErrorVo.getCode()));
                 balanceVo.setError(balanceErrorVo);
             }
             httpService.end(httpRequestLog, balanceVo);
         }
 
-        return balanceVo;
+        return new ResponseEntity<>(balanceVo, HttpStatusCode.valueOf(status));
 
     }
 
@@ -137,22 +133,20 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String token, Map<String, Object> body)
-            throws AuthenticationException,
-            InvalidPlayerException,
-            GameNotSupportedException,
-            CurrencyNotSupportedException,
-            DisabledVendorLineException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            InvalidVendorLineException,
-            CredentialNotFoundException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String token, String body)
+            throws AuthenticationException, InvalidPlayerException, GameNotSupportedException,
+            CurrencyNotSupportedException, DisabledVendorLineException, DisabledAgentPlayerException,
+            DisabledGameException, InvalidVendorLineException, CredentialNotFoundException, JsonProcessingException {
 
-        // Verify Signature
+        // Convert object to Map for signature check
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> bodyObj = mapper.readValue(body, Map.class);
+
+        // Get signature key
         String signatureKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SIGNATURE_KEY);
-        if(!VendorService.isSameSignature(token, body, signatureKey)) {
-            throw new InvalidVendorLineException();
-        }
+
+        // Verify signature
+        VendorService.validateSignature(token, bodyObj, signatureKey);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -162,6 +156,9 @@ public class BalanceAction {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // Verify if is valid player
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);

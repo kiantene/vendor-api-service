@@ -1,0 +1,48 @@
+package com.nextgen.gameaggregator.vendor.spinix.api.payout;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+public class RoundPayoutTransactionDto {
+
+    @NotBlank
+    @Pattern(regexp = "[a-zA-Z]+")
+    @Size(max = 24)
+    public String type;
+
+    @NotNull
+    @Digits(fraction = 2, integer = 32)
+    @DecimalMax(value = "100000000000000000000000000000000.00", inclusive = false)
+    @DecimalMin(value = "-100000000000000000000000000000000.00", inclusive = false)
+    public BigDecimal amount;
+
+    @NotBlank
+    public String timestamp;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Size(max = 24)
+    public String id;
+
+    @Size(max = 50)
+    @Pattern(regexp = "^[a-zA-Z0-9_-]*$")
+    public String info;
+
+    @NotNull
+    public Boolean isEnd;
+
+    public Long getConvertedTimestamp() {
+        Instant instant = Instant.parse(this.timestamp);
+        return instant.toEpochMilli();
+    }
+}

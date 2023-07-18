@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
+import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class BetAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         BetVo betVo = new BetVo();
         String traceId = httpRequestLog.getId();
+        String vendorPlayerUsername = "";
+        String vendorCurrencyCode = "";
+        String token = "";
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -54,6 +58,9 @@ public class BetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getToken());
+            vendorPlayerUsername = gameSession.getVendorPlayerUsername();
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
+            token = gameSession.getToken();
 
             this.doVerification(betDto, gameSession);
 
@@ -62,10 +69,19 @@ public class BetAction {
             ResultType resultType = getResultType(betDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
 
-            betVo.setUsername(gameSession.getVendorPlayerUsername());
-            betVo.setCurrency(gameSession.getVendorCurrencyCode());
+            betVo.setUsername(vendorPlayerUsername);
+            betVo.setCurrency(vendorCurrencyCode);
             betVo.setBalance(balance);
-            betVo.setToken(gameSession.getToken());
+            betVo.setToken(token);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            betVo.setUsername(vendorPlayerUsername);
+            betVo.setCurrency(vendorCurrencyCode);
+            betVo.setBalance(betResultIdempotentViolationException.getBalance());
+            betVo.setToken(token);
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
@@ -79,11 +95,19 @@ public class BetAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
 
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
+            } else {
+                betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
                  BetNotFoundException |
-                 InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException e) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);

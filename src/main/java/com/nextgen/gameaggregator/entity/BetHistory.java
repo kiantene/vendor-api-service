@@ -92,9 +92,6 @@ public class BetHistory {
     @JsonProperty("vendor_settle_time")
     private Long vendorSettleTime;
 
-    @JsonProperty("create_time")
-    private Long createTime;
-
     @JsonProperty("result_time")
     private Long resultTime;
 
@@ -123,7 +120,6 @@ public class BetHistory {
         this.gameSessionToken = settledBet.getGameSessionToken();
         this.vendorBetTime = settledBet.getVendorBetTime();
         this.vendorSettleTime = settledBet.getVendorSettleTime();
-        this.createTime = Instant.now().toEpochMilli();
         this.resultTime = settledBet.getResultTime();
         this.resettleNum = settledBet.getResettleNum();
     }

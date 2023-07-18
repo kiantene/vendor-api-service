@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +36,6 @@ public class BetAction {
     private HttpService httpService;
     @Autowired
     private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletService walletService;
     @Autowired
@@ -94,6 +89,13 @@ public class BetAction {
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+
         } catch (
                 AuthenticationException |
                 InvalidDecryptionException |
@@ -107,12 +109,19 @@ public class BetAction {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
         } catch (
                 MergedBetDataIntegrityException |
-                CouchbaseDataIntegrityException |
-                InvalidOperatorResponseException |
                 InvalidAgentApiCredentialException |
                 BetNotFoundException cancelException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            } else {
+                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
@@ -133,6 +142,7 @@ public class BetAction {
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

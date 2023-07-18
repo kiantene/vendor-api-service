@@ -11,17 +11,17 @@ import jakarta.validation.constraints.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BalanceDto {
 
-    @NotBlank(message = ResponseCodes.INVALID_PARAMETERS)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_PARAMETERS)
-    @Size(min = 4, max = 32, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 4, max = 32)
     private String username;
 
-    @NotNull(message = ResponseCodes.INVALID_PARAMETERS)
-    @Digits(integer = 13, fraction = 0, message = ResponseCodes.INVALID_PARAMETERS)
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
     private Long timestamp;
 
-    @NotBlank(message = ResponseCodes.INVALID_APPID)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_APPID)
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String appid;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)

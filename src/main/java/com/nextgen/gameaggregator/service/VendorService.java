@@ -1,22 +1,20 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.entity.custom.IGameVendor;
-import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.LanguageRepository;
-import com.nextgen.gameaggregator.repository.VendorCurrencyRepository;
-import com.nextgen.gameaggregator.repository.VendorLanguageCodeRepository;
-import com.nextgen.gameaggregator.repository.VendorRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.custom.IGameVendor;
+import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.repository.*;
+
 @Service
-public class VendorService {
+public class VendorService extends BaseVendorService {
 
     @Autowired
     private VendorRepository vendorRepository;
@@ -99,6 +97,13 @@ public class VendorService {
         return vendorLanguageCode;
     }
 
+    public VendorLanguageCode getFirstVendorLanguageCode(Vendor vendor) throws VendorLanguageNotSupportedException {
+        VendorLanguageCode vendorLanguageCode = vendorLanguageCodeRepository.findTop1ByVendorIdAndStatus(vendor.getId(), Status.ACTIVE.code);
+        Optional.ofNullable(vendorLanguageCode).orElseThrow(VendorLanguageNotSupportedException::new);
+
+        return vendorLanguageCode;
+    }
+
     public VendorCurrency findVendorCurrency(Vendor vendor, Currency currency) throws VendorCurrencyNotSupportException {
         VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendor.getId(), currency.getId());
 
@@ -110,5 +115,4 @@ public class VendorService {
 
         return vendorCurrency;
     }
-
 }

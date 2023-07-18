@@ -45,7 +45,4 @@ public class VendorGameService {
         return vendorGame;
     }
 
-    public void checkVendorGameCodeStatus(Integer gameId, Integer currencyId, Integer languageId, Integer platformId){
-
-    }
 }

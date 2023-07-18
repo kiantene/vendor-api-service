@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -40,7 +41,6 @@ public class CashTransferInOutAction {
     private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
-
     @Autowired
     private ValidationService validationService;
 
@@ -49,10 +49,13 @@ public class CashTransferInOutAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseVo<CashTransferInOutVo> parentResponseVo = new ResponseVo<>();
         String traceId = httpRequestLog.getId();
+        CashTransferInOutVo responseVo = new CashTransferInOutVo();
+        String vendorCurrencyCode = "";
 
         try {
             String body = httpRequestLog.getRequestBody();
             CashTransferInOutDto dto = HttpService.convertQueryStringToDto(body, CashTransferInOutDto.class);
+            vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -64,15 +67,24 @@ public class CashTransferInOutAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process full bet data
-            Integer isBet = 1;
-            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), true);
 
-            CashTransferInOutVo responseVo = new CashTransferInOutVo();
+            // 5. check is settledBet is exists
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
             parentResponseVo.setData(responseVo);
-            responseVo.setUpdatedTime(dto.getVendorSettleTime());
             responseVo.setBalanceAmount(balance);
-            responseVo.setCurrencyCode(dto.getCurrencyCode());
+            responseVo.setCurrencyCode(vendorCurrencyCode);
+            responseVo.setUpdatedTime(dto.getVendorSettleTime());
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            parentResponseVo.setData(responseVo);
+            responseVo.setUpdatedTime(betResultIdempotentViolationException.getVendorSettleTime());
+            responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
+            responseVo.setCurrencyCode(vendorCurrencyCode);
 
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
@@ -85,6 +97,7 @@ public class CashTransferInOutAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+            parentResponseVo.setData(null);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
@@ -95,8 +108,16 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INTERNAL_SERVER_ERROR));
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
+                parentResponseVo.setData(null);
+            } else {
+                parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
+                parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
@@ -105,10 +126,6 @@ public class CashTransferInOutAction {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
-
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
-            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
 
         } catch (InvalidSignatureException invalidSignatureException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
@@ -138,8 +155,11 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
 
-        } catch (BetResultIdempotentViolationException e) {
-            // TODO: add handling logic
+        } catch (Exception exception) {
+            parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, parentResponseVo);
         }
@@ -161,11 +181,19 @@ public class CashTransferInOutAction {
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerName());
 
-
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
         // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+        VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+
+        //update session games while player is using session that is not matched with the game which played.
+        if (vendorGame.getId() != gameSession.getVendorGameId()) {
+            gameSession.setVendorGameId(vendorGame.getId());
+            gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+            gameSession.setGameCode(vendorGame.getCode());
+            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+            gameSessionService.updateSession(gameSession);
+        }
 
         // 3. Verify vendor currency code is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
@@ -178,5 +206,4 @@ public class CashTransferInOutAction {
         String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
     }
-
 }

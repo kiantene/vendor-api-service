@@ -1,0 +1,131 @@
+package com.nextgen.gameaggregator.vendor.joker.api.result;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.joker.constant.ResponseCodes;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import org.hibernate.validator.constraints.Range;
+
+import java.math.BigDecimal;
+
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class SettleBetDto implements BetResultData {
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String appid;
+
+    @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
+    private String hash;
+
+    @NotBlank
+    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
+    private String id;
+
+    @NotNull
+    @Range(min = 0)
+    private BigDecimal amount;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 4, max = 32)
+    private String username;
+
+    @NotNull
+    @Digits(integer = 13, fraction = 0)
+    private Long timestamp;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String gamecode;
+
+    @NotBlank
+    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
+    private String roundid;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String description;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String type;
+
+    private String betid;
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.betid;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.betid;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.username + "_" + this.roundid;
+    }
+
+    @Override
+    public String getGameId() {
+        return this.gamecode;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return this.amount;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return getTimestamp();
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return getTimestamp();
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    /**
+     * @return
+     */
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
+    }
+}

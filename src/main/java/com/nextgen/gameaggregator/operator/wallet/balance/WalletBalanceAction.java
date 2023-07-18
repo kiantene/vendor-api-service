@@ -4,8 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
@@ -44,7 +45,7 @@ public class WalletBalanceAction {
     @Autowired
     private AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+    public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -57,16 +58,21 @@ public class WalletBalanceAction {
 
         WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
         WalletBalanceVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
-        headerMap.add(Endpoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        if (httpRequestLog != null) {
+            httpRequestLog.setOperatorProcessStartTime(startTime);
+            httpRequestLog.setOperatorData(dto.toString());
+        }
+
+        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.WALLET_BALANCE)
-                .header(Endpoints.HEADER_SIGNATURE, signature)
+                .uri(EndPoints.WALLET_BALANCE)
+                .header(EndPoints.HEADER_SIGNATURE, signature)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))
@@ -74,13 +80,20 @@ public class WalletBalanceAction {
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
-                .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .retry(3)
                 .block();
+
         long endTime = System.currentTimeMillis();
+        if (httpRequestLog != null) {
+            if (apiResponse != null) {
+                httpRequestLog.setOperatorResponse(apiResponse.toString());
+            }
+            httpRequestLog.setOperatorProcessEndTime(endTime);
+        }
 
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                Endpoints.WALLET_BALANCE, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                EndPoints.WALLET_BALANCE, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {
@@ -91,7 +104,7 @@ public class WalletBalanceAction {
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
-            requestService.validateResponse(responseVo);
+            RequestService.validateResponse(responseVo);
 
             //3. validate username and currency
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
@@ -99,21 +112,21 @@ public class WalletBalanceAction {
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-            requestService.failResponseLog(requestLogVo, invalidResponseException);
+            RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            requestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            requestService.failResponseLog(requestLogVo, exception);
+            RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
 

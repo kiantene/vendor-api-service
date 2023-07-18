@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.operator.game.url;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.constant.Endpoints;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.*;
@@ -38,6 +38,8 @@ public class GameUrlAction {
     private LanguageService languageService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private LoggingService loggingService;
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
@@ -49,67 +51,101 @@ public class GameUrlAction {
             String body = httpRequestLog.getRequestBody();
             GameUrlDto dto = HttpService.convertJsonToDto(body, GameUrlDto.class);
 
-            responseVo.setTraceId(dto.getTraceId());
-            httpRequestLog.setId(dto.getTraceId());
+            String traceId = dto.getTraceId();
+            responseVo.setTraceId(traceId);
+            httpRequestLog.setId(traceId);
 
             // 1. Validate all fields in the request object
+            loggingService.logStart();
             ValidationUtils.validateRequest(dto);
+            loggingService.logProcessTime("gameUrl ｜ ValidationUtils.validateRequest", traceId);
 
             // 2. Check if api key is valid
-            String apiKey = request.getHeader(Endpoints.HEADER_API_KEY);
+            String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
+            loggingService.logStart();
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
+            loggingService.logProcessTime("gameUrl ｜ validationService.validateApiKey", traceId);
 
             // 3. Validate the signature
-            String signature = request.getHeader(Endpoints.HEADER_SIGNATURE);
+            String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
+            loggingService.logStart();
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
+            loggingService.logProcessTime("gameUrl ｜ validationService.validateSignature", traceId);
 
             // 4. Check if trace Id has been sent before
+            loggingService.logStart();
             gameUrlService.checkDuplicateRequest(apiCredential.getAgent().getId(), dto.getTraceId());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkDuplicateRequest", traceId);
 
             // 5. Check if Agent currency is supported
+            loggingService.logStart();
             gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentCurrencySupported", traceId);
 
             // 6. check if platform supported
+            loggingService.logStart();
             Platform platform = gameUrlService.checkPlatformCode(dto.getPlatform());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkPlatformCode", traceId);
 
             // 7. check if platform supported
+            loggingService.logStart();
             Language language = languageService.checkLanguageCode(dto.getLanguage());
+            loggingService.logProcessTime("gameUrl ｜ languageService.checkLanguageCode", traceId);
 
             // 8. Check if game is supported
+            loggingService.logStart();
             VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());
+            loggingService.logProcessTime("gameUrl ｜ vendorGameService.checkGameSupported", traceId);
 
             // 9 Check if game details is supported (platform, language, currency)
+            loggingService.logStart();
             VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(
                     vendorGame, language, platform, apiCredential.getAgent().getCurrency());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkGameDetailSupported", traceId);
 
             // 10. Retrieve vendor line credentials by category
+            loggingService.logStart();
             VendorLine vendorLine = vendorLineService.findAgentVendorLine(
                     apiCredential.getAgent(), vendorGame.getVendor(), apiCredential.getAgent().getCurrency(), vendorGame.getGameCategory());
+            loggingService.logProcessTime("gameUrl ｜ vendorLineService.findAgentVendorLine", traceId);
 
             // 11. get vendor line credential
             Map<String, String> lineCredentials = vendorLineService.toCredentialMap(vendorLine);
 
             // 12. check if vendor language supported
+            loggingService.logStart();
             VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendor(), language);
+            loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorLanguageCode", traceId);
 
             // 13. check if vendor currency supported
+            loggingService.logStart();
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendor(), apiCredential.getAgent().getCurrency());
+            loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorCurrency", traceId);
 
             // 14. check if vendor platform supported
+            loggingService.logStart();
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.getVendorPlatformCode", traceId);
 
             // 15. Check if vendor player account exists
+            loggingService.logStart();
             GameSession gameSession = gameUrlService.checkPlayer(apiCredential.getAgent(),
                     dto.getUsername(), vendorLine, apiCredential.getAgent().getCurrency());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkPlayer", traceId);
 
+            loggingService.logStart();
             gameSession = gameSessionService.createSession(
                     gameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(),
                     vendorCurrency, vendorLanguageCode, vendorPlatformCode, dto.getLobbyUrl(), dto.getIpAddress());
+            loggingService.logProcessTime("gameUrl ｜ gameSessionService.createSession", traceId);
 
 //            gameSessionService.createSessionByVendorPlayer(gameSession);
 
             // 16. Request game url from vendor
+            loggingService.logStart();
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.getGameUrl (operator generate url)", traceId);
+
             responseVo.setData(gameUrlData);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error(illegalArgumentException.toString());
