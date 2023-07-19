@@ -23,6 +23,10 @@ public class StatusVo {
     @JsonProperty("successcredit")
     private Boolean successCredit;
 
+    //invalid respond to trigger vendor resend
+    @JsonProperty("retryStatus")
+    private Boolean retryStatus;
+
     @JsonProperty("refundstatus")
     private Integer refundStatus;
 

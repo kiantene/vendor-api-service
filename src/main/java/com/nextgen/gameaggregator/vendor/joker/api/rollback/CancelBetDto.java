@@ -41,7 +41,7 @@ public class CancelBetDto implements RollbackData {
     private String gamecode;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
     private String roundid;
 
     @Override
