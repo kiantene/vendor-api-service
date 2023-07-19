@@ -1,15 +1,10 @@
 package com.nextgen.gameaggregator.vendor.playngo.api.authenticate;
 
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.joker.api.authenticate.TokenDto;
-import com.nextgen.gameaggregator.vendor.playngo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
@@ -47,19 +42,19 @@ public class AuthAction {
 
         //Convert original request body into commonDto
         //AuthDto authDto = (AuthDto)this.xmlToObject(body, AuthDto.class);
-        JAXBContext jaxbContext;
-        try
-        {
-            jaxbContext = JAXBContext.newInstance(AuthDto.class);
-            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-            AuthDto authDto = (AuthDto) jaxbUnmarshaller.unmarshal(new StringReader(body));
-
-            System.out.println(authDto);
-        }
-        catch (JAXBException e)
-        {
-            e.printStackTrace();
-        }
+//        JAXBContext jaxbContext;
+//        try
+//        {
+//            jaxbContext = JAXBContext.newInstance(AuthDto.class);
+//            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+//            AuthDto authDto = (AuthDto) jaxbUnmarshaller.unmarshal(new StringReader(body));
+//
+//            System.out.println(authDto);
+//        }
+//        catch (JAXBException e)
+//        {
+//            e.printStackTrace();
+//        }
 
         httpService.end(httpRequestLog, authVo);
         return authVo;

@@ -12,7 +12,7 @@ public class EndPoints {
 
     public static final String BALANCE = "/balance";
 
-    public static final String CANCEL = "/cancel";
+    public static final String CANCEL = "/cancelReserve";
 
     // API url call to vendor
     public static final String GAME_URL = "/casino/ContainerLauncher";
