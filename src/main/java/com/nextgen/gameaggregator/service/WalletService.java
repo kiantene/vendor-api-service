@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -26,7 +27,6 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class WalletService {
-    private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
     @Autowired
     private BetHistoryService betHistoryService;
     @Autowired
@@ -51,6 +51,8 @@ public class WalletService {
     private CachingService cachingService;
     @Autowired
     private LoggingService loggingService;
+
+    private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
         if (httpRequestLog != null) {
