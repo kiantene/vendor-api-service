@@ -56,7 +56,7 @@ public class KafkaConsumerService {
 
             //4. send the bet data with resultType end to operator
             processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-            walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END);
+            walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null);
             processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
             //5. set the resultType as endRoundSettledBet.getGaResultType() which calculated in processBetResult

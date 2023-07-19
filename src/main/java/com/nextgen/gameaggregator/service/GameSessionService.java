@@ -52,6 +52,16 @@ public class GameSessionService {
         return session;
     }
 
+    @Caching( put = {
+            @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+    })
+    public GameSession updateSession(GameSession gameSession){
+        rawGameSessionRepository.save(gameSession);
+        return gameSession;
+
+    }
+
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @Caching( put = {
             @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),

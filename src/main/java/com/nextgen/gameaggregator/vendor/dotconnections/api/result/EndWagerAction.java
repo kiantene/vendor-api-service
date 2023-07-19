@@ -3,6 +3,8 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -71,6 +74,20 @@ public class EndWagerAction {
 
             // if transaction amount has more than 0 means WIN else LOSE
             ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
+
+            // Default end wager as unsettled
+            dto.setBetStatus(BetStatus.UNSETTLED);
+
+            // Determine if bet is settled
+            if (dto.isEndround.equals("true")) {
+                dto.setBetStatus(BetStatus.SETTLED);
+            }
+
+            // Get unsettled bet
+            UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
+
+            // Use unsettled bet's wagerId as vendor bet id and external transaction id
+            dto.setWagerId(unsettledBet.getVendorBetId());
 
             // Process bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
@@ -157,4 +174,14 @@ public class EndWagerAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
+    private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {
+        UnsettledBet unsettledBet = null;
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+        if (unsettledBetList.isEmpty()) {
+            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
+        }
+        unsettledBet = unsettledBetList.get(unsettledBetList. size()-1);
+
+        return unsettledBet;
+    }
 }

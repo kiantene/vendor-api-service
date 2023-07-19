@@ -76,12 +76,13 @@ public class TokenAction {
 
         } catch (
                 InvalidAgentApiCredentialException |
-                AuthenticationException |
                 InvalidOperatorResponseException |
                 CredentialNotFoundException exception
         ) {
             tokenVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             httpService.logError(httpRequestLog, exception);
+        } catch (AuthenticationException authenticationException) {
+            tokenVo.setResponseCode(ResponseCodes.INVALID_TOKEN);
         } catch (InvalidSignatureException invalidSignatureException) {
             tokenVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {

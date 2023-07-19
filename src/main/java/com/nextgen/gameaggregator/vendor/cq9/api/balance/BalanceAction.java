@@ -70,7 +70,7 @@ public class BalanceAction {
             this.doVerification(vendorPlayer, wToken);
 
             // 4. Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 5. Get vendor line supported currency
             VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId());
