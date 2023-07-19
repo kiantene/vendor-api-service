@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,7 +49,9 @@ public class BetAction {
         // Construct VO
         ResponseVo<CommonVo> responseVo = new ResponseVo<>();
         StatusVo statusVo = new StatusVo();
+        CommonVo commonVo = new CommonVo();
         responseVo.setStatus(statusVo);
+        String vendorCurrencyCode = "";
 
         try {
             // Retrieve request body in original string format
@@ -64,6 +65,7 @@ public class BetAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(betDto.getSession());
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession, wToken);
@@ -72,15 +74,17 @@ public class BetAction {
             BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             // Construct VO
-            CommonVo commonVo = new CommonVo();
             commonVo.setBalance(betEvent.getLastBalance());
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
+            commonVo.setCurrency(vendorCurrencyCode);
             responseVo.setData(commonVo);
 
-        } catch (TransactionStillProcessingException |
-                 BetResultIdempotentViolationException IdempotentException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            commonVo.setBalance(betResultIdempotentViolationException.getBalance());
+            commonVo.setCurrency(vendorCurrencyCode);
+            responseVo.setData(commonVo);
 
-            statusVo.setCode(ResponseCodes.DUPLICATE_EXTERNAL_TRANSACTION_ID);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);

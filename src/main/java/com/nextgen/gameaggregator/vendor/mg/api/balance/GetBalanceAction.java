@@ -62,7 +62,7 @@ public class GetBalanceAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
             // Get Player balance from Wallet Service
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             getBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             getBalanceVo.setBalance(balance);
 

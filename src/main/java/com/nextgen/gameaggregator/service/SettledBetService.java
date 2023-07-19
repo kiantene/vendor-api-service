@@ -16,6 +16,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 @Slf4j
 public class SettledBetService {
@@ -43,6 +45,20 @@ public class SettledBetService {
         return settledBet;
     }
 
+    @Caching(put = {
+            @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "SettledBet", key = "{#settledBet.vendorBetId, #settledBet.roundId, #settledBet.vendorId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    })
+    public SettledBet update(Integer operatorStatus, BigDecimal balance, SettledBet settledBet) {
+        settledBet.setBalance(balance);
+        settledBet.setOperatorStatus(operatorStatus);
+        settledBet.setId(settledBet.generateId());
+
+        rawSettledBetRepository.save(settledBet);
+
+        return settledBet;
+    }
+
     @Cacheable(value = "SettledBet", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager")
     public SettledBet getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
         SettledBet settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
@@ -57,6 +73,7 @@ public class SettledBetService {
     public SettledBet getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
 
         SettledBet settledBet = rawSettledBetRepository.findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+
         if (settledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId");
         }
@@ -75,6 +92,10 @@ public class SettledBetService {
         } catch (Exception e) {
             log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
         }
+    }
+
+    public String generateId(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId) {
+        return betResultData.getVendorBetId() + '_' + betResultData.getRoundId() + '_' + vendorGameId.toString() + '_' + vendorPlayerId.toString();
     }
 
     public SettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData)

@@ -64,7 +64,7 @@ public class UpdateBalanceAction {
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(betEvent.getLastBalance());
                 }
@@ -94,7 +94,7 @@ public class UpdateBalanceAction {
         } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException playerNotFoundException) {
             status = HttpStatus.NOT_FOUND;
 
-        } catch (CouchbaseDataIntegrityException| MergedBetDataIntegrityException| BetResultIdempotentViolationException internalErrorException) {
+        } catch (BetResultIdempotentViolationException internalErrorException) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         } catch (Exception exception) { // any other exception encountered
