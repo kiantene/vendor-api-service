@@ -1,13 +1,12 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.vo;
 
-import com.nextgen.gameaggregator.service.HttpResponse;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
-
-import javax.annotation.Nullable;
-
+import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import lombok.Data;
+
+import javax.annotation.Nullable;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -20,7 +19,7 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return false;
+        return this.code == ResponseCodes.SUCCESS;
     }
 
     public void setCode(Integer responseCode) {

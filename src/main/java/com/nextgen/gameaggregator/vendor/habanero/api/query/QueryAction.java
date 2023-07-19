@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -29,11 +30,7 @@ public class QueryAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private UnsettledBetService unsettledBetService;
-    @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
-    private BetResultLogService betResultLogService;
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.QUERY)
     public QueryVo balance(HttpServletRequest request) {
@@ -66,18 +63,23 @@ public class QueryAction {
             //Check bet record available from settle and unsettle table
             this.checkBetAvailable(gameSession, queryDto.getQueryRequestDto());
 
-            //return success respond
-            statusVo.setSuccess(true);
+            // bet not found return false respond
+            statusVo.setSuccess(false);
 
         } catch (
                 AuthenticationException |
                 InvalidRequestException |
                 NoAvailableLineException |
                 JsonProcessingException |
-                CredentialNotFoundException |
-                BetNotFoundException generalException
+                CredentialNotFoundException generalException
         ) {
             statusVo.setSuccess(false);
+        } catch (TransactionStillProcessingException TransactionStillProcessingException) {
+            //return invalid respond to trigger vendor resend when record still in processing
+            statusVo.setRetryStatus(true);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            // bet found return true respond
+            statusVo.setSuccess(true);
         } catch (Exception exception) {
             statusVo.setSuccess(false);
             httpService.logError(httpRequestLog, exception);
@@ -109,22 +111,17 @@ public class QueryAction {
 
     }
 
-    private void checkBetAvailable(GameSession gameSession, QueryRequestDto queryRequestDto) throws BetNotFoundException {
+    private void checkBetAvailable(GameSession gameSession, QueryRequestDto queryRequestDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
-        try {
-            //check settle bet available
-            SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), queryRequestDto.getInitialDebitTransferId());
-        } catch (BetNotFoundException betNotFoundException) {
-            try {
-                //check unsettle bet available
-                UnsettledBet unsettledBet = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), queryRequestDto.getTransferId());
-            } catch (BetNotFoundException unsettledBetNotFoundException) {
-                //check unsettle bet result available
-                RawBetResultLog rawBetResultLog = betResultLogService.checkExists(queryRequestDto.getTransferId(), queryRequestDto.getGameInstanceId(), gameSession.getVendorGameId().toString(), gameSession.getVendorPlayerId().toString());
-                if (rawBetResultLog == null) {
-                    throw betNotFoundException;
-                }
-            }
-        }
+        // settle bet Idempotent Check
+       vendorService.settledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
+
+        // unsettle bet Idempotent Check
+       vendorService.unsettledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
+
+        // bet result Idempotent Check
+       vendorService.betResultIdempotentCheck(gameSession, queryRequestDto.getTransferId(), queryRequestDto.getGameInstanceId());
+
     }
+
 }

@@ -70,7 +70,6 @@ public class FundInfoDto {
     @JsonProperty("dtevent")
     public String dtEvent;
 
-    @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JsonProperty("initialdebittransferid")
     public String initialDebitTransferId;

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.habanero.api.transfer;
+package com.nextgen.gameaggregator.vendor.habanero.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
