@@ -4,22 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.math.BigDecimal;
 
 @RestController
@@ -77,7 +73,6 @@ public class CancelBetAction {
             cancelBetVo.setUsername(vendorPlayerUsername);
             cancelBetVo.setCurrency(vendorCurrencyCode);
             cancelBetVo.setBalance(balance);
-            cancelBetVo.setTxId(traceId);
 
         } catch (BetNotFoundException betNotFoundException) {
             cancelBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
@@ -92,7 +87,6 @@ public class CancelBetAction {
                 cancelBetVo.setUsername(vendorPlayerUsername);
                 cancelBetVo.setCurrency(vendorCurrencyCode);
                 cancelBetVo.setBalance(betResultIdempotentViolationException.getBalance());
-                cancelBetVo.setTxId(traceId);
 
             }
 
