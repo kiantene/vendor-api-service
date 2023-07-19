@@ -69,11 +69,11 @@ public class GameResultAction {
         } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
-            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_AUTHORIZED_ACCESS));
+            responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
-            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PARAMETER_INPUT_ERROR));
+            responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (DateTimeParseException dateTimeParseException) {
-            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.WRONG_DATE_SECOND_FORMAT));
+            responseVo.setStatus(ResponseCodes.WRONG_DATE_SECOND_FORMAT);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (InsufficientBalanceException insufficientBalanceException) {
