@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -13,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -39,7 +42,6 @@ public class BetAction {
 
         try {
 
-            /*
             BetDto dto = HttpService.convertJsonToDto(decryptedData, BetDto.class);
 
             // Validate request parameters (Non-database calls)
@@ -62,10 +64,7 @@ public class BetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-             */
-            throw new InvalidRequestException();
-
-        } /*catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
@@ -83,8 +82,6 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        }*/catch (InvalidRequestException parameterInputErrorException) {
-            responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);

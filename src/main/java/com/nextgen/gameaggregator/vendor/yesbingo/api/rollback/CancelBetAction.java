@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.rollback;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,6 +11,8 @@ import com.nextgen.gameaggregator.vendor.yesbingo.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @Slf4j
@@ -36,8 +39,6 @@ public class CancelBetAction {
 
         try {
 
-            throw new InvalidRequestException();
-            /*
             CancelBetDto dto = HttpService.convertJsonToDto(decryptedData, CancelBetDto.class);
 
             // Validate request parameters (Non-database calls)
@@ -56,9 +57,7 @@ public class CancelBetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-             */
-
-        } /*catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
@@ -71,8 +70,6 @@ public class CancelBetAction {
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
-        }*/catch (InvalidRequestException parameterInputErrorException) {
-            responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
