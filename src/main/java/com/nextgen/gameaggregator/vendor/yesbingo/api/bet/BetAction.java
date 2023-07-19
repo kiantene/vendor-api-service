@@ -57,7 +57,7 @@ public class BetAction {
 
             // Process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody());
-            throw new TransactionStillProcessingException();
+            throw new CouchbaseDataIntegrityException();
             /*
             BigDecimal balance = betEvent.getLastBalance();
 
@@ -82,6 +82,8 @@ public class BetAction {
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 6001-The system is busy (vendor proceeds to cancel the bet)
             responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
+        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
+            responseVo.setStatus(ResponseCodes.WRONG_DATE_SECOND_FORMAT);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
