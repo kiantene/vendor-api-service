@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -57,15 +58,11 @@ public class BetAction {
 
             // Process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody());
-            throw new CouchbaseDataIntegrityException();
-            /*
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Balance and Currency
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
-
-             */
 
         } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
@@ -82,8 +79,6 @@ public class BetAction {
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 6001-The system is busy (vendor proceeds to cancel the bet)
             responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setStatus(ResponseCodes.WRONG_DATE_SECOND_FORMAT);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
