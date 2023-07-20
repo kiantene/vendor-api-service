@@ -31,14 +31,13 @@ public class GameUrlService implements GameUrl {
         // Get Game Lobby Url By Vendor Line
         String lobbyUrl = credentials.get(Credentials.LOBBY_URL);
 
+        // Construct the Game URL
         URI uri = UriComponentsBuilder.fromUriString(lobbyUrl)
                 .queryParams(formData)
                 .build()
                 .encode()
                 .toUri();
 
-        // Construct the Game URL
-        // String gameUrl = VendorService.generateGameUrl(lobbyUrl, token, operatorId, language, selectGame, homeUrl);
         // Save this player's game session
         // Set the game URL and return to Operator
         gameUrlVo.setGameUrl(uri.toString());
