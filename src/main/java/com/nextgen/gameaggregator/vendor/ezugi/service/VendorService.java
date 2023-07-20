@@ -2,13 +2,12 @@ package com.nextgen.gameaggregator.vendor.ezugi.service;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.VendorGameCode;
 import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import com.nextgen.gameaggregator.vendor.ezugi.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
@@ -34,12 +33,8 @@ import java.util.Map;
 public class VendorService extends BaseVendorService {
     @Autowired
     private UnsettledBetService unsettledBetService;
-
-    public static String generateGameUrl(String lobbyUrl, String playerGameSessionToken, String operatorId, String languageCode, String gameCode) {
-        // form query string
-        String loginUrl = lobbyUrl + "?token=" + playerGameSessionToken + "&operatorId=" + operatorId + "&language=" + languageCode + "&openTable=" + gameCode;
-        return loginUrl;
-    }
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     public static void verifyHash(String secretKey, String data, String hashKey) throws InvalidKeyException, NoSuchAlgorithmException, InvalidSignatureException {
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
@@ -94,6 +89,13 @@ public class VendorService extends BaseVendorService {
     public void verifyTokenStatus(Integer status) throws AuthenticationException {
         if (status != Status.ACTIVE.code) {
             throw new AuthenticationException();
+        }
+    }
+
+    public void verifyVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
+        VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
+        if (!vendorGameCode.getBetGameCode().equals(gameId)) {
+            throw new GameNotSupportedException();
         }
     }
 }

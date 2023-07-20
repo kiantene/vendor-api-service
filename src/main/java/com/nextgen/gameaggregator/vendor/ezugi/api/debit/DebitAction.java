@@ -54,6 +54,8 @@ public class DebitAction {
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     @PostMapping(path = EndPoints.DEBIT)
     public CommonVo debit(HttpServletRequest request) {
@@ -141,6 +143,10 @@ public class DebitAction {
                 debitVo.setErrorCode(ResponseCodes.INSUFFICIENT_FUNDS);
             }
             httpService.logError(httpRequestLog, e);
+        } catch (GameNotSupportedException e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            debitVo.setErrorDescription("Unknown Game ID");
+            httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
                  InvalidAgentApiCredentialException |
@@ -166,7 +172,7 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
@@ -181,6 +187,9 @@ public class DebitAction {
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
+
+        // Verify valid game id
+        vendorService.verifyVendorGameCode(gameSession, debitDto.getGameId().toString());
 
         // Verify valid bet type id
         VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());
