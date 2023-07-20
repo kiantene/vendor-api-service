@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@JacksonXmlRootElement(localName = "cancelReserve>")
+@JacksonXmlRootElement(localName = "cancelReserve")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CancelReserveDto {
 

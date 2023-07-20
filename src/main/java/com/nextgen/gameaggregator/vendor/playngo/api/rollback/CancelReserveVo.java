@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
 @Data
-@JacksonXmlRootElement(localName = "cancelReserve>")
+@JacksonXmlRootElement(localName = "cancelReserve")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CancelReserveVo implements HttpResponse {
 
