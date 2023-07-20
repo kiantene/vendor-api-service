@@ -51,6 +51,8 @@ public class WalletService {
     private CachingService cachingService;
     @Autowired
     private LoggingService loggingService;
+    @Autowired
+    private BetNotFoundLogService betNotFoundLogService;
 
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
@@ -328,7 +330,7 @@ public class WalletService {
 
     }
 
-    private UnsettledBet doCheckBetExistsInUnsettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
+    private UnsettledBet doCheckBetExistsInUnsettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, RollbackData rollbackData) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         UnsettledBet unsettledBet = null;
 
@@ -354,8 +356,10 @@ public class WalletService {
             return unsettledBet;
 
         } catch (BetNotFoundException betNotFoundException) {
+            //insert into bet not found log
+            betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED);
+
             //bet not found is valid case, so when bet not found, we will notify vendor to drop this request
-            //TODO ADD BET NOT FOUND DATA STORING
             throw new BetNotFoundException();
         }
     }
@@ -575,7 +579,7 @@ public class WalletService {
         try {
             settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
             if (settledBet == null) {
-                unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
+                unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, rollbackData);
                 settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                 settledBet.setOperatorStatus(operatorStatusProcessing);
                 settledBet.setStatus(BetStatus.REFUNDED.code);
