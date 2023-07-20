@@ -77,12 +77,13 @@ public class BalanceAction {
 
         } catch (
                 InvalidAgentApiCredentialException |
-                AuthenticationException |
                 InvalidOperatorResponseException |
                 CredentialNotFoundException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
             httpService.logError(httpRequestLog, exception);
+        } catch (AuthenticationException authenticationException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_TOKEN);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {
