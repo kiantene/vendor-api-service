@@ -24,7 +24,7 @@ public class JackpotWinDto implements BetResultData {
     private String hash;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String id;
 
     @NotNull
@@ -45,7 +45,7 @@ public class JackpotWinDto implements BetResultData {
     private String gamecode;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String roundid;
 
     @NotBlank
