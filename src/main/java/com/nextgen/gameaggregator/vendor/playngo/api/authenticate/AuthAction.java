@@ -1,9 +1,12 @@
 package com.nextgen.gameaggregator.vendor.playngo.api.authenticate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.xml.bind.JAXBContext;
@@ -29,7 +32,7 @@ public class AuthAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.AUTHTHENTICATE)
-    public AuthVo balance(HttpServletRequest request) throws InvalidRequestException {
+    public AuthVo balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -41,6 +44,11 @@ public class AuthAction {
         String body = httpRequestLog.getRequestBody();
 
         //Convert original request body into commonDto
+        XmlMapper xmlMapper = new XmlMapper();
+        AuthDto authDto = xmlMapper.readValue(body, AuthDto.class);
+
+        //Validate request parameters from vendor (Non-database related)
+        this.doValidation(authDto);
         //AuthDto authDto = (AuthDto)this.xmlToObject(body, AuthDto.class);
 //        JAXBContext jaxbContext;
 //        try
@@ -70,10 +78,10 @@ public class AuthAction {
         }
     }
 
-//    private void doValidation(AuthDto dto) throws InvalidRequestException {
-//        // General validation
-//        ValidationUtils.validateRequest(dto);
-//    }
+    private void doValidation(AuthDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
 //
 //    private void doVerification(HttpRequestLog request, AuthDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
 //

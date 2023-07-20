@@ -1,50 +1,52 @@
 package com.nextgen.gameaggregator.vendor.playngo.api.authenticate;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
-import jakarta.persistence.Entity;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlRootElement;
-import lombok.Data;
-
-import jakarta.validation.constraints.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import jakarta.validation.constraints.NotBlank;
 
 //@Data
 //@JsonInclude(JsonInclude.Include.NON_NULL)
 //@Entity
-@XmlRootElement(name = "authenticate")
-@XmlAccessorType(XmlAccessType.FIELD)
+@JacksonXmlRootElement(localName = "authenticate")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AuthDto {
 
-
-    @XmlAttribute(name = "username")
+    @NotBlank
+    @JacksonXmlProperty(localName = "username")
     private String username;
 
-    @XmlAttribute(name = "productId")
+    @JacksonXmlProperty(localName = "password")
+    private String password;
+
+    @JacksonXmlProperty(localName = "extra")
+    private String extra;
+
+    @JacksonXmlProperty(localName = "productId")
     private String productId;
 
-    @XmlAttribute(name = "CID")
+    @JacksonXmlProperty(localName = "client")
+    private String client;
+
+    @JacksonXmlProperty(localName = "CID")
     private String CID;
 
-    @XmlAttribute(name = "clientIP")
+    @JacksonXmlProperty(localName = "clientIP")
     private String clientIP;
 
-    @XmlAttribute(name = "contextId")
+    @JacksonXmlProperty(localName = "contextId")
     private String contextId;
 
-    @XmlAttribute(name = "accessToken")
+    @JacksonXmlProperty(localName = "accessToken")
     private String accessToken;
 
-    @XmlAttribute(name = "language")
+    @JacksonXmlProperty(localName = "language")
     private String language;
 
-    @XmlAttribute(name = "gameId")
+    @JacksonXmlProperty(localName = "gameId")
     private String gameId;
 
-    @XmlAttribute(name = "channel")
+    @JacksonXmlProperty(localName = "channel")
     private String channel;
 
 
