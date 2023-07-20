@@ -10,23 +10,15 @@ import com.nextgen.gameaggregator.service.UnsettledBetService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import com.nextgen.gameaggregator.vendor.ezugi.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
-import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
-import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -48,18 +40,6 @@ public class VendorService extends BaseVendorService {
             log.error(msg);
             throw new InvalidSignatureException(msg);
         }
-    }
-
-    public static String generateRequestToken(MultiValueMap<String, String> params, Map<String, String> credentials) throws NoSuchAlgorithmException {
-        List<String> values = new ArrayList<>();
-        for (String key : params.keySet()) {
-            values.add(key + "=" + params.getFirst(key));
-        }
-        String queryString = credentials.get(Credentials.API_ACCESS) + String.join("&", values);
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        byte[] digest = md.digest(queryString.getBytes(StandardCharsets.UTF_8));
-        String sha256 = DatatypeConverter.printHexBinary(digest).toLowerCase();
-        return sha256;
     }
 
     public static void verifyDebitBetTypeId(Integer betTypeId) throws InvalidFormatException {
