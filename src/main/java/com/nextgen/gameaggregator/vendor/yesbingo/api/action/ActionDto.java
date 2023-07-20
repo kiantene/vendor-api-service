@@ -14,6 +14,6 @@ public class ActionDto {
     @NotNull
     @Digits(fraction = 0, integer = 32)
     @Positive
-    public int action;
+    public Integer action;
 
 }

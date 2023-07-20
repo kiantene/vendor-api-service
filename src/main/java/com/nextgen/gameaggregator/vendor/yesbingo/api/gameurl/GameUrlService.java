@@ -57,8 +57,6 @@ public class GameUrlService implements GameUrl {
         Optional.ofNullable(aesIv).orElseThrow(InvalidVendorLineException::new);
         String dc = credentials.get(Credentials.DC);
         Optional.ofNullable(dc).orElseThrow(InvalidVendorLineException::new);
-        String isShowDollarSign = credentials.get(Credentials.IS_SHOW_DOLLAR_SIGN);
-        Optional.ofNullable(isShowDollarSign).orElseThrow(InvalidVendorLineException::new);
         String agent = credentials.get(Credentials.AGENT);
         Optional.ofNullable(agent).orElseThrow(InvalidVendorLineException::new);
 
@@ -82,7 +80,6 @@ public class GameUrlService implements GameUrl {
             params.addProperty("lang", gameSession.getVendorLanguageCode());
             params.addProperty("gType", gType);
             params.addProperty("mType", mType);
-            params.addProperty("isShowDollarSign", isShowDollarSign);
 
             encrypted = VendorService.encrypt(params.toString(), aesKey, aesIv);
 
