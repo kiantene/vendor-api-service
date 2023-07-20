@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.playngo.api.authenticate;
+package com.nextgen.gameaggregator.vendor.playngo.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class AuthAction {
+public class CancelReserveAction {
 
     @Autowired
     private HttpService httpService;
@@ -25,39 +25,32 @@ public class AuthAction {
     @Autowired
     private VendorLineService vendorLineService;
 
-    @PostMapping(path = EndPoints.AUTHTHENTICATE)
+    @PostMapping(path = EndPoints.CANCEL)
     public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
 
         // Construct VO
-        AuthVo authVo = new AuthVo();
-        authVo.setExternalId("testpng001");
-        authVo.setStatusCode("0");
-        authVo.setStatusMessage("ok");
-        authVo.setUserCurrency("CNY");
-        authVo.setCountry("CN");
-        authVo.setBirthdate("1970-01-01");
-        authVo.setRegistration("2010-05-05");
-        authVo.setReal("1000.00");
+        CancelReserveVo cancelReserveVo = new CancelReserveVo();
+        cancelReserveVo.setStatusCode("0");
 
         //Retrieve request body in original string format
         String body = httpRequestLog.getRequestBody();
 
         //Convert original request body into commonDto
         XmlMapper xmlMapper = new XmlMapper();
-        //AuthVo authDto = xmlMapper.readValue(body, AuthVo.class);
+        //BalanceDto authDto = xmlMapper.readValue(body, BalanceDto.class);
 
         //Validate request parameters from vendor (Non-database related)
         //this.doValidation(authDto);
 
-        String authVoXml = xmlMapper.writeValueAsString(authVo);
-        httpService.end(httpRequestLog, authVo);
+        String authVoXml = xmlMapper.writeValueAsString(cancelReserveVo);
+        httpService.end(httpRequestLog, cancelReserveVo);
         return authVoXml;
     }
 
-//    private void doValidation(AuthVo dto) throws InvalidRequestException {
+//    private void doValidation(BalanceDto dto) throws InvalidRequestException {
 //        // General validation
 //        ValidationUtils.validateRequest(dto);
 //    }

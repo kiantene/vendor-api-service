@@ -1,34 +1,64 @@
 package com.nextgen.gameaggregator.vendor.playngo.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.service.HttpResponse;
-import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import lombok.Data;
 
 @Data
+@JacksonXmlRootElement(localName = "authenticate")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthVo implements HttpResponse {
 
-    @JsonProperty("Username")
-    private String username;
-    @JsonProperty("Balance")
-    private Double balance;
-    @JsonProperty("Message")
-    private String message;
-    @JsonProperty("Status")
-    private Integer status;
+    @JacksonXmlProperty(localName = "externalId")
+    private String externalId;
 
-    public AuthVo() {
-        this.setResponseCode(ResponseCodes.SUCCESS);
-    }
+    @JacksonXmlProperty(localName = "statusCode")
+    private String statusCode;
 
-    public void setResponseCode(String responseCode) {
-        this.status = Integer.valueOf(responseCode);
-        this.message = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
-        this.username = "";
-        this.balance = Double.valueOf(0);
-    }
+    @JacksonXmlProperty(localName = "statusMessage")
+    private String statusMessage;
+
+    @JacksonXmlProperty(localName = "userCurrency")
+    private String userCurrency;
+
+    @JacksonXmlProperty(localName = "nickname")
+    private String nickname;
+
+    @JacksonXmlProperty(localName = "country")
+    private String country;
+
+    @JacksonXmlProperty(localName = "birthdate")
+    private String birthdate;
+
+    @JacksonXmlProperty(localName = "registration")
+    private String registration;
+
+    @JacksonXmlProperty(localName = "language")
+    private String language;
+
+    @JacksonXmlProperty(localName = "affiliateId")
+    private String affiliateId;
+
+    @JacksonXmlProperty(localName = "real")
+    private String real;
+
+    @JacksonXmlProperty(localName = "gender")
+    private String gender;
+
+    @JacksonXmlProperty(localName = "externalGameSessionId")
+    private String externalGameSessionId;
+
+    @JacksonXmlProperty(localName = "region")
+    private String region;
+
+    @JacksonXmlProperty(localName = "gameMode")
+    private String gameMode;
+
+    @JacksonXmlProperty(localName = "bonusBalance")
+    private String bonusBalance;
+
     @Override
     public boolean hasError() {
         return false;
