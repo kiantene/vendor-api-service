@@ -2,11 +2,13 @@ package com.nextgen.gameaggregator.vendor.playngo.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,58 +16,83 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class BalanceAction {
-
     @Autowired
     private HttpService httpService;
-
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.BALANCE)
     public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
         String traceId = httpRequestLog.getId();
 
-        // Construct VO
         BalanceVo balanceVo = new BalanceVo();
-        balanceVo.setReal("1000.00");
-        balanceVo.setStatusCode("0");
-
-        //Retrieve request body in original string format
-        String body = httpRequestLog.getRequestBody();
-
-        //Convert original request body into commonDto
         XmlMapper xmlMapper = new XmlMapper();
-        //BalanceDto authDto = xmlMapper.readValue(body, BalanceDto.class);
+        String authVoXml;
+        try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
 
-        //Validate request parameters from vendor (Non-database related)
-        //this.doValidation(authDto);
+            // Convert original request body into commonDto
+            BalanceDto balanceDto = xmlMapper.readValue(body, BalanceDto.class);
 
-        String authVoXml = xmlMapper.writeValueAsString(balanceVo);
-        httpService.end(httpRequestLog, balanceVo);
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(balanceDto);
+
+            // Verify Token
+            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getExternalGameSessionId());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession, balanceDto);
+
+            // Get walletBalance
+            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+
+            // Construct VO
+            balanceVo.setReal(balance.toString());
+            balanceVo.setStatusCode(ResponseCodes.OK);
+        } catch (Exception e) {
+            balanceVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, e);
+        } finally {
+            authVoXml = xmlMapper.writeValueAsString(balanceVo);
+            httpService.end(httpRequestLog, balanceVo);
+        }
+
         return authVoXml;
     }
 
-//    private void doValidation(BalanceDto dto) throws InvalidRequestException {
-//        // General validation
-//        ValidationUtils.validateRequest(dto);
-//    }
-//
-//    private void doVerification(HttpRequestLog request, AuthDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
-//
-//        //Verify received agent code is the same from credential
-//        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-//        ValidationUtils.isEquals(agentCode, dto.getAppid(), NoAvailableLineException::new);
-//
-//        //Verify received hash
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-//        VendorService.verifyHash(request.getRequestBody(), secretKey);
-//
-//    }
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
 
+    private void doVerification(GameSession gameSession, BalanceDto balanceDto) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException {
+        // Verify received token is the same from game session
+        // comparison for game session value will always be using  AuthenticationException
+        ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getExternalGameSessionId(), AuthenticationException::new);
+
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+    }
 }

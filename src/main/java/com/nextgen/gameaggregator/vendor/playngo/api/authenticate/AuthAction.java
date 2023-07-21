@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,12 +64,13 @@ public class AuthAction {
 
             // Construct VO
             authVo.setExternalId(gameSession.getVendorPlayerUsername());
-            authVo.setStatusCode("0");
+            authVo.setStatusCode(ResponseCodes.OK);
             authVo.setStatusMessage("OK");
             authVo.setUserCurrency(gameSession.getVendorCurrencyCode());
             authVo.setReal(balance.toString());
+            authVo.setExternalGameSessionId(gameSession.getToken());
         } catch (Exception e) {
-            authVo.setStatusCode("2");
+            authVo.setStatusCode(ResponseCodes.INTERNAL);
             authVo.setStatusMessage("INTERNAL");
             httpService.logError(httpRequestLog, e);
         } finally {
@@ -97,6 +99,5 @@ public class AuthAction {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
     }
 }
