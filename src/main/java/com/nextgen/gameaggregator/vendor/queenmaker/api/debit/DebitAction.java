@@ -2,13 +2,15 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.debit;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
-import com.nextgen.gameaggregator.vendor.queenmaker.dto.TransactionsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.CreditTransactionsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +45,8 @@ public class DebitAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.WALLET_DEBIT)
     public DebitVo DebitAction(HttpServletRequest request) {
@@ -62,9 +66,9 @@ public class DebitAction {
 
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
-            for (TransactionsDto transaction : debitDto.getTransactions()) {
+            for (CreditTransactionsDto transaction : debitDto.getTransactions()) {
                 String traceId = httpRequestLog.getId();
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId));
+                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body));
                 futures.add(future);
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -90,7 +94,7 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(TransactionsDto transactionsDto, GameSession gameSession, String clientId, String clientSecret)
+    private void doVerification(CreditTransactionsDto transactionsDto, GameSession gameSession, String clientId, String clientSecret)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -126,7 +130,7 @@ public class DebitAction {
 
     }
 
-    private TransactionsVo processData(TransactionsDto transactionsDto, String clientId, String clientSecret, String traceId) {
+    private TransactionsVo processData(CreditTransactionsDto transactionsDto, String clientId, String clientSecret, String traceId, String body) {
         TransactionsVo transactionsVo = new TransactionsVo();
 
         try {
@@ -139,13 +143,14 @@ public class DebitAction {
             // 3. Verify Credential and Currency
             this.doVerification(transactionsDto, gameSession, clientId, clientSecret);
 
-            // 4. Retrieve the latest wallet balance from Operator
-//            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // 4. Process bet
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, transactionsDto, body);
 
-
-            // 6. Set UsersVo
+            // 5. Set UsersVo
             transactionsVo.setTxid(traceId);
-
+            transactionsVo.setPtxid(traceId);
+            transactionsVo.setBal(betEvent.getLastBalance());
+            transactionsVo.setCur(gameSession.getVendorCurrencyCode());
 
         } catch (Exception exception) {
 

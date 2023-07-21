@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.vendor.queenmaker.dto.TransactionsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.CreditTransactionsDto;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
@@ -14,7 +14,7 @@ public class CreditDto {
     private String testmode;
 
     @NotEmpty(message = "Empty Array")
-    private List<TransactionsDto> transactions;
+    private List<CreditTransactionsDto> transactions;
 }
 
 

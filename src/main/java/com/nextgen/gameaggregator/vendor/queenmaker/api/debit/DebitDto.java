@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.debit;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.vendor.queenmaker.dto.TransactionsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.CreditTransactionsDto;
 import lombok.Data;
 
 import java.util.List;
@@ -11,5 +11,5 @@ import java.util.List;
 public class DebitDto {
     private String testmode;
     private Boolean transactional;
-    private List<TransactionsDto> transactions;
+    private List<CreditTransactionsDto> transactions;
 }

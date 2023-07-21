@@ -8,7 +8,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
-import com.nextgen.gameaggregator.vendor.queenmaker.dto.TransactionsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.CreditTransactionsDto;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +62,7 @@ public class CreditAction {
 
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
-            for (TransactionsDto transaction : creditDto.getTransactions()) {
+            for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
                 String traceId = httpRequestLog.getId();
                 CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId));
                 futures.add(future);
@@ -90,7 +90,7 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(TransactionsDto transactionsDto, GameSession gameSession, String clientId, String clientSecret)
+    private void doVerification(CreditTransactionsDto transactionsDto, GameSession gameSession, String clientId, String clientSecret)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -132,7 +132,7 @@ public class CreditAction {
 
     }
 
-    private TransactionsVo processData(TransactionsDto transactionsDto, String clientId, String clientSecret, String traceId) {
+    private TransactionsVo processData(CreditTransactionsDto transactionsDto, String clientId, String clientSecret, String traceId) {
         TransactionsVo transactionsVo = new TransactionsVo();
 
         try {
