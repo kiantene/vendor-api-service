@@ -76,19 +76,31 @@ public class JackpotWinAction {
 
         } catch (
                 InvalidAgentApiCredentialException |
-                AuthenticationException |
                 DisabledAgentPlayerException |
                 MergedBetDataIntegrityException |
                 DisabledGameException |
                 InsufficientBalanceException |
-                InvalidOperatorResponseException |
-                BetNotFoundException |
                 CredentialNotFoundException |
                 DisabledVendorLineException |
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
-            httpService.logError(httpRequestLog, exception);
+        } catch (AuthenticationException authenticationException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_TOKEN);
+        } catch (BetNotFoundException betNotFoundException) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            commonVo.setResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                commonVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUND);
+            } else {
+                commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
         } catch (InvalidSignatureException invalidSignatureException) {
             commonVo.setResponseCode(ResponseCodes.INVALID_SIGNATURE);
         } catch (NoAvailableLineException noAvailableLineException) {

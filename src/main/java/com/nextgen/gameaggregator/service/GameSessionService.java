@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.AgentRepository;
 import com.nextgen.gameaggregator.repository.RawGameSessionRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachePut;
@@ -50,6 +51,16 @@ public class GameSessionService {
 
         //TODO (by Alex), validate gameId param from vendor is match with game_sessions table's vendor_game_id
         return session;
+    }
+
+    @Caching( put = {
+            @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+    })
+    public GameSession updateSession(GameSession gameSession){
+        rawGameSessionRepository.save(gameSession);
+        return gameSession;
+
     }
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
@@ -121,6 +132,29 @@ public class GameSessionService {
             this.clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());
         }
 
+    }
+
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "#newToken", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager")
+    })
+    public GameSession regenerateGameSessionToken(GameSession gameSession, String newToken) {
+
+        // clear old GameSession in redis and couchbase
+        clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());
+
+        // Mapping old GameSession into new GameSession
+        GameSession newGameSession = new ModelMapper().map(gameSession, GameSession.class);
+
+        newGameSession.setId(newToken);
+        newGameSession.setToken(newToken);
+        newGameSession.setStatus(Status.ACTIVE.code);
+        newGameSession.setCreateTime(System.currentTimeMillis());
+        newGameSession.setTerminateTime(null);
+
+        rawGameSessionRepository.save(newGameSession);
+        return newGameSession;
     }
 
 

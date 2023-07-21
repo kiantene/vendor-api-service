@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
@@ -37,6 +38,8 @@ public class AppendWagerAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.APPEND_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -61,36 +64,48 @@ public class AppendWagerAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId());
 
             this.doVerification(dto, gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // Process jackpot as WIN
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.WIN, vendorService, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(balance);
 
-            // Set BalanceDataWalletVo Object
+            // Set ResponseVo Object
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
+        } catch (AuthenticationException | InvalidSignatureException signErrorException) {
+            responseVo.setCode(ResponseCodes.SIGN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+        } catch (BetNotFoundException betNotFoundException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
-        } catch (InvalidSignatureException | AuthenticationException signErrorException) {
-            responseVo.setCode(ResponseCodes.SIGN_ERROR);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException | JsonProcessingException systemErrorException) {
+                 InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
