@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.playngo.constant;
 
 public class GameType {
-    public static final Boolean ENABLE_JACKPOT = true;
-    public static final Boolean DISABLE_JACKPOT = false;
+    public static final String REAL = "0";
+    public static final String FUN = "1";
+
 
 }

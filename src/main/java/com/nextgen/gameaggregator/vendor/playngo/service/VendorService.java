@@ -82,7 +82,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String generateGameUrl(String apiUrl, MultiValueMap<String, String> parameters) {
+    public static String generateUrl(String apiUrl, MultiValueMap<String, String> parameters) {
         // form query string
         String queryString = "";
         List<String> values = new ArrayList<>();
