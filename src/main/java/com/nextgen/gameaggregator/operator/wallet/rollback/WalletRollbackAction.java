@@ -40,8 +40,6 @@ public class WalletRollbackAction {
     @Autowired
     RequestService requestService;
     @Autowired
-    private OperatorRequestService operatorRequestService;
-    @Autowired
     private AuthenticationService authenticationService;
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;

@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.eventing.events.UnsettledBetOperatorFailEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -283,11 +282,12 @@ public class WalletService {
         return balanceVo;
     }
 
-    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
+    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime)
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         SettledBet settledBet = null;
 
-        try{
+        try {
             loggingService.logStart();
             settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
             loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
@@ -303,65 +303,27 @@ public class WalletService {
                 throw new BetResultIdempotentViolationException(settledBet);
 
             } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
-                settledBet.setOperatorStatus(operatorStatusProcessing);
-
-                if(vendorSettledTime != null){
-                    //will be priority of using rollbackData vendorSettleTime if available.
-                    settledBet.setVendorSettleTime(vendorSettledTime);
-                }
-
-                if (settledBet.getStatus() != BetStatus.SETTLED.code) {
-                    //if the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
-
-                } else {
-                    //else is normal settled bet but error processing by operator, send cancel request to operator
+                // if normal settled bet but error processing by operator, send cancel request to operator
+                if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
                     settledBet.setStatus(BetStatus.CANCELLED.code);
                     settledBet.setInternalTransactionId(traceId);
                 }
+                // if the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
 
+                if (vendorSettledTime != null) {
+                    // will be priority of using rollbackData vendorSettleTime if available.
+                    settledBet.setVendorSettleTime(vendorSettledTime);
+                }
+                settledBet.setOperatorStatus(operatorStatusProcessing);
                 settledBetService.save(settledBet, settledBet.getRawData());
             }
 
-        } catch (BetNotFoundException betNotFoundException){
+        } catch (BetNotFoundException betNotFoundException) {
             //return settleBet = null;
         }
 
         return settledBet;
 
-    }
-
-    private UnsettledBet doCheckBetExistsInUnsettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, RollbackData rollbackData) throws BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
-
-        UnsettledBet unsettledBet = null;
-
-        try {
-            loggingService.logStart();
-            unsettledBet = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
-            loggingService.logProcessTime("doCheckBetExistsInUnsettledBet ｜ unsettledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
-
-            if (unsettledBet != null) { // duplicate request found in settled_bet
-                Integer operatorStatus = unsettledBet.getOperatorStatus();
-                // throw idempotent exception if status is processing or success
-                if (operatorStatus.equals(operatorStatusProcessing)) {
-                    log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + unsettledBet.getExternalTransactionId() + ") vendorPlayerId (" + unsettledBet.getVendorPlayerId() + ")");
-                    throw new TransactionStillProcessingException();
-
-                } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    //unsettledBet is processed successfully, so will prepare to send refund request to operator
-
-                } else {
-                    //unsettledBet is processed with error from operator, so will prepare to send refund request to operator
-                }
-            }
-            return unsettledBet;
-
-        } catch (BetNotFoundException betNotFoundException) {
-            //insert into bet not found log
-            betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED);
-
-            //bet not found is valid case, so when bet not found, we will notify vendor to drop this request
-            throw new BetNotFoundException();
-        }
     }
 
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
@@ -562,9 +524,10 @@ public class WalletService {
      * @throws BetNotFoundException    If no bet record is found
      * @throws RecordNotFoundException Generic exception for orphan records
      */
-    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService) throws
-            RecordNotFoundException, InvalidAgentApiCredentialException,
-            InvalidOperatorResponseException, BetRefundIdempotentViolationException, BetNotFoundException, BetResultIdempotentViolationException, TransactionStillProcessingException {
+    public BigDecimal processRollback(String traceId, RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService)
+            throws RecordNotFoundException, InvalidAgentApiCredentialException,
+            InvalidOperatorResponseException, BetRefundIdempotentViolationException, BetNotFoundException,
+            BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         log.info("processRollback (" + traceId + "): " + rollbackData);
         //do changes
@@ -581,19 +544,27 @@ public class WalletService {
             vendorSettledTime = settledBet.getVendorSettleTime();
 
             if (settledBet == null) {
-                unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, rollbackData);
+                try {
+                    loggingService.logStart();
+                    unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
+                    loggingService.logProcessTime("unsettledBetService.findBetsForRollback", traceId);
+                } catch (BetNotFoundException betNotFoundException) {
+                    betNotFoundLogService.save(vendorPlayerId, rollbackData.getRollbackId(), BetStatus.REFUNDED);
+                    throw betNotFoundException;
+                }
+
                 settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                 settledBet.setOperatorStatus(operatorStatusProcessing);
                 settledBet.setStatus(BetStatus.REFUNDED.code);
 
-                if(vendorSettledTime != null){
+                if (vendorSettledTime != null) {
                     //will be priority of using rollbackData vendorSettleTime if available.
                     settledBet.setVendorSettleTime(vendorSettledTime);
                 } else {
                     vendorSettledTime = settledBet.getVendorSettleTime();
                 }
 
-                if(settledBet.getVendorSettleTime() == null){
+                if (settledBet.getVendorSettleTime() == null) {
                     //if still null for vendorSettleTime, will use current system time as vendorSettleTime
                     settledBet.setVendorSettleTime(System.currentTimeMillis());
                     vendorSettledTime = settledBet.getVendorSettleTime();
@@ -625,14 +596,14 @@ public class WalletService {
             kafkaService.produceBetHistory(betHistory, settledBet);
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 
-            if (settledBet.getStatus() == BetStatus.REFUNDED.code) {
+            if (settledBet.getStatus().equals(BetStatus.REFUNDED.code)) {
                 //only refund request need to insert into betRefundLog and delete unsettledBet
                 RawBetRefundLog rawBetRefundLog = betRefundLogService.newRawBetRefundLog(traceId, betId, rollbackData, roundId, gameSession, balance);
                 loggingService.logStart();
                 betRefundLogService.create(rawBetRefundLog);
                 loggingService.logProcessTime("processRollback ｜ betRefundLogService.create", traceId);
 
-                //TODO INSERT INTO KAFKA
+                // TODO: INSERT INTO KAFKA
                 BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
                 log.info(new Gson().toJson(rawBetRefundLog));
 
