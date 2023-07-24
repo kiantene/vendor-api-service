@@ -135,7 +135,7 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorDescription("Credit transaction is still processing");
         } catch (MergedBetDataIntegrityException | RecordNotFoundException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
-                 InvalidOperatorResponseException | CouchbaseDataIntegrityException e) {
+                 InvalidOperatorResponseException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {

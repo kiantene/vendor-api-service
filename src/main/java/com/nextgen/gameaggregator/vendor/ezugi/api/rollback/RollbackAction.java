@@ -98,7 +98,7 @@ public class RollbackAction {
         } catch (DisabledGameException | DisabledAgentPlayerException | CurrencyNotSupportedException |
                  RecordNotFoundException | InvalidPlayerException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | DisabledVendorLineException | InvalidKeyException |
-                 CouchbaseDataIntegrityException | NoSuchAlgorithmException | InvalidOperatorResponseException e) {
+                 NoSuchAlgorithmException | InvalidOperatorResponseException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
@@ -117,7 +117,7 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException, JsonProcessingException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException, JsonProcessingException, TransactionStillProcessingException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 

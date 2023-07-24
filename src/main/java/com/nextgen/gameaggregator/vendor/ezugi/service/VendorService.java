@@ -56,11 +56,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public void verifyRollbackAmount(RollbackDto rollbackDto, GameSession gameSession) throws InvalidFormatException, BetNotFoundException {
+    public void verifyRollbackAmount(RollbackDto rollbackDto, GameSession gameSession) throws InvalidFormatException, BetNotFoundException, TransactionStillProcessingException {
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String externalTransactionId = rollbackDto.getTransactionId();
         UnsettledBet unsettledBet = null;
-        unsettledBet = unsettledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
         if (unsettledBet != null && (unsettledBet.getBetAmount().doubleValue() != rollbackDto.getRollbackAmount())) {
             throw new InvalidFormatException();
         }
