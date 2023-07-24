@@ -54,6 +54,7 @@ public class GameUrlAction {
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
             httpRequestLog.setId(traceId);
+            httpRequestLog.setOperatorUsername(dto.getUsername());
 
             // 1. Validate all fields in the request object
             loggingService.logStart();
