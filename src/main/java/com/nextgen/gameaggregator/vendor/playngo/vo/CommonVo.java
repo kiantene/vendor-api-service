@@ -14,6 +14,8 @@ public class CommonVo implements HttpResponse {
     private String statusCode;
     @JacksonXmlProperty(localName = "statusMessage")
     private String statusMessage;
+    private String ResponseXMLFormat;
+
     @Override
     public boolean hasError() {
         return !this.statusCode.equals(ResponseCodes.OK);

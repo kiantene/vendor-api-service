@@ -26,9 +26,8 @@ public class ReserveAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.RESERVE)
-    public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
+    public String reserve(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
-
         String traceId = httpRequestLog.getId();
 
         // Construct VO
@@ -50,22 +49,5 @@ public class ReserveAction {
         httpService.end(httpRequestLog, reserveVo);
         return authVoXml;
     }
-
-//    private void doValidation(BalanceDto dto) throws InvalidRequestException {
-//        // General validation
-//        ValidationUtils.validateRequest(dto);
-//    }
-//
-//    private void doVerification(HttpRequestLog request, AuthDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
-//
-//        //Verify received agent code is the same from credential
-//        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-//        ValidationUtils.isEquals(agentCode, dto.getAppid(), NoAvailableLineException::new);
-//
-//        //Verify received hash
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-//        VendorService.verifyHash(request.getRequestBody(), secretKey);
-//
-//    }
 
 }

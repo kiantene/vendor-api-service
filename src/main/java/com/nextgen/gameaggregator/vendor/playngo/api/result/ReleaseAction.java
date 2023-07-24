@@ -26,7 +26,7 @@ public class ReleaseAction {
     private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.RELEASE)
-    public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
+    public String release(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();

@@ -75,6 +75,7 @@ public class AuthAction {
             httpService.logError(httpRequestLog, e);
         } finally {
             authVoXml = xmlMapper.writeValueAsString(authVo);
+            authVo.setResponseXMLFormat(authVoXml);
             httpService.end(httpRequestLog, authVo);
         }
 

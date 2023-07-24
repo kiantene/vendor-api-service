@@ -42,7 +42,7 @@ public class BalanceAction {
 
         BalanceVo balanceVo = new BalanceVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String authVoXml;
+        String balanceVoXml;
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -69,11 +69,12 @@ public class BalanceAction {
             balanceVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, e);
         } finally {
-            authVoXml = xmlMapper.writeValueAsString(balanceVo);
+            balanceVoXml = xmlMapper.writeValueAsString(balanceVo);
+            balanceVo.setResponseXMLFormat(balanceVoXml);
             httpService.end(httpRequestLog, balanceVo);
         }
 
-        return authVoXml;
+        return balanceVoXml;
     }
 
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
