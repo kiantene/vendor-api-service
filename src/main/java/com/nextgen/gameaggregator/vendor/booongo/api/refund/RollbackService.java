@@ -93,8 +93,7 @@ public class RollbackService {
             error.setCode(ResponseCodes.OTHER_EXCEED);
             vo.setError(error);
         }catch(BetNotFoundException |
-               BetRefundIdempotentViolationException |
-               BetResultIdempotentViolationException e){
+               BetRefundIdempotentViolationException e){
             balance = getCurrentBalance(traceId, gameSession);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
