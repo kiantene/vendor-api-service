@@ -17,13 +17,16 @@ public class BetNotFoundLogService {
     @Autowired
     RawBetNotFoundLogRepository rawBetNotFoundLogRepository;
 
-    @CachePut(value = "BetNotFound", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager")
+    @CachePut(value = "BetNotFoundLog", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager")
     public BetNotFoundLog save(Long vendorPlayerId, String externalTransactionId, BetStatus betStatus) {
 
         BetNotFoundLog betNotFoundLog = new BetNotFoundLog();
+        String betNotFoundLogId = vendorPlayerId + '_' + externalTransactionId;
+
         betNotFoundLog.setVendorPlayerId(vendorPlayerId);
         betNotFoundLog.setExternalTransactionId(externalTransactionId);
         betNotFoundLog.setStatus(betStatus.code);
+        betNotFoundLog.setId(betNotFoundLogId);
 
         rawBetNotFoundLogRepository.save(betNotFoundLog);
 
