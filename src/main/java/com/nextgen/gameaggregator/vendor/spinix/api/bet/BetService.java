@@ -63,7 +63,7 @@ public class BetService {
             betDto.setTimestamp(bet.getConvertedTimestamp());
 
             // process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             // get balance
             BigDecimal balance = betEvent.getLastBalance();
@@ -81,9 +81,6 @@ public class BetService {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
-            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
@@ -91,6 +88,9 @@ public class BetService {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (Exception exception) {
+            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } finally {
             if (roundPayoutVo.getStatus() != HttpStatus.SC_OK) {
                 roundPayoutErrorVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(roundPayoutErrorVo.getCode()));

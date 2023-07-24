@@ -75,6 +75,9 @@ public class ResultAction {
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
             responseVo.setCash(idempotentViolationException.getBalance());
 
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {

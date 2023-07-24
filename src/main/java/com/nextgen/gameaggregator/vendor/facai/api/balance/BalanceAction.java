@@ -31,7 +31,6 @@ import java.math.RoundingMode;
 @Slf4j
 public class BalanceAction {
 
-
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -78,7 +77,7 @@ public class BalanceAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(balanceDto.getMemberAccount(), Integer.toString(balanceDto.getGameID()));
 
             //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, balanceDto, gameSession, jsonParam);

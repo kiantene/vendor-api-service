@@ -7,6 +7,11 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,13 +49,27 @@ public class VendorService extends BaseVendorService {
 
         for (String field : fields) {
             String[] kv = field.split("=");
-            if (kv.length == 2) queryParameterMap.put(kv[0], kv[1]);
+            if (kv.length == 2) {
+                if(kv[0].equals("amount")){
+                    //fix amount into 2 decimal
+                    BigDecimal amount = new BigDecimal(kv[1]);
+                    amount = amount.setScale(2, RoundingMode.DOWN);
+                    kv[1] = amount.toString();
+                }
+                queryParameterMap.put(kv[0], kv[1]);
+            }
         }
 
         return queryParameterMap;
     }
 
     public static void verifyHash(String requestBody, String secretKey) throws InvalidSignatureException {
+        try {
+            // Url decoder for the request body
+            requestBody = URLDecoder.decode(requestBody, StandardCharsets.UTF_8.name());
+        } catch (UnsupportedEncodingException e) {
+            throw new InvalidSignatureException();
+        }
         Map<String, String> map = convertQueryStringToMap(requestBody);
         String hash = map.get("hash");
         map.remove("hash");

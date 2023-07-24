@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.VendorLine;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,12 +13,12 @@ import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
 import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.repository.*;
+import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -73,7 +76,6 @@ public class BetHistoryService {
         entity.setEffectiveTurnover(BigDecimal.ZERO);
         entity.setResultType(ResultType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
-        entity.setCreateTime(System.currentTimeMillis());
 
         try {
             betHistoryRepository.save(entity);
@@ -97,33 +99,6 @@ public class BetHistoryService {
         return entity;
     }
 
-    /**
-     * Creates a unsettled bet record of the given RawUnsettledBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
-     * @return RawUnsettledBet entity object after a successful save
-     */
-    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public UnsettledBet createUnsettledBet(UnsettledBet entity) {
-        // Set default values
-        entity.setCreateTime(System.currentTimeMillis());
-        rawUnsettledBetRepository.save(entity);
-
-        return entity;
-    }
-
-    /**
-     * Creates a unsettled bet record of the given RawUnsettledBet entity object.
-     * This function will also populate default values of certain fields.
-     *
-     * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
-     */
-    @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
-    public void deleteUnsettledBet(UnsettledBet entity) {
-        rawUnsettledBetRepository.delete(entity);
-    }
-
     @Transactional
     public BetHistory jdbcCreate(BetHistory entity) {
 
@@ -136,7 +111,6 @@ public class BetHistoryService {
         entity.setEffectiveTurnover(BigDecimal.ZERO);
         entity.setResultType(ResultType.LOSE.code);
         entity.setStatus(BetStatus.UNSETTLED.code);
-        entity.setCreateTime(System.currentTimeMillis());
 
         jdbcTemplate.update("INSERT INTO bet_history (id, external_transaction_id, round_id, vendor_game_id, " +
                 "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
@@ -149,7 +123,7 @@ public class BetHistoryService {
                 entity.getGameSessionToken(), entity.getGameCategoryId(),
                 entity.getCurrencyId(), entity.getBetAmount(), entity.getWinAmount(), entity.getWinLoss(),
                 entity.getEffectiveTurnover(), entity.getResultType(), entity.getStatus(),
-                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getCreateTime(), entity.getResultTime());
+                entity.getVendorBetTime(), entity.getVendorSettleTime(), entity.getResultTime());
 
         return entity;
     }
@@ -211,7 +185,7 @@ public class BetHistoryService {
     public List<UnsettledBet> getBetDataListByRoundId(String roundId, Integer vendorLineId, Long vendorPlayerId){
 
         try{
-            List<UnsettledBet> unsettledBetLists = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerId(roundId, vendorLineId, vendorPlayerId);
+            List<UnsettledBet> unsettledBetLists = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(roundId, vendorLineId, vendorPlayerId);
 
             if (unsettledBetLists == null) {
                 return null;

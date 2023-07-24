@@ -22,8 +22,10 @@ import java.util.Optional;
 @NoArgsConstructor
 public class SettledBet extends BetInformation {
 
-    public SettledBet(BetResultData betResultData, String traceId) {
+    public SettledBet(BetResultData betResultData, String traceId, Integer vendorGameId, Long vendorPlayerId) {
         super(betResultData);
+        this.setVendorGameId(vendorGameId);
+        this.setVendorPlayerId(vendorPlayerId);
         this.setId(this.generateId());
         this.setInternalTransactionId(traceId);
         this.setStatus(BetStatus.SETTLED.code);

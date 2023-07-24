@@ -75,12 +75,14 @@ public class BalanceAction {
             responseVo.setCode(ResponseCodes.SUCCESS);
             responseVo.setData(responseDataVo);
 
-        } catch (AuthenticationException | InvalidVendorLineException | InvalidSignatureException signErrorException) {
+        } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
-        } catch (InvalidPlayerException invalidPlayerException) {
+        } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+        } catch (InvalidPlayerException invalidPlayerException) {
+            responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
@@ -118,6 +120,9 @@ public class BalanceAction {
 
         // Verify signature
         VendorService.isSameSignature(dto.getSign(), toVerifySign);
+
+        // Verify if is valid player
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getBrandUid(), InvalidPlayerException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
