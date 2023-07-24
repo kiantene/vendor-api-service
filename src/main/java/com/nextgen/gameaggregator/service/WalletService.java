@@ -578,6 +578,8 @@ public class WalletService {
 
         try {
             settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
+            vendorSettledTime = settledBet.getVendorSettleTime();
+
             if (settledBet == null) {
                 unsettledBet = this.doCheckBetExistsInUnsettledBet(vendorPlayerId, externalTransactionId, traceId, rollbackData);
                 settledBet = new SettledBet(unsettledBet, vendorService, traceId);
