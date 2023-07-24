@@ -104,8 +104,6 @@ pipeline {
                         sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
 
                         sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa ${PORTAINER_SERVICE_NAME}'"
-                        // TODO: Temporary solution, need to remove when done callback migrate (This is /vendor service)
-                        sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa vendor-api_sub-service'"
                     }
                 }
             }

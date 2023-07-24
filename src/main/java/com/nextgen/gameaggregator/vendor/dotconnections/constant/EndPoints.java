@@ -12,6 +12,7 @@ public class EndPoints {
     public static final String APPEND_WAGER = "/appendWager";
     public static final String END_WAGER = "/endWager";
     public static final String FREE_SPIN_RESULT = "/freeSpinResult";
+    public static final String PROMO_PAYOUT = "/promoPayout";
 
     // API url call to vendor
     public static final String GAME_URL = "/dcs/loginGame";

@@ -28,11 +28,7 @@ public class LoginService {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -116,9 +112,11 @@ public class LoginService {
             error.setCode(ResponseCodes.GAME_NOT_ALLOWED);
             vo.setError(error);
         }
-//        catch (Exception exception) {
-//            httpService.logError(httpRequestLog, exception);
-//        }
+        catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
+            error.setCode(ResponseCodes.GAME_NOT_ALLOWED);
+            vo.setError(error);
+        }
         finally{
             vo.setUid(loginDto.getUid());
         }

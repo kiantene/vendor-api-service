@@ -17,8 +17,10 @@ import org.springframework.data.couchbase.repository.Scope;
 @NoArgsConstructor
 public class UnsettledBet extends BetInformation {
 
-    public UnsettledBet(BetResultData betResultData) {
+    public UnsettledBet(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId) {
         super(betResultData);
+        this.setVendorGameId(vendorGameId);
+        this.setVendorPlayerId(vendorPlayerId);
         this.setId(this.generateId());
         this.setStatus(BetStatus.UNSETTLED.code);
     }

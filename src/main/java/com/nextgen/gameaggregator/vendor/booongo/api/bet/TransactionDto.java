@@ -52,6 +52,7 @@ public class TransactionDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})$")
+    // vendor record the time while sent data
     private String sent_at;
 
     @NotNull
@@ -107,7 +108,7 @@ public class TransactionDto implements BetResultData {
     public Long getVendorBetTime() { return getTimeStamp(this.getC_at()); }
 
     @Override
-    public Long getResultTime() { return getTimeStamp(this.getSent_at()); }
+    public Long getResultTime() { return getTimeStamp(this.getC_at()); }
 
     @Override
     public Long getVendorSettleTime() { return getTimeStamp(this.getC_at()); }

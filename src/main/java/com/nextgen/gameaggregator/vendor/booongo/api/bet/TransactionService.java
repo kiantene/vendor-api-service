@@ -30,8 +30,6 @@ public class TransactionService {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
@@ -39,10 +37,6 @@ public class TransactionService {
     private HttpService httpService;
     @Autowired
     private VendorService vendorService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
 
@@ -63,11 +57,11 @@ public class TransactionService {
             // Retrieve request body in original string format
             transactionDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), TransactionDto.class);
 
-            // Validate request parameters from vendor (Non-database related)
-            this.doValidation(transactionDto);
-
             // Verify session token
             gameSession = gameSessionService.verifyToken(transactionDto.getToken());
+
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(transactionDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(transactionDto, gameSession);
@@ -85,19 +79,30 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        } catch (BetResultIdempotentViolationException e) {
+        }catch (BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
             balance = getCurrentBalance(traceId, gameSession);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-        } catch (InvalidOperatorResponseException |
-                 DisabledVendorLineException |
+        }catch(InvalidOperatorResponseException e){
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+
+            // check the status is insufficient code or not
+            if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
+                errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
+            }
+
+            balance = getCurrentBalance(traceId, gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
+        }catch (DisabledVendorLineException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  CurrencyNotSupportedException |
                  DisabledAgentPlayerException |
-                 MergedBetDataIntegrityException |
                  DisabledGameException |
                  InvalidRequestException |
                  BetNotFoundException |
@@ -113,10 +118,15 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
-        } catch(Exception exception) {
-            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-            vo.setError(errorVo);
+        }catch(Exception exception){
             httpService.logError(httpRequestLog, exception);
+            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
+
+            balance = getCurrentBalance(traceId, gameSession);
+
+            // Retrieve current wallet balance
+            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            vo.setError(errorVo);
         }
         finally {
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
@@ -175,15 +185,6 @@ public class TransactionService {
 
         // Verify vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getArgs().getPlayer().getCurrency(), CurrencyNotSupportedException::new);

@@ -9,7 +9,7 @@ import java.util.*;
 @Service
 @Slf4j
 public class LoggingService {
-    @Value("${logging.process-time:true}")
+    @Value("${logging.process-time:false}")
     private Boolean enableProcessTime;
 
     private Long startTime;
@@ -21,7 +21,7 @@ public class LoggingService {
     public void logProcessTime(String functionName, String traceId) {
 
         //TODO ENABLE BASED ON enableProcessTime STATUS
-//        if (!enableProcessTime) return;
+        if (!enableProcessTime) return;
 
         Long endTime = System.currentTimeMillis();
         Gson gson = new Gson();

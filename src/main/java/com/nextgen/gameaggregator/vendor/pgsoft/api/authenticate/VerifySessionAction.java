@@ -56,6 +56,7 @@ public class VerifySessionAction {
             // 2. Verify session token - Need to validate whether game session expired
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             // x. Check credential line inactive
             agentApiCredentialService.getAgentApiCredential(gameSession.getAgentId());
             // 3. Validate vendor game code

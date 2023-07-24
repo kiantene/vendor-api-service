@@ -67,7 +67,8 @@ public class GameUrlService implements GameUrl {
         gameUrlDto.setReturn_url_info(Formats.RETURN_URL_INFO);
         gameUrlDto.setCallback_version(Formats.CALLBACK_VERSION);
 
-        Map<String, Object> mapData = VendorService.rearrangeMap(VendorService.convertObjectToMap(gameUrlDto, LinkedHashMap.class));
+        Map<String, Object> mapData = VendorService.convertObjectToMap(gameUrlDto, LinkedHashMap.class);
+        VendorService.rearrangeMap(mapData);
         MultiValueMap<String, String> formData = VendorService.flattenMapIntoMultiValueMap(mapData, "");
         formData.add("signature", VendorService.md5(VendorService.buildSignature(formData, key)));
 

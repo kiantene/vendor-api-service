@@ -8,4 +8,11 @@ public class Formats {
     public static final String RETURN_URL_INFO = "1"; // [1] returns link to the game as JSON, [0] redirects to the page with game
     public static final String CALLBACK_VERSION = "2"; // Callbacks protocol version. Default value is 2.
 
+    // callback response
+    // no_refund
+    public static final Integer NO_REFUND = 1; // 1 - won't trigger refund
+    public static final Integer REFUND = 0; // 0 - will trigger refund
+    // scope
+    public static final String SCOPE_INTERNAL = "internal"; // internal - error message is not available to user
+    public static final String SCOPE_USER = "user"; // user - error message seen by user
 }

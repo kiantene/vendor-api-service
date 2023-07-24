@@ -11,4 +11,6 @@ public interface VendorLanguageCodeRepository extends JpaRepository<VendorLangua
     VendorLanguageCode findByVendorIdAndLanguageId(Integer vendorId, Integer languageId);
 
     List<VendorLanguageCode> findByVendorId(Integer vendorId);
+
+    VendorLanguageCode findTop1ByVendorIdAndStatus(Integer vendorId, Integer status);
 }

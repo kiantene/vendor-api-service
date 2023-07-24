@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.evoplay.service;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -72,14 +74,13 @@ public class VendorService extends BaseVendorService {
 
     public static <T> T convertBodyToDto(String queryString, Type type) {
         Map<String, Object> resultMap = new LinkedHashMap<>();
-        queryString = URLDecoder.decode(queryString, StandardCharsets.UTF_8);
 
         String[] params = queryString.split("&");
         for (String param : params) {
             String[] keyValue = param.split("=", 2);
             if (keyValue.length == 2) {
-                String key = keyValue[0];
-                String value = keyValue[1];
+                String key = URLDecoder.decode(keyValue[0], StandardCharsets.UTF_8);
+                String value = URLDecoder.decode(keyValue[1], StandardCharsets.UTF_8);
                 populateNestedMap(resultMap, key, value);
             }
         }
@@ -99,7 +100,7 @@ public class VendorService extends BaseVendorService {
         currentMap.put(keys[keys.length - 1], value);
     }
 
-    public static Map<String, Object> rearrangeMap(Map<String, Object> originalMap) {
+    public static void rearrangeMap(Map<String, Object> originalMap) {
         String[] specificKeys = {"project", "version"};
         Map<String, Object> rearrangedMap = new LinkedHashMap<>();
 
@@ -111,26 +112,43 @@ public class VendorService extends BaseVendorService {
         }
 
         rearrangedMap.putAll(originalMap);
-
-        return rearrangedMap;
+        originalMap.clear();
+        originalMap.putAll(rearrangedMap);
     }
-
-    public static <O> String generateSignature(O Object, String key) {
-        Map<String, Object> mapData = rearrangeMap(convertObjectToMap(Object, LinkedHashMap.class));
-        mapData.remove("signature");
-        MultiValueMap<String, String> formData = flattenMapIntoMultiValueMap(mapData, "");
-        return md5(buildSignature(formData, key));
-    }
-
-    public static Long generateTimestamp(String time){
-        if(time != null){
-            return Long.valueOf(time);
-        }
+    
+    public static Long generateTimestamp() {
         return Instant.now().toEpochMilli();
     }
 
-    @Override
-    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
-        return betInfo.getEffectiveTurnover();
+//    @Override
+//    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+//        return betInfo.getEffectiveTurnover();
+//    }
+
+    public ResultType calculateResultType(BetStatus betStatus, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet) {
+
+        winAmount = Optional.ofNullable(winAmount).orElse(BigDecimal.ZERO);
+        jackpotAmount = Optional.ofNullable(jackpotAmount).orElse(BigDecimal.ZERO);
+
+        boolean isWinAmountMoreThanZero = winAmount.compareTo(BigDecimal.ZERO) > 0;
+        boolean isJackpotAmountMoreThanZero = jackpotAmount.compareTo(BigDecimal.ZERO) > 0;
+
+        ResultType resultType = null;
+
+        if (isBet) {
+            resultType = ResultType.BET_LOSE;
+        } else {
+            if (betStatus.equals(BetStatus.UNSETTLED)) {
+                resultType = ResultType.LOSE;
+            } else {
+                resultType = ResultType.END;
+            }
+        }
+
+        if (isWinAmountMoreThanZero || isJackpotAmountMoreThanZero) {
+            resultType = (isBet) ? ResultType.BET_WIN : ResultType.WIN;
+        }
+
+        return resultType;
     }
 }

@@ -44,11 +44,13 @@ public class BetAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         BetVo responseVo = new BetVo();
         String traceId = httpRequestLog.getId();
+        String vendorCurrencyCode = "";
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
+            vendorCurrencyCode = dto.getGameId();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -60,16 +62,24 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
 
-            String transactionId = traceId.replace("-", "");
-            if (betEvent.getBetInformation() != null) {
-                transactionId = VendorService.getTransactionId(betEvent.getBetInformation().getBetId());
-            }
-
+            String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setCash(betEvent.getLastBalance());
+            responseVo.setBonus(BigDecimal.ZERO);
+            responseVo.setUsedPromo(BigDecimal.ZERO);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+
+            String betId = betResultIdempotentViolationException.getBetId();
+            responseVo.setTransactionId(VendorService.getTransactionId(betId));
+            responseVo.setCurrency(vendorCurrencyCode);
+            responseVo.setCash(betResultIdempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
 
@@ -107,12 +117,7 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //SC_INSUFFICIENT_FUNDS
-            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
-                responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
-            } else {
-                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-            }
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

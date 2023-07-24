@@ -8,7 +8,6 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
-import com.nextgen.gameaggregator.vendor.evoplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -29,17 +28,16 @@ public class InitService {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo init(CallbackDto callbackDto, GameSession gameSession, String traceId, String key) throws
+    public ResponseVo init(CallbackDto callbackDto, GameSession gameSession, String traceId) throws
             InvalidAgentApiCredentialException,
             InvalidOperatorResponseException,
-            AuthenticationException,
             DisabledAgentPlayerException,
             DisabledGameException,
             DisabledVendorLineException,
             InvalidRequestException {
 
         this.doValidation(callbackDto);
-        this.doVerification(callbackDto, gameSession, key);
+        this.doVerification(gameSession);
 
         // Retrieve the latest wallet balance from Operator
         BigDecimal balance = walletService.getBalance(traceId, gameSession);
@@ -59,19 +57,14 @@ public class InitService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CallbackDto callbackDto, GameSession gameSession, String key)
+    private void doVerification(GameSession gameSession)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
-            DisabledGameException,
-            AuthenticationException {
+            DisabledGameException {
 
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // Verify Signature
-        String signature = VendorService.generateSignature(callbackDto, key);
-        ValidationUtils.isEquals(signature, callbackDto.getSignature(), AuthenticationException::new);
     }
 }

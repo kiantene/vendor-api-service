@@ -17,12 +17,12 @@ import java.math.BigDecimal;
 public class BetDto extends CallbackDto implements BetResultData {
     @Override
     public String getExternalTransactionId() {
-        return this.getData().getRound_id();
+        return this.getData().getAction_id();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.getData().getRound_id();
+        return this.getData().getAction_id();
     }
 
     @Override
@@ -37,14 +37,18 @@ public class BetDto extends CallbackDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getData().getAmount();
+        return new BigDecimal(this.getData().getAmount());
     }
 
     @Override
-    public BigDecimal getWinAmount() { return null; }
+    public BigDecimal getWinAmount() {
+        return null;
+    }
 
     @Override
-    public BigDecimal getWinLoss() { return null; }
+    public BigDecimal getWinLoss() {
+        return null;
+    }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
@@ -53,17 +57,17 @@ public class BetDto extends CallbackDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return VendorService.generateTimestamp(this.getData().getDetailsDto().getDetails().getTime());
+        return VendorService.generateTimestamp();
     }
 
     @Override
     public Long getResultTime() {
-        return VendorService.generateTimestamp(this.getData().getDetailsDto().getDetails().getTime());
+        return VendorService.generateTimestamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.generateTimestamp(this.getData().getDetailsDto().getDetails().getTime());
+        return VendorService.generateTimestamp();
     }
 
     @Override
@@ -73,7 +77,7 @@ public class BetDto extends CallbackDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return Boolean.valueOf(this.getData().getDetailsDto().getFreespin()) ? 1 : 0;
     }
 
     @Override

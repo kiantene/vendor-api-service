@@ -37,13 +37,12 @@ public class WinService {
     @Autowired
     private VendorService vendorService;
 
-    public ResponseVo win(CallbackDto callbackDto, GameSession gameSession, HttpRequestLog httpRequestLog, String traceId, String key)
+    public ResponseVo win(CallbackDto callbackDto, GameSession gameSession, HttpRequestLog httpRequestLog, String traceId)
             throws
             CurrencyNotSupportedException,
             InvalidRequestException,
             InvalidPlayerException,
             InvalidVendorLineException,
-            AuthenticationException,
             DisabledAgentPlayerException,
             GameNotSupportedException,
             DisabledGameException,
@@ -55,16 +54,15 @@ public class WinService {
             InsufficientBalanceException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            SettledBetIdempotentViolationException,
             TransactionStillProcessingException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         WinDto winDto = new ModelMapper().map(callbackDto, WinDto.class);
 
-        this.doValidation(callbackDto);
-        this.doVerification(callbackDto, gameSession, key);
+        this.doValidation(winDto);
+        this.doVerification(winDto, gameSession);
 
-        ResultType resultType = vendorService.calculateResultType(winDto.getBetAmount(), winDto.getWinAmount(), winDto.getJackpotAmount(), false);
+        ResultType resultType = vendorService.calculateResultType(winDto.getBetStatus(), winDto.getWinAmount(), winDto.getJackpotAmount(), false);
         BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, resultType, vendorService, httpRequestLog);
 
         ResponseDataVo responseDataVo = new ResponseDataVo();
@@ -77,18 +75,17 @@ public class WinService {
         return responseVo;
     }
 
-    private void doValidation(CallbackDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
+    private void doValidation(WinDto dto) throws InvalidRequestException {
 
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getData());
     }
 
-    private void doVerification(CallbackDto dto, GameSession gameSession, String key)
+    private void doVerification(WinDto dto, GameSession gameSession)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            AuthenticationException,
             CurrencyNotSupportedException,
             GameNotSupportedException {
 
@@ -96,8 +93,6 @@ public class WinService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        String signature = VendorService.generateSignature(dto, key);
-        ValidationUtils.isEquals(signature, dto.getSignature(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getData().getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getData().getDetailsDto().getGame().getGame_id(), GameNotSupportedException::new);
     }

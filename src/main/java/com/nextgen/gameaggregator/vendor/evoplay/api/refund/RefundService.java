@@ -36,13 +36,12 @@ public class RefundService {
     @Autowired
     private VendorService vendorService;
 
-    public ResponseVo refund(CallbackDto callbackDto, GameSession gameSession, String traceId, String key)
+    public ResponseVo refund(CallbackDto callbackDto, GameSession gameSession, String traceId)
             throws
             CurrencyNotSupportedException,
             InvalidRequestException,
             InvalidPlayerException,
             InvalidVendorLineException,
-            AuthenticationException,
             DisabledAgentPlayerException,
             GameNotSupportedException,
             DisabledGameException,
@@ -54,7 +53,7 @@ public class RefundService {
 
         // Validate request parameters (Non-database calls)
         this.doValidation(refundDto);
-        this.doVerification(refundDto, gameSession, key);
+        this.doVerification(refundDto, gameSession);
 
         // Retrieve the latest wallet balance from Operator
         BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
@@ -71,18 +70,17 @@ public class RefundService {
         return responseVo;
     }
 
-    private void doValidation(RefundDto dto) throws InvalidRequestException, CurrencyNotSupportedException {
+    private void doValidation(RefundDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
         ValidationUtils.validateRequest(dto.getData());
     }
 
-    private void doVerification(RefundDto dto, GameSession gameSession, String key)
+    private void doVerification(RefundDto dto, GameSession gameSession)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            AuthenticationException,
             CurrencyNotSupportedException,
             GameNotSupportedException {
 
@@ -90,8 +88,6 @@ public class RefundService {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        String signature = VendorService.generateSignature(dto, key);
-        ValidationUtils.isEquals(signature, dto.getSignature(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getData().getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getData().getDetailsDto().getGame().getGame_id(), GameNotSupportedException::new);
     }
