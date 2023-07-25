@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.jili.service;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import lombok.Data;
@@ -10,12 +9,8 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
-import java.math.BigDecimal;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.TimeZone;
 
 @Service
@@ -33,20 +28,20 @@ public class VendorService extends BaseVendorService {
 
         return sdf.format(new Date());
     }
+
     public static String urlQueryStringGenerator(MultiValueMap<String, String> params) {
 
         StringBuilder sb = new StringBuilder();
         for (String key : params.keySet()) {
-            List<String> values = params.get(key);
-            for (String value : values) {
-                sb.append(URLEncoder.encode(key, StandardCharsets.UTF_8));
-                sb.append("=");
-                sb.append(URLEncoder.encode(value, StandardCharsets.UTF_8));
-                sb.append("&");
-            }
+            String value = params.get(key).get(0);
+            sb.append(key);
+            sb.append("=");
+            sb.append(value);
+            sb.append("&");
         }
         return sb.deleteCharAt(sb.length() - 1).toString(); // remove the last '&'
     }
+
     public static String md5Generator(String input) {
         return DigestUtils.md5Hex(input);
     }
@@ -56,10 +51,10 @@ public class VendorService extends BaseVendorService {
     }
 
     public String gKeyGenerator() {
-        return md5Generator(dateGenerator(Formats.DATE_FORMAT, Formats.TIME_ZONE)+this.getAgentId()+this.getAgentKey());
+        return md5Generator(dateGenerator(Formats.DATE_FORMAT, Formats.TIME_ZONE) + this.getAgentId() + this.getAgentKey());
     }
 
     public String keyGenerator(MultiValueMap<String, String> params) {
-        return randomStringGenerator(Formats.RANDOM_STRING_LENGTH)+md5Generator(urlQueryStringGenerator(params)+gKeyGenerator())+randomStringGenerator(Formats.RANDOM_STRING_LENGTH);
+        return randomStringGenerator(Formats.RANDOM_STRING_LENGTH) + md5Generator(urlQueryStringGenerator(params) + gKeyGenerator()) + randomStringGenerator(Formats.RANDOM_STRING_LENGTH);
     }
 }

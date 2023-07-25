@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 public enum ResponseCode {
     SUCCESS             (0, "Success"),
     ALREADY_ACCEPTED    (1, "Already accepted"),
+    ROUND_NOT_FOUND (2, "Round not found"),
     NOT_ENOUGH_BALANCE  (2, "Not enough balance"),
     INVALID_PARAMETER   (3, "Invalid parameter"),
     TOKEN_EXPIRED       (4, "Token expired"),
