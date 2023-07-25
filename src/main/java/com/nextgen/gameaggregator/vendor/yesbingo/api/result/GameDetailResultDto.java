@@ -140,17 +140,17 @@ public class GameDetailResultDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return Instant.parse(this.gameDate).toEpochMilli();
+        return Instant.parse(this.reportDate).toEpochMilli();
     }
 
     @Override
     public Long getResultTime() {
-        return Instant.parse(this.gameDate).toEpochMilli();
+        return Instant.parse(this.reportDate).toEpochMilli();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return Instant.parse(this.gameDate).toEpochMilli();
+        return Instant.parse(this.reportDate).toEpochMilli();
     }
 
     @Override

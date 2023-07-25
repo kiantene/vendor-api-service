@@ -22,6 +22,7 @@ public class ResponseCodes {
     public static final String MULTIPLE_ACCOUNT_LOGIN_DETECTED = "9014";
     public static final String DATA_NOT_EXIST = "9015";
     public static final String WORK_IN_PROCESS = "9017";
+    public static final String SYSTEM_ERROR = "9025";
     public static final String PARAMETER_INPUT_ERROR = "8000";
     public static final String PARAMETER_EMPTY = "8001";
     public static final String PARAMETER_MUST_BE_POSITIVE_INTEGER = "8002";
@@ -73,6 +74,7 @@ public class ResponseCodes {
         put(MULTIPLE_ACCOUNT_LOGIN_DETECTED, "Multiple account login detected.");
         put(DATA_NOT_EXIST, "Data does not exist.");
         put(WORK_IN_PROCESS, "Work in process, please try again later.");
+        put(SYSTEM_ERROR, "System error.");
         put(PARAMETER_INPUT_ERROR, "The parameter of input error, please check if your parameter is correct or not.");
         put(PARAMETER_EMPTY, "The parameter cannot be empty.");
         put(PARAMETER_MUST_BE_POSITIVE_INTEGER, "The parameter must be a positive integer.");
