@@ -162,8 +162,8 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         // Check condition to know this free spin is finished or not
-        if (this.freeGameExternalId != null && this.freeGameFinished != null
-                && this.freeGameFinished != "1") {
+        if (this.freeGameExternalId != null && !this.freeGameExternalId.isEmpty()
+                && this.freeGameFinished != null && this.freeGameFinished != "1") {
             return BetStatus.UNSETTLED;
         }
         return BetStatus.SETTLED;
