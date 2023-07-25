@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.result;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Formats;
@@ -12,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
@@ -40,8 +43,6 @@ public class GameDetailResultAction {
 
         try {
 
-            throw new RuntimeException();
-            /*
             GameDetailResultDto dto = HttpService.convertJsonToDto(decryptedData, GameDetailResultDto.class);
 
             // Validate request parameters (Non-database calls)
@@ -60,9 +61,7 @@ public class GameDetailResultAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-             */
-
-        } /*catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
@@ -80,8 +79,6 @@ public class GameDetailResultAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } */catch (RuntimeException runtimeException) {
-            responseVo.setStatus(ResponseCodes.USER_NOT_PLAYING);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
