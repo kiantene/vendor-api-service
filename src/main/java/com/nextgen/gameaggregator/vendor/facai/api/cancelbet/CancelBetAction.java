@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -12,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,10 +85,44 @@ public class CancelBetAction {
 
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService);
 
-            //confirm cancel bet if found transaction id
-            //commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+
+        } catch (BetNotFoundException betNotFoundException) {
+            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+                commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+
+            }
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                //insufficient balance
+                commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
+                commonVo.setMainPoints(0d);
+
+            } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
+                //Operator Bet not found
+                commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+
+            } else {
+                //Other operator errors
+                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (
                 InvalidDecryptionException |
@@ -98,20 +134,16 @@ public class CancelBetAction {
                 CredentialNotFoundException |
                 DisabledGameException |
                 InvalidAgentApiCredentialException |
-                AuthenticationException |
-                InvalidOperatorResponseException notExistException
-        ) {
+                AuthenticationException otherException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
-        } catch (
-                RecordNotFoundException |
-                BetRefundIdempotentViolationException successException
-        ) {
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints((double) 0);
+
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
-        }finally {
+            httpService.logError(httpRequestLog, exception);
+
+        } finally {
             httpService.end(httpRequestLog, commonVo);
+
         }
 
         return commonVo;
