@@ -40,6 +40,11 @@ public class CancelBetDto implements RollbackData {
     @Size(min = 1, max = 50)
     private String token;
 
+    @Positive
+    @NotNull
+    @Range(min = 0, max = 2147483647)
+    private BigInteger wagersTime;
+
     @Override
     public String getRollbackId() {
         return String.valueOf(this.round);
@@ -47,6 +52,14 @@ public class CancelBetDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return null;
+        return getTimestamp();
+    }
+
+    private Long getTimestamp() {
+        long timestamp = this.getWagersTime().longValueExact();
+        if (String.valueOf(Math.abs(timestamp)).length() > 10) {
+            return timestamp;
+        }
+        return timestamp * 1000;
     }
 }

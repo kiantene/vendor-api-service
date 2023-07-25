@@ -77,7 +77,7 @@ public class RollbackAction {
 
         } catch (JsonProcessingException| InvalidAgentApiCredentialException|
             InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException| BetNotFoundException|
-            DisabledGameException| AuthenticationException| RecordNotFoundException| CouchbaseDataIntegrityException invalidException) {
+            DisabledGameException| AuthenticationException| RecordNotFoundException invalidException) {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         } catch (Exception exception) { // any other exception encountered

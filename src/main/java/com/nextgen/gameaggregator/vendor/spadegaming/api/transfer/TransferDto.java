@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import org.hibernate.validator.constraints.Range;
@@ -14,8 +15,10 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
+@Slf4j
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TransferDto implements BetResultData, RollbackData {
     @NotBlank
@@ -76,6 +79,9 @@ public class TransferDto implements BetResultData, RollbackData {
     @Size(max = 50)
     private String gameFeature;
 
+    @NotNull
+    private String transferTime;
+
     public String getAcctId() {
         return this.acctId.toLowerCase();
     }
@@ -122,17 +128,17 @@ public class TransferDto implements BetResultData, RollbackData {
 
     @Override
     public Long getVendorBetTime() {
-        return getTimestamp();
+        return convertTimestampToUnix(getTransferTime());
     }
 
     @Override
     public Long getResultTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
@@ -153,10 +159,16 @@ public class TransferDto implements BetResultData, RollbackData {
         return BetStatus.SETTLED;
     }
 
-    public Long getTimestamp() {
-        Instant instant = Instant.now();
-        long epochMilli = instant.toEpochMilli();
-        return epochMilli;
+    public Long convertTimestampToUnix(String transferTime) {
+       try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = dateFormat.parse(transferTime);
+            long unixTimestamp = date.getTime() / 1000L;
+            return unixTimestamp;
+        } catch (Exception exception) {
+            log.error(transferTime, exception);
+            return null;
+        }
     }
 
     @Override
@@ -166,6 +178,6 @@ public class TransferDto implements BetResultData, RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return getTimestamp();
+        return null;
     }
 }
