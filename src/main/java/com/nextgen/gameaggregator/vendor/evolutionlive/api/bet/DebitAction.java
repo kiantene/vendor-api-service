@@ -74,12 +74,15 @@ public class DebitAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidOperatorResponseException |
+                 TransactionStillProcessingException |
                  InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_FUNDS);
             httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            idempotentSetBalance(httpRequestLog, responseVo);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -114,5 +117,18 @@ public class DebitAction {
 
         // 2. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUserId());
+    }
+
+    private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
+        try {
+            DebitDto debitDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), DebitDto.class);
+            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession));
+            responseVo.setUuid(debitDto.getUuid());
+        } catch (InvalidOperatorResponseException e) {
+            responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+        } catch (Exception e) {
+            responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+        }
     }
 }

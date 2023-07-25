@@ -78,6 +78,7 @@ public class CreditAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidOperatorResponseException |
+                 TransactionStillProcessingException |
                  InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -87,6 +88,8 @@ public class CreditAction {
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.BET_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            idempotentSetBalance(httpRequestLog, responseVo);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -118,5 +121,18 @@ public class CreditAction {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), creditDto.getUserId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(creditDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), creditDto.getCurrency(), CurrencyNotSupportedException::new);
+    }
+
+    private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
+        try {
+            CreditDto creditDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CreditDto.class);
+            GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession));
+            responseVo.setUuid(creditDto.getUuid());
+        } catch (InvalidOperatorResponseException e) {
+            responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+        } catch (Exception e) {
+            responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+        }
     }
 }
