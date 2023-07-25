@@ -5,10 +5,19 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 @Slf4j
 @Data
 public class VendorService extends BaseVendorService {
 
+    public static Long convertToTimestamp(String dateTimeString) {
+        // Parse the date-time string to an Instant
+        Instant instant = Instant.parse(dateTimeString);
+
+        // Convert to milliseconds since the epoch
+        return instant.toEpochMilli();
+    }
 
 }

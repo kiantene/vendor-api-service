@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -11,7 +14,7 @@ import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DebitTransactionsDto {
+public class DebitTransactionsDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -171,4 +174,73 @@ public class DebitTransactionsDto {
     @Size(min = 1, max = 14)
     private String redeemcode; // optional
 
+    @Override
+    public String getExternalTransactionId() {
+        return null;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return null;
+    }
+
+    @Override
+    public String getRoundId() {
+        return this.roundid;
+    }
+
+    @Override
+    public String getGameId() {
+        return this.gamecode;
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return this.amt;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return this.turnover;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return VendorService.convertToTimestamp(this.timestamp);
+    }
+
+    @Override
+    public Long getResultTime() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return null;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return null;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return null;
+    }
 }
