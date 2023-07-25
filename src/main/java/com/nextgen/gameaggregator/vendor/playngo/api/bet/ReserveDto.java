@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -15,7 +16,6 @@ import java.math.BigDecimal;
 @JacksonXmlRootElement(localName = "reserve")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ReserveDto extends CommonDto implements BetResultData {
-
     @NotBlank
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
@@ -50,10 +50,8 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @NotBlank
     @JacksonXmlProperty(localName = "channel")
     private String channel;
-    @NotBlank
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
-    @NotBlank
     @JacksonXmlProperty(localName = "actualValue")
     private String actualValue;
 
@@ -99,7 +97,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return VendorService.getTimestamp();
     }
 
     @Override
@@ -114,7 +112,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override

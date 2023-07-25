@@ -9,7 +9,8 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonVo implements HttpResponse {
-
+    @JacksonXmlProperty(localName = "real")
+    private String real;
     @JacksonXmlProperty(localName = "statusCode")
     private String statusCode;
     @JacksonXmlProperty(localName = "statusMessage")

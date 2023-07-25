@@ -45,7 +45,6 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     private String totalLoss;
     @JacksonXmlProperty(localName = "totalGain")
     private String totalGain;
-    @NotBlank
     @JacksonXmlProperty(localName = "numRounds")
     private String numRounds;
     @NotBlank
@@ -60,16 +59,12 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @NotBlank
     @JacksonXmlProperty(localName = "roundId")
     private String roundId;
-    @NotBlank
     @JacksonXmlProperty(localName = "jackpotGain")
     private String jackpotGain;
-    @NotBlank
     @JacksonXmlProperty(localName = "jackpotLoss")
     private String jackpotLoss;
-    @NotBlank
     @JacksonXmlProperty(localName = "jackpotGainSeed")
     private String jackpotGainSeed;
-    @NotBlank
     @JacksonXmlProperty(localName = "jackpotGainId")
     private String jackpotGainId;
     @JacksonXmlProperty(localName = "freegameExternalId")
@@ -77,25 +72,17 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @NotBlank
     @JacksonXmlProperty(localName = "turnover")
     private String turnover;
-    @NotBlank
     @JacksonXmlProperty(localName = "freegameFinished")
     private String freeGameFinished;
-    @NotBlank
     @JacksonXmlProperty(localName = "freegameGain")
     private String freeGameGain;
-    @NotBlank
     @JacksonXmlProperty(localName = "freegameLoss")
     private String freeGameLoss;
-    @NotBlank
-    @JacksonXmlProperty(localName = "externalGameSessionId")
-    private String externalGameSessionId;
-    @NotBlank
     @JacksonXmlProperty(localName = "gameMode")
     private String gameMode;
     @NotBlank
     @JacksonXmlProperty(localName = "channel")
     private String channel;
-    @NotBlank
     @JacksonXmlProperty(localName = "freegameTotalGain")
     private String freeGameTotalGain;
 
@@ -156,7 +143,11 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return null;
+        // Check condition to know this bet have jackpot win or not
+        if (this.jackpotGain != null) {
+            return new BigDecimal(this.jackpotGain);
+        }
+        return BigDecimal.ZERO;
     }
 
     @Override
@@ -171,7 +162,8 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         // Check condition to know this free spin is finished or not
-        if (this.freeGameFinished != null && this.freeGameFinished != "1") {
+        if (this.freeGameExternalId != null && this.freeGameFinished != null
+                && this.freeGameFinished != "1") {
             return BetStatus.UNSETTLED;
         }
         return BetStatus.SETTLED;

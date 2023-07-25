@@ -27,8 +27,6 @@ public class AuthVo extends CommonVo {
     private String language;
     @JacksonXmlProperty(localName = "affiliateId")
     private String affiliateId;
-    @JacksonXmlProperty(localName = "real")
-    private String real;
     @JacksonXmlProperty(localName = "gender")
     private String gender;
     @JacksonXmlProperty(localName = "externalGameSessionId")
