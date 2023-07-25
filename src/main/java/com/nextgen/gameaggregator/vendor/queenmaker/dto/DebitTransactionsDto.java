@@ -241,6 +241,6 @@ public class DebitTransactionsDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return null;
+        return BetStatus.UNSETTLED;
     }
 }

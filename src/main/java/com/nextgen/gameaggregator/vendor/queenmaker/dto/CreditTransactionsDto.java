@@ -185,7 +185,7 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return null;
+        return this.roundid;
     }
 
     @Override
@@ -240,6 +240,6 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return null;
+        return BetStatus.SETTLED;
     }
 }

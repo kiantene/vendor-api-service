@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.debit;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.ResponseVo;

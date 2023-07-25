@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.ResponseVo;
