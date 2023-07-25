@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -15,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -60,6 +59,7 @@ public class RefundAction {
         responseVo.setStatus(statusVo);
 
         CommonVo commonVo = new CommonVo();
+        String vendorCurrencyCode = null;
 
         try {
             // Retrieve request body in original string format
@@ -78,6 +78,7 @@ public class RefundAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(unsettledBet.getGameSessionToken());
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(refundDto, wToken, unsettledBet);
@@ -86,9 +87,38 @@ public class RefundAction {
             BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
 
             commonVo.setBalance(balance);
-            commonVo.setCurrency(gameSession.getVendorCurrencyCode());
-
+            commonVo.setCurrency(vendorCurrencyCode);
             responseVo.setData(commonVo);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            //if found the bet in settled status
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                statusVo.setCode(ResponseCodes.SERVER_ERROR);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                commonVo.setBalance(betResultIdempotentViolationException.getBalance());
+                commonVo.setCurrency(vendorCurrencyCode);
+                responseVo.setData(commonVo);
+
+            }
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            statusVo.setCode(ResponseCodes.SERVER_ERROR);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 15) {
+                //Operator Bet not found
+                statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
+            } else {
+                //Other operator errors
+                statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            }
+
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (AuthenticationException |
                  CredentialNotFoundException |
@@ -96,9 +126,6 @@ public class RefundAction {
                  InvalidVendorLineException playerNotFoundException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
-        } catch (BetNotFoundException |
-                 RecordNotFoundException transactionRecordNotException) {
-            statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
