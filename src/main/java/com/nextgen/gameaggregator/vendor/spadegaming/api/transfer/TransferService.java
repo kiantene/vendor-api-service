@@ -40,7 +40,12 @@ public class TransferService {
         String body = httpRequestLog.getRequestBody();
         String traceId = httpRequestLog.getId();
         TransferVo transferVo = new TransferVo();
-
+        String transferId = "";
+        String merchantCode = "";
+        String merchantTxId = "";
+        String acctId = "";
+        Boolean isCancel = false;
+        
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
             transferVo.setMerchantCode(dto.getMerchantCode());
@@ -52,7 +57,10 @@ public class TransferService {
                     ? gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getAcctId(), dto.getGameCode())
                     : gameSessionService.getGameSessionByVendorPlayerUsername(dto.getAcctId());
 
-            String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
+            transferId = dto.getTransferId();
+            merchantTxId = gameSession.getToken();
+            acctId = gameSession.getVendorPlayerUsername();
             this.doVerification(dto, gameSession, merchantCode);
 
             switch (dto.getType()) {
@@ -65,6 +73,7 @@ public class TransferService {
                 }
                 case Actions.CANCEL_BET -> {
                     // Cancel bet and refund action
+                    isCancel = true;
                     BigDecimal rollbackBalance = walletService.processRollback(traceId, dto, gameSession, vendorService);
                     transferVo.setBalance(rollbackBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
@@ -73,23 +82,22 @@ public class TransferService {
                 case Actions.PAYOUT -> {
                     // Payout action
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    String type = Optional.ofNullable(dto.getSpecialGame()) // Check type in SpecialGame
-                            .map(SpecialGameDto::getType) // Map with dto
-                            .orElse(null);
+                    String type = Optional.ofNullable(dto.getSpecialGame()).map(SpecialGameDto::getType).orElse(null);
                     ResultType resultType = determineResultType(type, winDataDto);
                     BigDecimal payoutBalance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     transferVo.setBalance(payoutBalance);
                     transferVo.setMsg(ResponseCode.SUCCESS.description);
                     transferVo.setResponseCode(ResponseCode.SUCCESS);
                 }
-                case Actions.BONUS -> transferVo.setResponseCode(ResponseCode.SUCCESS);
                 default -> transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             }
-            transferVo.setTransferId(dto.getTransferId());
-            transferVo.setMerchantCode(dto.getMerchantCode());
-            transferVo.setMerchantTxId(gameSession.getToken());
-            transferVo.setAcctId(gameSession.getVendorPlayerUsername());
+
+            transferVo.setTransferId(transferId);
+            transferVo.setMerchantCode(merchantCode);
+            transferVo.setMerchantTxId(merchantTxId);
+            transferVo.setAcctId(acctId);
             transferVo.setSerialNo(traceId);
+
         } catch (AuthenticationException e) {
             // account not found 
             transferVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
@@ -109,7 +117,7 @@ public class TransferService {
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
         } catch (BetNotFoundException | RecordNotFoundException e) {
             // record ID not found
-            transferVo.setResponseCode(ResponseCode.RECORD_ID_NOT_FOUND);
+            transferVo.setResponseCode(isCancel ? ResponseCode.RELATED_ID_NOT_FOUND : ResponseCode.RECORD_ID_NOT_FOUND);
         } catch (InvalidRequestException | InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException | GameNotSupportedException |
                  BetRefundIdempotentViolationException e) {
@@ -118,10 +126,15 @@ public class TransferService {
         } catch (JsonProcessingException e) {
             // invalid format
             transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
-
         } catch (BetResultIdempotentViolationException e) {
-            // TODO: add handling logic
-
+            transferVo.setBalance(e.getBalance());
+            transferVo.setMsg(ResponseCode.SUCCESS.description);
+            transferVo.setResponseCode(ResponseCode.SUCCESS);
+            transferVo.setTransferId(transferId);
+            transferVo.setMerchantCode(merchantCode);
+            transferVo.setMerchantTxId(merchantTxId);
+            transferVo.setAcctId(acctId);
+            transferVo.setSerialNo(traceId);
         } catch (Exception exception) {
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
             httpService.logError(httpRequestLog, exception);
