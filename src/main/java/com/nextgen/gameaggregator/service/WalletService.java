@@ -339,12 +339,10 @@ public class WalletService {
                 //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
                 EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
                         gameSession.getCurrencyCode(), gameSession.getGameCode());
+                endRoundSettledBet.setInternalTransactionId(traceId);
 
                 kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
             }
-
-            //no matter match or not, will perform delete unsettled bet data with same round Id
-            unsettledBetService.delete(betRecord);
         }
     }
 
