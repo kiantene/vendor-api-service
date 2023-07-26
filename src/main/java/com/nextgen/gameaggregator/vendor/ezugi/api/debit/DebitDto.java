@@ -40,6 +40,9 @@ public class DebitDto extends CommonDto implements BetResultData {
     private Double debitAmount;
     @NotNull
     private Integer betTypeID;
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String currency;
 
     @Override
     public String getExternalTransactionId() {

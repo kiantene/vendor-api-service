@@ -43,6 +43,9 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     private Integer returnReason;
     @NotNull
     private Integer betTypeID;
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String currency;
     private String gameDataString;
     private GameDataStringDto gameDataStringDto;
 
@@ -63,7 +66,9 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     }
 
     @Override
-    public BigDecimal getBetAmount() { return BigDecimal.ZERO; }
+    public BigDecimal getBetAmount() {
+        return BigDecimal.ZERO;
+    }
 
     @Override
     public BigDecimal getWinAmount() {

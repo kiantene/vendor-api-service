@@ -63,15 +63,17 @@ public class DebitAction {
         String traceId = httpRequestLog.getId();
 
         DebitVo debitVo = new DebitVo();
+        DebitDto debitDto = new DebitDto();
+        GameSession gameSession = null;
         try {
             String body = httpRequestLog.getRequestBody();
-            DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
+            debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
 
             // Get GameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.verifyToken(debitDto.getToken());
+            gameSession = gameSessionService.verifyToken(debitDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, httpRequestLog, request);
@@ -88,15 +90,8 @@ public class DebitAction {
                     break;
             }
             // Construct Vo
-            debitVo.setToken(debitDto.getToken());
-            debitVo.setOperatorId(debitDto.getOperatorId());
-            debitVo.setUid(gameSession.getVendorPlayerUsername());
-            debitVo.setRoundId(debitDto.getVendorRoundId());
-            debitVo.setTransactionId(debitDto.getTransactionId());
-            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            debitVo.setCurrency(gameSession.getVendorCurrencyCode());
             debitVo.setErrorCode(ResponseCodes.OK);
-            debitVo.setTimestamp(System.currentTimeMillis());
+            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
         } catch (AuthenticationException e) {
             debitVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -161,6 +156,16 @@ public class DebitAction {
             if (debitVo.getErrorDescription() == null) {
                 debitVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(debitVo.getErrorCode()));
             }
+            debitVo.setToken(debitDto.getToken());
+            debitVo.setOperatorId(debitDto.getOperatorId());
+            debitVo.setUid(debitDto.getUid());
+            debitVo.setRoundId(debitDto.getVendorRoundId());
+            debitVo.setTransactionId(debitDto.getTransactionId());
+            if (debitVo.getBalance() == null) {
+                debitVo.setBalance(vendorService.getCurrentBalance(traceId, gameSession).setScale(2, RoundingMode.DOWN).doubleValue());
+            }
+            debitVo.setCurrency(debitDto.getCurrency());
+            debitVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, debitVo);
         }
         return debitVo;

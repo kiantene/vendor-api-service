@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.ezugi.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
@@ -27,6 +29,8 @@ public class VendorService extends BaseVendorService {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private VendorGameCodeService vendorGameCodeService;
+    @Autowired
+    private WalletService walletService;
 
     public static void verifyHash(String secretKey, String data, String hashKey) throws InvalidKeyException, NoSuchAlgorithmException, InvalidSignatureException {
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
@@ -77,5 +81,14 @@ public class VendorService extends BaseVendorService {
         if (!vendorGameCode.getBetGameCode().equals(gameId)) {
             throw new GameNotSupportedException();
         }
+    }
+
+    public BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+        BigDecimal balance = BigDecimal.ZERO;
+        try {
+            balance = walletService.getBalance(traceId, gameSession);
+        } catch (Exception exception) {
+        }
+        return balance;
     }
 }

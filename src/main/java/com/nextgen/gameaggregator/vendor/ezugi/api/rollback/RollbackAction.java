@@ -47,15 +47,17 @@ public class RollbackAction {
         String traceId = httpRequestLog.getId();
 
         RollbackVo rollbackVo = new RollbackVo();
+        RollbackDto rollbackDto = new RollbackDto();
+        GameSession gameSession = null;
         try {
             String body = httpRequestLog.getRequestBody();
-            RollbackDto rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
+            rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
             // Validate request parameters (Non-database calls)
             this.doValidation(rollbackDto);
 
             // Get GameSession by player name and vendor game id
-            GameSession gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+            gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession, httpRequestLog, request);
@@ -64,15 +66,8 @@ public class RollbackAction {
             BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
 
             // Construct Vo
-            rollbackVo.setToken(rollbackDto.getToken());
-            rollbackVo.setOperatorId(rollbackDto.getOperatorId());
-            rollbackVo.setUid(gameSession.getVendorPlayerUsername());
-            rollbackVo.setRoundId(rollbackDto.getRoundId());
-            rollbackVo.setTransactionId(rollbackDto.getTransactionId());
-            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
-            rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setErrorCode(ResponseCodes.OK);
-            rollbackVo.setTimestamp(System.currentTimeMillis());
+            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
         } catch (AuthenticationException e) {
             rollbackVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -91,12 +86,15 @@ public class RollbackAction {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid Amount");
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidPlayerException e) {
+            rollbackVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException | IOException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
         } catch (DisabledGameException | DisabledAgentPlayerException | CurrencyNotSupportedException |
-                 RecordNotFoundException | InvalidPlayerException | InvalidAgentApiCredentialException |
+                 RecordNotFoundException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | DisabledVendorLineException | InvalidKeyException |
                  NoSuchAlgorithmException | InvalidOperatorResponseException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
@@ -108,6 +106,16 @@ public class RollbackAction {
             if (rollbackVo.getErrorDescription() == null) {
                 rollbackVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION_ROLLBACK.get(rollbackVo.getErrorCode()));
             }
+            rollbackVo.setToken(rollbackDto.getToken());
+            rollbackVo.setOperatorId(rollbackDto.getOperatorId());
+            rollbackVo.setUid(rollbackDto.getUid());
+            rollbackVo.setRoundId(rollbackDto.getRoundId());
+            rollbackVo.setTransactionId(rollbackDto.getTransactionId());
+            if (rollbackVo.getBalance() == null) {
+                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, gameSession).setScale(2, RoundingMode.DOWN).doubleValue());
+            }
+            rollbackVo.setCurrency(rollbackDto.getCurrency());
+            rollbackVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, rollbackVo);
         }
         return rollbackVo;

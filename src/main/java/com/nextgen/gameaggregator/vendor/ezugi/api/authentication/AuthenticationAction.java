@@ -52,9 +52,11 @@ public class AuthenticationAction {
 
         // Construct Vo
         AuthenticationVo authenticationVo = new AuthenticationVo();
+        AuthenticationDto authenticationDto = new AuthenticationDto();
+        BigDecimal balance = BigDecimal.ZERO;
         try {
             String body = httpRequestLog.getRequestBody();
-            AuthenticationDto authenticationDto = HttpService.convertJsonToDto(body, AuthenticationDto.class);
+            authenticationDto = HttpService.convertJsonToDto(body, AuthenticationDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(authenticationDto);
@@ -66,19 +68,16 @@ public class AuthenticationAction {
             this.doVerification(gameSession, httpRequestLog, request, authenticationDto);
 
             // Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession);
 
             // Regenerate token for session token (launch token only can be use once time)
             String newToken = UUID.randomUUID().toString();
             GameSession newGameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
 
             authenticationVo.setToken(newGameSession.getToken());
-            authenticationVo.setOperatorId(authenticationDto.getOperatorId());
             authenticationVo.setUid(newGameSession.getVendorPlayerUsername());
-            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             authenticationVo.setCurrency(newGameSession.getVendorCurrencyCode());
             authenticationVo.setErrorCode(ResponseCodes.OK);
-            authenticationVo.setTimestamp(System.currentTimeMillis());
         } catch (AuthenticationException e) {
             authenticationVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -108,6 +107,9 @@ public class AuthenticationAction {
             if (authenticationVo.getErrorDescription() == null) {
                 authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
             }
+            authenticationVo.setOperatorId(authenticationDto.getOperatorId());
+            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            authenticationVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, authenticationVo);
         }
         return authenticationVo;
