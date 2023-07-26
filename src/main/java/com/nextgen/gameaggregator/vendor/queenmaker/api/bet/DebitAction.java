@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
-import com.nextgen.gameaggregator.vendor.queenmaker.dto.DebitTransactionsDto;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;

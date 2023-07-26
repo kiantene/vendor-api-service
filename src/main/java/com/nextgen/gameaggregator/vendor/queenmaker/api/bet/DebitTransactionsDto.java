@@ -1,9 +1,10 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.dto;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.queenmaker.dto.JpcontribsDto;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
