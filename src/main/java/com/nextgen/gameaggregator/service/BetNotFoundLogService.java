@@ -34,13 +34,9 @@ public class BetNotFoundLogService {
     }
 
     @Cacheable(value = "BetNotFound", key = "{#externalTransactionId, #vendorPlayerId}", cacheManager = "cacheManager")
-    public BetNotFoundLog getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+    public BetNotFoundLog getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId){
 
         BetNotFoundLog betNotFoundLog = rawBetNotFoundLogRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
-
-        if (betNotFoundLog == null) { // No matching bet record for the given round Id
-            throw new BetNotFoundException("Cannot find vendor player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
-        }
 
         return betNotFoundLog;
     }
