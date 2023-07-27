@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.vendor.ezugi.service;
 
+import com.nextgen.gameaggregator.entity.BetNotFoundLog;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.entity.VendorGameCode;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.UnsettledBetService;
-import com.nextgen.gameaggregator.service.VendorGameCodeService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.ezugi.api.rollback.RollbackDto;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +30,8 @@ public class VendorService extends BaseVendorService {
     private VendorGameCodeService vendorGameCodeService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private BetNotFoundLogService betNotFoundLogService;
 
     public static void verifyHash(String secretKey, String data, String hashKey) throws InvalidKeyException, NoSuchAlgorithmException, InvalidSignatureException {
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
@@ -64,7 +65,12 @@ public class VendorService extends BaseVendorService {
         Long vendorPlayerId = gameSession.getVendorPlayerId();
         String externalTransactionId = rollbackDto.getTransactionId();
         UnsettledBet unsettledBet = null;
-        unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
+        try {
+            unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
+        } catch (BetNotFoundException betNotFoundException) {
+            betNotFoundLogService.save(vendorPlayerId, rollbackDto.getRollbackId(), BetStatus.REFUNDED);
+            throw new BetNotFoundException();
+        }
         if (unsettledBet != null && (unsettledBet.getBetAmount().doubleValue() != rollbackDto.getRollbackAmount())) {
             throw new InvalidFormatException();
         }
@@ -90,5 +96,13 @@ public class VendorService extends BaseVendorService {
         } catch (Exception exception) {
         }
         return balance;
+    }
+
+    public void verifyDebitAfterRollback(Long vendorPlayerId, String externalTransactionId) throws DuplicateExternalTransactionIdException {
+        BetNotFoundLog betNotFoundLog = betNotFoundLogService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        // if have data mean have call rollback before
+        if (betNotFoundLog != null) {
+            throw new DuplicateExternalTransactionIdException();
+        }
     }
 }

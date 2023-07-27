@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.ezugi.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
+import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import lombok.Data;
 
 @Data
@@ -15,6 +16,6 @@ public class CommonVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return false;
+        return !errorCode.equals(ResponseCodes.OK);
     }
 }

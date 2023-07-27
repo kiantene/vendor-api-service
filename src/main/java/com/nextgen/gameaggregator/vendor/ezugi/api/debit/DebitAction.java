@@ -142,6 +142,10 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Unknown Game ID");
             httpService.logError(httpRequestLog, e);
+        } catch (DuplicateExternalTransactionIdException e) {
+            debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            debitVo.setErrorDescription("Debit after rollback");
+            httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException | DisabledGameException |
                  MergedBetDataIntegrityException | DisabledAgentPlayerException |
                  InvalidAgentApiCredentialException |
@@ -177,7 +181,7 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, DuplicateExternalTransactionIdException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
@@ -198,5 +202,8 @@ public class DebitAction {
 
         // Verify valid bet type id
         VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());
+
+        // Verify debit after rollback or not
+        vendorService.verifyDebitAfterRollback(gameSession.getVendorPlayerId(), debitDto.getExternalTransactionId());
     }
 }
