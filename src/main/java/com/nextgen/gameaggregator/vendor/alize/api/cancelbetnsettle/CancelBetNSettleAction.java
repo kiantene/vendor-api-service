@@ -85,9 +85,6 @@ public class CancelBetNSettleAction {
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (CouchbaseDataIntegrityException couchbaseDataIntegrityException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
-
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
 

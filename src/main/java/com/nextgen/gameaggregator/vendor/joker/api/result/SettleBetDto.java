@@ -24,7 +24,7 @@ public class SettleBetDto implements BetResultData {
     private String hash;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String id;
 
     @NotNull
@@ -45,7 +45,7 @@ public class SettleBetDto implements BetResultData {
     private String gamecode;
 
     @NotBlank
-    @Pattern(regexp = "^[a-zA-Z0-9_:-]+$")
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     private String roundid;
 
     @NotBlank
@@ -56,16 +56,14 @@ public class SettleBetDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String type;
 
-    private String betid;
-
     @Override
     public String getExternalTransactionId() {
-        return this.betid;
+        return this.username + "_" + this.id;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.betid;
+        return this.username + "_" + this.id;
     }
 
     @Override

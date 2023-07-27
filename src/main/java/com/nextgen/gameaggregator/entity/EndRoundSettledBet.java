@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -14,6 +15,8 @@ public class EndRoundSettledBet extends BetInformation {
     private String currencyCode;
     private String gameCode;
     private Integer gaResultType;
+    private Long endRoundProcessTime;
+    private Integer processEndRoundCounter;
 
     public EndRoundSettledBet(SettledBet settledBet, String agentPlayerUsername, String currencyCode, String gameCode) {
 
@@ -26,6 +29,8 @@ public class EndRoundSettledBet extends BetInformation {
         this.currencyCode = currencyCode;
         this.gameCode = gameCode;
         this.gaResultType = settledBet.getResultType();
+        this.endRoundProcessTime = System.currentTimeMillis();
+        this.processEndRoundCounter = 0;
     }
 
 }

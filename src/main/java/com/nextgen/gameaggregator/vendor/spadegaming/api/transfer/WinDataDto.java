@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import org.hibernate.validator.constraints.Range;
@@ -14,8 +15,10 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Data
+@Slf4j
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WinDataDto implements BetResultData {
@@ -76,6 +79,9 @@ public class WinDataDto implements BetResultData {
 
     @Size(max = 50)
     private String gameFeature;
+
+    @NotNull
+    private String transferTime;
     
     private String betId;
     private BigDecimal vendorWinLoss;
@@ -92,7 +98,12 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.referenceId;
+        if (getSpecialGame() != null) {
+            // Use transfer id if free spin
+            return (getSpecialGame().getType().equals("Free")) ? transferId : referenceId;
+        } else {
+            return referenceId;
+        }
     }
 
     @Override
@@ -107,8 +118,12 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        // Bet amount is zero when free spin
-        return (getSpecialGame() != null) ? BigDecimal.ZERO : null;
+        if (getSpecialGame() != null) {
+            // Bet amount is zero when free spin
+            return (getSpecialGame().getType().equals("Free")) ? BigDecimal.ZERO : null;
+        } else {
+            return null;
+        }
     }
 
     @Override
@@ -128,17 +143,17 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return getTimestamp();
+        return null;
     }
 
     @Override
     public Long getResultTime() {
-        return getTimestamp();
+        return convertTimestampToUnix(getTransferTime());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return getTimestamp();
+        return convertTimestampToUnix(getTransferTime());
     }
 
     @Override
@@ -148,7 +163,11 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        if (getSpecialGame() != null) {
+            return (getSpecialGame().getType().equals("Free")) ? 1 : 0;
+        } else {
+            return 0;
+        }
     }
 
     /**
@@ -159,9 +178,15 @@ public class WinDataDto implements BetResultData {
         return BetStatus.SETTLED;
     }
 
-    public Long getTimestamp() {
-        Instant instant = Instant.now();
-        long epochMilli = instant.toEpochMilli();
-        return epochMilli;
+    public Long convertTimestampToUnix(String transferTime) {
+       try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = dateFormat.parse(transferTime);
+            long unixTimestamp = date.getTime() / 1000L;
+            return unixTimestamp;
+        } catch (Exception exception) {
+            log.error(transferTime, exception);
+            return null;
+        }
     }
 }
