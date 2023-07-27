@@ -50,13 +50,13 @@ public class BetAction {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
-            vendorCurrencyCode = dto.getGameId();
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // 2. Retrieve and verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
