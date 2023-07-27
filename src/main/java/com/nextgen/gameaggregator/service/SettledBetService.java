@@ -36,7 +36,7 @@ public class SettledBetService {
         }
 
         if (settledBet.getRawData() == null) {
-            settledBet.setRawData(DigestUtils.md5Hex(rawData));
+            if(rawData == null)settledBet.setRawData("");
         }
 
         settledBet.setProcessingStatus(0);

@@ -53,7 +53,8 @@ public class VendorService extends BaseVendorService {
                 if(kv[0].equals("amount")){
                     //fix amount into 2 decimal
                     BigDecimal amount = new BigDecimal(kv[1]);
-                    kv[1] = Double.toString(amount.setScale(2, RoundingMode.DOWN).doubleValue());
+                    amount = amount.setScale(2, RoundingMode.DOWN);
+                    kv[1] = amount.toString();
                 }
                 queryParameterMap.put(kv[0], kv[1]);
             }
