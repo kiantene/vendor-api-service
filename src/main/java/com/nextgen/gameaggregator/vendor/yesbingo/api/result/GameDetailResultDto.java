@@ -81,6 +81,7 @@ public class GameDetailResultDto implements BetResultData {
 
     // Net win amount
     @NotNull
+    @Digits(integer = 10, fraction = 4)
     public BigDecimal netWin;
 
     // Participated in Mystery Prizes

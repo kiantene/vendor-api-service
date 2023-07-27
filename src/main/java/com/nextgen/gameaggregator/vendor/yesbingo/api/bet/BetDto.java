@@ -91,10 +91,14 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public String getVendorBetId() { return this.betId; }
+    public String getVendorBetId() {
+        return this.betId;
+    }
 
     @Override
-    public String getRoundId() { return this.roundId; }
+    public String getRoundId() {
+        return this.roundId;
+    }
 
     @Override
     public String getGameId() {
@@ -102,7 +106,9 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getBetAmount() { return this.bet.negate(); }
+    public BigDecimal getBetAmount() {
+        return this.bet.negate();
+    }
 
     @Override
     public BigDecimal getWinAmount() {
@@ -110,7 +116,9 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() { return getBetAmount().negate(); }
+    public BigDecimal getWinLoss() {
+        return getBetAmount().negate();
+    }
 
     @Override
     public BigDecimal getEffectiveTurnover() {

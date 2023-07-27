@@ -64,7 +64,9 @@ public class BetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+        } catch (InvalidAgentApiCredentialException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
@@ -93,15 +95,20 @@ public class BetAction {
 
     private void doValidation(BetDto dto) throws InvalidRequestException, DateTimeParseException {
 
+        if (dto.getGameDate() == null) {
+            // purposely set a wrong data to throw DateTimeParseException
+            throw new DateTimeParseException("Date string is null", "", 0);
+        }
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
         formatter.parse(dto.getGameDate());
 
         // General validation
         ValidationUtils.validateRequest(dto);
 
-        if(dto.getGType() == GameTypes.SLOT && dto.getJackpotContribute() == null) {
+        if (dto.getGType() == GameTypes.SLOT && dto.getJackpotContribute() == null) {
             throw new InvalidRequestException();
-        } else if(dto.getGType() == GameTypes.BINGO && dto.getPlaySeq() == null) {
+        } else if (dto.getGType() == GameTypes.BINGO && dto.getPlaySeq() == null) {
             throw new InvalidRequestException();
         }
     }
@@ -130,7 +137,7 @@ public class BetAction {
     }
 
     private void setRoundIdAndBetIdByGameType(BetDto dto) {
-        switch(dto.getGType()) {
+        switch (dto.getGType()) {
             case GameTypes.SLOT -> {
                 dto.setRoundId(dto.getGameSeqNo());
                 dto.setBetId(dto.getTransferId().toString());

@@ -55,7 +55,9 @@ public class BalanceAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+        } catch (InvalidAgentApiCredentialException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException e) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);

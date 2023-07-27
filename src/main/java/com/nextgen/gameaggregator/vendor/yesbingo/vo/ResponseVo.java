@@ -20,7 +20,7 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return false;
+        return this.status == ResponseCodes.SUCCEED;
     }
 
     public void setStatus(String responseCode) {
@@ -31,6 +31,7 @@ public class ResponseVo implements HttpResponse {
             this.errText = ResponseCodes.RESPONSE_DESCRIPTION.get(this.status);
         }
     }
+
     public void setStatus(String responseCode, String errorMsg) {
         this.status = responseCode;
         this.errText = errorMsg;

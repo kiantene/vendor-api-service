@@ -77,6 +77,7 @@ public class GameResultDto implements BetResultData {
 
     // Net win amount
     @NotNull
+    @Digits(integer = 10, fraction = 4)
     public BigDecimal netWin;
 
     @NotNull
@@ -126,10 +127,14 @@ public class GameResultDto implements BetResultData {
     }
 
     @Override
-    public String getVendorBetId() { return this.betId; }
+    public String getVendorBetId() {
+        return this.betId;
+    }
 
     @Override
-    public String getRoundId() { return this.roundId; }
+    public String getRoundId() {
+        return this.roundId;
+    }
 
     @Override
     public String getGameId() {
@@ -137,7 +142,9 @@ public class GameResultDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getBetAmount() { return BigDecimal.ZERO; }
+    public BigDecimal getBetAmount() {
+        return BigDecimal.ZERO;
+    }
 
     @Override
     public BigDecimal getWinAmount() {
@@ -145,10 +152,14 @@ public class GameResultDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() { return null; }
+    public BigDecimal getWinLoss() {
+        return null;
+    }
 
     @Override
-    public BigDecimal getEffectiveTurnover() { return BigDecimal.ZERO; }
+    public BigDecimal getEffectiveTurnover() {
+        return BigDecimal.ZERO;
+    }
 
     @Override
     public Long getVendorBetTime() {

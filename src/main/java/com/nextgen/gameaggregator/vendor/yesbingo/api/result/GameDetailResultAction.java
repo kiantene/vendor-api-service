@@ -90,6 +90,11 @@ public class GameDetailResultAction {
 
     private void doValidation(GameDetailResultDto dto) throws InvalidRequestException, DateTimeParseException {
 
+        if (dto.getGameDate() == null || dto.getReportDate() == null || dto.getLastModifyTime() == null) {
+            // purposely set a wrong data to throw DateTimeParseException
+            throw new DateTimeParseException("Date string is null", "", 0);
+        }
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
         formatter.parse(dto.getGameDate());
         formatter.parse(dto.getReportDate());

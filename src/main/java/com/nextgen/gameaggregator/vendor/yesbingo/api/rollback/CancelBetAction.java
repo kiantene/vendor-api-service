@@ -57,7 +57,8 @@ public class CancelBetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException |
+                 InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);

@@ -66,7 +66,9 @@ public class GameResultAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (InvalidAgentApiCredentialException | AuthenticationException | InvalidPlayerException |
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+        } catch (InvalidAgentApiCredentialException | InvalidPlayerException |
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
@@ -81,7 +83,7 @@ public class GameResultAction {
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 6001-The system is busy (vendor proceeds to cancel the bet)
             responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
-        } catch(BetNotFoundException betNotFoundException) {
+        } catch (BetNotFoundException betNotFoundException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.DATA_NOT_EXIST));
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
@@ -97,6 +99,11 @@ public class GameResultAction {
 
     private void doValidation(GameResultDto dto) throws InvalidRequestException, DateTimeParseException {
 
+        if (dto.getGameDate() == null || dto.getReportDate() == null || dto.getLastModifyTime() == null) {
+            // purposely set a wrong data to throw DateTimeParseException
+            throw new DateTimeParseException("Date string is null", "", 0);
+        }
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
         formatter.parse(dto.getGameDate());
         formatter.parse(dto.getReportDate());
@@ -105,12 +112,12 @@ public class GameResultAction {
         // General validation
         ValidationUtils.validateRequest(dto);
 
-        if(dto.getGType() == GameTypes.SLOT &&
+        if (dto.getGType() == GameTypes.SLOT &&
                 dto.getJackpotWin() == null &&
                 dto.getJackpotContribute() == null
         ) {
             throw new InvalidRequestException();
-        } else if(dto.getGType() == GameTypes.BINGO &&
+        } else if (dto.getGType() == GameTypes.BINGO &&
                 dto.getPlaySeq() == null &&
                 dto.getRound() == null
         ) {
@@ -142,7 +149,7 @@ public class GameResultAction {
     }
 
     private void setRoundIdAndBetIdByGameType(GameResultDto dto) {
-        switch(dto.getGType()) {
+        switch (dto.getGType()) {
             case GameTypes.SLOT -> {
                 dto.setRoundId(dto.getGameSeqNo());
                 dto.setBetId(dto.getTransferId().toString());
