@@ -77,7 +77,7 @@ public class GameResultDto implements BetResultData {
 
     // Net win amount
     @NotNull
-    @Digits(integer = 10, fraction = 4)
+    @Digits(integer = 10, fraction = 3)
     public BigDecimal netWin;
 
     @NotNull
