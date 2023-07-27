@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.action;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -110,8 +110,10 @@ public class GeneralAction {
                 }
             }
 
-        } catch (InvalidFormatException | InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException invalidRequestException) {
             responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
+        } catch (InvalidFormatException invalidFormatException) {
+            responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
