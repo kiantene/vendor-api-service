@@ -74,7 +74,7 @@ public class RollbackAction {
         } catch (BetNotFoundException e) {
             rollbackVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (BetRefundIdempotentViolationException e) {
+        } catch (BetRefundIdempotentViolationException | BetResultIdempotentViolationException e) {
             rollbackVo.setErrorCode(ResponseCodes.OK);
             rollbackVo.setErrorDescription("Transaction already processed");
             httpService.logError(httpRequestLog, e);
@@ -112,7 +112,7 @@ public class RollbackAction {
             rollbackVo.setRoundId(rollbackDto.getRoundId());
             rollbackVo.setTransactionId(rollbackDto.getTransactionId());
             if (rollbackVo.getBalance() == null) {
-                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, gameSession).setScale(2, RoundingMode.DOWN).doubleValue());
+                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken()).setScale(2, RoundingMode.DOWN).doubleValue());
             }
             rollbackVo.setCurrency(rollbackDto.getCurrency());
             rollbackVo.setTimestamp(System.currentTimeMillis());

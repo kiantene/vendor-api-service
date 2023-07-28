@@ -24,7 +24,7 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String transactionId;
-    @NotBlank
+    @NotBlank(message = "Transaction not found")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String debitTransactionId;
     @NotBlank

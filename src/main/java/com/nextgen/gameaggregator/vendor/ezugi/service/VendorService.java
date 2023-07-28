@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.entity.BetNotFoundLog;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.entity.VendorGameCode;
-import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -32,6 +31,8 @@ public class VendorService extends BaseVendorService {
     private WalletService walletService;
     @Autowired
     private BetNotFoundLogService betNotFoundLogService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     public static void verifyHash(String secretKey, String data, String hashKey) throws InvalidKeyException, NoSuchAlgorithmException, InvalidSignatureException {
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
@@ -68,8 +69,6 @@ public class VendorService extends BaseVendorService {
         try {
             unsettledBet = unsettledBetService.findBetsForRollback(vendorPlayerId, externalTransactionId);
         } catch (BetNotFoundException betNotFoundException) {
-            betNotFoundLogService.save(vendorPlayerId, rollbackDto.getRollbackId(), BetStatus.REFUNDED);
-            throw new BetNotFoundException();
         }
         if (unsettledBet != null && (unsettledBet.getBetAmount().doubleValue() != rollbackDto.getRollbackAmount())) {
             throw new InvalidFormatException();
@@ -89,9 +88,10 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+    public BigDecimal getCurrentBalance(String traceId, String token) {
         BigDecimal balance = BigDecimal.ZERO;
         try {
+            GameSession gameSession = gameSessionService.verifyToken(token);
             balance = walletService.getBalance(traceId, gameSession);
         } catch (Exception exception) {
         }

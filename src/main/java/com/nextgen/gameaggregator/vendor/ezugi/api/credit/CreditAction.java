@@ -28,6 +28,7 @@ import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -113,10 +114,25 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
             creditVo.setErrorDescription("Debit transaction ID not found");
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException | IOException e) {
+        } catch (InvalidRequestException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid parameter");
+            if (e.getValidation() != null) {
+                String violation = e.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse("Invalid parameter"); // if there's no value, set it to the default invalid request parameter
+                if (violation.equals("Transaction not found")) {
+                    creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
+                }
+                creditVo.setErrorDescription(violation);
+            }
             httpService.logError(httpRequestLog, e);
+        } catch (IOException e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Invalid parameter");
         } catch (InvalidSignatureException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid Hash");
@@ -146,7 +162,7 @@ public class CreditAction extends CommonDto {
             creditVo.setRoundId(creditDto.getVendorRoundId());
             creditVo.setTransactionId(creditDto.getTransactionId());
             if (creditVo.getBalance() == null) {
-                creditVo.setBalance(vendorService.getCurrentBalance(traceId, gameSession).setScale(2, RoundingMode.DOWN).doubleValue());
+                creditVo.setBalance(vendorService.getCurrentBalance(traceId, creditDto.getToken()).setScale(2, RoundingMode.DOWN).doubleValue());
             }
             creditVo.setCurrency(creditDto.getCurrency());
             creditVo.setTimestamp(System.currentTimeMillis());

@@ -166,7 +166,11 @@ public class DebitAction {
             debitVo.setRoundId(debitDto.getVendorRoundId());
             debitVo.setTransactionId(debitDto.getTransactionId());
             if (debitVo.getBalance() == null) {
-                debitVo.setBalance(vendorService.getCurrentBalance(traceId, gameSession).setScale(2, RoundingMode.DOWN).doubleValue());
+                if (debitVo.getErrorCode().equals(ResponseCodes.USER_NOT_FOUND)) {
+                    debitVo.setBalance(Double.valueOf(0));
+                } else {
+                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken()).setScale(2, RoundingMode.DOWN).doubleValue());
+                }
             }
             debitVo.setCurrency(debitDto.getCurrency());
             debitVo.setTimestamp(System.currentTimeMillis());
