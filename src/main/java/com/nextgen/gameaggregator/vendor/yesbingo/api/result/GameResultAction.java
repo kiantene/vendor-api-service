@@ -153,7 +153,7 @@ public class GameResultAction {
             }
             case GameTypes.BINGO -> {
                 dto.setRoundId(dto.getPlaySeq().toString());
-                dto.setBetId(dto.getGameSeqNo().toString());
+                dto.setBetId(dto.getGameSeqNo());
             }
         }
     }
