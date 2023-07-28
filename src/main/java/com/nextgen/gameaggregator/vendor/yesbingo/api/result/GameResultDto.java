@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -52,11 +53,15 @@ public class GameResultDto implements BetResultData {
     public Integer mType;
 
     // Game Date ISO 8601
-    @NotBlank
+    @NotBlank(message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
+    @Size(max = 24, message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
+    @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}Z$", message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
     public String gameDate;
 
     // Report Date ISO 8601
-    @NotBlank
+    @NotBlank(message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
+    @Size(max = 24, message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
+    @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}Z$", message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
     public String reportDate;
 
     // Vendor's defined currency
@@ -94,9 +99,10 @@ public class GameResultDto implements BetResultData {
     public String isJoinMysteryJackpot;
 
     // Last modify time ISO 8601
-    @NotBlank
+    @NotBlank(message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
+    @Size(max = 24, message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
+    @Pattern(regexp = "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])T([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d\\.\\d{3}Z$", message = ResponseCodes.WRONG_DATE_SECOND_FORMAT)
     public String lastModifyTime;
-
 
     // ----- For Slot game (gType = 1) -----------
     // Jackpot Contribution

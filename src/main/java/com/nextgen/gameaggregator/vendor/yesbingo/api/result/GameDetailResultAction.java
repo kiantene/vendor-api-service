@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.yesbingo.constant.Formats;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yesbingo.vo.ResponseVo;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -49,7 +47,7 @@ public class GameDetailResultAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getUid(), dto.getGameId());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
 
             // Verify data
             this.doVerification(dto, gameSession);
@@ -65,10 +63,20 @@ public class GameDetailResultAction {
                  CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
-        } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
+        } catch (InvalidRequestException invalidRequestException) {
+            if (invalidRequestException.getValidation() != null) {
+                String violation = invalidRequestException.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse(ResponseCodes.PARAMETER_INPUT_ERROR); // if there's no value, set it to the default invalid request parameter
+                responseVo.setStatus(violation);
+            } else {
+                responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+            }
+        } catch (JsonProcessingException jsonProcessingException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
-        } catch (DateTimeParseException dateTimeParseException) {
-            responseVo.setStatus(ResponseCodes.WRONG_DATE_SECOND_FORMAT);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (InsufficientBalanceException insufficientBalanceException) {
@@ -88,18 +96,7 @@ public class GameDetailResultAction {
 
     }
 
-    private void doValidation(GameDetailResultDto dto) throws InvalidRequestException, DateTimeParseException {
-
-        if (dto.getGameDate() == null || dto.getReportDate() == null || dto.getLastModifyTime() == null) {
-            // purposely set a wrong data to throw DateTimeParseException
-            throw new DateTimeParseException("Date string is null", "", 0);
-        }
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT);
-        formatter.parse(dto.getGameDate());
-        formatter.parse(dto.getReportDate());
-        formatter.parse(dto.getLastModifyTime());
-
+    private void doValidation(GameDetailResultDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
