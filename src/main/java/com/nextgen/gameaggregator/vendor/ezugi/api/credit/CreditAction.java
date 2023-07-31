@@ -107,8 +107,13 @@ public class CreditAction extends CommonDto {
             creditVo.setErrorDescription("Transaction already processed");
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
-            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
-            creditVo.setErrorDescription("Debit Transaction already processed");
+            if (e.getBetInformation().getExternalTransactionId().equals(creditDto.getExternalTransactionId())) {
+                creditVo.setErrorCode(ResponseCodes.OK);
+                creditVo.setErrorDescription("Transaction already processed");
+            } else {
+                creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+                creditVo.setErrorDescription("Debit Transaction already processed");
+            }
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
             creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
