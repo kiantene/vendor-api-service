@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.queenmaker.dto.UsersDto;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.UsersVo;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.WalletsVo;
@@ -69,7 +69,7 @@ public class BalanceAction {
             List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
             for (UsersDto user : balanceDto.getUsers()) {
                 String traceId = httpRequestLog.getId();
-                CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId));
+                CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
                 futures.add(future);
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -82,13 +82,13 @@ public class BalanceAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             String message = Optional.ofNullable(invalidRequestException.getValidation().values().iterator().next()).orElse("");
-            String errdesc = ResponseCode.SYSTEM_ERROR.errdesc.replace(Formats.REPLACE_STRING, " : " + message);
-            balanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR, errdesc);
+            String errdesc = ResponseCodes.SYSTEM_ERROR.errdesc.replace(Formats.REPLACE_STRING, " : " + message);
+            balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, errdesc);
         } catch (JsonProcessingException jsonProcessingException) {
-            balanceVo.setResponseCode(ResponseCode.INCORRECT_FORMAT);
+            balanceVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
         } catch (Exception exception) {
 
-            balanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+            balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, balanceVo);
@@ -134,7 +134,7 @@ public class BalanceAction {
         ValidationUtils.isEquals(usersDto.getCur(), gameSession.getVendorCurrencyCode(), InvalidCurrencyException::new);
     }
 
-    private UsersVo processData(UsersDto usersDto, String clientId, String clientSecret, String traceId) {
+    private UsersVo processData(UsersDto usersDto, String clientId, String clientSecret, String traceId, HttpRequestLog httpRequestLog) {
         UsersVo usersVo = new UsersVo();
 
         try {
@@ -164,9 +164,9 @@ public class BalanceAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             String message = Optional.ofNullable(invalidRequestException.getValidation().values().iterator().next()).orElse("");
-            String errdesc = ResponseCode.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, message);
+            String errdesc = ResponseCodes.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, message);
             usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCode.INCORRECT_FORMAT, errdesc);
+            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, errdesc);
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
@@ -177,19 +177,22 @@ public class BalanceAction {
                 exception) {
 
             usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCode.OPERATION_FAILED_DETERMINISTICALLY);
+            usersVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
         } catch (InvalidPlayerException | AuthenticationException e) {
-            String errdesc = ResponseCode.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, "invalid player");
+            String errdesc = ResponseCodes.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, "invalid player");
             usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCode.INVALID_ARGUMENTS, errdesc);
+            usersVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, errdesc);
         } catch (InvalidCurrencyException invalidCurrencyException) {
 
             usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCode.CURRENCY_MISMATCH);
-        } catch (Exception exception) {
-
+            usersVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
+        } catch (Exception e) {
             usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+            usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, e);
+
+        } finally {
+            httpService.end(httpRequestLog, usersVo);
         }
 
         return usersVo;

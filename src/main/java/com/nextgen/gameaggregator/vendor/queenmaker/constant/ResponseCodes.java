@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.queenmaker.constant;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public enum ResponseCode {
+public enum ResponseCodes {
     INVALID_OR_EXPIRED_TOKEN(10, "Invalid or expired token"),
     INVALID_TOKEN_SCOPE(19, "Invalid token scope"),
     USER_BLOCKED(20, "User blocked"),

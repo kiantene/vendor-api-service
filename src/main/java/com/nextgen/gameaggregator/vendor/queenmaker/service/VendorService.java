@@ -20,4 +20,8 @@ public class VendorService extends BaseVendorService {
         return instant.toEpochMilli();
     }
 
+    public static String[] splitGameCode(String vendorGameCode) {
+        return vendorGameCode.split("_", 2);
+    }
+
 }

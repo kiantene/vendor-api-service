@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -9,6 +10,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +51,9 @@ public class DebitAction {
             // Retrieve request body in original string format and convert into dto
             String clientId = request.getHeader(Formats.HEADER_CLIENT_ID);
             String clientSecret = request.getHeader(Formats.HEADER_CLIENT_SECRET);
+            Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
+            Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
+
             String body = httpRequestLog.getRequestBody();
             DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
@@ -58,7 +64,7 @@ public class DebitAction {
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
             for (DebitTransactionsDto transaction : debitDto.getTransactions()) {
                 String traceId = httpRequestLog.getId();
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body));
+                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body, httpRequestLog));
                 futures.add(future);
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -68,15 +74,21 @@ public class DebitAction {
                     .collect(Collectors.toList());
             debitVo.setTransactions(transactionsList);
 
-        } catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
+        } catch (InvalidRequestException e) {
+            debitVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
+
+        } catch (JsonProcessingException e) {
+            debitVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
+
+        } catch (Exception e) {
+            debitVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, debitVo);
         }
 
         return debitVo;
-
     }
 
     private <T> void doValidation(T dto) throws InvalidRequestException {
@@ -101,16 +113,17 @@ public class DebitAction {
         validationService.validateEligibleBet(gameSession, debitTransactionsDto.getUserid());
 
         // 2. Validate Credentials
-        Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
-        Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
+
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
         String CLIENT_SECRET = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
+        Optional.ofNullable(CLIENT_ID).orElseThrow(CredentialNotFoundException::new);
+        Optional.ofNullable(CLIENT_SECRET).orElseThrow(CredentialNotFoundException::new);
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
 
         // 3. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = gameSession.getVendorGameCode().split("_", 2);
+        String[] parts = VendorService.splitGameCode(gameSession.getVendorGameCode());
         String gpcode = parts[0];
         String gamecode = parts[1];
         ValidationUtils.isEquals(debitTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
@@ -120,7 +133,7 @@ public class DebitAction {
 
     }
 
-    private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body) {
+    private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpRequestLog httpRequestLog) {
         TransactionsVo transactionsVo = new TransactionsVo();
 
         try {
@@ -136,16 +149,53 @@ public class DebitAction {
             // 4. Process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitTransactionsDto, body);
 
-            // 5. Set UsersVo
+            // 5. Set transactionsVo
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(traceId);
             transactionsVo.setBal(betEvent.getLastBalance());
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
 
-        } catch (Exception exception) {
+        } catch (AuthenticationException e) {
+            transactionsVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
 
+        } catch (CurrencyNotSupportedException e) {
+            transactionsVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
+
+        } catch (InsufficientBalanceException e) {
+            transactionsVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUNDS);
+
+        } catch (GameNotSupportedException e) {
+            transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
+
+        } catch (InvalidRequestException e) {
+            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, e.getValidation().values().iterator().next().toString());
+
+        } catch (DisabledVendorLineException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidVendorLineException |
+                 InvalidPlayerException |
+                 InvalidAgentApiCredentialException |
+                 CredentialNotFoundException e) {
+            transactionsVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
+
+        } catch (BetResultIdempotentViolationException e) {
             transactionsVo.setTxid(traceId);
+            transactionsVo.setPtxid(traceId);
+            transactionsVo.setDup(true);
 
+        } catch (TransactionStillProcessingException e) {
+            transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Transaction Still Processing");
+
+        } catch (InvalidOperatorResponseException e) {
+            transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
+
+        } catch (Exception e) {
+            transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, e);
+
+        } finally {
+            httpService.end(httpRequestLog, transactionsVo);
         }
 
         return transactionsVo;
