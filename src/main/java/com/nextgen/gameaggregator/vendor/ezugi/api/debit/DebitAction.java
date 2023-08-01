@@ -127,7 +127,7 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setErrorDescription("Transaction already processed");
             httpService.logError(httpRequestLog, e);
-        } catch (IOException e) {
+        } catch (IOException | CurrencyNotSupportedException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
@@ -185,13 +185,16 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, DuplicateExternalTransactionIdException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, DuplicateExternalTransactionIdException, CurrencyNotSupportedException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId().toString(), InvalidRequestException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
+
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
