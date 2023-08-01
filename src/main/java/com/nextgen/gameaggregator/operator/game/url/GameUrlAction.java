@@ -67,6 +67,8 @@ public class GameUrlAction {
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
             loggingService.logProcessTime("gameUrl ｜ validationService.validateApiKey", traceId);
 
+            httpRequestLog.setAgentId(apiCredential.getAgent().getId());
+
             // 3. Validate the signature
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
             loggingService.logStart();

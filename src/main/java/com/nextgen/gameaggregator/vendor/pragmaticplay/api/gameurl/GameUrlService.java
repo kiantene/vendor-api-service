@@ -68,10 +68,10 @@ public class GameUrlService implements GameUrl {
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
         GameUrlVo responseVo = null;
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
 
         Long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(Endpoints.GAME_URL )
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -92,17 +92,18 @@ public class GameUrlService implements GameUrl {
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
-            responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
+            responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
             //2. validate vendor response
-            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            requestService.validateResponse(responseVo);
+            Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
+            RequestService.validateResponse(responseVo);
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
-            throw new InvalidVendorResponseException();
+            RequestService.failResponseLog(requestLogVo, invalidException);
+            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
 
         return responseVo;

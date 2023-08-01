@@ -54,7 +54,7 @@ public class RequestService {
             }
 
             if (!walletBalanceVo.getTraceId().equals(traceId)) {
-                validation.put("currency", "trace Id not match");
+                validation.put("trace Id", "trace Id not match");
             }
         }
 
@@ -113,9 +113,8 @@ public class RequestService {
     //endregion
 
     public Consumer<HttpHeaders> setHeaders(MultiValueMap<String, String> headersAsMap){
-        LinkedMultiValueMap mvmap = new LinkedMultiValueMap<>(headersAsMap);
-        Consumer<HttpHeaders> consumer = it -> it.addAll(mvmap);
-        return consumer;
+        LinkedMultiValueMap<String, String> mvmap = new LinkedMultiValueMap<>(headersAsMap);
+        return it -> it.addAll(mvmap);
     }
 
     public void validateVendorHttpStatusResponse(ResponseEntity responseEntity) throws HttpResponseStatusCodeException {
@@ -142,12 +141,11 @@ public class RequestService {
                 }
             });
 
-            System.err.println(validation.toString());
+            System.err.println(validation);
             if (!validation.isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidResponseException(validation.toString());
             }
         }
-
     }
 
     public static void failResponseLog(RequestLogVo requestLogVo, Exception exception) {
@@ -209,7 +207,6 @@ public class RequestService {
         log.info(gson.toJson(logInfo));
     }
 
-
     public RequestLogVo createRequestLogVo(String endpoint, String callbackUrl, Object requestObject,
                                            ResponseEntity responseEntity, MultiValueMap<String, String>  requestHeaders,
                                            Long startTime, Long endTime,
@@ -229,8 +226,6 @@ public class RequestService {
 
     public Boolean isTestEnvironment(String profilesActive){
         String[] environments = {"dev","qa","stg"};
-        return Arrays.stream(environments).anyMatch(profilesActive::equals);
+        return Arrays.asList(environments).contains(profilesActive);
     }
-
-
 }
