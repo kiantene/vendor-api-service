@@ -61,7 +61,7 @@ public class GameUrlService implements GameUrl {
             String token = vendorTokenService.getToken(gameSession.getVendorLineId());
             
             GameUrlVo responseVo = null;
-            MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+            MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
             headerMap.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED_VALUE);
             headerMap.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
 
@@ -87,15 +87,17 @@ public class GameUrlService implements GameUrl {
             try {
                 // 1. validate HTTP Response Code
                 requestService.validateVendorHttpStatusResponse(apiResponse);
-                responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
+                responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
                 //2. validate vendor response
-                Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
+                Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
                 RequestService.validateResponse(responseVo);
                 RequestService.successResponseLog(requestLogVo);
 
             } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
                 RequestService.failResponseLog(requestLogVo, invalidException);
+                String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+                throw new InvalidVendorResponseException(exceptionMsg);
             }
 
         return responseVo;
