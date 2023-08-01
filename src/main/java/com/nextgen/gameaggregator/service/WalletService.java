@@ -125,8 +125,16 @@ public class WalletService {
             loggingService.logStart();
             unsettledBetService.save(unsettledBet);
             loggingService.logProcessTime("processBet ｜ when invalidOperatorResponseException, unsettledBetService.save", traceId);
-            throw invalidOperatorResponseException;
-        }
+
+            if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                throw new InsufficientBalanceException();
+
+            } else {
+                throw invalidOperatorResponseException;
+
+            }
+
+        } 
 
         if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
 
