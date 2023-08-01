@@ -14,7 +14,8 @@ public enum ResponseCode {
     INVALID_REQUEST(7, "Bad parameters in the request, please check post parameters."),
     INVALID_GAME(8, "Game is not found or disabled."),
     INTERNAL_SERVER_ERROR_RETRY(100, "Internal server error. Please retry."),
-    INTERNAL_SERVER_ERROR_NO_RETRY(120, "Internal server error.");
+    INTERNAL_SERVER_ERROR_NO_RETRY(120, "Internal server error."),
+    INTERNAL_SERVER_ERROR_END_ROUND_RETRY(130, "Internal server error for End Round. Please retry.");
 
     public final Integer code;
     public final String description;
