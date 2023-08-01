@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
@@ -82,8 +83,9 @@ public class HttpService {
                             requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
                         }
 
-                        log.info("(" + requestLog.getUrl() + ") - " + requestLog);
-                        kafkaService.send(requestLog);
+                        Gson gson = new Gson();
+                        log.info(gson.toJson(requestLog));
+//                        kafkaService.send(requestLog);
 
                     } catch (Exception exception) {
                         log.error(exception.getMessage());

@@ -64,7 +64,7 @@ public class GameUrlService implements GameUrl {
         headers.add(EndPoints.HEADER_AUTHORIZATION, apiToken);
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(EndPoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -86,12 +86,13 @@ public class GameUrlService implements GameUrl {
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVendorResponseVo.class);
 
             //2. validate vendor response
-            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            requestService.validateResponse(responseVo);
-            requestService.successResponseLog(requestLogVo);
+            Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
+            RequestService.validateResponse(responseVo);
+            RequestService.successResponseLog(requestLogVo);
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
-            throw new InvalidVendorResponseException();
+            RequestService.failResponseLog(requestLogVo, invalidException);
+            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
 
         return responseVo.getData();

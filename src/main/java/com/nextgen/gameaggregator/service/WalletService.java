@@ -125,8 +125,16 @@ public class WalletService {
             loggingService.logStart();
             unsettledBetService.save(unsettledBet);
             loggingService.logProcessTime("processBet ｜ when invalidOperatorResponseException, unsettledBetService.save", traceId);
-            throw invalidOperatorResponseException;
-        }
+
+            if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                throw new InsufficientBalanceException();
+
+            } else {
+                throw invalidOperatorResponseException;
+
+            }
+
+        } 
 
         if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
 
@@ -166,7 +174,6 @@ public class WalletService {
         BetInformation walletBetResultData = null;
         UnsettledBet unsettledBet = null;
         WalletBalanceVo balanceVo = null;
-        SettledBet updateCachingSettledBet = new SettledBet();
 
         // check for idempotency in settled_bet
         loggingService.logStart();
@@ -174,15 +181,16 @@ public class WalletService {
         loggingService.logProcessTime("doSettledBetResult ｜ settledBetService.idempotentCheck", traceId);
 
         boolean retry = false;
+
         if (settledBet != null) {
             // to exclude PP endRound due to endRound mapping vendorBetId to roundId
             // IMPORTANT: refer to PP betDto and PP endRoundDto on vendorBetId mapping
-            if (resultType != ResultType.LOSE && resultType != ResultType.END) {
-                retry = true;
+            switch (resultType) {
+                case BET_WIN, BET_LOSE -> retry = true;
             }
-            updateCachingSettledBet = settledBet;
         }
 
+        SettledBet updateCachingSettledBet = settledBet;
         loggingService.logStart();
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
         loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
@@ -205,18 +213,27 @@ public class WalletService {
                 }
                 case WIN -> { // CQ9
 
+                    String internalTransactionId = traceId;
+                    if (settledBet != null) { // if not null, means vendor resends the settled bet
+                        // internal transaction id to use the previous value for operator call
+                        internalTransactionId = settledBet.getInternalTransactionId();
+                    }
+
                     unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
                     this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
 
                     //do not send aggregated settledBet as betResultDataForOperator for settled and win scenario
-                    walletBetResultData = new SettledBet(betResultData, traceId, unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId());
+                    walletBetResultData = new SettledBet(betResultData, internalTransactionId, unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId());
                     walletBetResultData.setBetAmount(BigDecimal.ZERO);
                     walletBetResultData.setBetId(settledBet.getBetId());
                     walletBetResultData.setVendorBetTime(settledBet.getVendorBetTime());
                     walletBetResultData.setWinLoss(settledBet.getWinLoss());
                     walletBetResultData.setEffectiveTurnover(settledBet.getEffectiveTurnover());
-                    updateCachingSettledBet = settledBet;
+                    walletBetResultData.setVendorId(gameSession.getVendorId());
+
+                    //when update caching settle bet, it should be using walletBetResultData, instead of settledBet data, because settledBet data is get from unsettledBet
+                    updateCachingSettledBet = new SettledBet(walletBetResultData);
 
                 }
                 case BET_WIN, BET_LOSE -> { // PGSoft
@@ -231,6 +248,7 @@ public class WalletService {
         } else {
             // resend transaction to Operator due to operator error from previous request
             walletBetResultData = settledBet;
+
         }
 
         // send bet data to Operator
@@ -256,7 +274,7 @@ public class WalletService {
             kafkaService.produceBetHistory(betHistory, settledBet);
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
-            if (resultType == ResultType.LOSE || resultType == ResultType.END) {
+            if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
                 loggingService.logStart();
                 updateCachingSettledBet = settledBetService.update(operatorStatusSuccess, balanceVo.getData().getBalance(), updateCachingSettledBet);
                 loggingService.logProcessTime("doSettledBetResult ｜ settledBetService.update", traceId);
@@ -264,8 +282,9 @@ public class WalletService {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             settledBet.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());
+
             // update operator status after receiving response from operator
-            if (resultType == ResultType.LOSE || resultType == ResultType.END) {
+            if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
                 loggingService.logStart();
                 settledBetService.update(invalidOperatorResponseException.getOperatorStatus(), BigDecimal.ZERO, updateCachingSettledBet);
                 loggingService.logProcessTime("doSettledBetResult ｜ when invalidOperatorResponseException, settledBetService.update", traceId);
