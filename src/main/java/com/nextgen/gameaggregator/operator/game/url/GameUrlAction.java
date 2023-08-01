@@ -54,6 +54,7 @@ public class GameUrlAction {
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
             httpRequestLog.setId(traceId);
+            httpRequestLog.setOperatorUsername(dto.getUsername());
 
             // 1. Validate all fields in the request object
             loggingService.logStart();
@@ -65,6 +66,8 @@ public class GameUrlAction {
             loggingService.logStart();
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
             loggingService.logProcessTime("gameUrl ｜ validationService.validateApiKey", traceId);
+
+            httpRequestLog.setAgentId(apiCredential.getAgent().getId());
 
             // 3. Validate the signature
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);

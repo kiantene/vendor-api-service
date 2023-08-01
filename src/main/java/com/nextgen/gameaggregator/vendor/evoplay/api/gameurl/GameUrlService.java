@@ -97,7 +97,6 @@ public class GameUrlService implements GameUrl {
                 .get()
                 .uri(uri)
                 .retrieve()
-                // TODO: to catch more error codes
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(EndPoints.RETRY)
@@ -123,7 +122,8 @@ public class GameUrlService implements GameUrl {
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException);
-            throw new InvalidVendorResponseException();
+            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
 
         return responseVo;

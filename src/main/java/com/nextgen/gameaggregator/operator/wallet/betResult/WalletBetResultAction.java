@@ -72,6 +72,7 @@ public class WalletBetResultAction {
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
+            httpRequestLog.setAgentId(agentId);
             httpRequestLog.setOperatorProcessStartTime(startTime);
             httpRequestLog.setOperatorData(dto.toString());
         }

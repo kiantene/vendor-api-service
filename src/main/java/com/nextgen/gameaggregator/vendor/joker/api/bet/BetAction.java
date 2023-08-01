@@ -74,7 +74,6 @@ public class BetAction {
 
         } catch (
                 InvalidAgentApiCredentialException |
-                AuthenticationException |
                 DisabledAgentPlayerException |
                 DisabledGameException |
                 CredentialNotFoundException |
@@ -82,6 +81,13 @@ public class BetAction {
                 InvalidPlayerException exception
         ) {
             commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (AuthenticationException authenticationException) {
+            commonVo.setResponseCode(ResponseCodes.INVALID_TOKEN);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            commonVo.setResponseCode(ResponseCodes.OTHER_MESSAGE);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            commonVo.setResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setBalance(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 commonVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUND);
