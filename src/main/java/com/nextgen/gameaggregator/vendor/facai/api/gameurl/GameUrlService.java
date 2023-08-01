@@ -72,7 +72,7 @@ public class GameUrlService implements GameUrl {
         //MD5 encrypt
         String md5Param = "";
         try {
-            md5Param = vendorService.md5(jsonParamString);
+            md5Param = VendorService.md5(jsonParamString);
         } catch (Exception exception) { // any other exception encountered
             throw new InvalidVendorLineException("MD5 Encrypt Failed");
         }
@@ -117,7 +117,7 @@ public class GameUrlService implements GameUrl {
 
         //post request to vendor API with JSON string
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(EndPoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_JSON_UTF8)
@@ -138,15 +138,16 @@ public class GameUrlService implements GameUrl {
             responseVo = HttpService.convertJsonToDto(String.valueOf(apiResponse.getBody()), GameUrlVo.class);
 
             //2. validate vendor response
-            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            requestService.validateResponse(responseVo);
+            Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
+            RequestService.validateResponse(responseVo);
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
                  JsonProcessingException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
-            throw new InvalidVendorResponseException();
+            RequestService.failResponseLog(requestLogVo, invalidException);
+            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
 
         return responseVo;

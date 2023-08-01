@@ -78,7 +78,7 @@ public class GameUrlService implements GameUrl {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create()
+        ResponseEntity<String> apiResponse = WebClient.create()
                 .get()
                 .uri(uri)
                 .retrieve()
@@ -101,14 +101,15 @@ public class GameUrlService implements GameUrl {
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
 
             //2. validate vendor response
-            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            requestService.validateResponse(responseVo);
+            Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
+            RequestService.validateResponse(responseVo);
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
-            throw new InvalidVendorResponseException();
+            RequestService.failResponseLog(requestLogVo, invalidException);
+            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
 
         return responseVo;

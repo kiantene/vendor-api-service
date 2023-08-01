@@ -166,7 +166,10 @@ public class KafkaConsumerService {
 
     public void doCheckExceedThresholdCounter(EndRoundSettledBet endRoundSettledBet, String newTraceId) throws ExceedThresholdCounterException {
 
-        Integer exceedThresholdCounter = 5;
+        //5 = 2.5 minutes
+        //10 = 9.17 minutes
+        //15 = 20 minutes
+        Integer exceedThresholdCounter = 15;
 
         if (endRoundSettledBet.getProcessEndRoundCounter() >= exceedThresholdCounter) {
             //if more than 5 times, throw ExceedThresholdCounterException and logged down separately
