@@ -136,11 +136,8 @@ public class WalletBetAction {
             RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
 
             Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
-            if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                throw new InsufficientBalanceException();
-            } else {
-                throw new InvalidOperatorResponseException(operatorStatus);
-            }
+            throw new InvalidOperatorResponseException(operatorStatus);
+
         } catch (Exception exception) {
             RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
