@@ -69,7 +69,7 @@ public class EndRoundAction {
             responseVo.setBonus(BigDecimal.ZERO);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setCash(betResultIdempotentViolationException.getBalance());
@@ -91,7 +91,7 @@ public class EndRoundAction {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
