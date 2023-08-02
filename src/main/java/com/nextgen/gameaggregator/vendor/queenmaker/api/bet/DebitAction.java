@@ -40,6 +40,8 @@ public class DebitAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.WALLET_DEBIT)
     public DebitVo DebitAction(HttpServletRequest request) {
@@ -54,6 +56,7 @@ public class DebitAction {
             Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
 
+            String traceId = httpRequestLog.getId();
             String body = httpRequestLog.getRequestBody();
             DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
@@ -63,7 +66,7 @@ public class DebitAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
             for (DebitTransactionsDto transaction : debitDto.getTransactions()) {
-                String traceId = httpRequestLog.getId();
+
                 CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body, httpRequestLog));
                 futures.add(future);
             }
@@ -113,7 +116,6 @@ public class DebitAction {
         validationService.validateEligibleBet(gameSession, debitTransactionsDto.getUserid());
 
         // 2. Validate Credentials
-
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
         String CLIENT_SECRET = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
         Optional.ofNullable(CLIENT_ID).orElseThrow(CredentialNotFoundException::new);
@@ -123,13 +125,12 @@ public class DebitAction {
 
         // 3. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = VendorService.splitGameCode(gameSession.getVendorGameCode());
+        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode());
         String gpcode = parts[0];
         String gamecode = parts[1];
-        ValidationUtils.isEquals(debitTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
-
-        ValidationUtils.isEquals(debitTransactionsDto.getGpcode(), gpcode, InvalidVendorLineException::new);
+        ValidationUtils.isEquals(debitTransactionsDto.getGpcode(), gpcode, GameNotSupportedException::new);
         ValidationUtils.isEquals(debitTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
+        ValidationUtils.isEquals(debitTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
     }
 
@@ -141,17 +142,18 @@ public class DebitAction {
             this.doValidation(debitTransactionsDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitTransactionsDto.getUserid(), debitTransactionsDto.getGamecode());
+            String vendorGameCode = vendorService.mergeGameCode(debitTransactionsDto.getGpcode(), debitTransactionsDto.getGamecode());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitTransactionsDto.getUserid(), vendorGameCode);
 
             // 3. Verify Credential and Currency
             this.doVerification(debitTransactionsDto, gameSession, clientId, clientSecret);
 
             // 4. Process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitTransactionsDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitTransactionsDto, body, httpRequestLog);
 
             // 5. Set transactionsVo
             transactionsVo.setTxid(traceId);
-            transactionsVo.setPtxid(traceId);
+            transactionsVo.setPtxid(debitTransactionsDto.getPtxid());
             transactionsVo.setBal(betEvent.getLastBalance());
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
 
@@ -174,10 +176,12 @@ public class DebitAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidVendorLineException |
-                 InvalidPlayerException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException e) {
             transactionsVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
+
+        } catch (InvalidPlayerException e) {
+            transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
 
         } catch (BetResultIdempotentViolationException e) {
             transactionsVo.setTxid(traceId);

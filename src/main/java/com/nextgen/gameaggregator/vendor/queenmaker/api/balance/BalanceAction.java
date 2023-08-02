@@ -36,8 +36,6 @@ public class BalanceAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
@@ -45,20 +43,21 @@ public class BalanceAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
 
     @PostMapping(path = EndPoints.WALLET_BALANCE)
     public BalanceVo BalanceAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-
         BalanceVo balanceVo = new BalanceVo();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String clientId = request.getHeader(Formats.HEADER_CLIENT_ID);
             String clientSecret = request.getHeader(Formats.HEADER_CLIENT_SECRET);
+            Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
+            Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
+
+            String traceId = httpRequestLog.getId();
             String body = httpRequestLog.getRequestBody();
             BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
@@ -68,7 +67,7 @@ public class BalanceAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
             for (UsersDto user : balanceDto.getUsers()) {
-                String traceId = httpRequestLog.getId();
+
                 CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
                 futures.add(future);
             }
@@ -80,16 +79,16 @@ public class BalanceAction {
 
             balanceVo.setUsers(usersList);
 
-        } catch (InvalidRequestException invalidRequestException) {
-            String message = Optional.ofNullable(invalidRequestException.getValidation().values().iterator().next()).orElse("");
-            String errdesc = ResponseCodes.SYSTEM_ERROR.errdesc.replace(Formats.REPLACE_STRING, " : " + message);
-            balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, errdesc);
-        } catch (JsonProcessingException jsonProcessingException) {
-            balanceVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
-        } catch (Exception exception) {
+        } catch (InvalidRequestException e) {
+            balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, e.getValidation().values().iterator().next().toString());
 
+        } catch (JsonProcessingException e) {
+            balanceVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
+
+        } catch (Exception e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, exception);
+            httpService.logError(httpRequestLog, e);
+
         } finally {
             httpService.end(httpRequestLog, balanceVo);
         }
@@ -111,7 +110,7 @@ public class BalanceAction {
             InvalidRequestException,
             CredentialNotFoundException,
             InvalidVendorLineException,
-            InvalidCurrencyException, AuthenticationException {
+            InvalidCurrencyException {
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -123,10 +122,10 @@ public class BalanceAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // 4. Validate Credentials
-        Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
-        Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
         String CLIENT_SECRET = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_SECRET);
+        Optional.ofNullable(CLIENT_ID).orElseThrow(CredentialNotFoundException::new);
+        Optional.ofNullable(CLIENT_SECRET).orElseThrow(CredentialNotFoundException::new);
         ValidationUtils.isEquals(clientId, CLIENT_ID, InvalidVendorLineException::new);
         ValidationUtils.isEquals(clientSecret, CLIENT_SECRET, InvalidVendorLineException::new);
 
@@ -159,39 +158,37 @@ public class BalanceAction {
             walletsList.add(walletVo);
 
             // 6. Set UsersVo
-            usersVo.setUserid(gameSession.getVendorPlayerUsername());
             usersVo.setWallets(walletsList);
 
-        } catch (InvalidRequestException invalidRequestException) {
-            String message = Optional.ofNullable(invalidRequestException.getValidation().values().iterator().next()).orElse("");
-            String errdesc = ResponseCodes.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, message);
-            usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, errdesc);
+        } catch (AuthenticationException e) {
+            usersVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
+
+        } catch (InvalidCurrencyException e) {
+            usersVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
+
+        } catch (InvalidRequestException e) {
+            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, e.getValidation().values().iterator().next().toString());
+
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  DisabledGameException |
-                 CredentialNotFoundException |
                  InvalidVendorLineException |
-                 InvalidOperatorResponseException |
-                 InvalidAgentApiCredentialException
-                exception) {
-
-            usersVo.setUserid(usersDto.getUserid());
+                 InvalidAgentApiCredentialException |
+                 CredentialNotFoundException e) {
             usersVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
-        } catch (InvalidPlayerException | AuthenticationException e) {
-            String errdesc = ResponseCodes.INVALID_ARGUMENTS.errdesc.replace(Formats.REPLACE_STRING, "invalid player");
-            usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, errdesc);
-        } catch (InvalidCurrencyException invalidCurrencyException) {
 
-            usersVo.setUserid(usersDto.getUserid());
-            usersVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
+        } catch (InvalidPlayerException e) {
+            usersVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
+
+        } catch (InvalidOperatorResponseException e) {
+            usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
+
         } catch (Exception e) {
-            usersVo.setUserid(usersDto.getUserid());
             usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
 
         } finally {
+            usersVo.setUserid(usersDto.getUserid());
             httpService.end(httpRequestLog, usersVo);
         }
 

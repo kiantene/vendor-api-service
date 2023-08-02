@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -41,8 +42,6 @@ public class CreditAction {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorService vendorService;
-
-
     @Autowired
     private WalletService walletService;
 
@@ -59,6 +58,7 @@ public class CreditAction {
             Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
 
+            String traceId = httpRequestLog.getId();
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
@@ -68,7 +68,7 @@ public class CreditAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
             for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
-                String traceId = httpRequestLog.getId();
+
                 CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, httpRequestLog));
                 futures.add(future);
             }
@@ -80,7 +80,14 @@ public class CreditAction {
             creditVo.setTransactions(transactionsList);
 
 
+        } catch (InvalidRequestException e) {
+            creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
+
+        } catch (JsonProcessingException e) {
+            creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
+
         } catch (Exception e) {
+            creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
 
         } finally {
@@ -95,7 +102,7 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditTransactionsDto transactionsDto, GameSession gameSession, String clientId, String clientSecret)
+    private void doVerification(CreditTransactionsDto creditTransactionsDto, GameSession gameSession, String clientId, String clientSecret)
             throws
             CredentialNotFoundException,
             InvalidVendorLineException,
@@ -112,13 +119,12 @@ public class CreditAction {
 
         // 2. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = VendorService.splitGameCode(gameSession.getVendorGameCode());
+        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode());
         String gpcode = parts[0];
         String gamecode = parts[1];
-        ValidationUtils.isEquals(transactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
-
-        ValidationUtils.isEquals(transactionsDto.getGpcode(), gpcode, InvalidVendorLineException::new);
-        ValidationUtils.isEquals(transactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
+        ValidationUtils.isEquals(creditTransactionsDto.getGpcode(), gpcode, GameNotSupportedException::new);
+        ValidationUtils.isEquals(creditTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
+        ValidationUtils.isEquals(creditTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
     }
 
@@ -130,7 +136,8 @@ public class CreditAction {
             this.doValidation(creditTransactionsDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditTransactionsDto.getUserid(), creditTransactionsDto.getGamecode());
+            String vendorGameCode = vendorService.mergeGameCode(creditTransactionsDto.getGpcode(), creditTransactionsDto.getGamecode());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditTransactionsDto.getUserid(), vendorGameCode);
 
             // 3. Verify Credential and Currency
             this.doVerification(creditTransactionsDto, gameSession, clientId, clientSecret);
@@ -141,7 +148,7 @@ public class CreditAction {
 
             // 5. Set transactionsVo
             transactionsVo.setTxid(traceId);
-            transactionsVo.setPtxid(traceId);
+            transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setBal(balance);
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
 
@@ -158,7 +165,7 @@ public class CreditAction {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
 
         } catch (InvalidRequestException e) {
-            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, e.getValidation().values().iterator().next().toString());
+            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, Optional.ofNullable(e.getValidation().values().iterator().next().toString()).orElse(""));
 
         } catch (InvalidVendorLineException |
                  CredentialNotFoundException |

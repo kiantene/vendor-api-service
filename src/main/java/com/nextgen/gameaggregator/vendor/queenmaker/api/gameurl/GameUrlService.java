@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
+import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,6 +36,8 @@ public class GameUrlService implements GameUrl {
 
     @Autowired
     RequestService requestService;
+    @Autowired
+    VendorService vendorService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -44,7 +47,7 @@ public class GameUrlService implements GameUrl {
             throws InvalidVendorLineException, InvalidFormatException {
 
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = gameSession.getVendorGameCode().split("_", 2);
+        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode());
         String gpcode = parts[0];
         String gcode = parts[1];
 

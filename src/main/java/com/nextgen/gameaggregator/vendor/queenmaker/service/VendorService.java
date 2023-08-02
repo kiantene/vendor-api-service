@@ -24,4 +24,8 @@ public class VendorService extends BaseVendorService {
         return vendorGameCode.split("_", 2);
     }
 
+    public static String mergeGameCode(String prefix, String suffix) {
+        return prefix + "_" + suffix;
+    }
+
 }

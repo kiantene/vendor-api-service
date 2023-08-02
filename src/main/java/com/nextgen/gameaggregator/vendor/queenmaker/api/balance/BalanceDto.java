@@ -13,7 +13,7 @@ public class BalanceDto {
 
     private String testmode;
 
-    @NotEmpty(message = "Empty Array")
+    @NotEmpty(message = "Empty users")
     private List<UsersDto> users;
 }
 
