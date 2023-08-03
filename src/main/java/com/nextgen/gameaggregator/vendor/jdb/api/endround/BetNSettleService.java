@@ -112,7 +112,6 @@ public class BetNSettleService {
         int mType = Integer.parseInt(parts[1]);
         ValidationUtils.isEquals(String.valueOf(mType), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorPlatformCode(), dto.getClientType(), VendorPlatformNotSupportedException::new);
     }
 
     private ResultType getResultType(BetNSettleDto dto) {
