@@ -136,7 +136,7 @@ public class WalletService {
 
             }
 
-        } 
+        }
 
         if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
 
@@ -269,6 +269,10 @@ public class WalletService {
             settledBetService.save(settledBet, rawData);
             loggingService.logProcessTime("doSettledBetResult ｜ , after walletBetResultAction.call, settledBetService.save", traceId);
 
+            // remap settleBet info before insert into kafka if needed, default will be no changes
+
+            settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
+
             // send settled bet to kafka
             BetHistory betHistory = new BetHistory(settledBet);
 
@@ -310,7 +314,7 @@ public class WalletService {
         return balanceVo;
     }
 
-    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime)
+    private SettledBet doCheckBetExistsInSettledBet(Long vendorPlayerId, String externalTransactionId, String traceId, Long vendorSettledTime, BaseVendorService vendorService)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         SettledBet settledBet = null;
@@ -327,24 +331,39 @@ public class WalletService {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
-                throw new BetResultIdempotentViolationException(settledBet);
+                if (vendorService.shouldRejectCancelRequest()) {
+                    log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                    throw new BetResultIdempotentViolationException(settledBet);
 
-            } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
-                // if normal settled bet but error processing by operator, send cancel request to operator
-                if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                    settledBet.setStatus(BetStatus.CANCELLED.code);
-                    settledBet.setInternalTransactionId(traceId);
-                }
-                // if the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
+                } else {
+                    if (!settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+                        log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+                        throw new BetResultIdempotentViolationException(settledBet);
 
-                if (vendorSettledTime != null) {
-                    // will be priority of using rollbackData vendorSettleTime if available.
-                    settledBet.setVendorSettleTime(vendorSettledTime);
+                    } else {
+                        // proceed with entire cancel flow request.
+
+                    }
                 }
-                settledBet.setOperatorStatus(operatorStatusProcessing);
-                settledBetService.save(settledBet, settledBet.getRawData());
+
+            } else {
+                // operatorStatus.equals(internalServerError)
+
             }
+
+            // if status is settled, reset internalTransactionId and send cancel request to operator
+            if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+                settledBet.setStatus(BetStatus.CANCELLED.code);
+                settledBet.setInternalTransactionId(traceId);
+            }
+            // else the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
+
+            if (vendorSettledTime != null) {
+                // will be priority of using rollbackData vendorSettleTime if available.
+                settledBet.setVendorSettleTime(vendorSettledTime);
+            }
+            settledBet.setOperatorStatus(operatorStatusProcessing);
+            settledBetService.save(settledBet, settledBet.getRawData());
 
         } catch (BetNotFoundException betNotFoundException) {
             //return settleBet = null;
@@ -579,7 +598,7 @@ public class WalletService {
         Long vendorSettledTime = rollbackData.getVendorSettledTime();
 
         try {
-            settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime);
+            settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
 
             if (settledBet == null) {
                 try {

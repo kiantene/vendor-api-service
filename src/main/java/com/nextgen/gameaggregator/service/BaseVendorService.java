@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 
 import java.math.BigDecimal;
@@ -37,5 +38,15 @@ public abstract class BaseVendorService {
         }
 
         return resultType;
+    }
+
+    public boolean shouldRejectCancelRequest() {
+        //Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
+        return true;
+    }
+
+    public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
+
+        return settledBet;
     }
 }
