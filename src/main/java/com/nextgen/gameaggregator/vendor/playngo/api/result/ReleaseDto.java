@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.playngo.api.result;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -9,7 +10,9 @@ import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @JacksonXmlRootElement(localName = "release")
@@ -85,6 +88,11 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     private String channel;
     @JacksonXmlProperty(localName = "freegameTotalGain")
     private String freeGameTotalGain;
+
+    @Nullable
+    @JacksonXmlProperty(localName = "jackpots")
+    @JacksonXmlElementWrapper(localName = "jackpots")
+    private List<JackpotDto> jackpots;
 
     @Override
     public String getExternalTransactionId() {
