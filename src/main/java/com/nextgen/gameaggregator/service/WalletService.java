@@ -295,7 +295,7 @@ public class WalletService {
         }
 
         loggingService.logStart();
-        this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession);
+        this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession, traceId);
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
 
         return balanceVo;
@@ -345,13 +345,13 @@ public class WalletService {
 
     }
 
-    private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession) {
+    private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
         if (unsettledBetList.isEmpty()) return;
 
         // multiple bets within same round
         for (UnsettledBet betRecord : unsettledBetList) {
             if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
-                String traceId = UUID.randomUUID().toString();
+                traceId = UUID.randomUUID().toString();
                 SettledBet newSettledBet = new SettledBet(betRecord, vendorService, traceId);
                 newSettledBet.setVendorSettleTime(settledBet.getVendorSettleTime());
 
@@ -361,6 +361,12 @@ public class WalletService {
                 endRoundSettledBet.setInternalTransactionId(traceId);
 
                 kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
+
+            } else {
+                loggingService.logStart();
+                unsettledBetService.delete(betRecord);
+                loggingService.logProcessTime("donNotifyEndRoundAsync ｜ unsettledBetService.delete", traceId);
+                
             }
         }
     }
