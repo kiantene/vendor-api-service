@@ -380,8 +380,13 @@ public class WalletService {
         for (UnsettledBet betRecord : unsettledBetList) {
             if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
                 traceId = UUID.randomUUID().toString();
+
+                //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
+                if(betRecord.getVendorSettleTime() == null){
+                    betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
+                }
+
                 SettledBet newSettledBet = new SettledBet(betRecord, vendorService, traceId);
-                newSettledBet.setVendorSettleTime(settledBet.getVendorSettleTime());
 
                 //AgentPlayerUsername, CurrencyCode and GameCode is used for walletBetResultAction.call when process end round result for operator
                 EndRoundSettledBet endRoundSettledBet = new EndRoundSettledBet(newSettledBet, gameSession.getAgentPlayerUsername(),
