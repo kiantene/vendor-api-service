@@ -71,7 +71,7 @@ public class BetWinDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.winAmount.subtract(this.betAmount);
     }
 
     @Override
