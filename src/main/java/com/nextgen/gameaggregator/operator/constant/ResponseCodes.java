@@ -38,6 +38,7 @@ public class ResponseCodes {
         SC_VENDOR_CURRENCY_NOT_SUPPORTED(28, "Vendor currency is not supported"),
         SC_VENDOR_LANGUAGE_NOT_SUPPORTED(29, "Vendor language is not supported"),
         SC_VENDOR_PLATFORM_NOT_SUPPORTED(30, "Vendor platform is not supported"),
+        SC_EXCEEDED_NUMBER_OF_RETRIES(31, "Exceeded number of retries."),
         ;
 
         public final Integer code;

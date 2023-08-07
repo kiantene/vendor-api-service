@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
+import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ProcessEndRoundLog;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
@@ -53,7 +54,7 @@ public class RequestService {
             }
 
             if (!walletBalanceVo.getTraceId().equals(traceId)) {
-                validation.put("currency", "trace Id not match");
+                validation.put("trace Id", "trace Id not match");
             }
         }
 
@@ -112,9 +113,8 @@ public class RequestService {
     //endregion
 
     public Consumer<HttpHeaders> setHeaders(MultiValueMap<String, String> headersAsMap){
-        LinkedMultiValueMap mvmap = new LinkedMultiValueMap<>(headersAsMap);
-        Consumer<HttpHeaders> consumer = it -> it.addAll(mvmap);
-        return consumer;
+        LinkedMultiValueMap<String, String> mvmap = new LinkedMultiValueMap<>(headersAsMap);
+        return it -> it.addAll(mvmap);
     }
 
     public void validateVendorHttpStatusResponse(ResponseEntity responseEntity) throws HttpResponseStatusCodeException {
@@ -141,12 +141,11 @@ public class RequestService {
                 }
             });
 
-            System.err.println(validation.toString());
+            System.err.println(validation);
             if (!validation.isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidResponseException(validation.toString());
             }
         }
-
     }
 
     public static void failResponseLog(RequestLogVo requestLogVo, Exception exception) {
@@ -187,25 +186,26 @@ public class RequestService {
         }
     }
 
-    public static void processEndRoundLog(ProcessEndRoundLog processEndRoundLog, Exception exception) {
+    public static void processEndRoundLog(ProcessEndRoundLog processEndRoundLog, Exception exception, EndRoundSettledBet endRoundSettledBet) {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
         logInfo.put("FunctionName: ", "processEndRoundLog");
         logInfo.put("TraceId: ", processEndRoundLog.getTraceId());
+        logInfo.put("NumOfRetries: ", endRoundSettledBet.getProcessEndRoundCounter());
+        logInfo.put("NextRetryTime: ", endRoundSettledBet.getEndRoundProcessTime());
         logInfo.put("RoundId: ", processEndRoundLog.getRoundId());
         logInfo.put("vendorBetId: ", processEndRoundLog.getVendorBetId());
-        logInfo.put("RawBody: ", processEndRoundLog.getRawBody());
+//        logInfo.put("RawBody: ", processEndRoundLog.getRawBody());
         logInfo.put("StartTime: ", processEndRoundLog.getStartTime());
         logInfo.put("EndTime: ", processEndRoundLog.getEndTime());
         logInfo.put("TimeTaken: ", processEndRoundLog.getEndTime() - processEndRoundLog.getStartTime());
         logInfo.put("OperatorProcessStartTime: ", processEndRoundLog.getOperatorProcessStartTime());
         logInfo.put("OperatorProcessEndTime: ", processEndRoundLog.getOperatorProcessEndTime());
         logInfo.put("OperatorProcessTimeTaken: ", processEndRoundLog.getOperatorProcessEndTime() - processEndRoundLog.getOperatorProcessStartTime());
-        logInfo.put("Status: ", processEndRoundLog.getStatus());
-        logInfo.put("ErrorMessage: ", (exception == null)?"SUCCESS":exception.getMessage());
+        logInfo.put("OperatorStatus: ", endRoundSettledBet.getOperatorStatus());
+        logInfo.put("ErrorMessage: ", (exception == null)?"SUCCESS":HttpService.getStackTrace(exception));
         log.info(gson.toJson(logInfo));
     }
-
 
     public RequestLogVo createRequestLogVo(String endpoint, String callbackUrl, Object requestObject,
                                            ResponseEntity responseEntity, MultiValueMap<String, String>  requestHeaders,
@@ -226,8 +226,6 @@ public class RequestService {
 
     public Boolean isTestEnvironment(String profilesActive){
         String[] environments = {"dev","qa","stg"};
-        return Arrays.stream(environments).anyMatch(profilesActive::equals);
+        return Arrays.asList(environments).contains(profilesActive);
     }
-
-
 }

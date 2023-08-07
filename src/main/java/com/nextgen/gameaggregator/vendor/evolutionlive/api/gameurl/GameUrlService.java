@@ -120,7 +120,8 @@ public class GameUrlService implements GameUrl {
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException);
-            throw new InvalidVendorResponseException();
+            String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
         return responseVo;
     }

@@ -82,10 +82,27 @@ public class UnsettledBetService {
         rawUnsettledBetRepository.delete(entity);
     }
 
-    public UnsettledBet getByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    public void deleteWithoutClearingCache(UnsettledBet entity) {
+        rawUnsettledBetRepository.delete(entity);
+    }
+
+    public UnsettledBet findBetsForRollback(Long vendorPlayerId, String externalTransactionId)
+            throws BetNotFoundException, TransactionStillProcessingException {
+
         UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
         if (unsettledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("Cannot find Vendor Player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
+        } else {
+            Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+            Integer operatorStatus = unsettledBet.getOperatorStatus();
+            // throw idempotent exception if status is processing or success
+            if (operatorStatus.equals(operatorStatusProcessing)) {
+                log.warn("getByVendorPlayerIdAndExternalTransactionId.processing: externalTransactionId (" + unsettledBet.getExternalTransactionId() + ") vendorPlayerId (" + unsettledBet.getVendorPlayerId() + ")");
+                throw new TransactionStillProcessingException();
+            }
+
+            // for OperatorStatus = (ERROR | SUCCESS), retry is required
         }
 
         return unsettledBet;
