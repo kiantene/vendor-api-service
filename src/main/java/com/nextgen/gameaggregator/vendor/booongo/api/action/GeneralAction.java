@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.booongo.api.bet.TransactionService;
+import com.nextgen.gameaggregator.vendor.booongo.api.freespin.FreeSpinService;
 import com.nextgen.gameaggregator.vendor.booongo.api.login.LoginService;
 import com.nextgen.gameaggregator.vendor.booongo.api.refund.RollbackService;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Actions;
@@ -40,6 +41,9 @@ public class GeneralAction {
 
     @Autowired
     private RollbackService rollbackService;
+
+    @Autowired
+    private FreeSpinService freeSpinService;
 
 
     @PostMapping(path = EndPoints.ACTION)
@@ -86,7 +90,14 @@ public class GeneralAction {
                 vo = balanceService.balance(httpRequestLog, traceId);
                 break;
             case Actions.TRANSACTION:
-                vo = transactionService.transaction(httpRequestLog, traceId);
+
+                // check the condition to decide which bet process should be taken
+                if(actionDto.getArgs().getBonus() != null){
+                    vo = freeSpinService.freespin(httpRequestLog, traceId);
+                }else{
+                    vo = transactionService.transaction(httpRequestLog, traceId);
+                }
+
                 break;
             case Actions.ROLLBACK:
                 vo = rollbackService.rollback(httpRequestLog, traceId);
