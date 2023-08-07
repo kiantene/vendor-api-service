@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -45,6 +46,8 @@ public class EndWagerAction {
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -55,12 +58,18 @@ public class EndWagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
+        String brandUid = "";
 
         try {
 
+            // Get request body
+            String body = httpRequestLog.getRequestBody();
+
             // Convert original request body into dto
             EndWagerDto dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
+
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -71,6 +80,10 @@ public class EndWagerAction {
 
             // Verify data
             this.doVerification(dto, gameSession);
+
+            // Verify if bet has been settled before
+            // This is to fulfill vendor's test cases
+//            this.verifySettledBet(dto, gameSession);
 
             // if transaction amount has more than 0 means WIN else LOSE
             ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
@@ -111,15 +124,15 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
@@ -172,6 +185,20 @@ public class EndWagerAction {
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+    }
+
+    private void verifySettledBet(EndWagerDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
+        try {
+            SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), dto.getRoundId());
+
+            if (settledBet != null) {
+                // if has settled bet, return success
+                throw new BetResultIdempotentViolationException();
+            }
+
+        } catch (BetNotFoundException e) {
+            // does nothing
+        }
     }
 
     private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {

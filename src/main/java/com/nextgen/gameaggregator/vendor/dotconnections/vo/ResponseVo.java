@@ -11,7 +11,7 @@ import javax.annotation.Nullable;
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ResponseVo implements HttpResponse {
-    private Integer code;
+    private String code;
     private String msg;
 
     @Nullable
@@ -22,7 +22,7 @@ public class ResponseVo implements HttpResponse {
         return this.code == ResponseCodes.SUCCESS;
     }
 
-    public void setCode(Integer responseCode) {
+    public void setCode(String responseCode) {
         this.code = responseCode;
         this.msg = ResponseCodes.RESPONSE_DESCRIPTION.get(this.code);
     }
