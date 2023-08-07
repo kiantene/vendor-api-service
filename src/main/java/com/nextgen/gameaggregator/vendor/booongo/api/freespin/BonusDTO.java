@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.freespin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -10,20 +11,22 @@ import java.math.BigInteger;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BonusDTO {
 
-    @NotNull
+    @NotBlank
     private String source;
 
-    @NotNull
+    @NotBlank
     private String campaign;
 
+    @NotBlank
     private String ext_bonus_id;
 
+    @NotNull
     private BigInteger bonus_id;
 
-    @NotNull
+    @NotBlank
     private String bonus_type;
 
-    @NotNull
+    @NotBlank
     private String event;
 
     private String start_date;
