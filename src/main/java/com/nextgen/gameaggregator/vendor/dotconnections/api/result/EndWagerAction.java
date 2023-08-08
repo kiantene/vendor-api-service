@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -82,8 +81,8 @@ public class EndWagerAction {
             this.doVerification(dto, gameSession);
 
             // Verify if bet has been settled before
-            // This is to fulfill vendor's test cases
-//            this.verifySettledBet(dto, gameSession);
+            // This is to pass vendor's test case: 5043: Bet record duplicate.
+            // this.verifySettledBet(dto, gameSession);
 
             // if transaction amount has more than 0 means WIN else LOSE
             ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
@@ -100,6 +99,7 @@ public class EndWagerAction {
             UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
 
             // Use unsettled bet's wagerId as vendor bet id and external transaction id
+            // dto.setExternalTransactionId(unsettledBet.getVendorBetId());
             dto.setWagerId(unsettledBet.getVendorBetId());
 
             // Process bet
@@ -187,19 +187,21 @@ public class EndWagerAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
+    /*
     private void verifySettledBet(EndWagerDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
         try {
-            SettledBet settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), dto.getRoundId());
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
             if (settledBet != null) {
-                // if has settled bet, return success
                 throw new BetResultIdempotentViolationException();
             }
-
-        } catch (BetNotFoundException e) {
-            // does nothing
+        } catch (BetNotFoundException betNotFoundException) {
+            // continue
         }
+
     }
+
+     */
 
     private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {
         UnsettledBet unsettledBet = null;

@@ -42,12 +42,12 @@ public class PromoPayoutDto implements BetResultData {
 
     @NotNull
     @Size(max = 36)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     public String promotionId;
 
     @NotBlank
     @Size(max = 128)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     public String transId;
 
     @NotBlank
