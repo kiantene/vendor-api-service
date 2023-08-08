@@ -85,7 +85,7 @@ public class EndWagerAction {
             // this.verifySettledBet(dto, gameSession);
 
             // if transaction amount has more than 0 means WIN else LOSE
-            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
+            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
 
             // Default end wager as unsettled
             dto.setBetStatus(BetStatus.UNSETTLED);
@@ -93,6 +93,7 @@ public class EndWagerAction {
             // Determine if bet is settled
             if (dto.isEndround.equals("true")) {
                 dto.setBetStatus(BetStatus.SETTLED);
+                resultType = ResultType.END;
             }
 
             // Get unsettled bet
@@ -142,8 +143,13 @@ public class EndWagerAction {
                  InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+                responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+            } else {
+                responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);

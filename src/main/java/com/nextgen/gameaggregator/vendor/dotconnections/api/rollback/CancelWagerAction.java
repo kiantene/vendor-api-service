@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.WagerTypes;
 import com.nextgen.gameaggregator.vendor.dotconnections.exception.InvalidProviderException;
 import com.nextgen.gameaggregator.vendor.dotconnections.service.VendorService;
 import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseDataVo;
@@ -77,9 +78,9 @@ public class CancelWagerAction {
              wagerType = 1: return/increase the amount to the player wallet (Mainly use rollback for this case)
              wagerType = 2: deduct/reduce the amount to the player's wallet. (This is to cancel settled bet but we don't do that)
              */
-//            if (dto.getWagerType() == WagerTypes.CANCEL_END_WAGER) {
-//                throw new BetNotFoundException();
-//            }
+            if (dto.getWagerType() == WagerTypes.CANCEL_END_WAGER) {
+                throw new BetNotFoundException();
+            }
 
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
 
