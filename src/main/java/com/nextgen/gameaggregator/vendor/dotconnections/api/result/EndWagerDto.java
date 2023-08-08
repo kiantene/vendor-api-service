@@ -95,7 +95,7 @@ public class EndWagerDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.amount;
+        return null;
     }
 
     @Override

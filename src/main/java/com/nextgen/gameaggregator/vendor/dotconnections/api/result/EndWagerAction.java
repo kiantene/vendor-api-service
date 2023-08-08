@@ -93,7 +93,10 @@ public class EndWagerAction {
             // Determine if bet is settled
             if (dto.isEndround.equals("true")) {
                 dto.setBetStatus(BetStatus.SETTLED);
-                resultType = ResultType.END;
+                if (resultType.code == ResultType.LOSE.code) {
+                    // if result type is LOSE and bet status is SETTLED, change to END
+                    resultType = ResultType.END;
+                }
             }
 
             // Get unsettled bet
