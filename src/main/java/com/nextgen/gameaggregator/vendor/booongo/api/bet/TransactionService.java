@@ -110,26 +110,13 @@ public class TransactionService {
                  GameNotSupportedException |
                  JsonProcessingException |
                  AuthenticationException |
+                 TransactionStillProcessingException |
                  CredentialNotFoundException e) {
-            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-
-            balance = getCurrentBalance(traceId, gameSession);
-
-            // Retrieve current wallet balance
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            vo.setError(errorVo);
-        }catch(TransactionStillProcessingException e){
-            // return http status as 503 to let vendor keep on resend request data
             errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(errorVo);
         }catch(Exception exception){
             httpService.logError(httpRequestLog, exception);
-            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
-
-            balance = getCurrentBalance(traceId, gameSession);
-
-            // Retrieve current wallet balance
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+            errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(errorVo);
         }
         finally {
