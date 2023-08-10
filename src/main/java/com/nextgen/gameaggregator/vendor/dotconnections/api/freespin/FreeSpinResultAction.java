@@ -65,6 +65,9 @@ public class FreeSpinResultAction {
 
             FreeSpinResultDto dto = HttpService.convertJsonToDto(body, FreeSpinResultDto.class);
 
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
+
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 

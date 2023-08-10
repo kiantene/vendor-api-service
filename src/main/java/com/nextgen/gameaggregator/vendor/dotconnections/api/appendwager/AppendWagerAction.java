@@ -62,6 +62,9 @@ public class AppendWagerAction {
              */
             AppendWagerDto dto = HttpService.convertJsonToDto(body, AppendWagerDto.class);
 
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
+
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 

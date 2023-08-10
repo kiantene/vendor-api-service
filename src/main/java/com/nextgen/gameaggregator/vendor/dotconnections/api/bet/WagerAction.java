@@ -60,6 +60,9 @@ public class WagerAction {
             // Convert original request body into dto
             WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
 
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
+
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
