@@ -106,6 +106,7 @@ public class GameResultDto implements BetResultData {
 
     // ----- For Slot game (gType = 1) -----------
     // Jackpot Contribution
+
     @PositiveOrZero
     public BigDecimal jackpotWin;
 

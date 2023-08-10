@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.yesbingo.api.action;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 @Data
@@ -13,7 +13,7 @@ public class ActionDto {
     // an id to identify which end point is triggered
     @NotNull
     @Digits(fraction = 0, integer = 32)
-    @Positive
+    @PositiveOrZero
     public Integer action;
 
 }

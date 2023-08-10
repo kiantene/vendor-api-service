@@ -105,14 +105,10 @@ public class GeneralAction {
                     responseVo = cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData);
                 }
                 // If the header does not match any of the expected values, return an error response
-                default -> {
-                    throw new InvalidRequestException();
-                }
+                default -> responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
             }
 
-        } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
-        } catch (InvalidFormatException invalidFormatException) {
+        } catch (InvalidFormatException | InvalidRequestException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);

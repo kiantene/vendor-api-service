@@ -28,11 +28,7 @@ public class BetAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    private ValidationService validationService;
 
     public ResponseVo bet(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
 
@@ -64,8 +60,7 @@ public class BetAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
-        } catch (InvalidAgentApiCredentialException | InvalidPlayerException |
-                 CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
+        } catch (InvalidAgentApiCredentialException | InvalidPlayerException | DisabledAgentPlayerException | DisabledGameException |
                  DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
         } catch (InvalidRequestException invalidRequestException) {
@@ -80,7 +75,7 @@ public class BetAction {
             } else {
                 responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
             }
-        } catch (JsonProcessingException jsonProcessingException) {
+        } catch (JsonProcessingException | CurrencyNotSupportedException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
@@ -111,26 +106,15 @@ public class BetAction {
     }
 
     private void doVerification(BetDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
+            throws AuthenticationException, InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
 
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, dto.getUid());
 
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // Verify if is valid player
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
-
-        // Verify currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify Game id
+        // Verify vendor gameCode, currency and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
     private void setRoundIdAndBetIdByGameType(BetDto dto) {

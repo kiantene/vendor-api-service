@@ -57,10 +57,10 @@ public class CancelBetAction {
             responseVo.setBalance(balance);
             responseVo.setStatus(ResponseCodes.SUCCEED);
 
-        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | AuthenticationException |
-                 InvalidPlayerException |
-                 CurrencyNotSupportedException | DisabledAgentPlayerException | DisabledGameException |
-                 DisabledVendorLineException noAuthorizedAccessException) {
+        } catch (AuthenticationException authenticationException) {
+            responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | InvalidPlayerException |
+                 DisabledAgentPlayerException | DisabledGameException | DisabledVendorLineException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
@@ -86,7 +86,7 @@ public class CancelBetAction {
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            throws InvalidPlayerException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
