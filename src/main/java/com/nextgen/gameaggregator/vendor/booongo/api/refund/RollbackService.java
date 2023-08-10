@@ -7,14 +7,14 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -89,8 +89,8 @@ public class RollbackService {
                  DisabledVendorLineException |
                  CredentialNotFoundException e) {
 
-            // vendor did not provide any error code, so using back general transaction error
-            error.setCode(ResponseCodes.OTHER_EXCEED);
+            // vendor did not provide any error code, so return http status as 503
+            error.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(error);
         }catch(BetNotFoundException |
                BetRefundIdempotentViolationException |
@@ -103,8 +103,8 @@ public class RollbackService {
             vo.setBalance(balanceVo);
         }catch(Exception exception){
             httpService.logError(httpRequestLog, exception);
-            // vendor did not provide any error code, so using back general transaction error
-            error.setCode(ResponseCodes.OTHER_EXCEED);
+            // vendor did not provide any error code, so return http status as 503
+            error.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(error);
         }
          finally{
