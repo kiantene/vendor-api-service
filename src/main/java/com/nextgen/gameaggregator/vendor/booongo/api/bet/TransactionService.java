@@ -72,9 +72,6 @@ public class TransactionService {
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
 
-            errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
-            vo.setError(errorVo);
-
         } catch (InsufficientBalanceException e) {
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
