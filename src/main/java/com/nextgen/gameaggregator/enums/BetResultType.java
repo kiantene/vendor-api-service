@@ -12,6 +12,7 @@ public enum BetResultType {
     LOSE (2, "Lose"),
     WIN (3, "Win"),
     JACKPOT (4, "Jackpot"),
+    ADJUSTMENT(5, "Adjustment")
     ;
 
     public final Integer code;
