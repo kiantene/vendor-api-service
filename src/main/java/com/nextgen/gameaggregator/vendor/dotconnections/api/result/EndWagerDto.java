@@ -70,7 +70,7 @@ public class EndWagerDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return wagerId;
+        return this.wagerId;
     }
 
     @Override
@@ -95,7 +95,7 @@ public class EndWagerDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return this.amount;
+        return null;
     }
 
     @Override
