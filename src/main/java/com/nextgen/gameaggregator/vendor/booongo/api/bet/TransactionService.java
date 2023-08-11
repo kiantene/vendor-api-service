@@ -87,18 +87,21 @@ public class TransactionService {
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
         }catch(InvalidOperatorResponseException e){
-            errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
             // check the status is insufficient code or not
             if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
                 errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
+
+                balance = getCurrentBalance(traceId, gameSession);
+
+                // Retrieve current wallet balance
+                balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
+                vo.setError(errorVo);
+            }else{
+                errorVo.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
+                vo.setError(errorVo);
             }
-
-            balance = getCurrentBalance(traceId, gameSession);
-
-            // Retrieve current wallet balance
-            balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
-            vo.setError(errorVo);
+            
         }catch (DisabledVendorLineException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
