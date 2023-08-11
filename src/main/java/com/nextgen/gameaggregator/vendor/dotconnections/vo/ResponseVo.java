@@ -11,7 +11,7 @@ import javax.annotation.Nullable;
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class ResponseVo implements HttpResponse {
-    private String code;
+    private Integer code;
     private String msg;
 
     @Nullable
@@ -19,11 +19,11 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return this.code == ResponseCodes.SUCCESS;
+        return this.code == Integer.parseInt(ResponseCodes.SUCCESS);
     }
 
     public void setCode(String responseCode) {
-        this.code = responseCode;
-        this.msg = ResponseCodes.RESPONSE_DESCRIPTION.get(this.code);
+        this.msg = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
+        this.code = Integer.parseInt(responseCode);
     }
 }
