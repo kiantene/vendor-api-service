@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.balance;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
@@ -24,8 +25,8 @@ public class BalanceDto {
     public String sign;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.PLAYER_NOT_EXIST)
+    @Size(min = 32, max = 32, message = ResponseCodes.PLAYER_NOT_EXIST)
     public String token;
 
     @NotBlank
