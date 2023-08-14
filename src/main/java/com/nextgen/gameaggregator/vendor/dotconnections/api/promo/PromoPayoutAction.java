@@ -49,9 +49,12 @@ public class PromoPayoutAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
+        String brandUid = "";
 
         try {
+
+            // Get request body
+            String body = httpRequestLog.getRequestBody();
 
             /*
             TODO: Hacksaw does not have promotion currently.
@@ -59,6 +62,9 @@ public class PromoPayoutAction {
              Simulating a promo payout for vendor's test cases for now
              */
             PromoPayoutDto dto = HttpService.convertJsonToDto(body, PromoPayoutDto.class);
+
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -90,15 +96,15 @@ public class PromoPayoutAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);

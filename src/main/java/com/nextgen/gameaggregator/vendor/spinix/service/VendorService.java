@@ -157,6 +157,11 @@ public class VendorService extends BaseVendorService {
             roundPayoutVo.setReqId(reqId);
 
             BigDecimal balance = walletService.getBalance(traceId, gameSession);
+
+//            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
+//                balance = balance.multiply(new BigDecimal("1000"));
+//            }
+
             roundPayoutDataWalletVo.setBalance(balance);
 
             // Set Currency + RoundPayoutDataWalletVo + Status

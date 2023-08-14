@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutDto;
 import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutTransactionDto;
+import com.nextgen.gameaggregator.vendor.spinix.constant.TransactionInfo;
 import com.nextgen.gameaggregator.vendor.spinix.constant.TransactionType;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
 import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutDataVo;
@@ -43,7 +44,6 @@ public class BetService {
         RoundPayoutVo roundPayoutVo = new RoundPayoutVo();
         RoundPayoutDataVo roundPayoutDataVo = new RoundPayoutDataVo();
         RoundPayoutErrorVo roundPayoutErrorVo = new RoundPayoutErrorVo();
-        Integer status = HttpStatus.SC_OK;
 
         try {
 
@@ -53,12 +53,25 @@ public class BetService {
             // Get bet transaction
             RoundPayoutTransactionDto bet = txnMap.get(TransactionType.BET);
 
+            BigDecimal betAmount = bet.getAmount().abs();
+            BigDecimal validTurnover = dto.getValidTurnover().abs();
+//            boolean convertCurrency = false;
+//            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
+//                convertCurrency = true;
+//            }
+//
+            // Currency conversion for IDR and VND
+//            if(convertCurrency) {
+//                betAmount = betAmount.divide(new BigDecimal("1000"));
+//                validTurnover = validTurnover.divide(new BigDecimal("1000"));
+//            }
+
             // Set necessary values to process bet record
             BetDto betDto = new ObjectMapper().convertValue(dto, BetDto.class);
             betDto.setRoundId(dto.getRoundId());
             betDto.setId(bet.getId());
-            betDto.setAmount(bet.getAmount().abs());
-            betDto.setValidTurnover(dto.getValidTurnover().abs());
+            betDto.setAmount(betAmount);
+            betDto.setValidTurnover(validTurnover);
             betDto.setGameId(dto.getGameId());
             betDto.setTimestamp(bet.getConvertedTimestamp());
 
@@ -68,15 +81,20 @@ public class BetService {
             // get balance
             BigDecimal balance = betEvent.getLastBalance();
 
+            // Convert balance currency
+//            if(convertCurrency) {
+//                balance = balance.multiply(new BigDecimal("1000"));
+//            }
+
             // Create RoundPayoutDataWalletVo Object
             RoundPayoutDataWalletVo roundPayoutDataWalletVo = new RoundPayoutDataWalletVo();
 
-            // Set Currency + balance + RoundPayoutDataWalletVo + RoundPayoutDataVo + Status
-            roundPayoutDataWalletVo.setBalance(balance);
+            // Set Currency + balance + RoundPayoutDataWalletVo + Status + Data
             roundPayoutDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
+            roundPayoutDataWalletVo.setBalance(balance);
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
+            roundPayoutVo.setStatus(HttpStatus.SC_OK);
             roundPayoutVo.setData(roundPayoutDataVo);
-            roundPayoutVo.setStatus(status);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
@@ -84,10 +102,13 @@ public class BetService {
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            roundPayoutVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, dto);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            setCodeAndStatusForInvalidOperatorResponseException(invalidOperatorResponseException, httpRequestLog, roundPayoutErrorVo, roundPayoutVo);
         } catch (Exception exception) {
             roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -115,20 +136,33 @@ public class BetService {
             // Assign win transaction to a meaningful dto name
             RoundPayoutTransactionDto win = txnMap.get(TransactionType.WIN);
 
+            BigDecimal winAmount = win.getAmount();
+            BigDecimal validTurnover = dto.getValidTurnover().abs();
+//            boolean convertCurrency = false;
+//            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
+//                convertCurrency = true;
+//            }
+
+            // Currency conversion for IDR and VND
+//            if(convertCurrency) {
+//                winAmount = winAmount.divide(new BigDecimal("1000"));
+//                validTurnover = validTurnover.divide(new BigDecimal("1000"));
+//            }
+
             // Set necessary values to process bet record
             WinDto winDto = new ObjectMapper().convertValue(dto, WinDto.class);
             winDto.setExternalTransactionId(win.getId());
             winDto.setRoundId(dto.getRoundId());
             winDto.setId(win.getId());
-            winDto.setAmount(win.getAmount());
+            winDto.setAmount(winAmount);
             winDto.setFreeSpin(0);
-            winDto.setValidTurnover(dto.getValidTurnover().abs());
+            winDto.setValidTurnover(validTurnover);
             winDto.setGameId(dto.getGameId());
             winDto.setTimestamp(win.getConvertedTimestamp());
             winDto.setBetStatus(BetStatus.UNSETTLED);
 
             // Determine if is free spin
-            if (win.getInfo().equals("feature_buy") || win.getInfo().equals("feature_freespin")) {
+            if (win.getInfo().equals(TransactionInfo.FEATURE_BUY) || win.getInfo().equals(TransactionInfo.FEATURE_FREESPIN)) {
                 winDto.setFreeSpin(1);
             }
 
@@ -146,39 +180,43 @@ public class BetService {
 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDto, resultType, vendorService, httpRequestLog);
 
+            // Convert balance currency
+//            if(convertCurrency) {
+//                balance = balance.multiply(new BigDecimal("1000"));
+//            }
+
             // Create RoundPayoutDataWalletVo Object
             RoundPayoutDataWalletVo roundPayoutDataWalletVo = new RoundPayoutDataWalletVo();
 
-            // Set Currency + balance + RoundPayoutDataWalletVo + Status
+            // Set Currency + balance + RoundPayoutDataWalletVo + Status + Data
             roundPayoutDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
             roundPayoutDataWalletVo.setBalance(balance);
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
+            roundPayoutVo.setData(roundPayoutDataVo);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (BetResultIdempotentViolationException | MergedBetDataIntegrityException parameterInvalidException) {
-            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
-            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (BetNotFoundException betNotFoundException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             roundPayoutVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, dto);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        } catch (BetNotFoundException betNotFoundException) {
+            roundPayoutErrorVo.setCode(ResponseCodes.TRANSACTION_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            setCodeAndStatusForInvalidOperatorResponseException(invalidOperatorResponseException, httpRequestLog, roundPayoutErrorVo, roundPayoutVo);
         } catch (Exception exception) {
-            // TODO: catch IdempotentException
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
-            if (roundPayoutVo.getStatus() == HttpStatus.SC_OK) {
-                roundPayoutVo.setData(roundPayoutDataVo);
-            } else {
+            if (roundPayoutVo.getStatus() != HttpStatus.SC_OK) {
                 roundPayoutErrorVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(roundPayoutErrorVo.getCode()));
                 roundPayoutVo.setError(roundPayoutErrorVo);
             }
@@ -202,17 +240,32 @@ public class BetService {
             RoundPayoutTransactionDto bet = txnMap.get(TransactionType.BET);
             RoundPayoutTransactionDto win = txnMap.get(TransactionType.WIN);
 
+            BigDecimal betAmount = bet.getAmount().abs();
+            BigDecimal winAmount = win.getAmount();
+            BigDecimal validTurnover = dto.getValidTurnover().abs();
+//            boolean convertCurrency = false;
+//            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
+//                convertCurrency = true;
+//            }
+
+            // Currency conversion for IDR and VND
+//            if(convertCurrency) {
+//                betAmount = betAmount.divide(new BigDecimal("1000"));
+//                winAmount = winAmount.divide(new BigDecimal("1000"));
+//                validTurnover = validTurnover.divide(new BigDecimal("1000"));
+//            }
+
             BetWinDto betWinDto = new BetWinDto();
             betWinDto.setReqId(dto.getReqId());
             betWinDto.setExternalTransactionId(dto.getRoundId());
             betWinDto.setRoundId(dto.getRoundId());
             betWinDto.setId(bet.getId());
-            betWinDto.setBetAmount(bet.getAmount().abs());
-            betWinDto.setWinAmount(win.getAmount());
+            betWinDto.setBetAmount(betAmount);
+            betWinDto.setWinAmount(winAmount);
             betWinDto.setTimestamp(bet.getConvertedTimestamp());
             betWinDto.setFreeSpin(0);
             betWinDto.setGameId(dto.getGameId());
-            betWinDto.setValidTurnover(bet.getAmount().abs());
+            betWinDto.setValidTurnover(validTurnover);
             betWinDto.setWinLossAmount(win.getAmount().subtract(bet.getAmount()));
             betWinDto.setBetStatus(BetStatus.UNSETTLED);
 
@@ -222,7 +275,7 @@ public class BetService {
             }
 
             // Determine if is free spin
-            if (win.getInfo().equals("feature_buy") || win.getInfo().equals("feature_freespin")) {
+            if (win.getInfo().equals(TransactionInfo.FEATURE_BUY) || win.getInfo().equals(TransactionInfo.FEATURE_FREESPIN)) {
                 betWinDto.setFreeSpin(1);
             }
 
@@ -231,44 +284,43 @@ public class BetService {
 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betWinDto, resultType, vendorService, httpRequestLog);
 
+            // Convert balance currency
+//            if(convertCurrency) {
+//                balance = balance.multiply(new BigDecimal("1000"));
+//            }
+
             // Create RoundPayoutDataWalletVo Object
             RoundPayoutDataWalletVo roundPayoutDataWalletVo = new RoundPayoutDataWalletVo();
 
-            // Set Currency + balance + RoundPayoutDataWalletVo + Status
+            // Set Currency + balance + RoundPayoutDataWalletVo + Status + Data
             roundPayoutDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());
             roundPayoutDataWalletVo.setBalance(balance);
             roundPayoutDataVo.setWallet(roundPayoutDataWalletVo);
             roundPayoutVo.setStatus(HttpStatus.SC_OK);
+            roundPayoutVo.setData(roundPayoutDataVo);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             roundPayoutErrorVo.setCode(ResponseCodes.USER_NOT_FOUND);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (MergedBetDataIntegrityException |
-                 BetResultIdempotentViolationException parameterInvalidException) {
-            roundPayoutErrorVo.setCode(ResponseCodes.PARAMETER_INVALID);
-            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-        } catch (BetNotFoundException betNotFoundException) {
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             roundPayoutVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, dto);
+        } catch (BetNotFoundException betNotFoundException) {
+            roundPayoutErrorVo.setCode(ResponseCodes.TRANSACTION_INVALID);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if (invalidOperatorResponseException.getOperatorStatus() != null && invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
-                roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
-                roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
-            } else {
-                roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
-                roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            }
+            setCodeAndStatusForInvalidOperatorResponseException(invalidOperatorResponseException, httpRequestLog, roundPayoutErrorVo, roundPayoutVo);
         } catch (Exception exception) {
             roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
             roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
-            if (roundPayoutVo.getStatus() == HttpStatus.SC_OK) {
-                roundPayoutVo.setData(roundPayoutDataVo);
-            } else {
+            if (roundPayoutVo.getStatus() != HttpStatus.SC_OK) {
                 roundPayoutErrorVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(roundPayoutErrorVo.getCode()));
                 roundPayoutVo.setError(roundPayoutErrorVo);
             }
@@ -277,4 +329,15 @@ public class BetService {
         return roundPayoutVo;
     }
 
+    private void setCodeAndStatusForInvalidOperatorResponseException(InvalidOperatorResponseException invalidOperatorResponseException, HttpRequestLog httpRequestLog,
+                                                                     RoundPayoutErrorVo roundPayoutErrorVo, RoundPayoutVo roundPayoutVo) {
+        if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+            roundPayoutErrorVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            roundPayoutVo.setStatus(HttpStatus.SC_BAD_REQUEST);
+        } else {
+            roundPayoutErrorVo.setCode(ResponseCodes.UNEXPECTED_INTERNAL_SERVER_ERROR);
+            roundPayoutVo.setStatus(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        }
+    }
 }
