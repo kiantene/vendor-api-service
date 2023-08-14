@@ -33,7 +33,6 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
-
 @Service
 @Slf4j
 public class WalletBetResultAction {
@@ -77,31 +76,35 @@ public class WalletBetResultAction {
             httpRequestLog.setOperatorData(dto.toString());
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorResponse(apiResponse.toString());
-            }
-            httpRequestLog.setOperatorProcessEndTime(endTime);
-        }
-
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
+        RequestLogVo requestLogVo = null;
 
         try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorResponse(apiResponse.toString());
+                }
+                httpRequestLog.setOperatorProcessEndTime(endTime);
+            }
+
+            requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
+
+
             log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
@@ -133,8 +136,20 @@ public class WalletBetResultAction {
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
+            long endTime = System.currentTimeMillis();
+            Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+
+            requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_BET_RESULT, apiUrl, dto, null, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
+            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
+                defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+            }
+
             RequestService.failResponseLog(requestLogVo, exception);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
+
         }
         return responseVo;
     }
