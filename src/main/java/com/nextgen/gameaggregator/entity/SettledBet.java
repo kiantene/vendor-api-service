@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.entity;
 
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.Data;
@@ -54,7 +55,7 @@ public class SettledBet extends BetInformation {
         this.setStatus(BetStatus.SETTLED.code);
         this.calculateResultType();
         this.setCreateTime(System.currentTimeMillis());
-        this.setVendorSettleTime( Optional.ofNullable(unsettledBet.getVendorSettleTime()).orElse(System.currentTimeMillis()) );
+        this.setVendorSettleTime(Optional.ofNullable(unsettledBet.getVendorSettleTime()).orElse(System.currentTimeMillis()));
     }
 
     public SettledBet(EndRoundSettledBet endRoundSettledBet) {
@@ -62,6 +63,27 @@ public class SettledBet extends BetInformation {
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(endRoundSettledBet, this);
         this.calculateResultType();
+        this.setCreateTime(System.currentTimeMillis());
+    }
+
+    public SettledBet(AdjustmentData adjustmentData, String traceId, GameSession gameSession) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(adjustmentData, this);
+        this.setBetId(traceId);
+        this.setBetAmount(BigDecimal.ZERO);
+        this.setWinAmount(adjustmentData.getAdjustmentAmount());
+        this.setVendorId(gameSession.getVendorId());
+        this.setVendorLineId(gameSession.getVendorLineId());
+        this.setVendorGameId(gameSession.getVendorGameId());
+        this.setVendorPlayerId(gameSession.getVendorPlayerId());
+        this.setAgentPlayerId(gameSession.getAgentPlayerId());
+        this.setAgentId(gameSession.getAgentId());
+        this.setId(this.generateId());
+        this.setInternalTransactionId(traceId);
+        this.setCurrencyId(gameSession.getCurrencyId());
+        this.setGameCategoryId(gameSession.getGameCategoryId());
+        this.setGameSessionToken(gameSession.getToken());
         this.setCreateTime(System.currentTimeMillis());
     }
 
@@ -80,7 +102,7 @@ public class SettledBet extends BetInformation {
 
         if (isJackpotAmountMoreThanZero) {
             betResultType = BetResultType.JACKPOT.code;
-        } else if (isWinAmountMoreThanZero){
+        } else if (isWinAmountMoreThanZero) {
             betResultType = BetResultType.WIN.code;
         }
 

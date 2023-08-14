@@ -18,4 +18,6 @@ public class EndPoints {
 
     public static final String CREATE_VERIFY_REPORT = "/create_verify_report";
     public static final String UPDATE_VERIFY_TEST_CASE = "/update_verify_test_case";
+
+    public static final String WALLET_ADJUSTMENT = "/wallet/adjustment";
 }

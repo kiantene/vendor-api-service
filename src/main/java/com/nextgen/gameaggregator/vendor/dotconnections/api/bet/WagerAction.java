@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -49,12 +50,18 @@ public class WagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
+        String brandUid = "";
 
         try {
 
+            // Get request body
+            String body = httpRequestLog.getRequestBody();
+
             // Convert original request body into dto
             WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
+
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -91,14 +98,26 @@ public class WagerAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                responseVo.setCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.REQUEST_PARAM_ERROR)
+                );
+            } else {
+                responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            }
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |

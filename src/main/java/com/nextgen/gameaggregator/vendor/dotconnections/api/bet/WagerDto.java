@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
@@ -33,8 +34,8 @@ public class WagerDto implements BetResultData {
     public String sign;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.PLAYER_NOT_EXIST)
+    @Size(min = 32, max = 32, message = ResponseCodes.PLAYER_NOT_EXIST)
     public String token;
 
     @NotBlank
@@ -146,7 +147,7 @@ public class WagerDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return this.jackpotContribution;
+        return BigDecimal.ZERO;
     }
 
     @Override

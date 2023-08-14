@@ -151,12 +151,23 @@ public class RequestService {
     public static void failResponseLog(RequestLogVo requestLogVo, Exception exception) {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
+
         logInfo.put("ApiUrl: ", requestLogVo.getCallbackUrl() + requestLogVo.getEndpoint());
         logInfo.put("RequestHeaders: ", requestLogVo.getRequestHeaders());
         logInfo.put("RequestParam: ", requestLogVo.getRequestObject());
-        logInfo.put("ResponseBody: ", requestLogVo.getResponseEntity().getBody());
-        logInfo.put("ResponseHeaders: ", requestLogVo.getResponseEntity().getHeaders());
-        logInfo.put("HttpStatusCode: ", requestLogVo.getResponseEntity().getStatusCode());
+
+        if (requestLogVo.getResponseEntity() == null) {
+            logInfo.put("ResponseBody: ", "TIMEOUT");
+            logInfo.put("ResponseHeaders: ", "TIMEOUT");
+            logInfo.put("HttpStatusCode: ", "TIMEOUT");
+
+        } else {
+            logInfo.put("ResponseBody: ", requestLogVo.getResponseEntity().getBody());
+            logInfo.put("ResponseHeaders: ", requestLogVo.getResponseEntity().getHeaders());
+            logInfo.put("HttpStatusCode: ", requestLogVo.getResponseEntity().getStatusCode());
+
+        }
+
         logInfo.put("RequestStartTime: ", requestLogVo.getStartTime());
         logInfo.put("RequestEndTime: ", requestLogVo.getEndTime());
         logInfo.put("ServicePackage: ", requestLogVo.getPackageName());
