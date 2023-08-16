@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.vendor.facai.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.facai.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.facai.service.VendorService;
 import com.nextgen.gameaggregator.vendor.facai.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -89,9 +88,6 @@ public class BetAction {
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
-        } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
-
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
@@ -110,7 +106,8 @@ public class BetAction {
         } catch (
                 MergedBetDataIntegrityException |
                 InvalidAgentApiCredentialException |
-                BetNotFoundException cancelException
+                BetNotFoundException |
+                TransactionStillProcessingException cancelException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
@@ -118,7 +115,7 @@ public class BetAction {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
             } else {
-                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
