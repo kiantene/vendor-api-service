@@ -10,9 +10,9 @@ public class WalletAdjustmentDto {
     private String username;
     private String transactionId;
     private String externalTransactionId;
+    private String roundId;
     private BigDecimal amount;
     private String currency;
     private String gameCode;
-    private String roundId;
     private Long timestamp;
 }
