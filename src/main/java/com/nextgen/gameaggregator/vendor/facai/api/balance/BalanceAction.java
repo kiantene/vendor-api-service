@@ -65,7 +65,7 @@ public class BalanceAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
+            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into balanceDto
             BalanceDto balanceDto = HttpService.convertJsonToDto(jsonParam, BalanceDto.class);
