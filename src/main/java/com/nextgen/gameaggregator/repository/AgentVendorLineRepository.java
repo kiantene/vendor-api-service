@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.repository;
 
 import com.nextgen.gameaggregator.entity.AgentVendorLine;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +19,7 @@ public interface AgentVendorLineRepository extends JpaRepository<AgentVendorLine
 
     List<AgentVendorLine> findByAgentIdAndVendorLineId(Integer agentId, Integer vendorLineId);
 
+    @Cacheable(value = "AgentVendorLine", key = "{#agentId, #vendorId, #currencyId, #gameCategoryId, #status}", cacheManager = "cacheManager")
     List<AgentVendorLine>  findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus
             (Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId, Integer status);
 }
