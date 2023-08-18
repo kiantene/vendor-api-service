@@ -57,6 +57,12 @@ public class RefundService {
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             //void the game
             statusVo.setRefundStatus(1);
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            //return invalid respond to trigger vendor resend when record still in processing
+            statusVo = new StatusVo();
+            fundTransferResponseVo.setStatusVo(statusVo);
+            statusVo.setSuccess(false);
+            statusVo.setRetryStatus(true);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setSuccess(false);
             statusVo.setAuthError(true);
