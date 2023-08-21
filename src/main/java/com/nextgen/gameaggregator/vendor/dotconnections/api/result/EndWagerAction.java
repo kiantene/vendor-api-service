@@ -92,19 +92,18 @@ public class EndWagerAction {
 
             // Determine if bet is settled
             if (dto.isEndround.equals("true")) {
+                // Get unsettled bet
+                UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
+
+                // Set vendor bet id with unsettled bet's id
+                dto.setWagerId(unsettledBet.getVendorBetId());
+
                 dto.setBetStatus(BetStatus.SETTLED);
                 if (resultType.code == ResultType.LOSE.code) {
                     // if result type is LOSE and bet status is SETTLED, change to END
                     resultType = ResultType.END;
                 }
             }
-
-            // Get unsettled bet
-            UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
-
-            // Use unsettled bet's wagerId as vendor bet id and external transaction id
-            // dto.setExternalTransactionId(unsettledBet.getVendorBetId());
-            dto.setWagerId(unsettledBet.getVendorBetId());
 
             // Process bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
