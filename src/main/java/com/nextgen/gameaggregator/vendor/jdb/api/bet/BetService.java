@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -53,42 +51,38 @@ public class BetService {
 
             vo.setBalance(betEvent.getLastBalance());
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
-        } catch (JsonProcessingException jsonProcessingException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);   
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            vo.setBalance(betResultIdempotentViolationException.getBalance());
+            vo.setSuccessResponseCode(ResponseCode.SUCCESS);
+
         } catch (AuthenticationException authenticationException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);   
+
         } catch (InsufficientBalanceException nsufficientBalanceException) {
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
-        } catch (CouchbaseDataIntegrityException exception) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (InvalidOperatorResponseException exception) {
+
+        } catch (InvalidAgentApiCredentialException | GameNotSupportedException | CurrencyNotSupportedException | 
+            JsonProcessingException invalidValidRequestException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (InvalidAgentApiCredentialException exception) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+
         } catch (InvalidRequestException invalidRequestException) {
-            if (invalidRequestException.getValidation() != null) {
-                String violation = invalidRequestException.getValidation()
-                        .entrySet()
-                        .stream()
-                        .findFirst()
-                        .map(Map.Entry::getValue) // get the value of the first element
-                        .orElse(ResponseCode.INVALID_REQUEST_PARAMETER); // if there's no value, set it to the default invalid request parameter
+            if (invalidRequestException.getValidation() != null && !invalidRequestException.getValidation().isEmpty()) {
+                String violation = invalidRequestException.getValidation().entrySet().iterator().next().getValue();
                 vo.setErrorResponseCode(violation);
             } else {
                 vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
             }
-        } catch (DisabledVendorLineException exception) {
+
+        } catch (DisabledVendorLineException | DisabledGameException | DisabledAgentPlayerException failedException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (GameNotSupportedException gameNotSupportedException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+
+        } catch (TransactionStillProcessingException | InvalidOperatorResponseException cannotCancelException) {
+            vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-        } catch (DisabledAgentPlayerException exception) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
-        } catch (DisabledGameException exception) {
-            vo.setErrorResponseCode(ResponseCode.FAILED);
+
         } catch (Exception exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }
@@ -104,6 +98,7 @@ public class BetService {
     private void doVerification(BetDto dto, GameSession gameSession) throws DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException, CurrencyNotSupportedException,
             InvalidPlayerException, AuthenticationException {
+
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUid());
 
