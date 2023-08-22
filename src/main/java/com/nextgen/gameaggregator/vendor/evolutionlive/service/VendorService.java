@@ -1,7 +1,11 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.service;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.evolutionlive.api.endround.CreditDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.gameurl.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -59,5 +63,26 @@ public class VendorService extends BaseVendorService {
         configDto.setGame(configGameDto);
         configDto.setChannel(configChannelDto);
         return configDto;
+    }
+
+    @Override
+    public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
+        // Get the JSON request body from the HttpRequestLog
+        String requestBody = rawData;
+        Gson gson = new Gson();
+
+        try {
+            // Convert the JSON request body to SettleDto object
+            CreditDto dto = gson.fromJson(requestBody, CreditDto.class);
+
+            // Remap roundId
+            settledBet.setRoundId(dto.getGame().getId().split("-")[0]);
+
+
+        } catch (JsonParseException e) {
+            log.error("Error parsing JSON: " + e.getMessage());
+        }
+
+        return settledBet;
     }
 }
