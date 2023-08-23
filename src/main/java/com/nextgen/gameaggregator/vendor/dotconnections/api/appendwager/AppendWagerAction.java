@@ -49,7 +49,7 @@ public class AppendWagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String brandUid = "";
+        GameSession gameSession = null;
 
         try {
 
@@ -62,14 +62,11 @@ public class AppendWagerAction {
              */
             AppendWagerDto dto = HttpService.convertJsonToDto(body, AppendWagerDto.class);
 
-            // Set brandUid for exceptional handling
-            brandUid = dto.getBrandUid();
-
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId());
 
             this.doVerification(dto, gameSession);
 
@@ -95,15 +92,15 @@ public class AppendWagerAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
