@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 @Slf4j
 public class KafkaService {
@@ -23,9 +25,14 @@ public class KafkaService {
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
 
-    public void produceBetHistory(BetHistory betHistory, SettledBet settledBet) {
+    public void produceBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
         try {
+            //will do currency conversion before send to kafka
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);

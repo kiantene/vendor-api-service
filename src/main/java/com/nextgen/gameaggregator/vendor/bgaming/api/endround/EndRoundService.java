@@ -46,7 +46,7 @@ public class EndRoundService {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public TransactionVo endRound(CommonDto commonDto, ActionDto actionDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException {
+    public TransactionVo endRound(CommonDto commonDto, ActionDto actionDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
         String traceId = httpRequestLog.getId();
         TransactionVo transactionVo = new TransactionVo();
 
