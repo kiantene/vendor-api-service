@@ -64,7 +64,7 @@ public class ReserveAction {
             this.doVerification(gameSession, reserveDto);
 
             // Process Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, reserveDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, reserveDto, body, httpRequestLog);
 
             // Construct VO
             reserveVo.setStatusCode(ResponseCodes.OK);

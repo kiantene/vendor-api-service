@@ -60,7 +60,7 @@ public class BalanceAction {
             this.doVerification(gameSession, balanceDto);
 
             // Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Construct VO
             balanceVo.setReal(balance.toString());
