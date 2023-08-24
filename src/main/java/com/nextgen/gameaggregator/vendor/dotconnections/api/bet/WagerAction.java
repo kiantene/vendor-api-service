@@ -75,7 +75,7 @@ public class WagerAction {
 
             // Process bet
             // Vendor identify duplicate bet by round_id and wager_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Vendor player username + Balance + Currency

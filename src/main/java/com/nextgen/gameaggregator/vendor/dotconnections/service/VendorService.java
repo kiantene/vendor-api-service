@@ -95,7 +95,7 @@ public class VendorService extends BaseVendorService {
         try {
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession));
+            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession, httpRequestLog));
             responseVo.setData(responseDataVo);
 
         } catch (InvalidAgentApiCredentialException systemErrorException) {
