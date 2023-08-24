@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -50,19 +51,24 @@ public class CancelWagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
-        GameSession gameSession = null;
+        String brandUid = "";
 
         try {
 
+            // Get request body
+            String body = httpRequestLog.getRequestBody();
+
             // Convert original request body into dto
             CancelWagerDto dto = HttpService.convertJsonToDto(body, CancelWagerDto.class);
+
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // Get last game session
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify data
             this.doVerification(dto, gameSession);
@@ -101,16 +107,26 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
         } catch (BetNotFoundException betRecordNotExistException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
                  InvalidAgentApiCredentialException | JsonProcessingException | RecordNotFoundException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, systemErrorException);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.REFUNDED.code) {
+                // if bet already refunded
+                responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+                responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            } else {
+                // if found the bet other in settled status (cancel / unsettle / settled)
+                responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+                httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            }
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.facai.service;
 
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -28,13 +29,16 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public String aesDecrypt(String dataString, String appKey) throws InvalidDecryptionException {
+    public String aesDecrypt(String dataString, String appKey, HttpRequestLog httpRequestLog, String body) throws InvalidDecryptionException {
         try {
             Base64.Decoder decoder = Base64.getDecoder();
             SecretKeySpec keySpec = new SecretKeySpec(appKey.getBytes(), "AES");
             Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
             cipher.init(Cipher.DECRYPT_MODE, keySpec);
-            return new String(cipher.doFinal(decoder.decode(dataString)));
+            //Add decrypt value into request body
+            String jsonParam = new String(cipher.doFinal(decoder.decode(dataString)));
+            httpRequestLog.setRequestBody(body + ", Decrypt Value:" + jsonParam);
+            return jsonParam;
         } catch (Exception exception) {
             throw new InvalidDecryptionException();
         }

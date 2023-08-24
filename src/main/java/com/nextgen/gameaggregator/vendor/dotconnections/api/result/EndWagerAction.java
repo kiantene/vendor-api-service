@@ -45,6 +45,8 @@ public class EndWagerAction {
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -55,12 +57,18 @@ public class EndWagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
+        String brandUid = "";
 
         try {
 
+            // Get request body
+            String body = httpRequestLog.getRequestBody();
+
             // Convert original request body into dto
             EndWagerDto dto = HttpService.convertJsonToDto(body, EndWagerDto.class);
+
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -72,8 +80,12 @@ public class EndWagerAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
+            // Verify if bet has been settled before
+            // This is to pass vendor's test case: 5043: Bet record duplicate.
+            // this.verifySettledBet(dto, gameSession);
+
             // if transaction amount has more than 0 means WIN else LOSE
-            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;
+            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
 
             // Default end wager as unsettled
             dto.setBetStatus(BetStatus.UNSETTLED);
@@ -81,12 +93,17 @@ public class EndWagerAction {
             // Determine if bet is settled
             if (dto.isEndround.equals("true")) {
                 dto.setBetStatus(BetStatus.SETTLED);
+                if (resultType.code == ResultType.LOSE.code) {
+                    // if result type is LOSE and bet status is SETTLED, change to END
+                    resultType = ResultType.END;
+                }
             }
 
             // Get unsettled bet
             UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
 
             // Use unsettled bet's wagerId as vendor bet id and external transaction id
+            // dto.setExternalTransactionId(unsettledBet.getVendorBetId());
             dto.setWagerId(unsettledBet.getVendorBetId());
 
             // Process bet
@@ -111,15 +128,15 @@ public class EndWagerAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
@@ -129,8 +146,13 @@ public class EndWagerAction {
                  InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+                responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+            } else {
+                responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -173,6 +195,22 @@ public class EndWagerAction {
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
+
+    /*
+    private void verifySettledBet(EndWagerDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
+        try {
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorGameIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
+            if (settledBet != null) {
+                throw new BetResultIdempotentViolationException();
+            }
+        } catch (BetNotFoundException betNotFoundException) {
+            // continue
+        }
+
+    }
+
+     */
 
     private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {
         UnsettledBet unsettledBet = null;

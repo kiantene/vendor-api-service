@@ -45,7 +45,7 @@ public class BetService {
     @Autowired
     private VendorLineService vendorLineService;
 
-    public TransactionVo bet(CommonDto commonDto, ActionDto actionDto, HttpRequestLog httpRequestLog, int count, HttpServletRequest request) throws AuthenticationException, InvalidPlayerException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException {
+    public TransactionVo bet(CommonDto commonDto, ActionDto actionDto, HttpRequestLog httpRequestLog, int count, HttpServletRequest request) throws AuthenticationException, InvalidPlayerException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
         String traceId = httpRequestLog.getId();
         TransactionVo transactionVo = new TransactionVo();
 

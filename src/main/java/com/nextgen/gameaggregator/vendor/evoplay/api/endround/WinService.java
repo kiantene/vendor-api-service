@@ -54,7 +54,7 @@ public class WinService {
             InsufficientBalanceException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            TransactionStillProcessingException {
+            TransactionStillProcessingException, VendorCurrencyNotSupportException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         WinDto winDto = new ModelMapper().map(callbackDto, WinDto.class);

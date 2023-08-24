@@ -76,7 +76,7 @@ public class ResultService {
                 //setup debit and credit bet type respond message
                 statusVo.setSuccessCredit(true);
             }
-        } catch (TransactionStillProcessingException e) {
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
             statusVo = new StatusVo();
             fundTransferResponseVo.setStatusVo(statusVo);
