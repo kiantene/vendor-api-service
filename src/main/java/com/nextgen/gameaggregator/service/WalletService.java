@@ -205,6 +205,12 @@ public class WalletService {
 
                     // handle if settle end/lose resultType having isFreeSpin = 1.
                     unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1) ? betResultData.getIsFreespin() : unsettledBet.getIsFreespin());
+
+                    //if end got new effective turnover, will include accordingly.
+                    if (betResultData.getEffectiveTurnover() != null && betResultData.getEffectiveTurnover().compareTo(BigDecimal.ZERO) != 0) {
+                        unsettledBet.setEffectiveTurnover(betResultData.getEffectiveTurnover());
+                    }
+
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                     walletBetResultData = settledBet;
 
@@ -570,6 +576,11 @@ public class WalletService {
         BigDecimal jackpotAmountLatest = Optional.ofNullable(betResultData.getJackpotAmount()).orElse(BigDecimal.ZERO);
         BigDecimal finalJackpotAmount = jackpotAmount.add(jackpotAmountLatest);
         betData.setJackpotAmount(finalJackpotAmount);
+
+        //if betResultData have effectiveTurnover amount, then assign the amount into betData (unsettledBet)
+        if (betResultData.getEffectiveTurnover() != null && betResultData.getEffectiveTurnover().compareTo(BigDecimal.ZERO) != 0) {
+            betData.setEffectiveTurnover(betResultData.getEffectiveTurnover());
+        }
 
         betData.setResultTime(betResultData.getResultTime());
         betData.setVendorSettleTime(betResultData.getVendorSettleTime());
