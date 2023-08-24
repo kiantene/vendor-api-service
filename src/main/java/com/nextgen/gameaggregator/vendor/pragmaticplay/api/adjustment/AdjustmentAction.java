@@ -110,6 +110,9 @@ public class AdjustmentAction {
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
+        } catch (VendorCurrencyNotSupportException e) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
 

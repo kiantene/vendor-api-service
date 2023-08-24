@@ -1,10 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.entity.*;
@@ -14,6 +17,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.*;
 
 @Service
+@Slf4j
 public class VendorService extends BaseVendorService {
 
     @Autowired
@@ -104,13 +108,35 @@ public class VendorService extends BaseVendorService {
         return vendorLanguageCode;
     }
 
-    public VendorCurrency findVendorCurrency(Vendor vendor, Currency currency) throws VendorCurrencyNotSupportException {
-        VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendor.getId(), currency.getId());
+    @Cacheable(value = "vendorCurrencies", key = "{#vendorId, #currencyId}", cacheManager = "cacheManager")
+    public VendorCurrency findVendorCurrency(Integer vendorId, Integer currencyId) throws VendorCurrencyNotSupportException {
+        VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendorId, currencyId);
 
         Optional.ofNullable(vendorCurrency).orElseThrow(VendorCurrencyNotSupportException::new);
 
         if (vendorCurrency.getStatus() == 0) {
             throw new VendorCurrencyNotSupportException();
+        }
+
+        return vendorCurrency;
+    }
+
+    public VendorCurrency getCurrencyConversionRate(GameSession gameSession, String traceId) throws VendorCurrencyNotSupportException {
+        BigDecimal defaultConversionRateAsOne = BigDecimal.ONE;
+        VendorCurrency vendorCurrency = this.findVendorCurrency(gameSession.getVendorId(), gameSession.getCurrencyId());
+
+        //if unset or zero for FromVendorRate, will be set as 1
+        if (vendorCurrency.getFromVendorRate() == null || vendorCurrency.getFromVendorRate().compareTo(BigDecimal.ZERO) == 0) {
+            vendorCurrency.setFromVendorRate(defaultConversionRateAsOne);
+            log.info("Currency conversion failed, FromVendorRate() is zero or empty for vendorId : " + gameSession.getVendorId() + " | currencyId = " + gameSession.getVendorId() + " ｜ traceId = " + traceId);
+
+        }
+
+        //if unset or zero for ToVendorRate, will be set as 1
+        if (vendorCurrency.getToVendorRate() == null || vendorCurrency.getToVendorRate().compareTo(BigDecimal.ZERO) == 0) {
+            vendorCurrency.setToVendorRate(defaultConversionRateAsOne);
+            log.info("Currency conversion failed, ToVendorRate() is zero or empty for vendorId : " + gameSession.getVendorId() + " | currencyId = " + gameSession.getVendorId() + " ｜ traceId = " + traceId);
+
         }
 
         return vendorCurrency;

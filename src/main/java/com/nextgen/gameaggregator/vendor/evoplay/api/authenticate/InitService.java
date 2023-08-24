@@ -34,7 +34,7 @@ public class InitService {
             DisabledAgentPlayerException,
             DisabledGameException,
             DisabledVendorLineException,
-            InvalidRequestException {
+            InvalidRequestException, VendorCurrencyNotSupportException {
 
         this.doValidation(callbackDto);
         this.doVerification(gameSession);
