@@ -92,7 +92,11 @@ public class AuthenticateService {
         } catch (IllegalArgumentException e) {  
             // invalid parameter 
             authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
-        } finally {
+        } catch (Exception e) {
+            // others
+            authBalanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+        }
+        finally {
            // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, authBalanceVo);
 

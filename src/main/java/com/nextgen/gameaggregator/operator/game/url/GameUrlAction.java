@@ -122,7 +122,7 @@ public class GameUrlAction {
 
             // 13. check if vendor currency supported
             loggingService.logStart();
-            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendor(), apiCredential.getAgent().getCurrency());
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendor().getId(), apiCredential.getAgent().getCurrency().getId());
             loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorCurrency", traceId);
 
             // 14. check if vendor platform supported

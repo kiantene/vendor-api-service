@@ -30,6 +30,8 @@ public class KafkaConsumerService {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private LoggingService loggingService;
+    @Autowired
+    private VendorService vendorService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcess(String message) throws InterruptedException {
@@ -71,9 +73,11 @@ public class KafkaConsumerService {
                 //3. convert endRoundSettledBet back to settledBet
                 SettledBet settledBet = new SettledBet(endRoundSettledBet);
 
+                VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
+
                 //4. send the bet data with resultType end to operator
                 processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null);
+                walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
                 processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
                 //5. set the resultType as endRoundSettledBet.getGaResultType() which calculated in processBetResult
@@ -89,7 +93,7 @@ public class KafkaConsumerService {
                 log.info(new Gson().toJson(betHistory));
 
                 //8. send to process bet history kafka topic
-                kafkaService.produceBetHistory(betHistory, settledBet);
+                kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
 
                 //delete unsettled bet
                 UnsettledBet unsettledBet = new UnsettledBet(settledBet);
