@@ -51,7 +51,7 @@ public class BetAction {
             this.setRoundIdAndBetIdByGameType(dto);
 
             // Process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody());
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody(), httpRequestLog);
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Balance and Currency
