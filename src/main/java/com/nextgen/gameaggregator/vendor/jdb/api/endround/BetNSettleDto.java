@@ -156,7 +156,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return bet;
+        return bet.negate();
     }
 
     @Override

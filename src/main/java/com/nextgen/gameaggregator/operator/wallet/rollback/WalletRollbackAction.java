@@ -4,14 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.VendorCurrency;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.OperatorRequestService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +24,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -43,9 +42,14 @@ public class WalletRollbackAction {
     private AuthenticationService authenticationService;
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId)
-            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+    public WalletBalanceVo
+    call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId)
+            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -54,6 +58,9 @@ public class WalletRollbackAction {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
+
+        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
+        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
@@ -98,6 +105,9 @@ public class WalletRollbackAction {
 
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
+
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
             RequestService.successResponseLog(requestLogVo);
 
