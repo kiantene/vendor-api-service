@@ -77,7 +77,7 @@ public class GameResultDto implements BetResultData {
 
     // Win amount
     @NotNull
-    @PositiveOrZero
+    @PositiveOrZero(message = ResponseCodes.PARAMETER_MUST_BE_POSITIVE_INTEGER)
     public BigDecimal win;
 
     // Net win amount
