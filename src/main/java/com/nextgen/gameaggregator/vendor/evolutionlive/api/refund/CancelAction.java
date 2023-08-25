@@ -94,11 +94,14 @@ public class CancelAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException e) {
+                 InvalidOperatorResponseException |
+                 TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
+        } catch (BetResultIdempotentViolationException e) {
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
