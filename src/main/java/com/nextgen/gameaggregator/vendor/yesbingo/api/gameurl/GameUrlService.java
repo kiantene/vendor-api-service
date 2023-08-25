@@ -29,7 +29,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 
 @Service
@@ -66,7 +65,8 @@ public class GameUrlService implements GameUrl {
         try {
 
             long unixTimestamp = Math.round(System.currentTimeMillis() * 1000.0);
-            BigDecimal balance = walletService.getBalance(UUID.randomUUID().toString(), gameSession, null);
+            // BigDecimal balance = walletService.getBalance(UUID.randomUUID().toString(), gameSession, null);
+            BigDecimal balance = BigDecimal.ZERO;
             String vendorGameCode = gameSession.getVendorGameCode();
             String[] parts = vendorGameCode.split("_");
             String gType = parts[0];
