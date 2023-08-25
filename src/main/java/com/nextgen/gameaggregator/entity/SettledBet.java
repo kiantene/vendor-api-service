@@ -29,7 +29,7 @@ public class SettledBet extends BetInformation {
         modelMapper.map(betInformation, this);
     }
 
-    public SettledBet(BetResultData betResultData, String internalTransactionId, Integer vendorGameId, Long vendorPlayerId) {
+    public SettledBet(BetResultData betResultData, String internalTransactionId, Integer vendorGameId, Long vendorPlayerId, GameSession gameSession) {
         super(betResultData);
         this.setVendorGameId(vendorGameId);
         this.setVendorPlayerId(vendorPlayerId);
@@ -38,6 +38,12 @@ public class SettledBet extends BetInformation {
         this.setStatus(BetStatus.SETTLED.code);
         this.calculateResultType();
         this.setCreateTime(System.currentTimeMillis());
+        this.setGameSessionToken(gameSession.getToken());
+        this.setVendorLineId(gameSession.getVendorLineId());
+        this.setAgentPlayerId(gameSession.getAgentPlayerId());
+        this.setAgentId(gameSession.getAgentId());
+        this.setGameCategoryId(gameSession.getGameCategoryId());
+        this.setCurrencyId(gameSession.getCurrencyId());
     }
 
     public SettledBet(UnsettledBet unsettledBet, BaseVendorService vendorService, String traceId) {
