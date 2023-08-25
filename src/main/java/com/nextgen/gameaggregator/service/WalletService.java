@@ -248,7 +248,7 @@ public class WalletService {
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
 
                     //do not send aggregated settledBet as betResultDataForOperator for settled and win scenario
-                    walletBetResultData = new SettledBet(betResultData, internalTransactionId, unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId());
+                    walletBetResultData = new SettledBet(betResultData, internalTransactionId, unsettledBet.getVendorGameId(), unsettledBet.getVendorPlayerId(), gameSession);
                     walletBetResultData.setBetAmount(BigDecimal.ZERO);
                     walletBetResultData.setBetId(settledBet.getBetId());
                     walletBetResultData.setVendorBetTime(settledBet.getVendorBetTime());
@@ -372,6 +372,13 @@ public class WalletService {
 
                     } else {
                         // proceed with entire cancel flow request.
+                        Integer resettleNum = 0;
+
+                        if (settledBet.getResettleNum() != null) {
+                            resettleNum = settledBet.getResettleNum();
+                        }
+
+                        settledBet.setResettleNum(resettleNum + 1);
 
                     }
                 }
