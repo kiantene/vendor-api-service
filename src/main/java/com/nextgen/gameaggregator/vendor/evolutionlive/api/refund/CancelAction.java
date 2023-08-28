@@ -130,6 +130,7 @@ public class CancelAction {
             InvalidPlayerException {
 
         // 1. Verify Username, GameCode, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getToken(), cancelDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelDto.getCurrency(), CurrencyNotSupportedException::new);
