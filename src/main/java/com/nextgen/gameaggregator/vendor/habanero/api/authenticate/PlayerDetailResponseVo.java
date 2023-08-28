@@ -2,14 +2,13 @@ package com.nextgen.gameaggregator.vendor.habanero.api.authenticate;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.vendor.habanero.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class PlayerDetailResponseVo {
+public class PlayerDetailResponseVo extends CommonVo {
 
     @JsonProperty("status")
     private StatusVo statusVo;
@@ -20,9 +19,8 @@ public class PlayerDetailResponseVo {
     @JsonProperty("accountname")
     private String accountnName;
 
-    @JsonProperty("balance")
-    private BigDecimal balance;
+    public PlayerDetailResponseVo() {
+        this.setStatusVo(new StatusVo());
+    }
 
-    @JsonProperty("currencycode")
-    private String currencyCode;
 }

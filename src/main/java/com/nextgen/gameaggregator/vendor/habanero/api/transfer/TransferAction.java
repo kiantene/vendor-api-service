@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.habanero.api.refund.RefundService;
@@ -14,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.habanero.constant.GameStateMode;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
-import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
@@ -54,10 +56,6 @@ public class TransferAction {
 
         // Construct VO
         TransferVo responseVo = new TransferVo();
-        FundTransferResponseVo fundTransferResponseVo = new FundTransferResponseVo();
-        StatusVo statusVo = new StatusVo();
-        fundTransferResponseVo.setStatusVo(statusVo);
-        responseVo.setFundTransferResponseVo(fundTransferResponseVo);
         Integer httpStatus = HttpStatus.SC_OK;
 
         try {
@@ -66,6 +64,11 @@ public class TransferAction {
 
             //Convert original request body into authDto
             TransferDto transferDto = HttpService.convertJsonToDto(body, TransferDto.class);
+
+            //setup debit and credit bet type respond message
+            if (transferDto.getFundTransferRequestDto().getFundDto().getDebitAndCredit()) {
+                responseVo.setDebitNCreditMessage();
+            }
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(transferDto);
@@ -77,7 +80,7 @@ public class TransferAction {
             this.doVerification(transferDto, gameSession);
 
             //handle transfer action
-            responseVo = this.processTransferAction(transferDto, gameSession, traceId, httpRequestLog, body);
+            responseVo = this.processTransferAction(responseVo, transferDto, gameSession, traceId, httpRequestLog, body);
 
         } catch (
                 AuthenticationException |
@@ -90,16 +93,32 @@ public class TransferAction {
                 CredentialNotFoundException |
                 DisabledVendorLineException generalException
         ) {
-            statusVo.setSuccess(false);
-            statusVo.setAuthError(true);
-            statusVo.setMessage(ResponseCodes.TRANSFER_FAIL);
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+
+        } catch (
+                InvalidAgentApiCredentialException |
+                BetNotFoundException generalException
+        ) {
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_ERROR);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            //return invalid respond to trigger vendor resend when record still in processing
+            responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (Exception exception) {
-            statusVo.setSuccess(false);
-            statusVo.setAuthError(true);
-            statusVo.setMessage(ResponseCodes.TRANSFER_FAIL);
+            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
+
         }
 
         if (responseVo.getFundTransferResponseVo().getStatusVo().getRetryStatus() != null) {
@@ -119,23 +138,6 @@ public class TransferAction {
         ValidationUtils.validateRequest(dto.getSubAuth());
         ValidationUtils.validateRequest(dto.getFundTransferRequestDto());
         ValidationUtils.validateRequest(dto.getFundTransferRequestDto().getFundDto());
-        if (dto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null) {
-            //Loop bet info
-            for (FundInfoDto fundInfoDto : dto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-                ValidationUtils.validateRequest(fundInfoDto);
-                //date time format validation
-                if (!vendorService.isValidDateString(fundInfoDto.getDtEvent())) {
-                    throw new InvalidRequestException();
-                }
-            }
-        }
-        if (dto.getFundTransferRequestDto().getFundDto().getRefundDto() != null) {
-            ValidationUtils.validateRequest(dto.getFundTransferRequestDto().getFundDto().getRefundDto());
-            //date time format validation
-            if (!vendorService.isValidDateString(dto.getFundTransferRequestDto().getFundDto().getRefundDto().getDtEvent())) {
-                throw new InvalidRequestException();
-            }
-        }
         ValidationUtils.isEquals("fundtransferrequest", dto.getType(), InvalidRequestException::new);
         //date time format validation
         if (!vendorService.isValidDateString(dto.getDtSent())) {
@@ -145,9 +147,9 @@ public class TransferAction {
 
     }
 
-    private void doVerification(TransferDto dto, GameSession gameSession)
-            throws NoAvailableLineException, CredentialNotFoundException, InvalidPlayerException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
+    private void doVerification(TransferDto dto, GameSession gameSession) throws
+            NoAvailableLineException,
+            CredentialNotFoundException {
 
         //Verify received passkey is the same from credential
         String passkey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PASSKEY);
@@ -160,84 +162,65 @@ public class TransferAction {
         //Verify vendor game code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getBaseGame().getKeyName(), NoAvailableLineException::new);
 
-        //Verify vendor currency code is the same from gameSession
-        if (dto.getFundTransferRequestDto().getFundDto().getFundInfoDto() != null) {
-            //Loop bet info
-            for (FundInfoDto fundInfoDto : dto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-                ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), fundInfoDto.getCurrencyCode(), NoAvailableLineException::new);
-            }
-        }
-        if (dto.getFundTransferRequestDto().getFundDto().getRefundDto() != null) {
-            ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getFundTransferRequestDto().getFundDto().getRefundDto().getCurrencyCode(), NoAvailableLineException::new);
-        }
-
-        //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getFundTransferRequestDto().getAccountId());
-
     }
 
     private GameSession getGameSession(TransferDto transferDto) throws AuthenticationException {
         GameSession gameSession = new GameSession();
-        if (!transferDto.getFundTransferRequestDto().getIsRetry()) {
-            //check 1st fundinfo gamestatemode value
-            if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0].getGameStateMode() != GameStateMode.EXPIRE) {
-                //Get GameSession by token
-                gameSession = gameSessionService.verifyToken(transferDto.getFundTransferRequestDto().getToken());
-            } else {
-                //When gamestatemode = 3 get GameSession by player name and vendor game id, this end request might send out after few days of bet
-                gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(transferDto.getFundTransferRequestDto().getAccountId(), transferDto.getBaseGame().getKeyName());
-            }
-        } else {
+
+        if (transferDto.getFundTransferRequestDto().getIsRetry()) {
             //When isRetry = true, get GameSession by player name and vendor game id
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(transferDto.getFundTransferRequestDto().getAccountId(), transferDto.getBaseGame().getKeyName());
+        } else if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0].getGameStateMode() != GameStateMode.EXPIRE) {
+            //When gamestatemode = 3 get GameSession by player name and vendor game id, this end request might send out after few days of bet
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(transferDto.getFundTransferRequestDto().getAccountId(), transferDto.getBaseGame().getKeyName());
+        } else {
+            //Get GameSession by token
+            gameSession = gameSessionService.verifyToken(transferDto.getFundTransferRequestDto().getToken());
         }
 
         return gameSession;
     }
 
-    private TransferVo processTransferAction(TransferDto transferDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog, String body) {
-        TransferVo responseVo = new TransferVo();
-        FundTransferResponseVo fundTransferResponseVo = new FundTransferResponseVo();
-        StatusVo statusVo = new StatusVo();
-        fundTransferResponseVo.setStatusVo(statusVo);
-        responseVo.setFundTransferResponseVo(fundTransferResponseVo);
+    private TransferVo processTransferAction(TransferVo responseVo, TransferDto transferDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog, String body) throws
+            InvalidRequestException,
+            InvalidAgentApiCredentialException,
+            BetNotFoundException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            InvalidOperatorResponseException,
+            BetResultIdempotentViolationException,
+            CouchbaseDataIntegrityException,
+            MergedBetDataIntegrityException,
+            VendorCurrencyNotSupportException,
+            NoAvailableLineException,
+            InvalidPlayerException,
+            AuthenticationException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            DisabledVendorLineException
+    {
 
-        //setup debit and credit bet type respond message
-        if (transferDto.getFundTransferRequestDto().getFundDto().getDebitAndCredit()) {
-            statusVo.setSuccessDebit(false);
-            statusVo.setSuccessCredit(false);
-        }
-
-        //check not refund/recredit transfer
-        if (!transferDto.getFundTransferRequestDto().getIsRetry()) {
+        if (transferDto.getFundTransferRequestDto().getIsRefund()) {
+            //handle refund condition
+            responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, traceId, httpRequestLog);
+        } else {
+            //handle not refund condition
             //Loop bet info
             for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-                if (fundInfoDto.getGameStateMode() == GameStateMode.BET) {
-                    //process bet result into unsettle bet when gamestatemode = 1(game round start)
-                    responseVo = betService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, traceId, body, httpRequestLog);
-                    if (!responseVo.getFundTransferResponseVo().getStatusVo().getSuccess()) {
-                        //stop loop and return error respond when debit and credit condition
-                        break;
+                switch (fundInfoDto.getGameStateMode()) {
+                    case GameStateMode.DEBIT -> {
+                        //process bet result into unsettle bet when gamestatemode = 1(game round start)
+                        responseVo = betService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, traceId, body, httpRequestLog);
                     }
-                } else {
-                    //process bet result into settle bet when gamestatemode = 2(game round end/ bonus free spin) or 0(free spin/jackpot) or 3(expire bet round end)
-                    responseVo = resultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), fundInfoDto.getGameStateMode(), gameSession, traceId, httpRequestLog);
+                    case GameStateMode.CREDIT, GameStateMode.CREDIT_ENDROUND, GameStateMode.EXPIRE -> {
+                        //process bet result into settle bet when gamestatemode = 2(game round end/ bonus free spin) or 0(free spin/jackpot) or 3(expire bet round end)
+                        responseVo = resultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, traceId, httpRequestLog);
+                    }
+                    // If the header does not match any of the expected values, return an error response
+                    default -> {
+                        throw new InvalidRequestException();
+                    }
                 }
-            }
-        } else {
-            //handle refund and recredit
-            if (transferDto.getFundTransferRequestDto().getIsRecredit()) {
-                //handle recredit condition
-                //get 1st array object as record
-                FundInfoDto fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
-
-                //handle recredit action
-                responseVo = resultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), fundInfoDto.getGameStateMode(), gameSession, traceId, httpRequestLog);
-
-            } else {
-                //handle refund condition
-                //handle refund action
-                responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, traceId, httpRequestLog);
             }
         }
 

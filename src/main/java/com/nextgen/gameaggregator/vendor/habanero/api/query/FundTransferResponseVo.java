@@ -12,4 +12,8 @@ public class FundTransferResponseVo {
     @JsonProperty("status")
     private StatusVo statusVo;
 
+    public FundTransferResponseVo() {
+        this.setStatusVo(new StatusVo());
+    }
+
 }
