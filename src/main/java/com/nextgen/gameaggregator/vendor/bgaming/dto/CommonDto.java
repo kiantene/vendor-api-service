@@ -20,7 +20,7 @@ public class CommonDto {
     @JsonProperty("game")
     private String game;
     @JsonProperty("game_id")
-    private String gameId;
+    private String vendorRoundId;
     @JsonProperty("finished")
     private Boolean finished = false;
     @JsonProperty("actions")
