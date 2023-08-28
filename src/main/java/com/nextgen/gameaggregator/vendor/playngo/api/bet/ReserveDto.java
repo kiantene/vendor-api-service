@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import javax.annotation.Nullable;
@@ -20,9 +21,11 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ReserveDto extends CommonDto implements BetResultData {
     @NotBlank
+    @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
     @NotBlank
+    @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "productId")
     private String productId;
     @NotBlank
