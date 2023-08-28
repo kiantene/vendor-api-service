@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.evoplay.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -12,11 +13,11 @@ import lombok.Data;
 public class DataDto {
     @NotBlank
     @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[a-zA-Z0-9_/-]+$")
     private String round_id;
 
     @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[a-zA-Z0-9_/-]+$")
     private String refund_round_id;
 
     @Size(max = 50)
@@ -44,4 +45,11 @@ public class DataDto {
     private String details;
 
     private DetailsDto detailsDto;
+
+    private String id;
+    private String user_id;
+    private String type;
+    private String event_id;
+    private String user_message;
+    private String wallet_type;
 }

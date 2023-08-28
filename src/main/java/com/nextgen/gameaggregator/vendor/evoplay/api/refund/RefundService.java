@@ -46,7 +46,16 @@ public class RefundService {
             GameNotSupportedException,
             DisabledGameException,
             DisabledVendorLineException,
-            CredentialNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, BetRefundIdempotentViolationException, InvalidOperatorResponseException, BetNotFoundException, CouchbaseDataIntegrityException, BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException {
+            CredentialNotFoundException,
+            InvalidAgentApiCredentialException,
+            RecordNotFoundException,
+            BetRefundIdempotentViolationException,
+            InvalidOperatorResponseException,
+            BetNotFoundException,
+            CouchbaseDataIntegrityException,
+            BetResultIdempotentViolationException,
+            TransactionStillProcessingException,
+            VendorCurrencyNotSupportException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         RefundDto refundDto = new ModelMapper().map(callbackDto, RefundDto.class);
