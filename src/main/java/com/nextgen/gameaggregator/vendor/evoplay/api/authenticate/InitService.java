@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.evoplay.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.VendorGameService;
@@ -34,7 +35,7 @@ public class InitService {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo init(CallbackDto callbackDto, GameSession gameSession, String traceId) throws
+    public ResponseVo init(CallbackDto callbackDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidAgentApiCredentialException,
             InvalidOperatorResponseException,
             DisabledAgentPlayerException,
