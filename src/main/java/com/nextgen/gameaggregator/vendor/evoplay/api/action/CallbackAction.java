@@ -91,10 +91,10 @@ public class CallbackAction {
 
             switch (callbackDto.getName().toLowerCase()) {
                 case "init" -> {
-                    responseVo = initService.init(callbackDto, gameSession, traceId);
+                    responseVo = initService.init(callbackDto, gameSession, traceId, httpRequestLog);
                 }
                 case "bet" -> {
-                    responseVo = betService.bet(callbackDto, gameSession, body, traceId);
+                    responseVo = betService.bet(callbackDto, gameSession, body, traceId, httpRequestLog);
                 }
                 case "win" -> {
                     responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId);
@@ -119,7 +119,7 @@ public class CallbackAction {
 
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code) && callbackDto.getName().equalsIgnoreCase("refund")) {
-                idempotentSetBalance(traceId, gameSession, responseVo);
+                idempotentSetBalance(traceId, gameSession, responseVo, httpRequestLog);
             } else {
                 responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
             }
@@ -148,7 +148,7 @@ public class CallbackAction {
 
         } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
-            idempotentSetBalance(traceId, gameSession, responseVo);
+            idempotentSetBalance(traceId, gameSession, responseVo, httpRequestLog);
 
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
@@ -161,10 +161,10 @@ public class CallbackAction {
         return responseVo;
     }
 
-    private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo) {
+    private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo, HttpRequestLog httpRequestLog) {
         try {
             ResponseDataVo responseDataVo = new ResponseDataVo();
-            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession));
+            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession, httpRequestLog));
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(responseDataVo);
         } catch (InvalidOperatorResponseException e) {
