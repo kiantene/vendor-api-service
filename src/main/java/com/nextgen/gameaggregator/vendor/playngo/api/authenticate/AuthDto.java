@@ -17,6 +17,7 @@ public class AuthDto extends CommonDto {
     @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "username")
     private String username;
+
     @JacksonXmlProperty(localName = "password")
     private String password;
     @JacksonXmlProperty(localName = "extra")
@@ -28,6 +29,7 @@ public class AuthDto extends CommonDto {
 
     @JacksonXmlProperty(localName = "client")
     private String client;
+
     @JacksonXmlProperty(localName = "CID")
     private String CID;
 
@@ -50,6 +52,7 @@ public class AuthDto extends CommonDto {
     @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "gameId")
     private String gameId;
+
     @JacksonXmlProperty(localName = "channel")
     private String channel;
 }

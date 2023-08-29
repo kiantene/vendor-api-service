@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -24,40 +25,60 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
+
     @NotBlank
     @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "productId")
     private String productId;
+
     @NotBlank
+    @Size(min = 1, max = 32)
     @JacksonXmlProperty(localName = "transactionId")
     private String transactionId;
+
     @NotBlank
     @JacksonXmlProperty(localName = "real")
     private String real;
+
     @NotBlank
+    @Size(min = 3, max = 3)
     @JacksonXmlProperty(localName = "currency")
     private String currency;
+
     @NotBlank
+    @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "gameId")
     private String gameId;
+
     @NotBlank
+    @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "gameSessionId")
     private String gameSessionId;
+
+    @Size(min = 1, max = 50)
     @JacksonXmlProperty(localName = "contextId")
     private String contextId;
+
     @NotBlank
+    @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "accessToken")
     private String accessToken;
+
     @NotBlank
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "roundId")
-    private String roundId;
+    private Long roundId;
+
     @JacksonXmlProperty(localName = "gameMode")
-    private String gameMode;
+    private Integer gameMode;
+
     @NotBlank
     @JacksonXmlProperty(localName = "channel")
     private String channel;
+
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
+
     @JacksonXmlProperty(localName = "actualValue")
     private String actualValue;
 
@@ -78,7 +99,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.roundId;
+        return String.valueOf(this.roundId);
     }
 
     @Override

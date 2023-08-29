@@ -17,18 +17,22 @@ public class BalanceDto extends CommonDto {
     @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
+
     @NotBlank
     @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "productId")
     private String productId;
+
     @NotBlank
-    @Size(min = 1, max = 3)
+    @Size(min = 3, max = 3)
     @JacksonXmlProperty(localName = "currency")
     private String currency;
+
     @NotBlank
     @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "gameId")
     private String gameId;
+
     @NotBlank
     @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "accessToken")
