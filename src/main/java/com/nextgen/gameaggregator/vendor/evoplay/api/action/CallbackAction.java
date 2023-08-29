@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evoplay.api.authenticate.InitService;
+import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceIncreaseService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.endround.WinService;
 import com.nextgen.gameaggregator.vendor.evoplay.api.refund.RefundService;
@@ -52,6 +53,8 @@ public class CallbackAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private BalanceIncreaseService balanceIncreaseService;
 
     // Handle incoming API requests
     @PostMapping
@@ -73,24 +76,34 @@ public class CallbackAction {
             // Mapping raw Map data into Dto
             callbackDto = new ModelMapper().map(rawData, CallbackDto.class);
 
-            // get gameSession
-            gameSession = gameSessionService.verifyToken(callbackDto.getToken());
+            // Increase Balance request Vendor didn't send token and signature, so we get gameSession by vendorPlayerUsername and skip verified signature
+            if (callbackDto.getName().toLowerCase().equals("balanceincrease")) {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(callbackDto.getData().getUser_id());
 
-            // use raw body Map data verify signature
-            verifySignature(gameSession, rawData, callbackDto);
+            } else {
+                // get gameSession
+                gameSession = gameSessionService.verifyToken(callbackDto.getToken());
+
+                // use raw body Map data verify signature
+                verifySignature(gameSession, rawData, callbackDto);
+            }
+
 
             switch (callbackDto.getName().toLowerCase()) {
                 case "init" -> {
-                    responseVo = initService.init(callbackDto, gameSession, traceId);
+                    responseVo = initService.init(callbackDto, gameSession, traceId, httpRequestLog);
                 }
                 case "bet" -> {
-                    responseVo = betService.bet(callbackDto, gameSession, body, traceId);
+                    responseVo = betService.bet(callbackDto, gameSession, body, traceId, httpRequestLog);
                 }
                 case "win" -> {
                     responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId);
                 }
                 case "refund" -> {
                     responseVo = refundService.refund(callbackDto, gameSession, traceId);
+                }
+                case "balanceincrease" -> {
+                    responseVo = balanceIncreaseService.balanceIncrease(callbackDto, gameSession, traceId, httpRequestLog);
                 }
                 // If the header does not match any of the expected values, return an error response
                 default -> {
@@ -106,16 +119,21 @@ public class CallbackAction {
 
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code) && callbackDto.getName().equalsIgnoreCase("refund")) {
-                idempotentSetBalance(traceId, gameSession, responseVo);
+                idempotentSetBalance(traceId, gameSession, responseVo, httpRequestLog);
             } else {
                 responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
             }
-            
+
+        } catch (BetNotFoundException e) {
+            if (callbackDto.getName().equalsIgnoreCase("refund")) {
+                idempotentSetBalance(traceId, gameSession, responseVo, httpRequestLog);
+            } else {
+                responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+            }
         } catch (AuthenticationException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
                  DisabledVendorLineException |
-                 BetNotFoundException |
                  RecordNotFoundException e) {
             responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
 
@@ -130,7 +148,7 @@ public class CallbackAction {
 
         } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
-            idempotentSetBalance(traceId, gameSession, responseVo);
+            idempotentSetBalance(traceId, gameSession, responseVo, httpRequestLog);
 
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
@@ -143,10 +161,10 @@ public class CallbackAction {
         return responseVo;
     }
 
-    private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo) {
+    private void idempotentSetBalance(String traceId, GameSession gameSession, ResponseVo responseVo, HttpRequestLog httpRequestLog) {
         try {
             ResponseDataVo responseDataVo = new ResponseDataVo();
-            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession));
+            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession, httpRequestLog));
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setData(responseDataVo);
         } catch (InvalidOperatorResponseException e) {

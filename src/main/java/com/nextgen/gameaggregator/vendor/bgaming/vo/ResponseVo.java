@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.bgaming.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
 
@@ -21,6 +22,7 @@ public class ResponseVo implements HttpResponse {
     @JsonProperty("message")
     private String message;
     private Integer httpStatus;
+    private List<HttpRequestLog> httpRequestLogList;
 
     @Override
     public boolean hasError() {

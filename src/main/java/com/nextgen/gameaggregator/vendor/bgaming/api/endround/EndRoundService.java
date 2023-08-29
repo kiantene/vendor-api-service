@@ -12,8 +12,8 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
-import com.nextgen.gameaggregator.vendor.bgaming.vo.TransactionVo;
 import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
+import com.nextgen.gameaggregator.vendor.bgaming.vo.TransactionVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -46,7 +46,7 @@ public class EndRoundService {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public TransactionVo endRound(CommonDto commonDto, ActionDto actionDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
+    public TransactionVo endRound(CommonDto commonDto, ActionDto actionDto, HttpRequestLog httpRequestLog, HttpRequestLog parentHttpRequestLog, HttpServletRequest request) throws AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException, MergedBetDataIntegrityException, InsufficientBalanceException, TransactionStillProcessingException, BetNotFoundException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, VendorCurrencyNotSupportException {
         String traceId = httpRequestLog.getId();
         TransactionVo transactionVo = new TransactionVo();
 
@@ -56,12 +56,12 @@ public class EndRoundService {
         GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getUserId());
 
         // Verify remaining parameters (Verify against database values)
-        this.doVerification(commonDto, gameSession, httpRequestLog, request);
+        this.doVerification(commonDto, gameSession, parentHttpRequestLog, request);
 
         // Prepare Data for process bet
         ResultType resultType = ResultType.END;
         if (actionDto == null) {
-            endRoundDto.setBetId(commonDto.getGameId());
+            endRoundDto.setBetId(commonDto.getVendorRoundId());
         } else {
             endRoundDto.setBetId(actionDto.getActionId());
             if (actionDto.getAction().equals("win")) {
@@ -70,7 +70,7 @@ public class EndRoundService {
                 endRoundDto.setWinAmount(amount);
             }
         }
-        endRoundDto.setTimestamp(httpRequestLog.getStartTime());
+        endRoundDto.setTimestamp(System.currentTimeMillis());
 
         // process settled bet
         BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, httpRequestLog);

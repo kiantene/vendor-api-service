@@ -22,7 +22,7 @@ public class EndRoundDto implements BetResultData {
     @JsonProperty("game")
     private String game;
     @JsonProperty("game_id")
-    private String gameId;
+    private String vendorRoundId;
     @JsonProperty("finished")
     private Boolean finished;
     @JsonProperty("actions")
@@ -34,7 +34,7 @@ public class EndRoundDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.betId;
+        return this.vendorRoundId;
     }
 
     @Override
@@ -44,7 +44,7 @@ public class EndRoundDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.gameId;
+        return this.vendorRoundId;
     }
 
     @Override

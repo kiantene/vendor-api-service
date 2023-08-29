@@ -23,18 +23,19 @@ public class BetDto implements BetResultData {
     @JsonProperty("game")
     private String game;
     @JsonProperty("game_id")
-    private String gameId;
+    private String vendorRoundId;
     @JsonProperty("finished")
     private Boolean finished;
     @JsonProperty("actions")
     private List<ActionDto> actions;
     private String betId;
     private BigDecimal betAmount;
+    private BigDecimal winAmount;
     private Long timestamp;
 
     @Override
     public String getExternalTransactionId() {
-        return this.betId;
+        return this.vendorRoundId;
     }
 
     @Override
@@ -44,7 +45,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.gameId;
+        return this.vendorRoundId;
     }
 
     @Override
