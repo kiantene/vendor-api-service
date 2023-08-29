@@ -82,12 +82,14 @@ public class VendorService extends BaseVendorService {
         return vendorCurrencies;
     }
 
+    @Cacheable(value = "Vendors", key = "{#agent.id, #language.id}" , cacheManager = "cacheManager")
     public List<IGameVendor> findAgentSupportedVendors(Language language, Agent agent){
 
         return vendorRepository.findByAgentSupportedVendorAndStatus(
                 agent.getId(), agent.getCurrency().getId(), language.getId(), Status.ACTIVE.code);
     }
 
+    @Cacheable(value = "VendorLanguages", key = "{#language.id, #vendor.id}" , cacheManager = "cacheManager")
     public VendorLanguageCode findVendorLanguageCode(Vendor vendor, Language language) throws VendorLanguageNotSupportedException {
 
         VendorLanguageCode vendorLanguageCode =
@@ -108,7 +110,7 @@ public class VendorService extends BaseVendorService {
         return vendorLanguageCode;
     }
 
-    @Cacheable(value = "vendorCurrencies", key = "{#vendorId, #currencyId}", cacheManager = "cacheManager")
+    @Cacheable(value = "VendorCurrencies", key = "{#vendorId, #currencyId}", cacheManager = "cacheManager")
     public VendorCurrency findVendorCurrency(Integer vendorId, Integer currencyId) throws VendorCurrencyNotSupportException {
         VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendorId, currencyId);
 
