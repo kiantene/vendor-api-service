@@ -65,6 +65,7 @@ public class GameSessionService {
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
     @Caching( put = {
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}" , cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
@@ -72,6 +73,7 @@ public class GameSessionService {
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
                                      String vendorPlatformCode, String lobbyUrl, String ipAddress) throws AuthenticationException {
+
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendor().getId());
@@ -115,6 +117,7 @@ public class GameSessionService {
     }
 
     public void clearGameSession(GameSession gameSession, String username, String vendorGameCode){
+        cacheManager.getCache("GameSessions").evict(gameSession.getAgentId()+","+username+","+gameSession.getVendorLineId()+","+gameSession.getCurrencyId());
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername());
         cacheManager.getCache("GameSessions").evict(username);
