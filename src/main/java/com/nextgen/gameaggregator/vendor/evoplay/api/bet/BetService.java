@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.evoplay.api.bet;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.ValidationService;
@@ -26,7 +27,7 @@ public class BetService {
     @Autowired
     private ValidationService validationService;
 
-    public ResponseVo bet(CallbackDto callbackDto, GameSession gameSession, String body, String traceId)
+    public ResponseVo bet(CallbackDto callbackDto, GameSession gameSession, String body, String traceId, HttpRequestLog httpRequestLog)
             throws
             CurrencyNotSupportedException,
             InvalidRequestException,
@@ -39,7 +40,10 @@ public class BetService {
             InvalidPlayerException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            DisabledVendorLineException, BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException {
+            DisabledVendorLineException,
+            BetResultIdempotentViolationException,
+            TransactionStillProcessingException,
+            VendorCurrencyNotSupportException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         BetDto betDto = new ModelMapper().map(callbackDto, BetDto.class);
@@ -47,7 +51,7 @@ public class BetService {
         this.doValidation(betDto);
         this.doVerification(betDto, gameSession);
 
-        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
         ResponseDataVo responseDataVo = new ResponseDataVo();
         responseDataVo.setBalance(betEvent.getLastBalance());
