@@ -10,8 +10,8 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
-import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
@@ -43,10 +43,6 @@ public class QueryAction {
 
         // Construct VO
         QueryVo responseVo = new QueryVo();
-        FundTransferResponseVo fundTransferResponseVo = new FundTransferResponseVo();
-        StatusVo statusVo = new StatusVo();
-        fundTransferResponseVo.setStatusVo(statusVo);
-        responseVo.setFundTransferResponseVo(fundTransferResponseVo);
         Integer httpStatus = HttpStatus.SC_OK;
 
         try {
@@ -69,7 +65,7 @@ public class QueryAction {
             this.checkBetAvailable(gameSession, queryDto.getQueryRequestDto());
 
             // bet not found return false respond
-            statusVo.setSuccess(false);
+            responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
 
         } catch (
                 AuthenticationException |
@@ -78,18 +74,23 @@ public class QueryAction {
                 JsonProcessingException |
                 CredentialNotFoundException generalException
         ) {
-            statusVo.setSuccess(false);
+            responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
+
         } catch (TransactionStillProcessingException TransactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
-            statusVo.setRetryStatus(true);
+            responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // bet found return true respond
-            statusVo.setSuccess(true);
+            responseVo.setResponseCode(ResponseCodes.QUERY_SUCCESS);
+
         } catch (Exception exception) {
-            statusVo.setSuccess(false);
+            responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
+
         }
 
         if (responseVo.getFundTransferResponseVo().getStatusVo().getRetryStatus() != null) {

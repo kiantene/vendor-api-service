@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
@@ -60,10 +61,14 @@ public class BetDetailService implements BetDetailUrl {
             throws InvalidVendorResponseException, InvalidVendorLineException {
         BetDetailUrlVo responseVo = new BetDetailUrlVo();
 
-        //Get Vendor game URL
-        String urlScheme = credentials.get(Credentials.API_URL) + EndPoints.BET_DETAIL_URL;
         //Construct the Game URL
-        String gameUrl = VendorService.generateUrl(urlScheme, formData);
+        String gameUrl = UriComponentsBuilder.fromUriString(credentials.get(Credentials.API_URL))
+                .path(EndPoints.BET_DETAIL_URL)
+                .queryParams(formData)
+                .build()
+                .encode()
+                .toUri()
+                .toString();
 
         //Save this player's game session
         //Set the game URL and return to Operator
