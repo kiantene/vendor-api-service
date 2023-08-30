@@ -12,7 +12,7 @@ public class CommonVo implements HttpResponse {
     @JacksonXmlProperty(localName = "real")
     private String real;
     @JacksonXmlProperty(localName = "statusCode")
-    private String statusCode;
+    private Integer statusCode;
     @JacksonXmlProperty(localName = "statusMessage")
     private String statusMessage;
     private String ResponseXMLFormat;
@@ -20,5 +20,10 @@ public class CommonVo implements HttpResponse {
     @Override
     public boolean hasError() {
         return !this.statusCode.equals(ResponseCodes.OK);
+    }
+
+    public void setStatusCode(Integer responseCode) {
+        this.statusCode = responseCode;
+        this.statusMessage = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
     }
 }

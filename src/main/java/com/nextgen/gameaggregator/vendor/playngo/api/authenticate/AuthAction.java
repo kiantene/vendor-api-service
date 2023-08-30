@@ -65,13 +65,11 @@ public class AuthAction {
             // Construct VO
             authVo.setExternalId(gameSession.getVendorPlayerUsername());
             authVo.setStatusCode(ResponseCodes.OK);
-            authVo.setStatusMessage("OK");
             authVo.setUserCurrency(gameSession.getVendorCurrencyCode());
             authVo.setReal(balance.toString());
             authVo.setExternalGameSessionId(gameSession.getToken());
         } catch (Exception e) {
             authVo.setStatusCode(ResponseCodes.INTERNAL);
-            authVo.setStatusMessage("INTERNAL");
             httpService.logError(httpRequestLog, e);
         } finally {
             authVoXml = xmlMapper.writeValueAsString(authVo);

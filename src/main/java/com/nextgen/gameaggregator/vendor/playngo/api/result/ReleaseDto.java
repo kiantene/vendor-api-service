@@ -7,7 +7,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import javax.annotation.Nullable;
@@ -20,74 +20,137 @@ import java.util.List;
 public class ReleaseDto extends CommonDto implements BetResultData {
 
     @NotBlank
+    @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
+
     @NotBlank
+    @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "productId")
     private String productId;
+
     @NotBlank
+    @Size(min = 1, max = 32)
     @JacksonXmlProperty(localName = "transactionId")
     private String transactionId;
+
+    @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "retry")
-    private String retry;
-    @NotBlank
+    private Integer retry;
+
+    @NotNull
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "real")
-    private String real;
+    private BigDecimal real;
+
     @NotBlank
+    @Size(min = 3, max = 3)
     @JacksonXmlProperty(localName = "currency")
     private String currency;
+
     @NotBlank
+    @Size(min = 1, max = 32)
     @JacksonXmlProperty(localName = "gameSessionId")
     private String gameSessionId;
+
+    @Size(max = 50)
     @JacksonXmlProperty(localName = "contextId")
     private String contextId;
-    @NotBlank
+
+    @NotNull
+    @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "state")
-    private String state;
+    private Integer state;
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "totalLoss")
     private String totalLoss;
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "totalGain")
     private String totalGain;
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "numRounds")
     private String numRounds;
-    @NotBlank
+
+    // 0 = Real Money, 1 = Promotional money. For example, the result of Free game spins.
+    @NotNull
+    @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "type")
-    private String type;
+    private Integer type;
+
     @NotBlank
+    @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "gameId")
     private String gameId;
+
     @NotBlank
+    @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "accessToken")
     private String accessToken;
-    @NotBlank
+
+    @NotNull
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "roundId")
-    private String roundId;
+    private Long roundId;
+
+    @NotNull
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "jackpotGain")
-    private String jackpotGain;
+    private BigDecimal jackpotGain;
+
+    @NotNull
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "jackpotLoss")
-    private String jackpotLoss;
+    private BigDecimal jackpotLoss;
+
+    @NotNull
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "jackpotGainSeed")
     private String jackpotGainSeed;
+
+    @NotNull
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "jackpotGainId")
     private String jackpotGainId;
+
+    @Size(max = 32)
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
-    @NotBlank
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "turnover")
-    private String turnover;
+    private BigDecimal turnover;
+
+    @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "freegameFinished")
     private String freeGameFinished;
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "freegameGain")
-    private String freeGameGain;
+    private BigDecimal freeGameGain;
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "freegameLoss")
     private String freeGameLoss;
+
+    @Size(max = 64)
+    @JacksonXmlProperty(localName = "externalGameSessionId")
+    private String externalGameSessionId;
+
+    @Pattern(regexp = "^(0|1|2)$")
     @JacksonXmlProperty(localName = "gameMode")
     private String gameMode;
+
     @NotBlank
+    @Pattern(regexp = "^(1|2|5)$")
     @JacksonXmlProperty(localName = "channel")
     private String channel;
+
+    @PositiveOrZero
     @JacksonXmlProperty(localName = "freegameTotalGain")
-    private String freeGameTotalGain;
+    private BigDecimal freeGameTotalGain;
 
     @Nullable
     @JacksonXmlProperty(localName = "jackpots")
@@ -106,7 +169,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.roundId;
+        return String.valueOf(this.roundId);
     }
 
     @Override
@@ -121,7 +184,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(this.real);
+        return this.real;
     }
 
     @Override
@@ -153,7 +216,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     public BigDecimal getJackpotAmount() {
         // Check condition to know this bet have jackpot win or not
         if (this.jackpotGain != null) {
-            return new BigDecimal(this.jackpotGain);
+            return this.jackpotGain;
         }
         return BigDecimal.ZERO;
     }
@@ -171,7 +234,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     public BetStatus getBetStatus() {
         // Check condition to know this free spin is finished or not
         if (this.freeGameExternalId != null && !this.freeGameExternalId.isEmpty()
-                && this.freeGameFinished != null && this.freeGameFinished != "1") {
+                && this.freeGameFinished != null && !this.freeGameFinished.equals("1")) {
             return BetStatus.UNSETTLED;
         }
         return BetStatus.SETTLED;

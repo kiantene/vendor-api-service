@@ -8,14 +8,13 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Data
 @JacksonXmlRootElement(localName = "reserve")
@@ -36,9 +35,10 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "transactionId")
     private String transactionId;
 
-    @NotBlank
+    @NotNull
+    @Positive
     @JacksonXmlProperty(localName = "real")
-    private String real;
+    private BigDecimal real;
 
     @NotBlank
     @Size(min = 3, max = 3)
@@ -55,7 +55,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "gameSessionId")
     private String gameSessionId;
 
-    @Size(min = 1, max = 50)
+    @Size(max = 50)
     @JacksonXmlProperty(localName = "contextId")
     private String contextId;
 
@@ -64,23 +64,32 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "accessToken")
     private String accessToken;
 
-    @NotBlank
+    @NotNull
     @PositiveOrZero
     @JacksonXmlProperty(localName = "roundId")
     private Long roundId;
 
+    @Size(max = 64)
+    @JacksonXmlProperty(localName = "externalGameSessionId")
+    private String externalGameSessionId;
+
+    @Pattern(regexp = "^(0|1|2)$")
     @JacksonXmlProperty(localName = "gameMode")
-    private Integer gameMode;
+    private String gameMode;
 
     @NotBlank
+    @Pattern(regexp = "^(1|2|5)$")
     @JacksonXmlProperty(localName = "channel")
     private String channel;
 
+    @NotBlank
+    @Size(min = 1, max = 32)
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
 
+    @Positive
     @JacksonXmlProperty(localName = "actualValue")
-    private String actualValue;
+    private BigDecimal actualValue;
 
     @Nullable
     @JacksonXmlProperty(localName = "jackpots")
@@ -109,7 +118,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return new BigDecimal(this.real);
+        return this.real;
     }
 
     @Override
@@ -124,7 +133,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return new BigDecimal(this.real);
+        return this.real;
     }
 
     @Override
@@ -134,12 +143,12 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return null;
+        return VendorService.getTimestamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return VendorService.getTimestamp();
     }
 
     @Override
@@ -150,7 +159,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @Override
     public Integer getIsFreespin() {
         // Check condition to know this bet is free spin or not
-        if (this.real == "0") {
+        if (Objects.equals(this.getReal(), BigDecimal.ZERO)) {
             return 1;
         }
         return 0;
