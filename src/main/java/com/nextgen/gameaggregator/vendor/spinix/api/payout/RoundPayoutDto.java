@@ -40,7 +40,7 @@ public class RoundPayoutDto implements RollbackData {
     public String roundId;
 
     @NotBlank
-    @Pattern(regexp = "[a-zA-Z]+")
+    @Pattern(regexp = "[a-zA-Z_]+")
     @Size(max = 24)
     public String gameType;
 
