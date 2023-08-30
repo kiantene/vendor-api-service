@@ -82,10 +82,6 @@ public class WalletService {
         return balanceVo.getData().getBalance();
     }
 
-    public BigDecimal getBalance(String traceId, GameSession gameSession) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
-        return this.getBalance(traceId, gameSession, null);
-    }
-
     /**
      * To process the unsettled bet by sending the bet data to Operator to validate the player has sufficient balance
      * to place the bet.
@@ -157,14 +153,6 @@ public class WalletService {
         if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
 
         return betEvent;
-    }
-
-    // This function will be deprecated, all vendor files must use processBet with httpRequestLog
-    public BetEvent processBet(String traceId, GameSession gameSession, BetResultData betResultData, String rawData) throws
-            InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
-            InvalidAgentApiCredentialException, BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException {
-
-        return this.processBet(traceId, gameSession, betResultData, rawData, null);
     }
 
     private UnsettledBet getUnsettledBetFromRound(List<UnsettledBet> betList, String roundId) throws BetNotFoundException {
@@ -607,7 +595,7 @@ public class WalletService {
             TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
 
         betResultLogService.idempotentCheck(traceId, gameSession, betResultData);
-        BigDecimal balance = this.getBalance(traceId, gameSession);
+        BigDecimal balance = this.getBalance(traceId, gameSession, null);
         balance = balance.add(betResultData.getWinAmount());
 
         betResultLogService.create(traceId, betResultData.getVendorBetId(), betResultData, gameSession, balance, 1);
