@@ -66,7 +66,7 @@ public class BetAction {
             this.doVerification(httpRequestLog, betDto, gameSession);
 
             //Process full bet data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);

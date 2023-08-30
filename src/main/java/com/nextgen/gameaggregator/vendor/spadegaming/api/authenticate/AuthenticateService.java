@@ -58,7 +58,7 @@ public class AuthenticateService {
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Populate the AcctInfoVo object with user details
             acctInfoVo.setAcctId(gameSession.getVendorPlayerUsername());

@@ -62,7 +62,7 @@ public class AuthAction {
             this.doVerification(authDto, gameSession);
 
             //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return success respond
             responseVo.getPlayerDetailResponseVo().setAccountId(gameSession.getVendorPlayerUsername());
