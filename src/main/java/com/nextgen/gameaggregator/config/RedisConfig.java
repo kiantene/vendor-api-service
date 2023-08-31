@@ -100,7 +100,7 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .fromSerializer(new GenericJackson2JsonRedisSerializer());
 
         Map<String, RedisCacheConfiguration> cacheNamesConfigurationMap = new HashMap<>();
-
+        
         cacheNamesConfigurationMap.put("Vendors", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLanguages", RedisCacheConfiguration.defaultCacheConfig()
