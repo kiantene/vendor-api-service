@@ -94,7 +94,7 @@ public class RollbackAction {
                 String body = httpRequestLog.getRequestBody();
                 RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
                 GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
-                BigDecimal balance = walletService.getBalance(traceId, gameSession);
+                BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
                 rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
                 rollbackVo.setBalance(balance);
             } catch (Exception exception) {

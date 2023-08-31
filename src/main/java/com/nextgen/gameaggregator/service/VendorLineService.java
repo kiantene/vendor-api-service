@@ -27,8 +27,8 @@ public class VendorLineService {
     @Autowired
     private AgentVendorLineRepository agentVendorLineRepository;
 
-
-    public VendorLine findAgentVendorLine(Agent agent, Vendor vendor,Currency currency , GameCategory gameCategory)
+    @Cacheable(value = "VendorLines", key = "{#agent.id, #vendor.id, #currency.id, #gameCategory.id}" , cacheManager = "cacheManager")
+    public VendorLine findAgentVendorLine(Agent agent, Vendor vendor, Currency currency, GameCategory gameCategory)
             throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine>  agentVendorLines = agentVendorLineRepository.
@@ -134,6 +134,7 @@ public class VendorLineService {
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
+    @Cacheable(value = "VendorLines", key = "{#vendorLineId}" , cacheManager = "cacheManager")
     public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException, DisabledVendorLineException {
 
         //1. get vendor line

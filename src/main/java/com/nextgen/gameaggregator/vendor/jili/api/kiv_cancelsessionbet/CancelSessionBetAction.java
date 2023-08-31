@@ -65,7 +65,7 @@ public class CancelSessionBetAction {
             this.doVerification(cancelSessionBetDto, gameSession);
 
             // 4. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             cancelSessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelSessionBetVo.setCurrency(gameSession.getVendorCurrencyCode());

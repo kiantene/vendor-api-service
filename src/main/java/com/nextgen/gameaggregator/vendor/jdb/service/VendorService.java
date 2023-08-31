@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleDto;
-import com.nextgen.gameaggregator.vendor.jdb.constant.ProviderCategory;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.stereotype.Service;
@@ -76,7 +76,7 @@ public class VendorService extends BaseVendorService {
             SettleDto dto = HttpService.convertJsonToDto(requestBody, SettleDto.class);
 
             // check the settled transaction is JDB Spribe or not
-            if(dto.getGType().equals(ProviderCategory.SPRIBE)){
+            if(dto.getGType().equals(Formats.SPRIBE)){
 
                 // Remap vendorBetId & vendorRoundId
                 settledBet.setVendorBetId(dto.getGameRoundSeqNo().toString());

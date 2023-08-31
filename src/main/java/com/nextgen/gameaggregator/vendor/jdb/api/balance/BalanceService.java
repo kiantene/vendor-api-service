@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
 import java.math.BigDecimal;
 
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,7 @@ public class BalanceService {
             this.doVerification(balanceDto, gameSession);
 
             // 4. Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, actionDto.getHttpRequestLog());
 
             // Construct VO
             vo.setBalance(balance);

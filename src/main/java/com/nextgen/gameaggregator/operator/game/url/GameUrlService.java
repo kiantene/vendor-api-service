@@ -8,6 +8,8 @@ import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -80,6 +82,7 @@ public class GameUrlService {
         return gameUrlData;
     }
 
+    @Cacheable(value = "Platforms", key = "#platformCode" , cacheManager = "cacheManager")
     public Platform checkPlatformCode(String platformCode) throws InvalidPlatformException {
         Platform platform = platformRepository.findByCode(platformCode);
         Optional.ofNullable(platform).orElseThrow(InvalidPlatformException::new);
@@ -87,6 +90,7 @@ public class GameUrlService {
 
     }
 
+    @Cacheable(value = "VendorGameCode", key = "{#vendorGame.id, #language.id, #currency.id}" , cacheManager = "cacheManager")
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
 
@@ -161,6 +165,7 @@ public class GameUrlService {
         }
     }
 
+    @Cacheable(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}" , cacheManager = "cacheManager")
     public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;
