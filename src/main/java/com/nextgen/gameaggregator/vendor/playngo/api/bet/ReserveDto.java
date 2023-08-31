@@ -20,6 +20,7 @@ import java.util.Objects;
 @JacksonXmlRootElement(localName = "reserve")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ReserveDto extends CommonDto implements BetResultData {
+
     @NotBlank
     @Size(min = 1, max = 64)
     @JacksonXmlProperty(localName = "externalId")
@@ -37,6 +38,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @NotNull
     @Positive
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "real")
     private BigDecimal real;
 
@@ -88,6 +90,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
     private String freeGameExternalId;
 
     @Positive
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "actualValue")
     private BigDecimal actualValue;
 
