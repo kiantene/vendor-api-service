@@ -68,7 +68,7 @@ public class AuthenticationAction {
             this.doVerification(gameSession, httpRequestLog, request, authenticationDto);
 
             // Get walletBalance
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Regenerate token for session token (launch token only can be use once time)
             String newToken = UUID.randomUUID().toString();

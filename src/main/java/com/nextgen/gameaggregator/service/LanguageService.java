@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.repository.LanguageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -16,6 +17,7 @@ public class LanguageService {
     @Autowired
     private LanguageRepository languageRepository;
 
+    @Cacheable(value = "Languages", key = "{#languageCode}", cacheManager = "cacheManager")
     public Language checkLanguageCode(String languageCode) throws InvalidLanguageException {
         Language language = languageRepository.findByCode(languageCode);
         Optional.ofNullable(language).orElseThrow(InvalidLanguageException::new);

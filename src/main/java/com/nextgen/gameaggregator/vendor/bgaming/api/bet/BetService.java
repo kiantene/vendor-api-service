@@ -68,7 +68,7 @@ public class BetService {
 
         // Process unsettled bet
         BigDecimal balance = null;
-        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
         balance = betEvent.getLastBalance();
 
         // Convert Amount

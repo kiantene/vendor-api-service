@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceServ
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,11 +49,12 @@ public class InitService {
         this.doVerification(gameSession);
 
         // Retrieve the latest wallet balance from Operator
+
         BigDecimal balance = null;
         if (isBalancedIncreaseTestEnabled) {
             balance = balanceService.getBalance(gameSession.getVendorPlayerUsername(), traceId, gameSession, httpRequestLog);
         } else {
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
         }
 
         ResponseDataVo responseDataVo = new ResponseDataVo();

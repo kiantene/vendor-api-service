@@ -66,7 +66,7 @@ public class BalanceAction {
             List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
             for (UsersDto user : balanceDto.getUsers()) {
                 String traceId = httpRequestLog.getId();
-                CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId));
+                CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
                 futures.add(future);
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -125,7 +125,7 @@ public class BalanceAction {
         ValidationUtils.isEquals(usersDto.getCur(), gameSession.getVendorCurrencyCode(), InvalidCurrencyException::new);
     }
 
-    private UsersVo processData(UsersDto usersDto, String clientId, String clientSecret, String traceId) {
+    private UsersVo processData(UsersDto usersDto, String clientId, String clientSecret, String traceId, HttpRequestLog httpRequestLog) {
         UsersVo usersVo = new UsersVo();
 
         try {
@@ -139,7 +139,7 @@ public class BalanceAction {
             this.doVerification(usersDto, gameSession, clientId, clientSecret);
 
             // 4. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 5. Set WalletVo for each user
             WalletsVo walletVo = new WalletsVo();

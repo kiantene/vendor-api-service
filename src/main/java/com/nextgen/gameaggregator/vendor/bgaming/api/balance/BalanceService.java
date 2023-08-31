@@ -51,7 +51,7 @@ public class BalanceService {
         this.doVerification(commonDto, gameSession, httpRequestLog, request);
 
         // Get walletBalance
-        BigDecimal balance = walletService.getBalance(traceId, gameSession);
+        BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         // Convert Amount
         Integer convertedBalance = vendorService.convertAmountToInteger(balance, commonDto.getCurrency());
