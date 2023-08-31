@@ -82,9 +82,11 @@ public class BalanceAction {
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (
                 InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
@@ -95,6 +97,7 @@ public class BalanceAction {
 
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -104,6 +107,7 @@ public class BalanceAction {
 
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
