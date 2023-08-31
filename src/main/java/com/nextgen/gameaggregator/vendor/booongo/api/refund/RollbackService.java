@@ -95,7 +95,7 @@ public class RollbackService {
         }catch(BetNotFoundException |
                BetRefundIdempotentViolationException |
                BetResultIdempotentViolationException e){
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
@@ -148,12 +148,12 @@ public class RollbackService {
         ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         BigDecimal balance = BigDecimal.ZERO;
 
         try {
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } catch (Exception exception) {
 

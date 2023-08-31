@@ -51,6 +51,7 @@ public class WagerAction {
 
         String traceId = httpRequestLog.getId();
         String brandUid = "";
+        GameSession gameSession = null;
 
         try {
 
@@ -67,14 +68,14 @@ public class WagerAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
+            gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
 
             // Verify data
             this.doVerification(dto, gameSession);
 
             // Process bet
             // Vendor identify duplicate bet by round_id and wager_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Vendor player username + Balance + Currency
@@ -98,11 +99,11 @@ public class WagerAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, brandUid);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -126,9 +127,9 @@ public class WagerAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } catch (Exception e) {
+        } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, e);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }

@@ -93,7 +93,7 @@ public class GeneralAction {
             actionDto.setHttpRequestLog(httpRequestLog);
 
             // Handle the action and return the resulting value
-            vo = this.actionHandling(actionDto, traceId);
+            vo = this.actionHandling(actionDto, traceId, httpRequestLog);
         
         } catch (CredentialNotFoundException credentialNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
@@ -117,7 +117,7 @@ public class GeneralAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId) {
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
             case Actions.CANCEL_BET_AND_SETTLE -> vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId);

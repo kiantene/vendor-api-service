@@ -35,6 +35,7 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    @Cacheable(value = "VendorGames", key = "{#gameCode}", cacheManager = "cacheManager")
     public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException, DisabledGameException {
         VendorGame vendorGame = vendorGameRepository.findByCode(gameCode);
         Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);

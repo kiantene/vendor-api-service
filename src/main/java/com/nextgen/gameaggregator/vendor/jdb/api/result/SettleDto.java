@@ -1,18 +1,18 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -119,7 +119,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.gameRoundSeqNo.toString();
+        // check provider's category to decide round id value
+        if(this.getGType().equals(Formats.SPRIBE)){
+            return String.valueOf(refTransferIds.get(0));
+        }else{
+            return this.gameRoundSeqNo.toString();
+        }
     }
 
     @Override

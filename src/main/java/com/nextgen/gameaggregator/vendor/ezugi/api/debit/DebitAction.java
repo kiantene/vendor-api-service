@@ -85,7 +85,7 @@ public class DebitAction {
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     break;
                 default:
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
                     balance = betEvent.getLastBalance();
                     break;
             }
@@ -169,7 +169,7 @@ public class DebitAction {
                 if (debitVo.getErrorCode().equals(ResponseCodes.USER_NOT_FOUND)) {
                     debitVo.setBalance(Double.valueOf(0));
                 } else {
-                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken()).setScale(2, RoundingMode.DOWN).doubleValue());
+                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
                 }
             }
             debitVo.setCurrency(debitDto.getCurrency());
