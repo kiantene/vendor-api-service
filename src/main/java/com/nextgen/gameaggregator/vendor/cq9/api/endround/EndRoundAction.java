@@ -63,14 +63,10 @@ public class EndRoundAction {
         String vendorCurrencyCode = "";
 
         try {
-            // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
-
             // Convert original request body into dto
-            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
+            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);
-            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {
-            });
+            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {});
 
             // 1. Validate request parameters from vendor
             this.doValidation(endRoundDto, endRoundDataDtoList, wToken);

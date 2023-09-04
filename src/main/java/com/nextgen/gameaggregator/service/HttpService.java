@@ -6,10 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,21 +33,16 @@ public class HttpService {
 
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
-    @Autowired
-    private HttpRequestLogRepository httpRequestLogRepository;
-    @Autowired
-    private KafkaService kafkaService;
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
-            String headersJson = new ObjectMapper().writeValueAsString(headers);
             String requestBody = this.getRawRequestBody(request);
             httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
-            httpRequestLog.setHeaders(headersJson);
+            httpRequestLog.setHeaders(headers);
             httpRequestLog.setRequestBody(requestBody);
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
@@ -69,8 +62,7 @@ public class HttpService {
             requestLog.setEndTime(System.currentTimeMillis());
                 THREAD_POOL.submit(() -> {
                     try {
-                        String responseBody = new ObjectMapper().writeValueAsString(responseVo);
-                        requestLog.setResponseBody(responseBody);
+                        requestLog.setResponseBody(responseVo);
                         requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                         requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
@@ -152,8 +144,16 @@ public class HttpService {
         return object;
     }
 
+    public static <T> T convertQueryStringToDto(HttpRequestLog httpRequestLog, Class<T> objectClass) throws InvalidRequestException {
+        String body = httpRequestLog.getRequestBody();
+        if (body == null) throw new InvalidRequestException();
+        T object = HttpService.convertQueryStringToDto(body, objectClass);
+        httpRequestLog.setRequestBodyDto(object);
+
+        return object;
+    }
+
     public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
-//        Map<String, String> queryParameterMap = new HashMap<>();
         Map<String, Object> queryParameterMap = new HashMap<>();
 
         // TODO: To review on this exception handling
@@ -193,6 +193,15 @@ public class HttpService {
         } catch (IllegalArgumentException illegalArgumentException) {
             throw new InvalidRequestException(); // re-throw as InvalidRequest
         }
+
+        return object;
+    }
+
+    public static <T> T convertQueryStringToDtoUrlDecode(HttpRequestLog httpRequestLog, Class<T> objectClass) throws InvalidRequestException {
+        String body = httpRequestLog.getRequestBody();
+        if (body == null) throw new InvalidRequestException();
+        T object = HttpService.convertQueryStringToDtoUrlDecode(body, objectClass);
+        httpRequestLog.setRequestBodyDto(object);
 
         return object;
     }

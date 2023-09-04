@@ -66,7 +66,7 @@ public class WalletAdjustmentAction {
 
         long startTime = System.currentTimeMillis();
         httpRequestLog.setOperatorProcessStartTime(startTime);
-        httpRequestLog.setOperatorData(dto.toString());
+        httpRequestLog.setOperatorData(dto);
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
@@ -83,7 +83,7 @@ public class WalletAdjustmentAction {
         long endTime = System.currentTimeMillis();
 
         if (apiResponse != null) {
-            httpRequestLog.setOperatorResponse(apiResponse.toString());
+            httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
         }
         httpRequestLog.setOperatorProcessEndTime(endTime);
 
@@ -99,6 +99,8 @@ public class WalletAdjustmentAction {
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            httpRequestLog.setOperatorResponse(responseVo);
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
