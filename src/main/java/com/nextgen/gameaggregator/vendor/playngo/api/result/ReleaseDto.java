@@ -36,7 +36,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "retry")
-    private Integer retry;
+    private String retry;
 
     @NotNull
     @PositiveOrZero
@@ -60,7 +60,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @NotNull
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "state")
-    private Integer state;
+    private String state;
 
     @PositiveOrZero
     @JacksonXmlProperty(localName = "totalLoss")
@@ -78,17 +78,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @NotNull
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "type")
-    private Integer type;
-
-    @NotBlank
-    @Size(min = 1, max = 16)
-    @JacksonXmlProperty(localName = "gameId")
-    private String gameId;
-
-    @NotBlank
-    @Size(min = 1, max = 64)
-    @JacksonXmlProperty(localName = "accessToken")
-    private String accessToken;
+    private String type;
 
     @NotNull
     @PositiveOrZero

@@ -49,17 +49,9 @@ public class AuthDto extends CommonDto {
     @JacksonXmlProperty(localName = "contextId")
     private String contextId;
 
-    @Size(max = 64)
-    @JacksonXmlProperty(localName = "accessToken")
-    private String accessToken;
-
     @Size(max = 5)
     @JacksonXmlProperty(localName = "language")
     private String language;
-
-    @Size(max = 16)
-    @JacksonXmlProperty(localName = "gameId")
-    private String gameId;
 
     @NotBlank
     @Pattern(regexp = "^(1|2|5)$")

@@ -40,13 +40,14 @@ public class ReserveAction {
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.RESERVE)
-    public String reserve(HttpServletRequest request) throws JsonProcessingException {
+    public String reserve(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         ReserveVo reserveVo = new ReserveVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String authVoXml;
+        String reserveVoXml = "";
+
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -68,19 +69,57 @@ public class ReserveAction {
 
             // Construct VO
             reserveVo.setStatusCode(ResponseCodes.OK);
-            reserveVo.setStatusMessage("OK");
-            reserveVo.setReal(betEvent.getLastBalance().toString());
-        } catch (Exception e) {
+            reserveVo.setReal(betEvent.getLastBalance());
+
+        } catch (InvalidAgentApiCredentialException |
+                   InvalidPlayerException |
+                   DisabledAgentPlayerException |
+                   DisabledGameException |
+                   DisabledVendorLineException |
+                   GameNotSupportedException |
+                   CredentialNotFoundException |
+                   JsonProcessingException |
+                   InvalidRequestException internalErrorException) {
             reserveVo.setStatusCode(ResponseCodes.INTERNAL);
-            reserveVo.setStatusMessage("INTERNAL");
-            httpService.logError(httpRequestLog, e);
+
+        } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
+            reserveVo.setStatusCode(ResponseCodes.INVALIDCURRENCY);
+
+        } catch (AuthenticationException authenticationException) {
+            reserveVo.setStatusCode(ResponseCodes.SESSIONEXPIRED);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            reserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            reserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            reserveVo.setStatusCode(ResponseCodes.INTERNAL);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                reserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+            } else {
+                reserveVo.setStatusCode(ResponseCodes.INTERNAL);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
+        } catch (Exception exception) {
+            reserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            authVoXml = xmlMapper.writeValueAsString(reserveVo);
-            reserveVo.setResponseXMLFormat(authVoXml);
+            try {
+                reserveVoXml = xmlMapper.writeValueAsString(reserveVo);
+            } catch (JsonProcessingException e) {
+                reserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            }
+            reserveVo.setResponseXMLFormat(reserveVoXml);
             httpService.end(httpRequestLog, reserveVo);
+
         }
 
-        return authVoXml;
+        return reserveVoXml;
     }
 
     private void doValidation(ReserveDto dto) throws InvalidRequestException {
@@ -88,7 +127,20 @@ public class ReserveAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameSession gameSession, ReserveDto reserveDto) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException, InvalidPlayerException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(GameSession gameSession, ReserveDto reserveDto)
+            throws
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            AuthenticationException,
+            InvalidPlayerException,
+            CurrencyNotSupportedException,
+            GameNotSupportedException,
+            CredentialNotFoundException {
+
+        // Verify vendor's access token
+        vendorService.verifyAccessCode(gameSession.getVendorLineId(), reserveDto);
+
         // Verify Username, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), reserveDto.getExternalId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), reserveDto.getCurrency(), CurrencyNotSupportedException::new);

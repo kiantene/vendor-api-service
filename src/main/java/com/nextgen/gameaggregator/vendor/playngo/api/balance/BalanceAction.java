@@ -63,7 +63,7 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Construct VO
-            balanceVo.setReal(balance.toString());
+            balanceVo.setReal(balance);
             balanceVo.setStatusCode(ResponseCodes.OK);
         } catch (Exception e) {
             balanceVo.setStatusCode(ResponseCodes.INTERNAL);

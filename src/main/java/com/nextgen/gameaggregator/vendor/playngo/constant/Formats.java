@@ -11,5 +11,6 @@ public class Formats {
     public static final Integer TIMEOUT = 10000;
     public static final Integer RETRY = 3;
 
-
+    // Date Format
+    public static final String DATE_FORMAT = "yyyy-MM-dd";
 }

@@ -2,9 +2,14 @@ package com.nextgen.gameaggregator.vendor.playngo.service;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorGameCode;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.vendor.playngo.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,6 +19,9 @@ import java.time.Instant;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+
+    @Autowired
+    private VendorLineService vendorLineService;
     public static Long getTimestamp() {
         return Instant.now().toEpochMilli();
     }
@@ -25,6 +33,13 @@ public class VendorService extends BaseVendorService {
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
         if (!vendorGameCode.getBetGameCode().equals(gameId)) {
             throw new GameNotSupportedException();
+        }
+    }
+
+    public void verifyAccessCode(Integer vendorLineId, CommonDto dto) throws CredentialNotFoundException, AuthenticationException {
+        String accessToken = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.ACCESS_TOKEN);
+        if (!accessToken.equals(dto.getAccessToken())) {
+            throw new AuthenticationException();
         }
     }
 

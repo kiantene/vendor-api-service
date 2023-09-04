@@ -49,22 +49,12 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 16)
-    @JacksonXmlProperty(localName = "gameId")
-    private String gameId;
-
-    @NotBlank
-    @Size(min = 1, max = 16)
     @JacksonXmlProperty(localName = "gameSessionId")
     private String gameSessionId;
 
     @Size(max = 50)
     @JacksonXmlProperty(localName = "contextId")
     private String contextId;
-
-    @NotBlank
-    @Size(min = 1, max = 64)
-    @JacksonXmlProperty(localName = "accessToken")
-    private String accessToken;
 
     @NotNull
     @PositiveOrZero
@@ -84,8 +74,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "channel")
     private String channel;
 
-    @NotBlank
-    @Size(min = 1, max = 32)
+    @Size(max = 32)
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
 

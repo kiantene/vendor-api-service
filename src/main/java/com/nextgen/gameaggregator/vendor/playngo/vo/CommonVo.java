@@ -6,11 +6,13 @@ import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonVo implements HttpResponse {
     @JacksonXmlProperty(localName = "real")
-    private String real;
+    private BigDecimal real;
     @JacksonXmlProperty(localName = "statusCode")
     private Integer statusCode;
     @JacksonXmlProperty(localName = "statusMessage")
@@ -22,8 +24,11 @@ public class CommonVo implements HttpResponse {
         return !this.statusCode.equals(ResponseCodes.OK);
     }
 
-    public void setStatusCode(Integer responseCode) {
+    public void setStatusCodeAndMessage(Integer responseCode) {
         this.statusCode = responseCode;
         this.statusMessage = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
+    }
+    public void setStatusCode(Integer responseCode) {
+        this.statusCode = responseCode;
     }
 }
