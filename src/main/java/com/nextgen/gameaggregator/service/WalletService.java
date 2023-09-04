@@ -27,8 +27,6 @@ import java.util.UUID;
 @Slf4j
 public class WalletService {
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
     private BetResultLogService betResultLogService;
     @Autowired
     private BetRefundLogService betRefundLogService;
@@ -62,8 +60,10 @@ public class WalletService {
 
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
         if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(WalletBalanceAction.class.getSimpleName());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             httpRequestLog.setVendorId(gameSession.getVendorId());
+            httpRequestLog.setGameToken(gameSession.getToken());
             httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
         }
 
@@ -101,9 +101,12 @@ public class WalletService {
 
         log.info("processBet (" + traceId + "): " + betResultData);
         if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             httpRequestLog.setVendorId(gameSession.getVendorId());
+            httpRequestLog.setVendorBetId(betResultData.getVendorBetId());
             httpRequestLog.setRoundId(betResultData.getRoundId());
+            httpRequestLog.setGameToken(gameSession.getToken());
             httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
         }
 
@@ -568,12 +571,13 @@ public class WalletService {
             InvalidAgentApiCredentialException, MergedBetDataIntegrityException, InsufficientBalanceException,
             TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
 
+        httpRequestLog.setRequestType(WalletBetResultAction.class.getSimpleName());
         httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
         httpRequestLog.setVendorId(gameSession.getVendorId());
+        httpRequestLog.setVendorBetId(betResultData.getVendorBetId());
         httpRequestLog.setRoundId(betResultData.getRoundId());
+        httpRequestLog.setGameToken(gameSession.getToken());
         httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
-
-        log.info("processBetResult:" + resultType + " (" + traceId + ") :" + betResultData);
 
         WalletBalanceVo balanceVo;
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);

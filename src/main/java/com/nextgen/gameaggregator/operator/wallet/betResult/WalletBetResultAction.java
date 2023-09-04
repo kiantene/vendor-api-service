@@ -75,7 +75,7 @@ public class WalletBetResultAction {
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
             httpRequestLog.setOperatorProcessStartTime(startTime);
-            httpRequestLog.setOperatorData(dto.toString());
+            httpRequestLog.setOperatorData(dto);
         }
 
         RequestLogVo requestLogVo = null;
@@ -96,7 +96,7 @@ public class WalletBetResultAction {
             long endTime = System.currentTimeMillis();
             if (httpRequestLog != null) {
                 if (apiResponse != null) {
-                    httpRequestLog.setOperatorResponse(apiResponse.toString());
+                    httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
                 }
                 httpRequestLog.setOperatorProcessEndTime(endTime);
             }
@@ -105,8 +105,6 @@ public class WalletBetResultAction {
                     EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                     this.getClass().getPackage().getName(), profilesActive);
 
-
-
             log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
@@ -114,6 +112,8 @@ public class WalletBetResultAction {
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            if (httpRequestLog != null) httpRequestLog.setOperatorResponse(responseVo);
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 

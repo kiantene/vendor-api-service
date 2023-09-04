@@ -37,8 +37,8 @@ public class KafkaService {
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
-            // TODO: proper handling for kafka error
-            log.error("Kafka produceBetHistory.exception -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            e.printStackTrace();
         }
     }
 
@@ -49,9 +49,5 @@ public class KafkaService {
             //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
             log.error(e.getMessage());
         }
-    }
-
-    public void send(HttpRequestLog httpRequestLog) {
-        jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_REQUEST_LOGS, httpRequestLog);
     }
 }
