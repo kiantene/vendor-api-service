@@ -48,8 +48,7 @@ public class BetAction {
 
         try {
             // Retrieve request body in original string format and convert into dto
-            String body = httpRequestLog.getRequestBody();
-            BetDto dto = HttpService.convertQueryStringToDto(body, BetDto.class);
+            BetDto dto = HttpService.convertQueryStringToDto(httpRequestLog, BetDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -62,7 +61,7 @@ public class BetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Process unsettled bet process
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody(), httpRequestLog);
 
             String transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);

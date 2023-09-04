@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.eventing.listeners;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
-import com.nextgen.gameaggregator.repository.RawResultBetRepository;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.CachingService;
@@ -22,8 +21,6 @@ public class SettledBetEventListener implements EventListener<SettledBetEvent> {
     private CachingService cachingService;
     @Autowired
     private RawUnsettledBetRepository rawUnsettledBetRepository;
-    @Autowired
-    private RawResultBetRepository rawResultBetRepository;
 
     @Override
     public void onEvent(SettledBetEvent event) {
@@ -45,13 +42,6 @@ public class SettledBetEventListener implements EventListener<SettledBetEvent> {
         } catch (EmptyResultDataAccessException e) {
             // Handle exception for document not found
             log.info("Unable to delete from rawUnsettledBet with ID " + Id);
-        }
-
-        try {
-            rawResultBetRepository.deleteById(Id);
-        } catch (EmptyResultDataAccessException e) {
-            // Handle exception for document not found
-            log.info("Unable to delete from rawResultBet with ID " + Id);
         }
     }
 }

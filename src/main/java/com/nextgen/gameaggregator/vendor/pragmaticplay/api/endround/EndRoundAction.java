@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
@@ -15,7 +14,6 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,10 +34,6 @@ public class EndRoundAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
-    private Environment environment;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = Endpoints.END_ROUND)
@@ -50,8 +44,7 @@ public class EndRoundAction {
 
         try {
             // Retrieve request body in original string format and convert into dto
-            String body = httpRequestLog.getRequestBody();
-            EndRoundDto dto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
+            EndRoundDto dto = HttpService.convertQueryStringToDto(httpRequestLog, EndRoundDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);

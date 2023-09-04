@@ -4,8 +4,6 @@ import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
-import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
-import com.nextgen.gameaggregator.repository.AgentRepository;
 import com.nextgen.gameaggregator.repository.RawGameSessionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -15,8 +13,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.core.env.Environment;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,17 +24,6 @@ import java.util.Optional;
 public class GameSessionService {
     @Autowired
     private RawGameSessionRepository rawGameSessionRepository;
-
-    @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
-    @Autowired
-    private AgentRepository agentRepository;
-
-    @Autowired
-    private RedisConnectionFactory connectionFactory;
-
-    @Autowired
-    private Environment environment;
 
     @Autowired
     private CacheManager cacheManager;
@@ -95,11 +80,6 @@ public class GameSessionService {
         return gameSession;
 
     }
-
-//    @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager")
-//    public GameSession createSessionByVendorPlayer(GameSession gameSession){
-//        return gameSession;
-//    }
 
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
@@ -159,6 +139,4 @@ public class GameSessionService {
         rawGameSessionRepository.save(newGameSession);
         return newGameSession;
     }
-
-
 }
