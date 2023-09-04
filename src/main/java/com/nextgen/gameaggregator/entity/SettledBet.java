@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @Document
 @Scope("raw")
-@Collection("settled_bet")
+@Collection("settled_bet_temp")
 @Data
 @NoArgsConstructor
 public class SettledBet extends BetInformation {

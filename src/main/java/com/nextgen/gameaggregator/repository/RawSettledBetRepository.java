@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 @Scope("raw")
-@Collection("settled_bet")
+@Collection("settled_bet_temp")
 public interface RawSettledBetRepository extends CouchbaseRepository<SettledBet, String> {
     SettledBet findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
 
