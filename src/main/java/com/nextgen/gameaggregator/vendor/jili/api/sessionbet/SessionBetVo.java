@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.jili.api.kiv_sessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.vendor.jili.vo.ResponseVo;
