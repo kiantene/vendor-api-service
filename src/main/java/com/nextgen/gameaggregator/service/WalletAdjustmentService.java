@@ -34,9 +34,11 @@ public class WalletAdjustmentService {
     private VendorService vendorService;
 
     public BigDecimal processAdjustment(String traceId, GameSession gameSession, AdjustmentData adjustmentData, HttpRequestLog httpRequestLog) throws BetAdjustmentIdempotentViolationException, BetNotFoundException, SettledBetNotFoundException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException, VendorCurrencyNotSupportException {
+        httpRequestLog.setRequestType(WalletAdjustmentAction.class.getSimpleName());
         httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
         httpRequestLog.setVendorId(gameSession.getVendorId());
         httpRequestLog.setRoundId(adjustmentData.getRoundId());
+        httpRequestLog.setGameToken(gameSession.getToken());
         httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
 
         WalletBalanceVo balanceVo = null;
