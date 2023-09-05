@@ -100,13 +100,25 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .fromSerializer(new GenericJackson2JsonRedisSerializer());
 
         Map<String, RedisCacheConfiguration> cacheNamesConfigurationMap = new HashMap<>();
-
+        
+        cacheNamesConfigurationMap.put("Vendors", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorLanguages", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("Languages", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("Platforms", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("AgentApiCredentialsByApiKey", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorCurrencies", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentVendorLine", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(360)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGameCode", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(360)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGameCurrency", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(360)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("BetNotFoundLog", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(60)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("rawResultLog", RedisCacheConfiguration.defaultCacheConfig()
@@ -120,21 +132,25 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("GameSessions", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLines", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("BetHistories", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(10)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLineCredentials", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentPlayers", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGames", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentApiCredentials", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("promoData", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("playerBalance", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(10)).serializeValuesWith(pair));
+
+        // EvoPlay Increase Balance EndPoints use
+        cacheNamesConfigurationMap.put("EvoPlayBalance", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
 
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
                 RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)),

@@ -1,20 +1,22 @@
-package com.nextgen.gameaggregator.vendor.jili.api.kiv_cancelsessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.cancelsessionbet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 
 @RestController
@@ -24,29 +26,24 @@ public class CancelSessionBetAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
     @Autowired
-    private BetHistoryService betHistoryService;
+    private VendorService vendorService;
+    @Autowired
+    private ValidationService validationService;
+
+
     @PostMapping(path = EndPoints.CANCEL_SESSION_BET)
-    public CancelSessionBetVo CancelSessionBetAction (HttpServletRequest request) {
+    public CancelSessionBetVo CancelSessionBetAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         CancelSessionBetVo cancelSessionBetVo = new CancelSessionBetVo();
         String traceId = httpRequestLog.getId();
 
-
-        try{
+        try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             CancelSessionBetDto cancelSessionBetDto = HttpService.convertJsonToDto(body, CancelSessionBetDto.class);
@@ -57,21 +54,53 @@ public class CancelSessionBetAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(cancelSessionBetDto.getToken());
 
-            // 3. get Bet History for checking
-            // TODO : (need change to get by betId)
-//            BetHistory betHistory = betHistoryService.getBetTransactionByRoundId(String.valueOf(cancelSessionBetDto.getRound()), rawGameSession.getVendorGameId(), rawGameSession.getVendorPlayerId());
-
-
+            // 3. Verify request parameters
             this.doVerification(cancelSessionBetDto, gameSession);
 
-            // 4. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            // 4. Send refund to Operator
+            BigDecimal balance = walletService.processRollback(traceId, cancelSessionBetDto, gameSession, vendorService);
 
             cancelSessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelSessionBetVo.setCurrency(gameSession.getVendorCurrencyCode());
             cancelSessionBetVo.setBalance(balance);
-//            cancelSessionBetVo.setToken(rawGameSession.getToken());
 
+
+        } catch (BetNotFoundException betNotFoundException) {
+            cancelSessionBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+                //if found the bet in settled status
+                cancelSessionBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
+
+            }
+            if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
+                //if found the bet in refunded status
+                cancelSessionBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+
+            } else {
+                //if found the bet other in settled status (cancel)
+                cancelSessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+
+            }
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            cancelSessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                //insufficient balance
+                cancelSessionBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED_AND_CANNOT_BE_CANCELED);
+
+            } else if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code)) {
+                //Operator Bet not found
+                cancelSessionBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
+
+            } else {
+                //If other operator errors set code -1 error
+                // cancelSessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+                cancelSessionBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
@@ -85,15 +114,15 @@ public class CancelSessionBetAction {
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
-                 InvalidOperatorResponseException |
-                 InvalidAgentApiCredentialException e) {
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException otherErrorException) {
             cancelSessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
 
         } catch (Exception exception) {
             cancelSessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
             httpService.logError(httpRequestLog, exception);
 
-        } finally{
+        } finally {
             httpService.end(httpRequestLog, cancelSessionBetVo);
         }
         return cancelSessionBetVo;
@@ -103,6 +132,7 @@ public class CancelSessionBetAction {
         // General validation
         ValidationUtils.validateRequest(cancelSessionBetDto);
     }
+
     private void doVerification(CancelSessionBetDto cancelSessionBetDto, GameSession gameSession)
             throws
             AuthenticationException,
@@ -110,24 +140,15 @@ public class CancelSessionBetAction {
             DisabledAgentPlayerException,
             DisabledGameException,
             GameNotSupportedException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException,
+            InvalidPlayerException {
 
-        // 1. Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), cancelSessionBetDto.getToken(), AuthenticationException::new);
+        // validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelSessionBetDto.getGame()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelSessionBetDto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // 2. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // 3. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 4. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }

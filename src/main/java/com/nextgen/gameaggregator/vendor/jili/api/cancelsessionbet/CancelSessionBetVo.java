@@ -1,10 +1,11 @@
-package com.nextgen.gameaggregator.vendor.jili.api.kiv_cancelsessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.cancelsessionbet;
 
 import com.nextgen.gameaggregator.vendor.jili.vo.ResponseVo;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+
 @Data
 public class CancelSessionBetVo extends ResponseVo {
     private String username;      // Identifier of the user within the Casino Operator’s system

@@ -156,7 +156,7 @@ public class VendorService extends BaseVendorService {
             String reqId = dto.getReqId();
             roundPayoutVo.setReqId(reqId);
 
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
 //            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
 //                balance = balance.multiply(new BigDecimal("1000"));

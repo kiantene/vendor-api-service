@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.rollback;
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.Data;
@@ -12,9 +13,12 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Range;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CancelWagerDto implements RollbackData {
+public class CancelWagerDto implements RollbackData, AdjustmentData {
 
     @NotBlank
     @Size(max = 7)
@@ -61,6 +65,9 @@ public class CancelWagerDto implements RollbackData {
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
 
+    public BigDecimal adjustmentAmount;
+
+    // For rollback
     @Override
     public String getRollbackId() {
         return String.valueOf(this.wagerId);
@@ -69,5 +76,32 @@ public class CancelWagerDto implements RollbackData {
     @Override
     public Long getVendorSettledTime() {
         return null;
+    }
+
+    // For adjustment
+    @Override
+    public String getVendorBetId()  {
+        return String.valueOf(this.wagerId);
+    }
+
+    @Override
+    public String getExternalTransactionId() {
+        return String.valueOf(this.wagerId);
+    }
+
+    @Override
+    public String getGameId() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getAdjustmentAmount() {
+        return this.adjustmentAmount;
+    }
+
+    @Override
+    public Long getTimestamp() {
+        Instant instant = Instant.now();
+        return instant.toEpochMilli();
     }
 }

@@ -74,7 +74,7 @@ public class WinDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return BigDecimal.ZERO;
+        return this.validTurnover;
     }
 
     @Override

@@ -1,15 +1,14 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-import java.math.BigDecimal;
-
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -61,9 +60,7 @@ public class BetDto implements BetResultData {
     }
 
     @Override
-    public BigDecimal getWinLoss() {
-        return getBetAmount().negate();
-    }
+    public BigDecimal getWinLoss() { return null; }
 
     @Override
     public BigDecimal getEffectiveTurnover() {

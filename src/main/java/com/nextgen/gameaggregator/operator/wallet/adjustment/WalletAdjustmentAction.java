@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
+import com.nextgen.gameaggregator.service.CurrencyConversionService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
@@ -40,11 +41,13 @@ public class WalletAdjustmentAction {
     AuthenticationService authenticationService;
     @Autowired
     RequestService requestService;
+    @Autowired
+    CurrencyConversionService currencyConversionService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog)
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -52,7 +55,10 @@ public class WalletAdjustmentAction {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
+
         WalletAdjustmentDto dto = this.newWalletAdjustmentDto(traceId, gameSession, betInformation);
+        dto.setAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getAmount(), fromVendorConversionRate));
+
         log.info("Request [" + apiUrl + EndPoints.WALLET_ADJUSTMENT + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -60,7 +66,7 @@ public class WalletAdjustmentAction {
 
         long startTime = System.currentTimeMillis();
         httpRequestLog.setOperatorProcessStartTime(startTime);
-        httpRequestLog.setOperatorData(dto.toString());
+        httpRequestLog.setOperatorData(dto);
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
@@ -77,7 +83,7 @@ public class WalletAdjustmentAction {
         long endTime = System.currentTimeMillis();
 
         if (apiResponse != null) {
-            httpRequestLog.setOperatorResponse(apiResponse.toString());
+            httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
         }
         httpRequestLog.setOperatorProcessEndTime(endTime);
 
@@ -93,6 +99,8 @@ public class WalletAdjustmentAction {
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            httpRequestLog.setOperatorResponse(responseVo);
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
@@ -101,6 +109,9 @@ public class WalletAdjustmentAction {
 
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
+
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
             RequestService.successResponseLog(requestLogVo);
 

@@ -54,7 +54,7 @@ public class DebitAction {
             this.doVerification(debitDto, gameSession);
 
             // process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
 
             responseVo.setBalance(betEvent.getLastBalance());
             responseVo.setUuid(debitDto.getUuid());
@@ -123,7 +123,7 @@ public class DebitAction {
         try {
             DebitDto debitDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), DebitDto.class);
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
-            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession));
+            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(debitDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);

@@ -60,6 +60,7 @@ public class GameUrlService implements GameUrl {
         HashMap<String, String> settings = new HashMap<>();
         settings.put("lang", gameSession.getLanguage());
         settings.put("sd", sound);
+        settings.put("eurl", gameSession.getLobbyUrl());
         arrayMap.put("settings", settings);
         String json = new Gson().toJson(arrayMap);
 

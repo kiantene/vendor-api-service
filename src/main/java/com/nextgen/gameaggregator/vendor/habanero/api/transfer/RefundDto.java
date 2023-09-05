@@ -4,16 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -98,14 +95,6 @@ public class RefundDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        //convert date time string to timestamp
-        if(this.getDtEvent() != null){
-            LocalDateTime localDateTime = LocalDateTime.parse(this.getDtEvent(), DateTimeFormatter.ISO_DATE_TIME);
-            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC"));
-            long timestamp = zonedDateTime.toInstant().toEpochMilli();
-            return timestamp;
-        }else {
-            return null;
-        }
+        return VendorService.dateTimeConvert(this.getDtEvent());
     }
 }

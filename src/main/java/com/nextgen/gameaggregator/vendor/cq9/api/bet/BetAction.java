@@ -54,11 +54,8 @@ public class BetAction {
         String vendorCurrencyCode = "";
 
         try {
-            // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
-
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(body, BetDto.class);
+            BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, BetDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto, wToken);
@@ -71,7 +68,7 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
             // Construct VO
             commonVo.setBalance(betEvent.getLastBalance());

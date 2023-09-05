@@ -133,7 +133,7 @@ public class SettledBetService {
         } catch (BetNotFoundException betNotFoundException) {
             // bet not found is expected
             // save the data into couchbase first for idempotency checks
-            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId);
+            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId, gameSession);
             processingSettledBet.setOperatorStatus(operatorStatusProcessing);
             processingSettledBet.setVendorId(gameSession.getVendorId());
             processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());

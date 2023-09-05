@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.action;
 
+import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -138,6 +139,12 @@ public class GeneralAction {
             httpStatus = responseVo.getHttpStatus();
             responseVo.setHttpStatus(null);
             httpService.end(httpRequestLog, responseVo);
+            if (responseVo.getHttpRequestLogList() != null) {
+                for (HttpRequestLog newHttpRequestLog : responseVo.getHttpRequestLogList()) {
+                    httpService.end(newHttpRequestLog, responseVo);
+                }
+                responseVo.setHttpRequestLogList(null);
+            }
         }
         return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(httpStatus));
     }
@@ -147,28 +154,40 @@ public class GeneralAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private ResponseVo serviceHandling(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws InvalidRequestException, InvalidAgentApiCredentialException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException, DisabledAgentPlayerException, DisabledGameException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, DisabledVendorLineException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException {
+    private ResponseVo serviceHandling(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws InvalidRequestException, InvalidAgentApiCredentialException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException, DisabledAgentPlayerException, DisabledGameException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, DisabledVendorLineException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
         ResponseVo responseVo = new ResponseVo();
 
         if (!commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
             // No action , Get balance
             responseVo = balanceService.balance(commonDto, httpRequestLog, request);
         } else if (commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
-            TransactionVo transactionVo = endRoundService.endRound(commonDto, null, httpRequestLog, request);
+            TransactionVo transactionVo = endRoundService.endRound(commonDto, null, httpRequestLog, httpRequestLog, request);
             responseVo.setBalance(transactionVo.getBalance());
-            responseVo.setGameId(commonDto.getGameId());
+            responseVo.setGameId(commonDto.getVendorRoundId());
         } else {
             int count = 0;
             List<TransactionVo> transactionVoList = new ArrayList<>();
+            List<HttpRequestLog> httpRequestLogList = new ArrayList<>();
             for (ActionDto actionDto : commonDto.getActions()) {
+                // create new http request for avoid operator Idempotent
+                HttpRequestLog newHttpRequestLog = httpService.start(request);
+                newHttpRequestLog.setRequestBody(new Gson().toJson(actionDto));
+                httpRequestLogList.add(newHttpRequestLog);
                 TransactionVo transactionVo;
                 count++;
                 switch (actionDto.getAction()) {
                     case "bet" -> {
-                        transactionVo = betService.bet(commonDto, actionDto, httpRequestLog, count, request);
+                        transactionVo = betService.bet(commonDto, actionDto, newHttpRequestLog, httpRequestLog, request);
+                        // If this is last bet action and finished true then will process to end round
+                        if (commonDto.getFinished() && count == commonDto.getActions().size()) {
+                            newHttpRequestLog = httpService.start(request);
+                            newHttpRequestLog.setRequestBody(new Gson().toJson(actionDto));
+                            httpRequestLogList.add(newHttpRequestLog);
+                            transactionVo = endRoundService.endRound(commonDto, actionDto, newHttpRequestLog, httpRequestLog, request);
+                        }
                     }
                     case "win" -> {
-                        transactionVo = endRoundService.endRound(commonDto, actionDto, httpRequestLog, request);
+                        transactionVo = endRoundService.endRound(commonDto, actionDto, newHttpRequestLog, httpRequestLog, request);
                     }
                     default -> {
                         throw new InvalidRequestException();
@@ -178,8 +197,9 @@ public class GeneralAction {
                 transactionVo.setBalance(null);
                 transactionVoList.add(transactionVo);
             }
-            responseVo.setGameId(commonDto.getGameId());
+            responseVo.setGameId(commonDto.getVendorRoundId());
             responseVo.setTransactions(transactionVoList);
+            responseVo.setHttpRequestLogList(httpRequestLogList);
         }
         return responseVo;
     }
@@ -197,7 +217,7 @@ public class GeneralAction {
                     transactionVoList.add(transactionVo);
                 }
             }
-            responseVo.setGameId(commonDto.getGameId());
+            responseVo.setGameId(commonDto.getVendorRoundId());
             responseVo.setTransactions(transactionVoList);
         } catch (Exception e) {
             responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

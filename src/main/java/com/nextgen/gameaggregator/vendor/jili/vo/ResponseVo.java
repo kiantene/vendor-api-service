@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import lombok.Data;
+
 @Data
 public class ResponseVo implements HttpResponse {
     private Integer errorCode;

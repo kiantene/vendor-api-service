@@ -40,7 +40,7 @@ public class BalanceService {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo balance(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException {
+    public ResponseVo balance(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, VendorCurrencyNotSupportException {
         String traceId = httpRequestLog.getId();
         ResponseVo responseVo = new ResponseVo();
 
@@ -51,7 +51,7 @@ public class BalanceService {
         this.doVerification(commonDto, gameSession, httpRequestLog, request);
 
         // Get walletBalance
-        BigDecimal balance = walletService.getBalance(traceId, gameSession);
+        BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         // Convert Amount
         Integer convertedBalance = vendorService.convertAmountToInteger(balance, commonDto.getCurrency());
