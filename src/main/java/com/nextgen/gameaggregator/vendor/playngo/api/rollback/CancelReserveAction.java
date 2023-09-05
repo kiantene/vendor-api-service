@@ -48,6 +48,7 @@ public class CancelReserveAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
+            log.info("Cancel Reserve body: " + body);
 
             // Convert original request body into commonDto
             CancelReserveDto cancelReserveDto = xmlMapper.readValue(body, CancelReserveDto.class);
