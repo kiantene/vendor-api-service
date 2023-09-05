@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,7 +108,7 @@ public class BetAction {
                  DisabledAgentPlayerException |
                  BetNotFoundException |
                  InvalidAgentApiCredentialException |
-                 InvalidPlayerException e) {
+                 InvalidPlayerException otherErrorException) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
 
         } catch (Exception exception) {
@@ -137,11 +136,7 @@ public class BetAction {
             CurrencyNotSupportedException,
             InvalidPlayerException {
 
-        // 1. Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
-
-        // 2. validate vendor username, agent vendor line, player status, and game status
+        // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode and currency
