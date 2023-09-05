@@ -85,6 +85,9 @@ public class BalanceAction {
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
+        
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
@@ -103,7 +106,7 @@ public class BalanceAction {
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
         // Verify vendor line is active
@@ -112,5 +115,7 @@ public class BalanceAction {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 }

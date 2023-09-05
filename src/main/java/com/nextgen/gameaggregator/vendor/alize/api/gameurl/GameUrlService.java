@@ -24,6 +24,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.alize.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.alize.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.alize.constant.GameId;
 import com.nextgen.gameaggregator.vendor.alize.service.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,7 @@ public class GameUrlService implements GameUrl {
         formData.add("operator", operator);
         formData.add("playmode", "free");
         formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
+        formData.add("gameId", this.getGameId(gameSession.getVendorGameCode()));
 
         return formData;
     }
@@ -137,5 +139,10 @@ public class GameUrlService implements GameUrl {
         signatureBodyMap.put("lang", formData.getFirst("lang"));
 
         return new Gson().toJson(signatureBodyMap);
+    }
+
+    private String getGameId(String vendorGameCode) {
+        String gameId = GameId.getGameId(vendorGameCode);
+        return gameId;
     }
 }
