@@ -27,18 +27,14 @@ public class ReleaseAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.RELEASE)
-    public String release(HttpServletRequest request) throws JsonProcessingException {
+    public String release(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 

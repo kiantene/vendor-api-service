@@ -2,17 +2,24 @@ package com.nextgen.gameaggregator.vendor.playngo.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -21,50 +28,114 @@ public class CancelReserveAction {
 
     @Autowired
     private HttpService httpService;
-
     @Autowired
-    private VendorLineService vendorLineService;
+    private GameSessionService gameSessionService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.CANCEL)
     public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
-        HttpRequestLog httpRequestLog = httpService.start(request);
 
+        HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
-        // Construct VO
         CancelReserveVo cancelReserveVo = new CancelReserveVo();
-        cancelReserveVo.setStatusCode("0");
-
-        //Retrieve request body in original string format
-        String body = httpRequestLog.getRequestBody();
-
-        //Convert original request body into commonDto
         XmlMapper xmlMapper = new XmlMapper();
-        //BalanceDto authDto = xmlMapper.readValue(body, BalanceDto.class);
+        String cancelReserveVoXml = "";
 
-        //Validate request parameters from vendor (Non-database related)
-        //this.doValidation(authDto);
+        try {
+            // Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
 
-        String authVoXml = xmlMapper.writeValueAsString(cancelReserveVo);
-        httpService.end(httpRequestLog, cancelReserveVo);
-        return authVoXml;
+            // Convert original request body into commonDto
+            CancelReserveDto cancelReserveDto = xmlMapper.readValue(body, CancelReserveDto.class);
+
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(cancelReserveVo);
+
+            // Verify Token
+            GameSession gameSession = gameSessionService.verifyToken(cancelReserveDto.getExternalGameSessionId());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession, cancelReserveDto);
+
+            // Send refund to Operator
+            BigDecimal balance = walletService.processRollback(traceId, cancelReserveDto, gameSession, vendorService);
+
+            // Construct VO
+            cancelReserveVo.setStatusCode(ResponseCodes.OK);
+            cancelReserveVo.setReal(balance);
+
+        } catch (InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 GameNotSupportedException |
+                 CredentialNotFoundException |
+                 JsonProcessingException |
+                 InvalidRequestException internalErrorException) {
+            cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+
+        } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
+            cancelReserveVo.setStatusCode(ResponseCodes.INVALIDCURRENCY);
+
+        } catch (AuthenticationException authenticationException) {
+            cancelReserveVo.setStatusCode(ResponseCodes.SESSIONEXPIRED);
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+            } else {
+                cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
+        } catch (Exception exception) {
+            cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, exception);
+
+        } finally {
+            try {
+                cancelReserveVoXml = xmlMapper.writeValueAsString(cancelReserveVo);
+            } catch (JsonProcessingException e) {
+                cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            }
+            cancelReserveVo.setResponseXMLFormat(cancelReserveVoXml);
+            httpService.end(httpRequestLog, cancelReserveVo);
+
+        }
+
+        return cancelReserveVoXml;
     }
 
-//    private void doValidation(BalanceDto dto) throws InvalidRequestException {
-//        // General validation
-//        ValidationUtils.validateRequest(dto);
-//    }
-//
-//    private void doVerification(HttpRequestLog request, AuthDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException, InvalidSignatureException {
-//
-//        //Verify received agent code is the same from credential
-//        String agentCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.APP_ID);
-//        ValidationUtils.isEquals(agentCode, dto.getAppid(), NoAvailableLineException::new);
-//
-//        //Verify received hash
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-//        VendorService.verifyHash(request.getRequestBody(), secretKey);
-//
-//    }
+    private void doValidation(CancelReserveVo dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession, CancelReserveDto dto)
+            throws
+            CredentialNotFoundException,
+            AuthenticationException,
+            InvalidPlayerException,
+            GameNotSupportedException,
+            CurrencyNotSupportedException {
+
+        // Verify vendor's access token
+        vendorService.verifyAccessCode(gameSession.getVendorLineId(), dto);
+
+        // Verify Username, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify bet game code
+        vendorService.verifyVendorGameCode(gameSession, dto.getGameId());
+
+    }
 
 }

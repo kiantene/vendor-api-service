@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.playngo.api.result;
+package com.nextgen.gameaggregator.vendor.playngo.api.rollback;
 
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonJackpotDto;
 
