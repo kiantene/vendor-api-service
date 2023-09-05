@@ -35,6 +35,8 @@ public class CancelBetNSettleAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.CANCEL_BET_N_SETTLE)
     public CommonVo action(HttpServletRequest request) {
@@ -87,6 +89,9 @@ public class CancelBetNSettleAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.ERROR);
+        
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
             httpService.logError(httpRequestLog, exception);
@@ -110,5 +115,7 @@ public class CancelBetNSettleAction {
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 }
