@@ -112,7 +112,7 @@ public class RollbackAction {
             rollbackVo.setRoundId(rollbackDto.getRoundId());
             rollbackVo.setTransactionId(rollbackDto.getTransactionId());
             if (rollbackVo.getBalance() == null) {
-                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken()).setScale(2, RoundingMode.DOWN).doubleValue());
+                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
             }
             rollbackVo.setCurrency(rollbackDto.getCurrency());
             rollbackVo.setTimestamp(System.currentTimeMillis());

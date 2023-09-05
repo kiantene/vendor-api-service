@@ -2,18 +2,12 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,9 +40,13 @@ public class WalletBetAction {
     AgentApiCredentialService agentApiCredentialService;
     @Autowired
     AuthenticationService authenticationService;
+    @Autowired
+    VendorService vendorService;
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog)
-            throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+            throws InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -59,9 +57,15 @@ public class WalletBetAction {
         WalletBalanceVo responseVo;
         Integer agentId = gameSession.getAgentId();
 
+        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
+        BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
+        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
+
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
+
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betInformation);
+        dto.setAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getAmount(), fromVendorConversionRate));
         log.info("Request [" + apiUrl + EndPoints.WALLET_BET + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -71,7 +75,7 @@ public class WalletBetAction {
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
             httpRequestLog.setOperatorProcessStartTime(startTime);
-            httpRequestLog.setOperatorData(dto.toString());
+            httpRequestLog.setOperatorData(dto);
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
@@ -89,7 +93,7 @@ public class WalletBetAction {
         long endTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             if (apiResponse != null) {
-                httpRequestLog.setOperatorResponse(apiResponse.toString());
+                httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
             }
             httpRequestLog.setOperatorProcessEndTime(endTime);
         }
@@ -105,7 +109,9 @@ public class WalletBetAction {
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
-            responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
+            responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            if (httpRequestLog != null) httpRequestLog.setOperatorResponse(responseVo);
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
@@ -114,6 +120,9 @@ public class WalletBetAction {
 
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
+
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
             BigDecimal balance = responseVo.getData().getBalance();
             //TODO to be discuss whether should system pre handle negative if

@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
 import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,14 +76,14 @@ public class TransactionService {
         } catch (InsufficientBalanceException e) {
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
         }catch (BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -92,7 +93,7 @@ public class TransactionService {
             if(e.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code){
                 errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
-                balance = getCurrentBalance(traceId, gameSession);
+                balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
                 // Retrieve current wallet balance
                 balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -146,12 +147,12 @@ public class TransactionService {
         return resultType;
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         BigDecimal balance = BigDecimal.ZERO;
 
         try {
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } catch (Exception exception) {
 

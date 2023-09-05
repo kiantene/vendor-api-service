@@ -53,8 +53,7 @@ public class CashTransferInOutAction {
         String vendorCurrencyCode = "";
 
         try {
-            String body = httpRequestLog.getRequestBody();
-            CashTransferInOutDto dto = HttpService.convertQueryStringToDto(body, CashTransferInOutDto.class);
+            CashTransferInOutDto dto = HttpService.convertQueryStringToDto(httpRequestLog, CashTransferInOutDto.class);
             vendorCurrencyCode = dto.getCurrencyCode();
 
             // 1. Validate request parameters (Non-database calls)

@@ -80,6 +80,8 @@ public class GeneralAction {
             // Decrypt the 'X' field in the VendorRequestDto object using the key and iv values obtained earlier.
             String params = VendorService.decrypt(commonDto.getX(), key, iv);
 
+            httpRequestLog.setRequestBody(params); // change the body value by using decrypted data
+
             // Convert the params string to an ActionDto object
             ActionDto actionDto = HttpService.convertJsonToDto(params, ActionDto.class);
 
@@ -91,7 +93,7 @@ public class GeneralAction {
             actionDto.setHttpRequestLog(httpRequestLog);
 
             // Handle the action and return the resulting value
-            vo = this.actionHandling(actionDto, traceId);
+            vo = this.actionHandling(actionDto, traceId, httpRequestLog);
         
         } catch (CredentialNotFoundException credentialNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
@@ -115,7 +117,7 @@ public class GeneralAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private CommonVo actionHandling(ActionDto actionDto, String traceId) {
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
         CommonVo vo = new CommonVo();
         switch (actionDto.getAction()) {
             case Actions.CANCEL_BET_AND_SETTLE -> vo = cancelBetNSettleService.cancelBetNSettle(actionDto, traceId);

@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+
 @Data
 public class CancelBetVo extends ResponseVo {
     private String username;      // Identifier of the user within the Casino Operator’s system

@@ -30,11 +30,15 @@ public class WalletAdjustmentService {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private WalletAdjustmentAction walletAdjustmentAction;
+    @Autowired
+    private VendorService vendorService;
 
-    public BigDecimal processAdjustment(String traceId, GameSession gameSession, AdjustmentData adjustmentData, HttpRequestLog httpRequestLog) throws BetAdjustmentIdempotentViolationException, BetNotFoundException, SettledBetNotFoundException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException {
+    public BigDecimal processAdjustment(String traceId, GameSession gameSession, AdjustmentData adjustmentData, HttpRequestLog httpRequestLog) throws BetAdjustmentIdempotentViolationException, BetNotFoundException, SettledBetNotFoundException, TransactionStillProcessingException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException, VendorCurrencyNotSupportException {
+        httpRequestLog.setRequestType(WalletAdjustmentAction.class.getSimpleName());
         httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
         httpRequestLog.setVendorId(gameSession.getVendorId());
         httpRequestLog.setRoundId(adjustmentData.getRoundId());
+        httpRequestLog.setGameToken(gameSession.getToken());
         httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
 
         WalletBalanceVo balanceVo = null;
@@ -48,8 +52,10 @@ public class WalletAdjustmentService {
 
             SettledBet settledBet = this.newAdjustmentSettledBet(traceId, adjustmentData, gameSession);
 
+            VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
+
             // Adjustment Request to Operator
-            balanceVo = walletAdjustmentAction.call(traceId, gameSession.getAgentId(), gameSession, settledBet, httpRequestLog);
+            balanceVo = walletAdjustmentAction.call(traceId, gameSession.getAgentId(), gameSession, settledBet, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
 
             // update operator status after receiving response from operator
             settledBet.setOperatorStatus(operatorStatusSuccess);
@@ -62,7 +68,7 @@ public class WalletAdjustmentService {
 
             // send settled bet to kafka
             BetHistory betHistory = new BetHistory(settledBet);
-            kafkaService.produceBetHistory(betHistory, settledBet);
+            kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             rawBetAdjustmentLog.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());

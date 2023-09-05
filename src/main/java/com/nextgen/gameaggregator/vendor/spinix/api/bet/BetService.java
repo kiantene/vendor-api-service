@@ -1,23 +1,17 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.bet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.vendor.spinix.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.spinix.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutDto;
-import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutTransactionDto;
-import com.nextgen.gameaggregator.vendor.spinix.constant.TransactionInfo;
-import com.nextgen.gameaggregator.vendor.spinix.constant.TransactionType;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.vendor.spinix.api.payout.*;
+import com.nextgen.gameaggregator.vendor.spinix.constant.*;
 import com.nextgen.gameaggregator.vendor.spinix.service.VendorService;
-import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutDataVo;
-import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutDataWalletVo;
-import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutErrorVo;
-import com.nextgen.gameaggregator.vendor.spinix.api.payout.RoundPayoutVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
+
+import static com.nextgen.gameaggregator.vendor.spinix.constant.GameType.BET_AMOUNT_GAME_TYPE_LIST;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -71,7 +67,14 @@ public class BetService {
             betDto.setRoundId(dto.getRoundId());
             betDto.setId(bet.getId());
             betDto.setAmount(betAmount);
-            betDto.setValidTurnover(validTurnover);
+
+            if(BET_AMOUNT_GAME_TYPE_LIST.contains(dto.getGameType())) {
+                // use bet amount as turnover if game type is table or arcade
+                betDto.setValidTurnover(betAmount);
+            } else {
+                betDto.setValidTurnover(validTurnover);
+            }
+
             betDto.setGameId(dto.getGameId());
             betDto.setTimestamp(bet.getConvertedTimestamp());
 
@@ -265,7 +268,14 @@ public class BetService {
             betWinDto.setTimestamp(bet.getConvertedTimestamp());
             betWinDto.setFreeSpin(0);
             betWinDto.setGameId(dto.getGameId());
-            betWinDto.setValidTurnover(validTurnover);
+
+            if(BET_AMOUNT_GAME_TYPE_LIST.contains(dto.getGameType())) {
+                // use bet amount as turnover if game type is table or arcade
+                betWinDto.setValidTurnover(betAmount);
+            } else {
+                betWinDto.setValidTurnover(validTurnover);
+            }
+
             betWinDto.setWinLossAmount(win.getAmount().subtract(bet.getAmount()));
             betWinDto.setBetStatus(BetStatus.UNSETTLED);
 

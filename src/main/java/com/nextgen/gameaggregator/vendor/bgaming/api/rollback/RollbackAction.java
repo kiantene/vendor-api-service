@@ -13,13 +13,14 @@ import com.nextgen.gameaggregator.vendor.bgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bgaming.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bgaming.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.bgaming.vo.TransactionVo;
-import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
 import org.joda.time.DateTime;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -75,24 +76,23 @@ public class RollbackAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, gameSession, httpRequestLog, request);
 
+            RollbackDto rollbackDto = new ModelMapper().map(commonDto, RollbackDto.class);
+            Long settleTime = System.currentTimeMillis();
             List<TransactionVo> transactionVoList = new ArrayList<>();
-            BigDecimal balance = null;
             for (ActionDto actionDto : commonDto.getActions()) {
-                RollbackDto rollbackDto = this.setRollbackDto(actionDto, httpRequestLog);
-                if (actionDto.getAction().equals("rollback")) {
-                    balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
-                }
                 TransactionVo transactionVo = new TransactionVo();
                 transactionVo.setActionId(actionDto.getActionId());
                 transactionVo.setTxId(actionDto.getActionId());
-                transactionVo.setProcessedAt(new DateTime(rollbackDto.getVendorSettledTime()).toString());
+                transactionVo.setProcessedAt(new DateTime(settleTime).toString());
                 transactionVoList.add(transactionVo);
             }
+            rollbackDto.setTimestamp(settleTime);
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
 
             // Construct VO
             balance = balance.multiply(new BigDecimal(100));
             responseVo.setBalance(balance.intValue());
-            responseVo.setGameId(commonDto.getGameId());
+            responseVo.setGameId(commonDto.getVendorRoundId());
             responseVo.setTransactions(transactionVoList);
             responseVo.setHttpStatus(HttpStatus.SC_OK);
         } catch (InvalidSignatureException e) {
@@ -106,10 +106,14 @@ public class RollbackAction {
             responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException |
-                 BetResultIdempotentViolationException |
-                 TransactionStillProcessingException e) {
+                 BetResultIdempotentViolationException e) {
             responseVo = handleDuplicateBet(commonDto, httpRequestLog, request);
             responseVo.setHttpStatus(HttpStatus.SC_OK);
+            httpService.logError(httpRequestLog, e);
+        } catch (TransactionStillProcessingException e) {
+            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+            responseVo.setMessage("Unknown error.");
+            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -192,14 +196,6 @@ public class RollbackAction {
         VendorService.verifySign(authToken, new Gson().toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
     }
 
-    private RollbackDto setRollbackDto(ActionDto actionDto, HttpRequestLog httpRequestLog) {
-        RollbackDto rollbackDto = new RollbackDto();
-        rollbackDto.setBetId(actionDto.getOriginalActionId());
-        rollbackDto.setTimestamp(httpRequestLog.getStartTime());
-
-        return rollbackDto;
-    }
-
     private ResponseVo handleDuplicateBet(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) {
         ResponseVo responseVo = new ResponseVo();
         try {
@@ -213,7 +209,7 @@ public class RollbackAction {
                     transactionVoList.add(transactionVo);
                 }
             }
-            responseVo.setGameId(commonDto.getGameId());
+            responseVo.setGameId(commonDto.getVendorRoundId());
             responseVo.setTransactions(transactionVoList);
         } catch (Exception e) {
             responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
