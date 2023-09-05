@@ -40,4 +40,9 @@ public class VendorService extends BaseVendorService {
             throw new RuntimeException("Error generating signature", e);
         }
     }
+
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
+    }
 }
