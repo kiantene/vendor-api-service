@@ -1,13 +1,15 @@
-package com.nextgen.gameaggregator.vendor.jili.api.kiv_sessionbet;
+package com.nextgen.gameaggregator.vendor.jili.api.sessionbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.constant.Formats;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import jakarta.validation.constraints.*;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -30,9 +32,11 @@ public class SessionBetDto implements BetResultData {
     @Positive
     @NotNull
     private BigInteger round;
+    @Pattern(regexp = "^true$|^false$")
+    private String offline;
     @Positive
     @NotNull
-    @Range(min=0, max=2147483647)
+    @Range(min = 0, max = 2147483647)
     private BigInteger wagersTime;
     @NotNull
     @Range(min = 0)
@@ -63,53 +67,88 @@ public class SessionBetDto implements BetResultData {
     @Positive
     private Integer statementType;
 
-    @Override
-    public String getExternalTransactionId() { return String.valueOf(this.round); }
-    @Override
-    public String getVendorBetId(){ return String.valueOf(this.round); }
-    @Override
-    public String getRoundId() { return String.valueOf(this.round); }
-    @Override
-    public String getGameId() { return String.valueOf(this.game); }
-    @Override
-    public BigDecimal getBetAmount() { return this.betAmount; }
-    @Override
-    public BigDecimal getWinAmount() { return this.winloseAmount; }
-    @Override
-    public BigDecimal getWinLoss() { return this.getBetAmount().negate(); }
+    // public BetStatus betStatus;
 
     @Override
-    public BigDecimal getEffectiveTurnover() { return this.betAmount; }
+    public String getExternalTransactionId() {
+        return String.valueOf(this.round);
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return String.valueOf(this.round);
+    }
+
+    @Override
+    public String getRoundId() {
+        return String.valueOf(this.sessionId);
+    }
+
+    @Override
+    public String getGameId() {
+        return String.valueOf(this.game);
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return this.betAmount;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return this.winloseAmount;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return this.getBetAmount().negate();
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return this.turnover;
+    }
 
     @Override
     public Long getVendorBetTime() {
         return getTimestamp();
     }
+
     @Override
     public Long getResultTime() {
         return getTimestamp();
     }
+
     @Override
     public Long getVendorSettleTime() {
         return getTimestamp();
     }
-    @Override
-    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO;}
 
     @Override
-    public Integer getIsFreespin() { return 0;}
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
 
     /**
      * @return
      */
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        if (this.type == Formats.SESSION_BET_TYPE_SETTLE) {
+            return BetStatus.SETTLED;
+        }
+
+        return BetStatus.UNSETTLED;
     }
 
     private Long getTimestamp() {
         long timestamp = this.getWagersTime().longValueExact();
-        if(String.valueOf(Math.abs(timestamp)).length() > 10){
+        if (String.valueOf(Math.abs(timestamp)).length() > 10) {
             return timestamp;
         }
         return timestamp * 1000;
