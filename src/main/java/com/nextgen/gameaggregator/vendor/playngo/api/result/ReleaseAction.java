@@ -48,6 +48,7 @@ public class ReleaseAction {
 
             // Convert original request body into commonDto
             ReleaseDto releaseDto = xmlMapper.readValue(body, ReleaseDto.class);
+            log.info("Release body: " + body);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(releaseDto);

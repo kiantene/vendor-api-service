@@ -46,6 +46,7 @@ public class BalanceAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
+            log.info("Balance body: " + body);
 
             // Convert original request body into commonDto
             BalanceDto balanceDto = xmlMapper.readValue(body, BalanceDto.class);

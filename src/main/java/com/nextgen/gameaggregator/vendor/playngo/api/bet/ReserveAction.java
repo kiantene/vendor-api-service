@@ -51,6 +51,7 @@ public class ReserveAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
+            log.info("Reserve body: " + body);
 
             // Convert original request body into commonDto
             ReserveDto reserveDto = xmlMapper.readValue(body, ReserveDto.class);

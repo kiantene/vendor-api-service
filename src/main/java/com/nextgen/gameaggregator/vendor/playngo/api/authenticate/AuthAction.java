@@ -54,6 +54,7 @@ public class AuthAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
+            log.info("Auth body: " + body);
 
             // Convert original request body into commonDto
             AuthDto authDto = xmlMapper.readValue(body, AuthDto.class);
