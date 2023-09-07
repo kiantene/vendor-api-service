@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -89,6 +90,8 @@ public class DebitAction {
 
         } finally {
             httpService.end(httpRequestLog, debitVo);
+            log.info("ILU RequestBody : " + httpRequestLog.getRequestBody());
+            log.info("ILU ResponseBody : " + debitVo);
         }
 
         return debitVo;
@@ -136,6 +139,7 @@ public class DebitAction {
 
     private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpRequestLog httpRequestLog) {
         TransactionsVo transactionsVo = new TransactionsVo();
+        GameSession gameSession = null;
 
         try {
             // 1. Validate each user data
@@ -143,7 +147,7 @@ public class DebitAction {
 
             // 2. Verify session token
             String vendorGameCode = vendorService.mergeGameCode(debitTransactionsDto.getGpcode(), debitTransactionsDto.getGamecode());
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitTransactionsDto.getUserid(), vendorGameCode);
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitTransactionsDto.getUserid(), vendorGameCode);
 
             // 3. Verify Credential and Currency
             this.doVerification(debitTransactionsDto, gameSession, clientId, clientSecret);
@@ -184,6 +188,7 @@ public class DebitAction {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
 
         } catch (BetResultIdempotentViolationException e) {
+            transactionsVo.setBal(this.getBalance(traceId, gameSession));
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(traceId);
             transactionsVo.setDup(true);
@@ -203,6 +208,16 @@ public class DebitAction {
         }
 
         return transactionsVo;
+    }
+
+    private BigDecimal getBalance(String traceId, GameSession gameSession) {
+        BigDecimal balance = BigDecimal.ZERO;
+        try {
+            balance = walletService.getBalance(traceId, gameSession, null);
+        } catch (Exception e) {
+            // nothing to do
+        }
+        return balance;
     }
 }
 

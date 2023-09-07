@@ -9,7 +9,5 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UsersVo extends ResponseVo {
     private String userid;
-    private Integer err;
-    private String errdesc;
     private List<WalletsVo> wallets;
 }

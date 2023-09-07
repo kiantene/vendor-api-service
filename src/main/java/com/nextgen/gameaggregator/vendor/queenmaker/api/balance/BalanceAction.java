@@ -91,6 +91,8 @@ public class BalanceAction {
 
         } finally {
             httpService.end(httpRequestLog, balanceVo);
+            log.info("ILU RequestBody : " + httpRequestLog.getRequestBody());
+            log.info("ILU ResponseBody : " + balanceVo);
         }
 
         return balanceVo;

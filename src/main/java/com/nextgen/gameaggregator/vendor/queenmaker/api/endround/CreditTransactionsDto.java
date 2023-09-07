@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.dto.JpcontribsDto;
+import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -145,12 +146,12 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return null;
+        return VendorService.convertToTimestamp(this.timestamp);
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return VendorService.convertToTimestamp(this.timestamp);
     }
 
     @Override

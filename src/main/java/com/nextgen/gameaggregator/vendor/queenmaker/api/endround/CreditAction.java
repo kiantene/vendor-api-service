@@ -92,6 +92,8 @@ public class CreditAction {
 
         } finally {
             httpService.end(httpRequestLog, creditVo);
+            log.info("ILU RequestBody : " + httpRequestLog.getRequestBody());
+            log.info("ILU ResponseBody : " + creditVo);
         }
 
         return creditVo;
@@ -130,6 +132,7 @@ public class CreditAction {
 
     private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpRequestLog httpRequestLog) {
         TransactionsVo transactionsVo = new TransactionsVo();
+        GameSession gameSession = null;
 
         try {
             // 1. Validate each user data
@@ -137,7 +140,7 @@ public class CreditAction {
 
             // 2. Verify session token
             String vendorGameCode = vendorService.mergeGameCode(creditTransactionsDto.getGpcode(), creditTransactionsDto.getGamecode());
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditTransactionsDto.getUserid(), vendorGameCode);
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditTransactionsDto.getUserid(), vendorGameCode);
 
             // 3. Verify Credential and Currency
             this.doVerification(creditTransactionsDto, gameSession, clientId, clientSecret);
@@ -173,6 +176,8 @@ public class CreditAction {
             transactionsVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
 
         } catch (BetResultIdempotentViolationException e) {
+            // return current balance
+            transactionsVo.setBal(this.getBalance(traceId, gameSession));
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(traceId);
             transactionsVo.setDup(true);
@@ -197,6 +202,16 @@ public class CreditAction {
         }
 
         return transactionsVo;
+    }
+
+    private BigDecimal getBalance(String traceId, GameSession gameSession) {
+        BigDecimal balance = BigDecimal.ZERO;
+        try {
+            balance = walletService.getBalance(traceId, gameSession, null);
+        } catch (Exception e) {
+            // nothing to do
+        }
+        return balance;
     }
 
 }
