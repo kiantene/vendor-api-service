@@ -94,12 +94,13 @@ public class ReleaseAction {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+            if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
             } else {
                 releaseVo.setStatusCode(ResponseCodes.INTERNAL);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
             }
+
         } catch (Exception exception) {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, exception);
@@ -131,15 +132,18 @@ public class ReleaseAction {
             AuthenticationException,
             CredentialNotFoundException {
 
+        // Verify product group id
+        vendorService.verifyProductId(gameSession.getVendorLineId(), releaseDto);
+
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), releaseDto);
+
+        // Verify bet game code
+        vendorService.verifyVendorGameCode(gameSession, releaseDto.getGameId());
 
         // Verify Username, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), releaseDto.getExternalId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), releaseDto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify bet game code
-        vendorService.verifyVendorGameCode(gameSession, releaseDto.getGameId());
 
     }
 

@@ -99,7 +99,7 @@ public class ReserveAction {
             reserveVo.setStatusCode(ResponseCodes.INTERNAL);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+            if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 reserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
             } else {
                 reserveVo.setStatusCode(ResponseCodes.INTERNAL);
@@ -139,18 +139,21 @@ public class ReserveAction {
             GameNotSupportedException,
             CredentialNotFoundException {
 
+        // Verify product group id
+        vendorService.verifyProductId(gameSession.getVendorLineId(), reserveDto);
+
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), reserveDto);
-
-        // Verify Username, CurrencyCode
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), reserveDto.getExternalId(), InvalidPlayerException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), reserveDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify bet game code
         vendorService.verifyVendorGameCode(gameSession, reserveDto.getGameId());
 
         // Validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, reserveDto.getExternalId());
+
+        // Verify Username, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), reserveDto.getExternalId(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), reserveDto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
 }

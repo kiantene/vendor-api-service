@@ -5,6 +5,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -19,12 +20,8 @@ public class BalanceDto extends CommonDto {
     private String externalId;
 
     @NotBlank
-    @Size(min = 1, max = 16)
-    @JacksonXmlProperty(localName = "productId")
-    private String productId;
-
-    @NotBlank
     @Size(min = 3, max = 3)
+    @Pattern(regexp = "^[A-Z]+$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 

@@ -97,6 +97,7 @@ public class AuthAction {
                  DisabledGameException |
                  DisabledVendorLineException |
                  CredentialNotFoundException |
+                 GameNotSupportedException |
                  JsonProcessingException |
                  InvalidRequestException internalErrorException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
@@ -131,7 +132,22 @@ public class AuthAction {
     }
 
     private void doVerification(GameSession gameSession, AuthDto authDto)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException, AuthenticationException {
+            throws
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            CredentialNotFoundException,
+            AuthenticationException,
+            GameNotSupportedException {
+
+        // Verify vendor's access token
+        vendorService.verifyAccessCode(gameSession.getVendorLineId(), authDto);
+
+        // Verify product group id
+        vendorService.verifyProductId(gameSession.getVendorLineId(), authDto);
+
+        // Verify bet game code
+        vendorService.verifyVendorGameCode(gameSession, authDto.getGameId());
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -141,9 +157,6 @@ public class AuthAction {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // Verify vendor's access token
-        vendorService.verifyAccessCode(gameSession.getVendorLineId(), authDto);
     }
 
     private String getBirthDate() {

@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.playngo.api.authenticate;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -18,6 +19,7 @@ public class AuthDto extends CommonDto {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JacksonXmlProperty(localName = "username")
     private String username;
 
@@ -28,10 +30,6 @@ public class AuthDto extends CommonDto {
     @Nullable
     @JacksonXmlProperty(localName = "extra")
     private String extra;
-
-    @Size(min = 1, max = 32)
-    @JacksonXmlProperty(localName = "productId")
-    private String productId;
 
     @Nullable
     @JacksonXmlProperty(localName = "client")
@@ -50,6 +48,7 @@ public class AuthDto extends CommonDto {
     private String contextId;
 
     @Size(max = 5)
+    @Pattern(regexp = "^[a-zA-Z0-9_]+$")
     @JacksonXmlProperty(localName = "language")
     private String language;
 

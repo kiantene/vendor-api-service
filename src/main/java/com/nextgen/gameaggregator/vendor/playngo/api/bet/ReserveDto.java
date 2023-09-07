@@ -27,11 +27,6 @@ public class ReserveDto extends CommonDto implements BetResultData {
     private String externalId;
 
     @NotBlank
-    @Size(min = 1, max = 16)
-    @JacksonXmlProperty(localName = "productId")
-    private String productId;
-
-    @NotBlank
     @Size(min = 1, max = 32)
     @JacksonXmlProperty(localName = "transactionId")
     private String transactionId;
@@ -44,6 +39,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @NotBlank
     @Size(min = 3, max = 3)
+    @Pattern(regexp = "^[A-Z]+$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 
@@ -60,10 +56,6 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @PositiveOrZero
     @JacksonXmlProperty(localName = "roundId")
     private Long roundId;
-
-    @Size(max = 64)
-    @JacksonXmlProperty(localName = "externalGameSessionId")
-    private String externalGameSessionId;
 
     @Pattern(regexp = "^(0|1|2)$")
     @JacksonXmlProperty(localName = "gameMode")

@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.playngo.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,8 @@ public class BalanceAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.BALANCE)
     public String balance(HttpServletRequest request) throws InvalidRequestException, JsonProcessingException {
@@ -42,7 +45,8 @@ public class BalanceAction {
 
         BalanceVo balanceVo = new BalanceVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String balanceVoXml;
+        String balanceVoXml = "";
+
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -66,11 +70,34 @@ public class BalanceAction {
             // Construct VO
             balanceVo.setReal(balance);
             balanceVo.setStatusCode(ResponseCodes.OK);
-        } catch (Exception e) {
-            balanceVo.setStatusCode(ResponseCodes.INTERNAL);
-            httpService.logError(httpRequestLog, e);
+
+        } catch (InvalidAgentApiCredentialException |
+                 InvalidOperatorResponseException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 DisabledVendorLineException |
+                 CredentialNotFoundException |
+                 GameNotSupportedException |
+                 JsonProcessingException |
+                 InvalidRequestException internalErrorException) {
+            balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+
+        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
+            balanceVo.setStatusCodeAndMessage(ResponseCodes.INVALIDCURRENCY);
+
+        } catch (AuthenticationException authenticationException) {
+            balanceVo.setStatusCodeAndMessage(ResponseCodes.SESSIONEXPIRED);
+
+        } catch (Exception exception) {
+            balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
-            balanceVoXml = xmlMapper.writeValueAsString(balanceVo);
+            try {
+                balanceVoXml = xmlMapper.writeValueAsString(balanceVo);
+            } catch (JsonProcessingException e) {
+                balanceVo.setStatusCode(ResponseCodes.INTERNAL);
+            }
             balanceVo.setResponseXMLFormat(balanceVoXml);
             httpService.end(httpRequestLog, balanceVo);
         }
@@ -83,10 +110,23 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(GameSession gameSession, BalanceDto balanceDto) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException {
-        // Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getExternalGameSessionId(), AuthenticationException::new);
+    private void doVerification(GameSession gameSession, BalanceDto balanceDto)
+            throws
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            AuthenticationException,
+            CredentialNotFoundException,
+            GameNotSupportedException {
+
+        // Verify vendor's access token
+        vendorService.verifyAccessCode(gameSession.getVendorLineId(), balanceDto);
+
+        // Verify product group id
+        vendorService.verifyProductId(gameSession.getVendorLineId(), balanceDto);
+
+        // Verify bet game code
+        vendorService.verifyVendorGameCode(gameSession, balanceDto.getGameId());
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -96,5 +136,6 @@ public class BalanceAction {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
     }
 }

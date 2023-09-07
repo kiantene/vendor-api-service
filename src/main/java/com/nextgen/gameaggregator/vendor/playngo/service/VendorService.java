@@ -43,4 +43,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public void verifyProductId(Integer vendorLineId, CommonDto dto) throws CredentialNotFoundException, AuthenticationException {
+        String accessToken = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PRODUCT_GROUP);
+        if (!accessToken.equals(dto.getProductId())) {
+            throw new AuthenticationException();
+        }
+    }
+
 }

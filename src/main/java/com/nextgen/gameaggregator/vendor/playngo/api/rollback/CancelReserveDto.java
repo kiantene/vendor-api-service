@@ -25,11 +25,6 @@ public class CancelReserveDto extends CommonDto implements RollbackData {
     private String externalId;
 
     @NotBlank
-    @Size(min = 1, max = 16)
-    @JacksonXmlProperty(localName = "productId")
-    private String productId;
-
-    @NotBlank
     @Size(min = 1, max = 32)
     @JacksonXmlProperty(localName = "transactionId")
     private String transactionId;
