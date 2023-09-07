@@ -27,6 +27,8 @@ public class BetDto implements BetResultData {
     public String recordID;
 
     @NotBlank(message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.PARAM_CONTAIN_ERROR)
+    @Size(min = 1, max = 24, message = ResponseCodes.PARAM_CONTAIN_ERROR)
     @JsonProperty("BankID")
     public String bankID;
 
