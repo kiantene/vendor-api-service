@@ -249,6 +249,8 @@ public class WalletService {
 
                     //when update caching settle bet, it should be using walletBetResultData, instead of settledBet data, because settledBet data is get from unsettledBet
                     updateCachingSettledBet = new SettledBet(walletBetResultData);
+                    //ga-2684, handle for hacksaw
+                    updateCachingSettledBet.setBetAmount(settledBet.getBetAmount());
 
                 }
                 case BET_WIN, BET_LOSE -> { // PGSoft
