@@ -121,10 +121,6 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "freegameLoss")
     private String freeGameLoss;
 
-    @Size(max = 64)
-    @JacksonXmlProperty(localName = "externalGameSessionId")
-    private String externalGameSessionId;
-
     @Pattern(regexp = "^(0|1|2)$")
     @JacksonXmlProperty(localName = "gameMode")
     private String gameMode;
