@@ -39,7 +39,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @NotBlank
     @Size(min = 3, max = 3)
-    @Pattern(regexp = "^[A-Z]+$")
+    @Pattern(regexp = "^[a-zA-Z]+$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 

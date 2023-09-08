@@ -21,7 +21,7 @@ public class BalanceDto extends CommonDto {
 
     @NotBlank
     @Size(min = 3, max = 3)
-    @Pattern(regexp = "^[A-Z]+$")
+    @Pattern(regexp = "^[a-zA-Z]+$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 

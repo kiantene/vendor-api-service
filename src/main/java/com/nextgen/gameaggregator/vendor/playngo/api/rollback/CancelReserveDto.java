@@ -40,6 +40,7 @@ public class CancelReserveDto extends CommonDto implements RollbackData {
 
     @NotBlank
     @Size(min = 3, max = 3)
+    @Pattern(regexp = "^[a-zA-Z]+$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 
@@ -52,10 +53,6 @@ public class CancelReserveDto extends CommonDto implements RollbackData {
     @PositiveOrZero
     @JacksonXmlProperty(localName = "roundId")
     private Long roundId;
-
-    @Size(max = 64)
-    @JacksonXmlProperty(localName = "externalGameSessionId")
-    private String externalGameSessionId;
 
     @NotBlank
     @Pattern(regexp = "^(1|2|5)$")

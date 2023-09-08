@@ -40,6 +40,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @NotBlank
     @Size(min = 3, max = 3)
+    @Pattern(regexp = "^[a-zA-Z]+$")
     @JacksonXmlProperty(localName = "currency")
     private String currency;
 
