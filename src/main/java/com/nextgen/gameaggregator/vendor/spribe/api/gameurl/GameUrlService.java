@@ -37,7 +37,6 @@ public class GameUrlService implements GameUrl {
         }
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("game", gameCode);
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("token", gameSession.getToken());
         formData.add("lang", gameSession.getVendorLanguageCode());
@@ -61,7 +60,8 @@ public class GameUrlService implements GameUrl {
             .scheme("https")
             .host(gameUrl)
             .path("/games")
-            .path("/launch")
+            .path("/launch/")
+            .path(gameSession.getVendorGameCode())
             .queryParams(formData)
             .build()
             .encode()
