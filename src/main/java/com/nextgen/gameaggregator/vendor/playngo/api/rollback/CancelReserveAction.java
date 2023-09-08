@@ -56,8 +56,8 @@ public class CancelReserveAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(cancelReserveVo);
 
-            // Verify Token
-            GameSession gameSession = gameSessionService.verifyToken(cancelReserveDto.getExternalGameSessionId());
+            // Get game session or verify Token
+            GameSession gameSession = vendorService.getGameSession(cancelReserveDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, cancelReserveDto);

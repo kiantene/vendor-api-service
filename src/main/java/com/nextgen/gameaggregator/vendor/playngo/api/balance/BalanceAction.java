@@ -58,8 +58,8 @@ public class BalanceAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
-            // Verify Token
-            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getExternalGameSessionId());
+            // Get game session or verify Token
+            GameSession gameSession = vendorService.getGameSession(balanceDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, balanceDto);
@@ -138,4 +138,5 @@ public class BalanceAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
+
 }

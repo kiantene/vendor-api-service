@@ -59,8 +59,8 @@ public class ReserveAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(reserveDto);
 
-            // Verify Token
-            GameSession gameSession = gameSessionService.verifyToken(reserveDto.getExternalGameSessionId());
+            // Get game session or verify Token
+            GameSession gameSession = vendorService.getGameSession(reserveDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, reserveDto);

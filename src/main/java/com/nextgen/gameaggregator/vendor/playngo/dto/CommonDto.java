@@ -13,7 +13,6 @@ import lombok.Data;
 public class CommonDto {
 
     @Size(max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     @JacksonXmlProperty(localName = "externalGameSessionId")
     private String externalGameSessionId;
 

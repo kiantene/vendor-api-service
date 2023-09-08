@@ -53,8 +53,8 @@ public class ReleaseAction {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(releaseDto);
 
-            // Verify Token
-            GameSession gameSession = gameSessionService.verifyToken(releaseDto.getExternalGameSessionId());
+            // Get game session or verify Token
+            GameSession gameSession = vendorService.getGameSession(releaseDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, releaseDto);
