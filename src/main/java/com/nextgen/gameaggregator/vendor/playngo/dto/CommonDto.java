@@ -29,7 +29,7 @@ public class CommonDto {
     protected String gameId;
 
     @NotBlank
-    @Size(min = 1, max = 16)
+    @Size(min = 1, max = 32)
     @Pattern(regexp = "^[a-zA-Z0-9]+$")
     @JacksonXmlProperty(localName = "productId")
     private String productId;
