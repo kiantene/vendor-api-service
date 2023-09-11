@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 
 @RestController
@@ -74,7 +75,10 @@ public class CancelReserveAction {
                  GameNotSupportedException |
                  CredentialNotFoundException |
                  JsonProcessingException |
-                 InvalidRequestException internalErrorException) {
+                 InvalidRequestException |
+                 NoSuchMethodException |
+                 InvocationTargetException |
+                 IllegalAccessException internalErrorException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {

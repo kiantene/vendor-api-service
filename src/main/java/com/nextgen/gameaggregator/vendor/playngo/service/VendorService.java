@@ -10,16 +10,14 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.playngo.api.balance.BalanceDto;
-import com.nextgen.gameaggregator.vendor.playngo.api.bet.ReserveDto;
-import com.nextgen.gameaggregator.vendor.playngo.api.result.ReleaseDto;
-import com.nextgen.gameaggregator.vendor.playngo.api.rollback.CancelReserveDto;
 import com.nextgen.gameaggregator.vendor.playngo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Instant;
 
 @Service
@@ -66,75 +64,32 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public GameSession getGameSession(BalanceDto dto) throws AuthenticationException, InvalidRequestException {
+    public <T> GameSession getGameSession(T dto)
+            throws
+            AuthenticationException,
+            InvalidRequestException,
+            NoSuchMethodException,
+            InvocationTargetException,
+            IllegalAccessException {
+
         GameSession gameSession;
-        String externalGameSessionId = dto.getExternalGameSessionId();
+
+        Method getExternalGameSessionIdMethod = dto.getClass().getMethod("getExternalGameSessionId");
+        String externalGameSessionId = (String) getExternalGameSessionIdMethod.invoke(dto);
 
         if(externalGameSessionId == null || externalGameSessionId.equals("")) {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getExternalId());
+            Method getExternalId = dto.getClass().getMethod("getExternalId");
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername((String) getExternalId.invoke(dto));
         } else {
             // validate extern game session id
-            this.validateExternalGameSessionId(dto.getExternalGameSessionId());
+            this.validateExternalGameSessionId(externalGameSessionId);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(dto.getExternalGameSessionId());
+            gameSession = gameSessionService.verifyToken(externalGameSessionId);
         }
 
         return gameSession;
 
-    }
-
-    public GameSession getGameSession(ReserveDto dto) throws AuthenticationException, InvalidRequestException {
-        GameSession gameSession;
-        String externalGameSessionId = dto.getExternalGameSessionId();
-
-        if(externalGameSessionId == null || externalGameSessionId.equals("")) {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getExternalId());
-        } else {
-            // validate extern game session id
-            this.validateExternalGameSessionId(dto.getExternalGameSessionId());
-
-            // Verify session token
-            gameSession = gameSessionService.verifyToken(dto.getExternalGameSessionId());
-        }
-
-        return gameSession;
-
-    }
-
-    public GameSession getGameSession(ReleaseDto dto) throws AuthenticationException, InvalidRequestException {
-        GameSession gameSession;
-        String externalGameSessionId = dto.getExternalGameSessionId();
-
-        if(externalGameSessionId == null || externalGameSessionId.equals("")) {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getExternalId());
-        } else {
-            // validate extern game session id
-            this.validateExternalGameSessionId(dto.getExternalGameSessionId());
-
-            // Verify session token
-            gameSession = gameSessionService.verifyToken(dto.getExternalGameSessionId());
-        }
-
-        return gameSession;
-
-    }
-
-    public GameSession getGameSession(CancelReserveDto dto) throws AuthenticationException, InvalidRequestException {
-        GameSession gameSession;
-        String externalGameSessionId = dto.getExternalGameSessionId();
-
-        if(externalGameSessionId == null || externalGameSessionId.equals("")) {
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getExternalId());
-        } else {
-            // validate extern game session id
-            this.validateExternalGameSessionId(dto.getExternalGameSessionId());
-
-            // Verify session token
-            gameSession = gameSessionService.verifyToken(dto.getExternalGameSessionId());
-        }
-
-        return gameSession;
     }
 
 }

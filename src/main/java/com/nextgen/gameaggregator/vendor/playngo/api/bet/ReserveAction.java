@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.reflect.InvocationTargetException;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -73,14 +75,17 @@ public class ReserveAction {
             reserveVo.setReal(betEvent.getLastBalance());
 
         } catch (InvalidAgentApiCredentialException |
-                   InvalidPlayerException |
-                   DisabledAgentPlayerException |
-                   DisabledGameException |
-                   DisabledVendorLineException |
-                   GameNotSupportedException |
-                   CredentialNotFoundException |
-                   JsonProcessingException |
-                   InvalidRequestException internalErrorException) {
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 DisabledVendorLineException |
+                 GameNotSupportedException |
+                 CredentialNotFoundException |
+                 JsonProcessingException |
+                 InvalidRequestException |
+                 NoSuchMethodException |
+                 InvocationTargetException |
+                 IllegalAccessException internalErrorException) {
             reserveVo.setStatusCode(ResponseCodes.INTERNAL);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {

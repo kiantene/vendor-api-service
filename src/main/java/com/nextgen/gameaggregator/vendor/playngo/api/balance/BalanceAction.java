@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 
 @RestController
@@ -79,7 +80,10 @@ public class BalanceAction {
                  CredentialNotFoundException |
                  GameNotSupportedException |
                  JsonProcessingException |
-                 InvalidRequestException internalErrorException) {
+                 InvalidRequestException |
+                 NoSuchMethodException |
+                 InvocationTargetException |
+                 IllegalAccessException internalErrorException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
