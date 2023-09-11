@@ -168,7 +168,7 @@ public class CreditAction {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
 
         } catch (InvalidRequestException e) {
-            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, Optional.ofNullable(e.getValidation().values().iterator().next().toString()).orElse(""));
+            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, Optional.ofNullable(e.getValidation().values().iterator().next()).orElse(""));
 
         } catch (InvalidVendorLineException |
                  CredentialNotFoundException |
