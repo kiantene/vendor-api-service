@@ -90,8 +90,8 @@ public class DebitAction {
 
         } finally {
             httpService.end(httpRequestLog, debitVo);
-            log.info("ILU RequestBody : " + httpRequestLog.getRequestBody());
-            log.info("ILU ResponseBody : " + debitVo);
+            log.info("QM RequestBody : " + httpRequestLog.getRequestBody());
+            log.info("QM ResponseBody : " + debitVo);
         }
 
         return debitVo;

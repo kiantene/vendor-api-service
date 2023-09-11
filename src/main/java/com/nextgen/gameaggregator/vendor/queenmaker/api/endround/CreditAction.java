@@ -92,8 +92,8 @@ public class CreditAction {
 
         } finally {
             httpService.end(httpRequestLog, creditVo);
-            log.info("ILU RequestBody : " + httpRequestLog.getRequestBody());
-            log.info("ILU ResponseBody : " + creditVo);
+            log.info("QM RequestBody : " + httpRequestLog.getRequestBody());
+            log.info("QM ResponseBody : " + creditVo);
         }
 
         return creditVo;
