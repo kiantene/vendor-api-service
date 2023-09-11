@@ -87,21 +87,26 @@ public class GeneralAction {
 
             switch (dto.getAction()) {
                 case Actions.BALANCE -> {
+                    log.info("Yesbingo BALANCE: " + decryptedData);
                     responseVo = balanceAction.balance(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.BET -> {
                     // For Bingo & Slot = Bet
+                    log.info("Yesbingo BET: " + decryptedData);
                     responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.GAME_RESULT -> {
                     // For Bingo & Slot = Win
+                    log.info("Yesbingo GAME_RESULT: " + decryptedData);
                     responseVo = gameResultAction.gameResult(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.GAME_DETAIL_RESULT -> {
                     // For fish game is Bet + Win
+                    log.info("Yesbingo GAME_DETAIL_RESULT: " + decryptedData);
                     responseVo = gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData);
                 }
                 case Actions.CANCEL_BET -> {
+                    log.info("Yesbingo CANCEL_BET: " + decryptedData);
                     responseVo = cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData);
                 }
                 // If the header does not match any of the expected values, return an error response
