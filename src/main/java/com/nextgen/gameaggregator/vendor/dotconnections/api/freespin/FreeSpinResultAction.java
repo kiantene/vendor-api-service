@@ -159,7 +159,8 @@ public class FreeSpinResultAction {
             AuthenticationException,
             InvalidSignatureException,
             InvalidRequestException,
-            InvalidProviderException {
+            InvalidProviderException,
+            GameNotSupportedException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -175,8 +176,9 @@ public class FreeSpinResultAction {
             throw new InvalidProviderException();
         }
 
-        // Verify currency
+        // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
 
     }
 }

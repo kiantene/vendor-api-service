@@ -84,22 +84,6 @@ public class EndWagerAction {
                 resultType = this.processEndRoundBet(dto, gameSession, resultType);
             }
 
-            /*
-            // Determine if bet is settled
-            if (dto.isEndround.equals("true")) {
-                // Get unsettled bet
-                UnsettledBet unsettledBet = this.getUnsettleBet(dto, gameSession);
-
-                // Set vendor bet id with unsettled bet's id
-                dto.setWagerId(unsettledBet.getVendorBetId());
-
-                if (resultType.code.equals(ResultType.LOSE.code)) {
-                    // if result type is LOSE and bet status is SETTLED, change to END
-                    resultType = ResultType.END;
-                }
-            }
-             */
-
             // Process bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
@@ -120,6 +104,9 @@ public class EndWagerAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+
+        } catch (GameNotSupportedException gameNotSupportedException) {
+            responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
@@ -197,7 +184,8 @@ public class EndWagerAction {
             AuthenticationException,
             InvalidSignatureException,
             InvalidRequestException,
-            InvalidProviderException {
+            InvalidProviderException,
+            GameNotSupportedException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -213,21 +201,10 @@ public class EndWagerAction {
             throw new InvalidProviderException();
         }
 
-        // Verify currency
+        // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
     }
-
-    /*
-    private UnsettledBet getUnsettleBet(EndWagerDto dto, GameSession gameSession) throws BetNotFoundException {
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-        if (unsettledBetList.isEmpty()) {
-            throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
-        }
-        UnsettledBet unsettledBet = unsettledBetList.get(unsettledBetList. size()-1);
-
-        return unsettledBet;
-    }
-     */
 
     private ResultType processEndRoundBet(EndWagerDto dto, GameSession gameSession, ResultType resultType) throws BetNotFoundException {
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());

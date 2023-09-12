@@ -92,7 +92,7 @@ public class WagerAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
 
-        } catch (InvalidPlayerException invalidPlayerException) {
+        } catch (GameNotSupportedException | InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
 
         } catch (DisabledGameException disabledGameException) {
@@ -161,10 +161,19 @@ public class WagerAction {
     }
 
     private void doVerification(WagerDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
-            DisabledAgentPlayerException, DisabledGameException, InvalidVendorLineException,
-            CredentialNotFoundException, AuthenticationException, InvalidRequestException,
-            InvalidSignatureException, InvalidProviderException {
+            throws
+            InvalidPlayerException,
+            CurrencyNotSupportedException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            InvalidVendorLineException,
+            CredentialNotFoundException,
+            AuthenticationException,
+            InvalidRequestException,
+            InvalidSignatureException,
+            InvalidProviderException,
+            GameNotSupportedException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -183,8 +192,9 @@ public class WagerAction {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getBrandUid());
 
-        // Verify currency
+        // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
     }
 
 }
