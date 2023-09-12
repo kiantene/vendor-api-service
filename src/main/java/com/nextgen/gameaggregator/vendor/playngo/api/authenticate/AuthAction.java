@@ -54,7 +54,7 @@ public class AuthAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Auth body: " + body);
+            log.info("Playngo Auth body: " + body);
 
             // Convert original request body into commonDto
             AuthDto authDto = xmlMapper.readValue(body, AuthDto.class);
@@ -115,9 +115,12 @@ public class AuthAction {
         } finally {
             try {
                 authVoXml = xmlMapper.writeValueAsString(authVo);
+
             } catch (JsonProcessingException e) {
                 authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+
             }
+
             authVo.setResponseXMLFormat(authVoXml);
             httpService.end(httpRequestLog, authVo);
 

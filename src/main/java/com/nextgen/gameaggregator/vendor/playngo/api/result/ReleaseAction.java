@@ -49,7 +49,7 @@ public class ReleaseAction {
 
             // Convert original request body into commonDto
             ReleaseDto releaseDto = xmlMapper.readValue(body, ReleaseDto.class);
-            log.info("Release body: " + body);
+            log.info("Playngo Release body: " + body);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(releaseDto);
@@ -100,9 +100,11 @@ public class ReleaseAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+
             } else {
                 releaseVo.setStatusCode(ResponseCodes.INTERNAL);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             }
 
         } catch (Exception exception) {
@@ -112,9 +114,12 @@ public class ReleaseAction {
         } finally {
             try {
                 releaseVoXml = xmlMapper.writeValueAsString(releaseVo);
+
             } catch (JsonProcessingException e) {
                 releaseVo.setStatusCode(ResponseCodes.INTERNAL);
+
             }
+
             releaseVo.setResponseXMLFormat(releaseVoXml);
             httpService.end(httpRequestLog, releaseVo);
 

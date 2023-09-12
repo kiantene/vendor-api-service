@@ -49,7 +49,7 @@ public class CancelReserveAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Cancel Reserve body: " + body);
+            log.info("Playngo Cancel Reserve body: " + body);
 
             // Convert original request body into commonDto
             CancelReserveDto cancelReserveDto = xmlMapper.readValue(body, CancelReserveDto.class);
@@ -96,10 +96,13 @@ public class CancelReserveAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+
             } else {
                 cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             }
+
         } catch (Exception exception) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, exception);
@@ -107,9 +110,12 @@ public class CancelReserveAction {
         } finally {
             try {
                 cancelReserveVoXml = xmlMapper.writeValueAsString(cancelReserveVo);
+
             } catch (JsonProcessingException e) {
                 cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+
             }
+
             cancelReserveVo.setResponseXMLFormat(cancelReserveVoXml);
             httpService.end(httpRequestLog, cancelReserveVo);
 

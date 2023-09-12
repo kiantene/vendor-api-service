@@ -29,13 +29,7 @@ public class ReserveAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
     private WalletService walletService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
     @Autowired
     private ValidationService validationService;
     @Autowired
@@ -53,7 +47,7 @@ public class ReserveAction {
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Reserve body: " + body);
+            log.info("Playngo Reserve body: " + body);
 
             // Convert original request body into commonDto
             ReserveDto reserveDto = xmlMapper.readValue(body, ReserveDto.class);
@@ -106,10 +100,13 @@ public class ReserveAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 reserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+
             } else {
                 reserveVo.setStatusCode(ResponseCodes.INTERNAL);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             }
+
         } catch (Exception exception) {
             reserveVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, exception);
