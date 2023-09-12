@@ -170,6 +170,7 @@ public class CancelWagerAction {
     private void doValidation(CancelWagerDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
     }
 
     private void doVerification(CancelWagerDto dto, GameSession gameSession)
@@ -202,6 +203,7 @@ public class CancelWagerAction {
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
     }
 
     private ResponseVo doAdjustment(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog) {
@@ -248,5 +250,7 @@ public class CancelWagerAction {
         }
 
         return responseVo;
+
     }
+
 }

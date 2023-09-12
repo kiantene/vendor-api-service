@@ -135,6 +135,7 @@ public class BalanceAction {
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession)
@@ -163,5 +164,7 @@ public class BalanceAction {
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
     }
+
 }

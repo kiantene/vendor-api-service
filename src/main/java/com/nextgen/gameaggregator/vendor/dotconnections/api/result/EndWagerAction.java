@@ -105,9 +105,6 @@ public class EndWagerAction {
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
 
-        } catch (GameNotSupportedException gameNotSupportedException) {
-            responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
-
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
 
@@ -184,8 +181,7 @@ public class EndWagerAction {
             AuthenticationException,
             InvalidSignatureException,
             InvalidRequestException,
-            InvalidProviderException,
-            GameNotSupportedException {
+            InvalidProviderException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -203,7 +199,7 @@ public class EndWagerAction {
 
         // Verify currency + game code
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+
     }
 
     private ResultType processEndRoundBet(EndWagerDto dto, GameSession gameSession, ResultType resultType) throws BetNotFoundException {
@@ -218,5 +214,6 @@ public class EndWagerAction {
         }
 
         return resultType;
+
     }
 }
