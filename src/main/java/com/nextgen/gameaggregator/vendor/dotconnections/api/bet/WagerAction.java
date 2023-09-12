@@ -50,7 +50,6 @@ public class WagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String brandUid = "";
         GameSession gameSession = null;
 
         try {
@@ -60,9 +59,6 @@ public class WagerAction {
 
             // Convert original request body into dto
             WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
-
-            // Set brandUid for exceptional handling
-            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -89,22 +85,32 @@ public class WagerAction {
 
         } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
+
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+
         } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
+
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if (invalidRequestException.getValidation() != null) {
@@ -116,20 +122,31 @@ public class WagerAction {
                                 .map(Map.Entry::getValue) // get the value of the first element
                                 .orElse(ResponseCodes.REQUEST_PARAM_ERROR)
                 );
+
             } else {
                 responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+
             }
+
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
-        } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
+
+        } catch (DisabledVendorLineException |
+                 DisabledAgentPlayerException |
+                 CredentialNotFoundException |
+                 InvalidAgentApiCredentialException |
+                 JsonProcessingException |
+                 TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }

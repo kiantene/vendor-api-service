@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -18,27 +19,7 @@ import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class FreeSpinResultDto implements BetResultData {
-
-    @NotBlank
-    @Size(max = 7)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    public String brandId;
-
-    @NotBlank
-    @Size(max = 32)
-    @Pattern(regexp = "^[A-Z0-9]*$")
-    public String sign;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(min = 3, max = 20)
-    public String brandUid;
-
-    @NotBlank
-    @Size(min = 3, max = 4)
-    @Pattern(regexp = "[a-zA-Z]+")
-    public String currency;
+public class FreeSpinResultDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
@@ -72,8 +53,6 @@ public class FreeSpinResultDto implements BetResultData {
     @Pattern(regexp = "^true$|^false$")
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
-
-    public BetStatus betStatus;
 
     @Override
     public String getExternalTransactionId() {
@@ -140,6 +119,15 @@ public class FreeSpinResultDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return this.betStatus;
+        // Default end wager as unsettled
+        BetStatus betStatus = BetStatus.UNSETTLED;
+
+        // If round ended then set to settle
+        if (this.isEndround.equals("true")) {
+            betStatus = BetStatus.SETTLED;
+        }
+
+        return betStatus;
+
     }
 }

@@ -104,7 +104,7 @@ public class GameUrlService implements GameUrl {
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
-            responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVendorResponseVo.class);
+            responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVendorResponseVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);

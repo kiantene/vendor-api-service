@@ -96,12 +96,12 @@ public class BetDetailService implements BetDetailUrl {
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            requestService.validateResponse(responseVo);
+            RequestService.validateResponse(responseVo);
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException);
             throw new InvalidVendorResponseException();
         }
 

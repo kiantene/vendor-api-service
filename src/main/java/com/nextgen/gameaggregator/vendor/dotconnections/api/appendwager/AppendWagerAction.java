@@ -84,39 +84,59 @@ public class AppendWagerAction {
 
         } catch (AuthenticationException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
+
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
-        } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
-                 InvalidAgentApiCredentialException | JsonProcessingException | TransactionStillProcessingException systemErrorException) {
+
+        } catch (DisabledVendorLineException |
+                 DisabledAgentPlayerException |
+                 CredentialNotFoundException |
+                 InvalidAgentApiCredentialException |
+                 JsonProcessingException |
+                 TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
+
         }
 
         return responseVo;
@@ -129,9 +149,16 @@ public class AppendWagerAction {
     }
 
     private void doVerification(AppendWagerDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
-            DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException,
-            AuthenticationException, InvalidSignatureException, InvalidRequestException, InvalidProviderException {
+            throws InvalidPlayerException,
+            CurrencyNotSupportedException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            CredentialNotFoundException,
+            AuthenticationException,
+            InvalidSignatureException,
+            InvalidRequestException,
+            InvalidProviderException {
 
         String brandId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.BRAND_ID);
         String apiKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.API_KEY);
@@ -146,9 +173,6 @@ public class AppendWagerAction {
         if (!dto.getProvider().equals(providerCode)) {
             throw new InvalidProviderException();
         }
-
-        // validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, dto.getBrandUid());
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);

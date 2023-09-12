@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
 import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
@@ -18,27 +19,7 @@ import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class CancelWagerDto implements RollbackData, AdjustmentData {
-
-    @NotBlank
-    @Size(max = 7)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    public String brandId;
-
-    @NotBlank
-    @Size(max = 32)
-    @Pattern(regexp = "^[A-Z0-9]*$")
-    public String sign;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(min = 3, max = 20)
-    public String brandUid;
-
-    @NotBlank
-    @Size(min = 3, max = 4)
-    @Pattern(regexp = "[a-zA-Z]+")
-    public String currency;
+public class CancelWagerDto extends CommonDto implements RollbackData, AdjustmentData {
 
     @NotBlank
     @Size(max = 64)
@@ -80,7 +61,7 @@ public class CancelWagerDto implements RollbackData, AdjustmentData {
 
     // For adjustment
     @Override
-    public String getVendorBetId()  {
+    public String getVendorBetId() {
         return String.valueOf(this.wagerId);
     }
 
