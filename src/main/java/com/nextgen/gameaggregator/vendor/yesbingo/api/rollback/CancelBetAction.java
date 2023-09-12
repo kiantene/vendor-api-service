@@ -68,6 +68,8 @@ public class CancelBetAction {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
