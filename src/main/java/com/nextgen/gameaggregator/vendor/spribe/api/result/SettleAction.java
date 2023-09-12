@@ -74,6 +74,7 @@ public class SettleAction {
             data.setCurrency(gameSession.getVendorCurrencyCode());
             data.setProvider(dto.getProvider());
             data.setProvider_tx_id(dto.getProvider_tx_id());
+            vo.setData(data);
 
         } catch (Exception exception) {
             error.setErrorCode(ErrorCodes.INTERNAL_ERROR);

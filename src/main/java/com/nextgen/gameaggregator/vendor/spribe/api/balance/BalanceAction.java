@@ -68,6 +68,7 @@ public class BalanceAction {
             data.setUsername(gameSession.getAgentPlayerUsername());
             data.setBalance(balance);
             data.setCurrency(gameSession.getVendorCurrencyCode());
+            vo.setData(data);
 
         } catch (AuthenticationException authenticationException) {
             error.setErrorCode(ErrorCodes.INVALID_TOKEN);
