@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.spribe.api.result;
+package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
 import java.math.BigDecimal;
 
@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
@@ -23,7 +22,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
-public class SettleAction {
+public class RollbackAction {
 
     @Autowired
     private HttpService httpService;
@@ -32,12 +31,16 @@ public class SettleAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
+    private VendorLineService vendorLineService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
     
-    @PostMapping(path = Endpoints.DEPOSIT)
-    public ResponseVo settle(HttpServletRequest request) {
+    @PostMapping(path = Endpoints.ROLLBACK)
+    public ResponseVo rollback(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
@@ -48,7 +51,7 @@ public class SettleAction {
         try {
             // 1. Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            SettleDto dto = HttpService.convertJsonToDto(body, SettleDto.class);
+            RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
             // 2. Validate request parameters (Non-database calls)
             this.doValidation(dto);
@@ -57,14 +60,13 @@ public class SettleAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUser_id());
 
             // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+            this.doVerification(dto, gameSession);
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 6. Send bet request to Operator
-            ResultType resultType = determineResultType(dto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            // 6. Send rollback request to Operator
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
 
             // 7. Set response data
             data.setOperator_tx_id(traceId);
@@ -74,7 +76,7 @@ public class SettleAction {
             data.setCurrency(gameSession.getVendorCurrencyCode());
             data.setProvider(dto.getProvider());
             data.setProvider_tx_id(dto.getProvider_tx_id());
-
+        
         } catch (Exception exception) {
             error.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             vo.setError(error);
@@ -83,19 +85,20 @@ public class SettleAction {
         return vo;
     }
 
-    private void doValidation(SettleDto dto) throws InvalidRequestException {
+    private void doValidation(RollbackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
-
-        validationService.validateEligibleBet(gameSession, dto.getUser_id());
-    }
-    
-    private ResultType determineResultType(SettleDto dto) {
-        return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
+    private void doVerification(RollbackDto dto, GameSession gameSession) throws AuthenticationException, 
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+        // Verify received vendor player username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 }
