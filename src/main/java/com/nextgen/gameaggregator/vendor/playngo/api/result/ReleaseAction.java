@@ -60,9 +60,8 @@ public class ReleaseAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, releaseDto);
 
-            // Process Bet Result
-            ResultType resultType = vendorService.calculateResultType(releaseDto.getBetAmount(), releaseDto.getWinAmount(), releaseDto.getJackpotAmount(), false);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, releaseDto, resultType, vendorService, httpRequestLog);
+            // Get balance if round id is 0 else process bet result
+            BigDecimal balance = this.processBetResultOrGetBalance(traceId, gameSession, releaseDto, httpRequestLog);
 
             // Construct VO
             releaseVo.setStatusCode(ResponseCodes.OK);
@@ -153,6 +152,29 @@ public class ReleaseAction {
         // Verify Username, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), releaseDto.getExternalId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), releaseDto.getCurrency(), CurrencyNotSupportedException::new);
+
+    }
+
+    private BigDecimal processBetResultOrGetBalance(String traceId, GameSession gameSession, ReleaseDto releaseDto, HttpRequestLog httpRequestLog)
+            throws
+            InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException,
+            BetResultIdempotentViolationException,
+            MergedBetDataIntegrityException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            BetNotFoundException,
+            InvalidOperatorResponseException {
+
+        if (releaseDto.getState().equals("1") && releaseDto.getRoundId().equals("0") && releaseDto.getReal().compareTo(BigDecimal.ZERO) == 0) {
+            return walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+        } else {
+            // Process Bet Result
+            ResultType resultType = vendorService.calculateResultType(releaseDto.getBetAmount(), releaseDto.getWinAmount(), releaseDto.getJackpotAmount(), false);
+            return walletService.processBetResult(traceId, gameSession, releaseDto, resultType, vendorService, httpRequestLog);
+
+        }
 
     }
 
