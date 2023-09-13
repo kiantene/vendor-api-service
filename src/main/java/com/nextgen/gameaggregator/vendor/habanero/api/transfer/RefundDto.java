@@ -2,8 +2,10 @@ package com.nextgen.gameaggregator.vendor.habanero.api.transfer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.habanero.service.CustomBooleanDeserializer;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,6 +43,7 @@ public class RefundDto implements RollbackData {
     @JsonProperty("bonusamount")
     public BigDecimal bonusAmount;
 
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("jpwin")
     public Boolean jpWin;
 
@@ -62,6 +65,7 @@ public class RefundDto implements RollbackData {
     @JsonProperty("jpcont")
     public BigDecimal jpCont;
 
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("isbonus")
     public Boolean isBonus;
 
@@ -76,6 +80,7 @@ public class RefundDto implements RollbackData {
     @JsonProperty("accounttransactiontype")
     public Integer accountTransactionType;
 
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("gameinfeature")
     public Boolean gameInFeature;
 
@@ -85,6 +90,7 @@ public class RefundDto implements RollbackData {
     @JsonProperty("featureno")
     public Integer featureNo;
 
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("lastbonusaction")
     public Boolean lastBonusAction;
 
