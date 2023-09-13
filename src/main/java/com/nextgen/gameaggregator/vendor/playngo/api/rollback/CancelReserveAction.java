@@ -90,6 +90,10 @@ public class CancelReserveAction {
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
 
+        } catch (BetNotFoundException betNotFoundException) {
+            cancelReserveVo.setStatusCode(ResponseCodes.OK);
+            cancelReserveVo.setExternalTransactionId("");
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
