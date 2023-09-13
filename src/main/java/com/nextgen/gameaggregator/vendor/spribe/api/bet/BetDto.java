@@ -6,8 +6,7 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -21,9 +20,11 @@ public class BetDto implements BetResultData {
     private String session_token;
 
     @NotBlank
+    @Size(max = 3)
     private String currency;
 
-    @NotBlank
+    @NotNull
+    @PositiveOrZero
     private BigDecimal amount;
 
     @NotBlank
@@ -46,17 +47,17 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return null;
+        return provider_tx_id;
     }
 
     @Override
     public String getVendorBetId() {
-        return null;
+        return provider_tx_id;
     }
 
     @Override
     public String getRoundId() {
-        return null;
+        return provider_tx_id;
     }
 
     @Override

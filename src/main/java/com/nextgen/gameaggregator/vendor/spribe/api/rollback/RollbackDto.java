@@ -43,13 +43,11 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getRollbackId'");
+        return provider_tx_id;
     }
 
     @Override
     public Long getVendorSettledTime() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getVendorSettledTime'");
+        return System.currentTimeMillis() / 1000;
     }
 }
