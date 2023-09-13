@@ -146,7 +146,7 @@ public class CreditAction {
             this.doVerification(creditTransactionsDto, gameSession, clientId, clientSecret);
 
             // 4. Process Result
-            ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false);
+            ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
 
             // 5. Set transactionsVo
@@ -179,7 +179,7 @@ public class CreditAction {
             // return current balance
             transactionsVo.setBal(this.getBalance(traceId, gameSession));
             transactionsVo.setTxid(traceId);
-            transactionsVo.setPtxid(traceId);
+            transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setDup(true);
 
         } catch (TransactionStillProcessingException e) {

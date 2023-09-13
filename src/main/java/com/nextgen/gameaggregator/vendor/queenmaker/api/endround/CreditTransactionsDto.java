@@ -101,17 +101,17 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.ptxid;
+        return this.refptxid;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.ptxid;
+        return this.refptxid;
     }
 
     @Override
     public String getRoundId() {
-        return this.refptxid;
+        return this.roundid;
     }
 
     @Override
@@ -166,6 +166,9 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        if (this.isclosinground != null && this.isclosinground) {
+            return BetStatus.SETTLED;
+        }
+        return BetStatus.UNSETTLED;
     }
 }
