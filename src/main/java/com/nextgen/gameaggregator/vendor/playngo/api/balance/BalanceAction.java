@@ -29,8 +29,6 @@ public class BalanceAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
     private WalletService walletService;
     @Autowired
     private AgentPlayerService agentPlayerService;

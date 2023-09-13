@@ -4,9 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
@@ -20,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -28,11 +34,13 @@ public class ReleaseAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
     private WalletService walletService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = EndPoints.RELEASE)
     public String release(HttpServletRequest request) {
@@ -170,12 +178,42 @@ public class ReleaseAction {
             return walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } else {
+            // Check if bet record has been settled before
+            this.verifySettledBet(releaseDto, gameSession);
+
+            // Get result type: (WIN / LOSE / END) or (BET_WIN / BET_LOSE)
+            ResultType resultType = this.getResultType(releaseDto, gameSession);
+
             // Process Bet Result
-            ResultType resultType = vendorService.calculateResultType(releaseDto.getBetAmount(), releaseDto.getWinAmount(), releaseDto.getJackpotAmount(), false);
             return walletService.processBetResult(traceId, gameSession, releaseDto, resultType, vendorService, httpRequestLog);
 
         }
 
+    }
+
+    private ResultType getResultType(ReleaseDto dto, GameSession gameSession) {
+        Boolean isBet = this.verifyUnsettleBet(dto, gameSession);
+        ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+
+        return resultType;
+    }
+
+    private boolean verifyUnsettleBet(ReleaseDto dto, GameSession gameSession) {
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
+        if (unsettledBetList.isEmpty()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private void verifySettledBet(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+
+        if (settledBetList.size() > 0) {
+            throw new BetResultIdempotentViolationException();
+        }
     }
 
 }

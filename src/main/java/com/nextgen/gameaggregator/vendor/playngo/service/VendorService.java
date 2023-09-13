@@ -26,14 +26,8 @@ public class VendorService extends BaseVendorService {
 
     @Autowired
     private VendorLineService vendorLineService;
-
     @Autowired
     private GameSessionService gameSessionService;
-
-    public static Long getTimestamp() {
-        return Instant.now().toEpochMilli();
-    }
-
     @Autowired
     private VendorGameCodeService vendorGameCodeService;
 
@@ -90,6 +84,10 @@ public class VendorService extends BaseVendorService {
 
         return gameSession;
 
+    }
+
+    public static Long getTimestamp() {
+        return Instant.now().toEpochMilli();
     }
 
 }

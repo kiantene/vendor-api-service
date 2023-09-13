@@ -5,7 +5,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -29,8 +28,6 @@ public class CancelReserveAction {
 
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
     @Autowired
@@ -94,7 +91,7 @@ public class CancelReserveAction {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if(invalidOperatorResponseException.getOperatorStatus() == com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+            if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
 
             } else {

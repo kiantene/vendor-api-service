@@ -27,8 +27,6 @@ public class ReserveAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
