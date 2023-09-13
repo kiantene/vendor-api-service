@@ -79,6 +79,10 @@ public class SettleAction {
         } catch (Exception exception) {
             error.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             vo.setError(error);
+            httpService.logError(httpRequestLog, exception);
+
+        } finally {
+            httpService.end(httpRequestLog, vo);
         }
 
         return vo;
