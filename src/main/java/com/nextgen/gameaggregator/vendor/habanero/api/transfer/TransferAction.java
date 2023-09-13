@@ -171,11 +171,11 @@ public class TransferAction {
             //When isRetry = true, get GameSession by player name and vendor game id
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(transferDto.getFundTransferRequestDto().getAccountId(), transferDto.getBaseGame().getKeyName());
         } else if (transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0].getGameStateMode() != GameStateMode.EXPIRE) {
+            //When gamestatemode != 3 get GameSession by token
+            gameSession = gameSessionService.verifyToken(transferDto.getFundTransferRequestDto().getToken());
+        } else {
             //When gamestatemode = 3 get GameSession by player name and vendor game id, this end request might send out after few days of bet
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(transferDto.getFundTransferRequestDto().getAccountId(), transferDto.getBaseGame().getKeyName());
-        } else {
-            //Get GameSession by token
-            gameSession = gameSessionService.verifyToken(transferDto.getFundTransferRequestDto().getToken());
         }
 
         return gameSession;
