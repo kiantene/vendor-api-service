@@ -205,20 +205,11 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        // Check condition to know this bet is free spin or not
-        if (this.freeGameExternalId != null) {
-            return 1;
-        }
         return 0;
     }
 
     @Override
     public BetStatus getBetStatus() {
-        // Check condition to know this free spin is finished or not
-        if (this.freeGameExternalId != null && !this.freeGameExternalId.isEmpty()
-                && this.freeGameFinished != null && !this.freeGameFinished.equals("1")) {
-            return BetStatus.UNSETTLED;
-        }
         return BetStatus.SETTLED;
     }
 }
