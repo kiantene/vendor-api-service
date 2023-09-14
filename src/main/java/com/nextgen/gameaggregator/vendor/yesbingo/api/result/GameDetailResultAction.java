@@ -95,8 +95,14 @@ public class GameDetailResultAction {
             responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setStatus(ResponseCodes.FAILED);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+            //SC_INSUFFICIENT_FUNDS
+            if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
+            } else {
+                responseVo.setStatus(ResponseCodes.FAILED);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            }
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
