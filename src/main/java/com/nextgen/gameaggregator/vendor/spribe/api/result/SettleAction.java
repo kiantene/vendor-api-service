@@ -74,11 +74,11 @@ public class SettleAction {
             data.setCurrency(gameSession.getVendorCurrencyCode());
             data.setProvider(dto.getProvider());
             data.setProvider_tx_id(dto.getProvider_tx_id());
+            vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
         } catch (Exception exception) {
-            error.setErrorCode(ErrorCodes.INTERNAL_ERROR);
-            vo.setError(error);
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
 
         } finally {

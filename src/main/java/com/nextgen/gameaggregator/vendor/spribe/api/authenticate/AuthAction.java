@@ -68,16 +68,15 @@ public class AuthAction {
             data.setUsername(gameSession.getVendorPlayerUsername());
             data.setBalance(balance);
             data.setCurrency(gameSession.getVendorCurrencyCode());
+            vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
         } catch (AuthenticationException authenticationException) {
-            error.setErrorCode(ErrorCodes.INVALID_TOKEN);
-            vo.setError(error);
+            vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
             httpService.logError(httpRequestLog, authenticationException);
 
         } catch (Exception exception) {
-            error.setErrorCode(ErrorCodes.INTERNAL_ERROR);
-            vo.setError(error);
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
