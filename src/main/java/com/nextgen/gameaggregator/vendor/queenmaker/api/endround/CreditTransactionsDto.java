@@ -136,7 +136,7 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.turnover;
+        return null;
     }
 
     @Override
