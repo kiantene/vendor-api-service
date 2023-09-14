@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.yesbingo.api.rollback;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -78,7 +79,12 @@ public class CancelBetAction {
             responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setStatus(ResponseCodes.FAILED);
+            if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
+                // if bet already refunded
+                responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+            } else {
+                responseVo.setStatus(ResponseCodes.FAILED);
+            }
 
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
