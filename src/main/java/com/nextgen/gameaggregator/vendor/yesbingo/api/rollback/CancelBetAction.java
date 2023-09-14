@@ -78,7 +78,7 @@ public class CancelBetAction {
             responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+            responseVo.setStatus(ResponseCodes.FAILED);
 
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
