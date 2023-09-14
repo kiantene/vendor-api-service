@@ -138,7 +138,7 @@ public class DebitTransactionsDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.amt;
+        return this.turnover;
     }
 
     @Override
