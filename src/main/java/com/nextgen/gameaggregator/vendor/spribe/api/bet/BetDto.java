@@ -87,7 +87,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis() / 1000;
+        return System.currentTimeMillis();
     }
 
     @Override

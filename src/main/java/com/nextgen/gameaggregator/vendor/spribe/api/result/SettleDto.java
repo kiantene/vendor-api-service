@@ -97,12 +97,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis() / 1000;
+        return System.currentTimeMillis();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return System.currentTimeMillis() / 1000;
+        return System.currentTimeMillis();
     }
 
     @Override

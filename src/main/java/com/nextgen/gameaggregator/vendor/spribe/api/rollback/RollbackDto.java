@@ -48,6 +48,6 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public Long getVendorSettledTime() {
-        return System.currentTimeMillis() / 1000;
+        return System.currentTimeMillis();
     }
 }
