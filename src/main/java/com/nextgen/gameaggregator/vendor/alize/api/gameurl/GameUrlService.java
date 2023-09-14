@@ -44,28 +44,31 @@ public class GameUrlService implements GameUrl {
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
-            Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+        Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
-        // Get operator by vendor line
-        String operator = "";
-        try {
-            operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
-        } catch (CredentialNotFoundException e) {
-            log.error("Credential not found : " + e.getMessage());
-        }
+      // Get operator and gameUrl by vendor line
+      String operator = "";
+      String gameUrl = "";
+      try {
+        operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
+        gameUrl = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "gameUrl");
+      } catch (CredentialNotFoundException e) {
+        log.error("Credential not found : " + e.getMessage());
+      }
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("currency", gameSession.getVendorCurrencyCode());
-        formData.add("gameId", this.getGameId(gameSession.getVendorGameCode()));
-        formData.add("gamecode", gameSession.getVendorGameCode());
-        formData.add("ip", gameSession.getIpAddress());
-        formData.add("lang", gameSession.getVendorLanguageCode());
-        formData.add("operator", operator);
-        formData.add("player", gameSession.getVendorPlayerUsername());
-        formData.add("playmode", "free");
-        formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
+      MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+      formData.add("currency", gameSession.getVendorCurrencyCode());
+      formData.add("gameId", this.getGameId(gameSession.getVendorGameCode()));
+      formData.add("gamecode", gameSession.getVendorGameCode());
+      formData.add("ip", gameSession.getIpAddress());
+      formData.add("lang", gameSession.getVendorLanguageCode());
+      formData.add("operator", operator);
+      formData.add("player", gameSession.getVendorPlayerUsername());
+      formData.add("playmode", "free");
+      formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
+      formData.add("url", gameUrl);
 
-        return formData;
+      return formData;
     }
 
     @Override
