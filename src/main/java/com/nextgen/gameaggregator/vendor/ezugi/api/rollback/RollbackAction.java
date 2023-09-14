@@ -111,6 +111,9 @@ public class RollbackAction {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Unknown Game ID");
             httpService.logError(httpRequestLog, e);
+        } catch (TransactionStillProcessingException e) {
+            rollbackVo.setErrorCode(ResponseCodes.TRANSACTION_TIMED_OUT);
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledGameException | DisabledAgentPlayerException |
                  RecordNotFoundException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | DisabledVendorLineException | InvalidKeyException |
