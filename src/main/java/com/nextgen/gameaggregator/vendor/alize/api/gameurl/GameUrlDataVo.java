@@ -7,6 +7,8 @@ import lombok.Data;
 public class GameUrlDataVo {
     @NotBlank(message = "url can not be blank")
     private String gameUrl;
+
+    private String data;
     
     private String token;
 }
