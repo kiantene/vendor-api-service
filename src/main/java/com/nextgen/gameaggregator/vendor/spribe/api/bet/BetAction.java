@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
-import com.nextgen.gameaggregator.vendor.spribe.vo.ErrorVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +41,6 @@ public class BetAction {
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
-        ErrorVo error = new ErrorVo();
 
         try {
              // 1. Retrieve request body in original string format and convert into dto
