@@ -41,6 +41,7 @@ public class VendorService extends BaseVendorService {
         String data = encoded.replace("+", "-").replace("/", "_").replace("=", "");
 
         return data;
+
     }
 
     public static String decrypt(String code, String key, String iv) throws Exception {
@@ -52,7 +53,9 @@ public class VendorService extends BaseVendorService {
         cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
         byte[] decryptedBytes = cipher.doFinal(decodedBytes);
         String decrypted = new String(decryptedBytes, StandardCharsets.UTF_8).trim();
+
         return decrypted;
+
     }
 
     private static String padString(String str) {
@@ -64,11 +67,13 @@ public class VendorService extends BaseVendorService {
             padded.append(padChar);
         }
         return padded.toString();
+
     }
 
     public static String getSign(String data) {
         String token = DigestUtils.md5Hex(data);
         return token.toUpperCase();
+
     }
 
     @Override

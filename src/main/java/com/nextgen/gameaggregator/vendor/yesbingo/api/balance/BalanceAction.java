@@ -57,16 +57,23 @@ public class BalanceAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
-        } catch (InvalidAgentApiCredentialException | InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException e) {
+
+        } catch (InvalidAgentApiCredentialException | InvalidPlayerException | DisabledAgentPlayerException |
+                 DisabledVendorLineException e) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
-        } catch (InvalidRequestException | JsonProcessingException | DisabledGameException parameterInputErrorException) {
+
+        } catch (InvalidRequestException | JsonProcessingException |
+                 DisabledGameException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
+
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
+
         }
 
         return responseVo;
@@ -76,6 +83,7 @@ public class BalanceAction {
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession)
@@ -95,5 +103,6 @@ public class BalanceAction {
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), DisabledGameException::new);
+
     }
 }

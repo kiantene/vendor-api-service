@@ -59,23 +59,35 @@ public class CancelBetAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
-        } catch (RecordNotFoundException | InvalidAgentApiCredentialException | InvalidPlayerException |
-                 DisabledAgentPlayerException | DisabledGameException | DisabledVendorLineException noAuthorizedAccessException) {
+
+        } catch (RecordNotFoundException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 DisabledVendorLineException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+
         } catch (InvalidRequestException | JsonProcessingException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
+
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
+
         }
 
         return responseVo;
@@ -85,10 +97,15 @@ public class CancelBetAction {
     private void doValidation(CancelBetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
     }
 
     private void doVerification(CancelBetDto dto, GameSession gameSession)
-            throws InvalidPlayerException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            throws
+            InvalidPlayerException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException {
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -101,5 +118,6 @@ public class CancelBetAction {
 
         // Verify if is valid player
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
+
     }
 }

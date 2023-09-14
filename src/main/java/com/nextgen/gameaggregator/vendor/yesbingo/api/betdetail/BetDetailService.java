@@ -61,7 +61,7 @@ public class BetDetailService implements BetDetailUrl {
             String[] parts = iBetDetailUrlInfo.getGameCode().split("_");
             String gType = parts[1];
 
-            params.addProperty("action", com.nextgen.gameaggregator.vendor.yesbingo.constant.EndPoints.BET_DETAIL);
+            params.addProperty("action", EndPoints.BET_DETAIL);
             params.addProperty("ts", unixTimestamp);
             params.addProperty("uid", iBetDetailUrlInfo.getVendorUsername());
             params.addProperty("parent", agent);

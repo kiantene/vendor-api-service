@@ -66,15 +66,8 @@ public class GeneralAction {
             // Validate request parameters (Non-database related)
             ValidationUtils.validateRequest(vendorRequestDto);
 
-            // Get the first vendor line id from list
-            Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.YESBINGO_ID, id);
-
-            // Get the key and iv value with vendorLineId
-            String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_KEY);
-            String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_IV);
-
-            // Decrypt data
-            String decryptedData = VendorService.decrypt(vendorRequestDto.getX(), key, iv);
+            // get decrypt data
+            String decryptedData = this.getDecryptedData(vendorRequestDto.getX(), id);
 
             // Update the requestBody for easier debugging purposes
             httpRequestLog.setRequestBody(body + "&json=" + decryptedData);
@@ -85,41 +78,19 @@ public class GeneralAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
-            switch (dto.getAction()) {
-                case Actions.BALANCE -> {
-                    log.info("Yesbingo BALANCE: " + decryptedData);
-                    responseVo = balanceAction.balance(httpRequestLog, traceId, decryptedData);
-                }
-                case Actions.BET -> {
-                    // For Bingo & Slot = Bet
-                    log.info("Yesbingo BET: " + decryptedData);
-                    responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
-                }
-                case Actions.GAME_RESULT -> {
-                    // For Bingo & Slot = Win
-                    log.info("Yesbingo GAME_RESULT: " + decryptedData);
-                    responseVo = gameResultAction.gameResult(httpRequestLog, traceId, decryptedData);
-                }
-                case Actions.GAME_DETAIL_RESULT -> {
-                    // For fish game is Bet + Win
-                    log.info("Yesbingo GAME_DETAIL_RESULT: " + decryptedData);
-                    responseVo = gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData);
-                }
-                case Actions.CANCEL_BET -> {
-                    log.info("Yesbingo CANCEL_BET: " + decryptedData);
-                    responseVo = cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData);
-                }
-                // If the header does not match any of the expected values, return an error response
-                default -> responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
-            }
+            // Do the appropriate action
+            responseVo = this.doAction(dto, decryptedData, traceId, httpRequestLog);
 
         } catch (InvalidFormatException | InvalidRequestException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
+
         }
 
         return responseVo;
@@ -129,6 +100,55 @@ public class GeneralAction {
     private void doValidation(ActionDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+    }
+
+    private String getDecryptedData(String encryptedData, String id) throws Exception {
+        // Get the first vendor line id from list
+        Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.YESBINGO_ID, id);
+
+        // Get the key and iv value with vendorLineId
+        String key = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_KEY);
+        String iv = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AES_IV);
+
+        // Decrypt data
+        return VendorService.decrypt(encryptedData, key, iv);
+
+    }
+
+    private ResponseVo doAction(ActionDto dto, String decryptedData, String traceId, HttpRequestLog httpRequestLog) {
+        ResponseVo responseVo = new ResponseVo();
+
+        switch (dto.getAction()) {
+            case Actions.BALANCE -> {
+                log.info("Yesbingo BALANCE: " + decryptedData);
+                responseVo = balanceAction.balance(httpRequestLog, traceId, decryptedData);
+            }
+            case Actions.BET -> {
+                // For Bingo & Slot = Bet
+                log.info("Yesbingo BET: " + decryptedData);
+                responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
+            }
+            case Actions.GAME_RESULT -> {
+                // For Bingo & Slot = Win
+                log.info("Yesbingo GAME_RESULT: " + decryptedData);
+                responseVo = gameResultAction.gameResult(httpRequestLog, traceId, decryptedData);
+            }
+            case Actions.GAME_DETAIL_RESULT -> {
+                // For fish game is Bet + Win
+                log.info("Yesbingo GAME_DETAIL_RESULT: " + decryptedData);
+                responseVo = gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData);
+            }
+            case Actions.CANCEL_BET -> {
+                log.info("Yesbingo CANCEL_BET: " + decryptedData);
+                responseVo = cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData);
+            }
+            // If the header does not match any of the expected values, return an error response
+            default -> responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
+        }
+
+        return responseVo;
+
     }
 
 }

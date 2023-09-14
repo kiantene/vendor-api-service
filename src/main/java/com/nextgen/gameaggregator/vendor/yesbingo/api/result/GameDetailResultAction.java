@@ -57,9 +57,15 @@ public class GameDetailResultAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
-        } catch (InvalidAgentApiCredentialException | InvalidPlayerException | DisabledAgentPlayerException |
-                 DisabledGameException | DisabledVendorLineException | GameNotSupportedException noAuthorizedAccessException) {
+
+        } catch (InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 DisabledVendorLineException |
+                 GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+
         } catch (InvalidRequestException invalidRequestException) {
             if (invalidRequestException.getValidation() != null) {
                 String violation = invalidRequestException.getValidation()
@@ -69,24 +75,33 @@ public class GameDetailResultAction {
                         .map(Map.Entry::getValue) // get the value of the first element
                         .orElse(ResponseCodes.PARAMETER_INPUT_ERROR); // if there's no value, set it to the default invalid request parameter
                 responseVo.setStatus(violation);
+
             } else {
                 responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+
             }
+
         } catch (JsonProcessingException | CurrencyNotSupportedException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
+
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 6001-The system is busy (vendor proceeds to cancel the bet)
             responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
+
         }
 
         return responseVo;
@@ -96,11 +111,18 @@ public class GameDetailResultAction {
     private void doValidation(GameDetailResultDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
     }
 
     private void doVerification(GameDetailResultDto dto, GameSession gameSession)
-            throws AuthenticationException, InvalidPlayerException, CurrencyNotSupportedException, DisabledVendorLineException,
-            DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
+            throws
+            AuthenticationException,
+            InvalidPlayerException,
+            CurrencyNotSupportedException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            GameNotSupportedException {
 
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUid());
@@ -108,5 +130,6 @@ public class GameDetailResultAction {
         // Verify vendor gameCode, currency and platform
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
     }
 }
