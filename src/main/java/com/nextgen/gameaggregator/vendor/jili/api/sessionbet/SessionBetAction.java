@@ -71,7 +71,6 @@ public class SessionBetAction {
                     sessionBetVo.setBalance(betEvent.getLastBalance());
                 }
                 case Formats.SESSION_BET_TYPE_SETTLE -> {
-
                     // Check if bet already settled
                     this.verifySettledBet(gameSession, sessionBetDto);
 
@@ -121,6 +120,7 @@ public class SessionBetAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  DisabledAgentPlayerException |
