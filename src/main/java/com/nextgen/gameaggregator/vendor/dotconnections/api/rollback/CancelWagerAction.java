@@ -40,8 +40,6 @@ public class CancelWagerAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
     @Autowired
     private WalletAdjustmentService walletAdjustmentService;

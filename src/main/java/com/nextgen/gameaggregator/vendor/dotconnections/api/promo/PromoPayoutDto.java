@@ -10,7 +10,6 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -78,20 +77,17 @@ public class PromoPayoutDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getResultTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override

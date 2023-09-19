@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
@@ -28,8 +27,6 @@ public class VendorService extends BaseVendorService {
 
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
 
@@ -55,37 +52,6 @@ public class VendorService extends BaseVendorService {
 
         return sb.toString();
     }
-
-    /*
-    public ResponseVo getCurrentBalanceResponseVo(HttpServletRequest request, String traceId, String brandUid) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
-
-        ResponseVo responseVo = new ResponseVo();
-        ResponseDataVo responseDataVo = new ResponseDataVo();
-
-        try {
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(brandUid);
-
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession, httpRequestLog));
-            responseVo.setData(responseDataVo);
-
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setCode(ResponseCodes.SIGN_ERROR);
-        } catch (InvalidAgentApiCredentialException systemErrorException) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } catch (Exception exception) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, exception);
-        }
-
-        return responseVo;
-    }
-     */
 
     public ResponseVo getCurrentBalanceResponseVo(HttpRequestLog httpRequestLog, String traceId, GameSession gameSession) {
 

@@ -37,8 +37,6 @@ public class FreeSpinResultAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.FREE_SPIN_RESULT)

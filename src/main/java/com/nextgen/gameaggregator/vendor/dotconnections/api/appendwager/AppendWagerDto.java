@@ -101,14 +101,12 @@ public class AppendWagerDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override

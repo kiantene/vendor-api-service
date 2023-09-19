@@ -37,8 +37,6 @@ public class AppendWagerAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.APPEND_WAGER)
@@ -58,7 +56,7 @@ public class AppendWagerAction {
             /*
             TODO: Hacksaw does not support Jackpot.
              To update this endpoint if there are other game that supports Jackpot.
-             This endpoint only return current balance for now.
+             Simulating a jackpot for vendor's test cases for now
              */
             AppendWagerDto dto = HttpService.convertJsonToDto(body, AppendWagerDto.class);
 

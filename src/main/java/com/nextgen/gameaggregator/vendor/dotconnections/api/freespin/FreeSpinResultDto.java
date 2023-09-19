@@ -6,16 +6,10 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -91,20 +85,17 @@ public class FreeSpinResultDto extends CommonDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getResultTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override

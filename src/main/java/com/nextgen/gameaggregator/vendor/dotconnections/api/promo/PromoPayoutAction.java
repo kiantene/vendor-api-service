@@ -37,8 +37,6 @@ public class PromoPayoutAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.PROMO_PAYOUT)

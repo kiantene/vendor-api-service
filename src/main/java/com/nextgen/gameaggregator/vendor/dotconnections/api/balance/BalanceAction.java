@@ -40,7 +40,7 @@ public class BalanceAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    @PostMapping(path = EndPoints.BALANCE)
+    @PostMapping(path = {EndPoints.BALANCE, EndPoints.LOGIN})
     public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);

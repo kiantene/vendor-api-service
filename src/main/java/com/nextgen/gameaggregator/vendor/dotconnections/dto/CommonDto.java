@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.time.Instant;
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CommonDto {
@@ -31,4 +33,7 @@ public class CommonDto {
     @Pattern(regexp = "[a-zA-Z]+")
     public String currency;
 
+    public Long getCurrentTimeStamp() {
+        return Instant.now().toEpochMilli();
+    }
 }

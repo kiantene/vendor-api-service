@@ -39,8 +39,6 @@ public class EndWagerAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;

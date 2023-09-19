@@ -50,7 +50,7 @@ public class GameUrlService implements GameUrl {
 
         String brandUid = gameSession.getVendorPlayerUsername();
         String platform = Platforms.WEB;
-        if (gameSession.getPlatformId() != Platforms.H5_CODE) {
+        if (gameSession.getVendorPlatformCode() != Platforms.H5) {
             platform = Platforms.H5;
         }
 

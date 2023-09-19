@@ -6,16 +6,14 @@ import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
-import lombok.Data;
-
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -82,7 +80,6 @@ public class CancelWagerDto extends CommonDto implements RollbackData, Adjustmen
 
     @Override
     public Long getTimestamp() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 }

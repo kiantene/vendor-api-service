@@ -29,9 +29,6 @@ public class BetDetailService implements BetDetailUrl {
 
     @Autowired
     RequestService requestService;
-    @Autowired
-    VendorService vendorService;
-
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
