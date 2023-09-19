@@ -43,6 +43,7 @@ public class AuthAction {
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
+        String gameToken = "";
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -54,6 +55,7 @@ public class AuthAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getUser_token());
+            gameToken = dto.getUser_token();
             
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -71,6 +73,7 @@ public class AuthAction {
 
         } catch (AuthenticationException authenticationException) {
             vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
+            httpRequestLog.setGameToken(gameToken);
             httpService.logError(httpRequestLog, authenticationException);
 
         } catch (Exception exception) {
