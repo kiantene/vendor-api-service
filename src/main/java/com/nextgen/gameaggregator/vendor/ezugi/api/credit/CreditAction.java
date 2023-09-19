@@ -176,6 +176,7 @@ public class CreditAction extends CommonDto {
             creditVo.setCurrency(creditDto.getCurrency());
             creditVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, creditVo);
+            log.info("Ezugi Credit Request Log : " + httpRequestLog);
         }
         return creditVo;
     }

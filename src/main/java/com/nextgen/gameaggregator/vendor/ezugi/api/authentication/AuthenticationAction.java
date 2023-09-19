@@ -111,6 +111,7 @@ public class AuthenticationAction {
             authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             authenticationVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, authenticationVo);
+            log.info("Ezugi Authentication Request Log : " + httpRequestLog);
         }
         return authenticationVo;
     }
