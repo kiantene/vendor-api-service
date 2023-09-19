@@ -29,7 +29,7 @@ public class SettleDto implements BetResultData {
     private String user_id;
 
     @NotNull
-    private Integer action_id;
+    private String action_id;
 
     @NotBlank
     private String action;
@@ -62,7 +62,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return withdraw_provider_tx_id;
+        return action_id;
     }
 
     @Override
