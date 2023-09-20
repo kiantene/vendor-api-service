@@ -5,22 +5,22 @@ import java.util.Map;
 
 public class ResponseCodes {
 
-    public static final Integer OK = 0;
-    public static final Integer NOUSER = 1;
-    public static final Integer INTERNAL = 2;
-    public static final Integer INVALIDCURRENCY = 3;
-    public static final Integer WRONGUSERNAMEPASSWORD = 4;
-    public static final Integer ACCOUNTLOCKED = 5;
-    public static final Integer ACCOUNTDISABLED = 6;
-    public static final Integer NOTENOUGHMONEY = 7;
-    public static final Integer MAXCONCURRENTCALLS = 8;
-    public static final Integer SPENDINGBUDGETEXCEEDED = 9;
-    public static final Integer SESSIONEXPIRED = 10;
-    public static final Integer TIMEBUDGETEXCEEDED = 11;
-    public static final Integer SERVICEUNAVAILABLE = 12;
+    public static final String OK = "0";
+    public static final String NOUSER = "1";
+    public static final String INTERNAL = "2";
+    public static final String INVALIDCURRENCY = "3";
+    public static final String WRONGUSERNAMEPASSWORD = "4";
+    public static final String ACCOUNTLOCKED = "5";
+    public static final String ACCOUNTDISABLED = "6";
+    public static final String NOTENOUGHMONEY = "7";
+    public static final String MAXCONCURRENTCALLS = "8";
+    public static final String SPENDINGBUDGETEXCEEDED = "9";
+    public static final String SESSIONEXPIRED = "10";
+    public static final String TIMEBUDGETEXCEEDED = "11";
+    public static final String SERVICEUNAVAILABLE = "12";
 
 
-    public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
+    public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(OK, "ok");
         put(NOUSER, "User was not logged in.");
         put(INTERNAL, "Internal server error.");

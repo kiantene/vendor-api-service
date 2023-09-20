@@ -137,7 +137,8 @@ public class ReserveAction {
             InvalidPlayerException,
             CurrencyNotSupportedException,
             GameNotSupportedException,
-            CredentialNotFoundException {
+            CredentialNotFoundException,
+            InvalidRequestException {
 
         // Verify product group id
         vendorService.verifyProductId(gameSession.getVendorLineId(), reserveDto);

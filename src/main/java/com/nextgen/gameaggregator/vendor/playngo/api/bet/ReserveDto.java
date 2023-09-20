@@ -70,6 +70,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
 
+    @NotNull
     @Positive
     @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "actualValue")

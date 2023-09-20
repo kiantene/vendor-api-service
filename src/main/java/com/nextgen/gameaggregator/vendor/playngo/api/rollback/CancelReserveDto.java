@@ -34,7 +34,8 @@ public class CancelReserveDto extends CommonDto implements RollbackData {
     private String retry;
 
     @NotNull
-    @PositiveOrZero
+    @Positive
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "real")
     private BigDecimal real;
 
@@ -63,6 +64,7 @@ public class CancelReserveDto extends CommonDto implements RollbackData {
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
 
+    @NotNull
     @Positive
     @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "actualValue")

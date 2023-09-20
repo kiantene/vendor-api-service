@@ -146,7 +146,8 @@ public class ReleaseAction {
             CurrencyNotSupportedException,
             GameNotSupportedException,
             AuthenticationException,
-            CredentialNotFoundException {
+            CredentialNotFoundException,
+            InvalidRequestException {
 
         // Verify product group id
         vendorService.verifyProductId(gameSession.getVendorLineId(), releaseDto);

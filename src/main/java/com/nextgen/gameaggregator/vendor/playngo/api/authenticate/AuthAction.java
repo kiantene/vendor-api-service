@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -98,15 +99,31 @@ public class AuthAction {
                  DisabledVendorLineException |
                  CredentialNotFoundException |
                  GameNotSupportedException |
-                 JsonProcessingException |
-                 InvalidRequestException internalErrorException) {
+                 JsonProcessingException internalErrorException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                authVo.setStatusCodeAndMessage(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.WRONGUSERNAMEPASSWORD)
+                );
+
+            } else {
+                authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+
+            }
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INVALIDCURRENCY);
 
         } catch (AuthenticationException authenticationException) {
-            authVo.setStatusCodeAndMessage(ResponseCodes.SESSIONEXPIRED);
+            authVo.setStatusCodeAndMessage(ResponseCodes.WRONGUSERNAMEPASSWORD);
 
         } catch (Exception exception) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
@@ -141,7 +158,8 @@ public class AuthAction {
             DisabledGameException,
             CredentialNotFoundException,
             AuthenticationException,
-            GameNotSupportedException {
+            GameNotSupportedException,
+            InvalidRequestException {
 
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), authDto);

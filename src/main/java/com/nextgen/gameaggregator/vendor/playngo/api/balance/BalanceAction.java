@@ -119,7 +119,8 @@ public class BalanceAction {
             DisabledGameException,
             AuthenticationException,
             CredentialNotFoundException,
-            GameNotSupportedException {
+            GameNotSupportedException,
+            InvalidRequestException {
 
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), balanceDto);

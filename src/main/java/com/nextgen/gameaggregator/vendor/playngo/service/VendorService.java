@@ -38,17 +38,17 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public void verifyAccessCode(Integer vendorLineId, CommonDto dto) throws CredentialNotFoundException, AuthenticationException {
+    public void verifyAccessCode(Integer vendorLineId, CommonDto dto) throws CredentialNotFoundException, InvalidRequestException {
         String accessToken = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.ACCESS_TOKEN);
         if (!accessToken.equals(dto.getAccessToken())) {
-            throw new AuthenticationException();
+            throw new InvalidRequestException();
         }
     }
 
-    public void verifyProductId(Integer vendorLineId, CommonDto dto) throws CredentialNotFoundException, AuthenticationException {
+    public void verifyProductId(Integer vendorLineId, CommonDto dto) throws CredentialNotFoundException, InvalidRequestException {
         String accessToken = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PRODUCT_GROUP);
         if (!accessToken.equals(dto.getProductId())) {
-            throw new AuthenticationException();
+            throw new InvalidRequestException();
         }
     }
 

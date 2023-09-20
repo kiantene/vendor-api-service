@@ -52,7 +52,7 @@ public class CancelReserveAction {
             CancelReserveDto cancelReserveDto = xmlMapper.readValue(body, CancelReserveDto.class);
 
             // Validate request parameters from vendor (Non-database related)
-            this.doValidation(cancelReserveVo);
+            this.doValidation(cancelReserveDto);
 
             // Get game session or verify Token
             GameSession gameSession = vendorService.getGameSession(cancelReserveDto);
@@ -125,7 +125,7 @@ public class CancelReserveAction {
         return cancelReserveVoXml;
     }
 
-    private void doValidation(CancelReserveVo dto) throws InvalidRequestException {
+    private void doValidation(CancelReserveDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
@@ -136,7 +136,8 @@ public class CancelReserveAction {
             AuthenticationException,
             InvalidPlayerException,
             GameNotSupportedException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException,
+            InvalidRequestException {
 
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), dto);

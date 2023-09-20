@@ -24,11 +24,11 @@ public class CommonVo implements HttpResponse {
         return !this.statusCode.equals(ResponseCodes.OK);
     }
 
-    public void setStatusCodeAndMessage(Integer responseCode) {
-        this.statusCode = responseCode;
+    public void setStatusCodeAndMessage(String responseCode) {
+        this.statusCode = Integer.valueOf(responseCode);
         this.statusMessage = ResponseCodes.RESPONSE_DESCRIPTION.get(responseCode);
     }
-    public void setStatusCode(Integer responseCode) {
-        this.statusCode = responseCode;
+    public void setStatusCode(String responseCode) {
+        this.statusCode = Integer.valueOf(responseCode);
     }
 }

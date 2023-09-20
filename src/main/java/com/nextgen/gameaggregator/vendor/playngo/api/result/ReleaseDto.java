@@ -53,25 +53,27 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "contextId")
     private String contextId;
 
-    @NotNull
+    @NotBlank
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "state")
     private String state;
 
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "totalLoss")
     private String totalLoss;
 
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "totalGain")
     private String totalGain;
 
     @PositiveOrZero
     @JacksonXmlProperty(localName = "numRounds")
-    private String numRounds;
+    private Integer numRounds;
 
     // 0 = Real Money, 1 = Promotional money. For example, the result of Free game spins.
-    @NotNull
+    @NotBlank
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "type")
     private String type;
@@ -83,43 +85,52 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "jackpotGain")
     private BigDecimal jackpotGain;
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "jackpotLoss")
     private BigDecimal jackpotLoss;
 
     @NotNull
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "jackpotGainSeed")
-    private String jackpotGainSeed;
+    private BigDecimal jackpotGainSeed;
 
     @NotNull
     @PositiveOrZero
     @JacksonXmlProperty(localName = "jackpotGainId")
-    private String jackpotGainId;
+    private Integer jackpotGainId;
 
     @Size(max = 32)
     @JacksonXmlProperty(localName = "freegameExternalId")
     private String freeGameExternalId;
 
+    @NotNull
     @PositiveOrZero
     @JacksonXmlProperty(localName = "turnover")
     private BigDecimal turnover;
 
+    @NotNull
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "freegameFinished")
-    private String freeGameFinished;
+    private Integer freeGameFinished;
 
+    @NotNull
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "freegameGain")
     private BigDecimal freeGameGain;
 
+    @NotNull
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "freegameLoss")
-    private String freeGameLoss;
+    private BigDecimal freeGameLoss;
 
     @Pattern(regexp = "^(0|1|2)$")
     @JacksonXmlProperty(localName = "gameMode")
@@ -131,6 +142,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     private String channel;
 
     @PositiveOrZero
+    @Digits(integer = 13, fraction = 2)
     @JacksonXmlProperty(localName = "freegameTotalGain")
     private BigDecimal freeGameTotalGain;
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -19,7 +20,7 @@ public class AuthDto extends CommonDto {
 
     @NotBlank
     @Size(min = 1, max = 64)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.WRONGUSERNAMEPASSWORD)
     @JacksonXmlProperty(localName = "username")
     private String username;
 
