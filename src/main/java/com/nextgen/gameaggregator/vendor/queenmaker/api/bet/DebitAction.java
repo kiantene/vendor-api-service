@@ -68,7 +68,7 @@ public class DebitAction {
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
             for (DebitTransactionsDto transaction : debitDto.getTransactions()) {
 
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body, httpRequestLog));
+                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body, request));
                 futures.add(future);
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -90,8 +90,7 @@ public class DebitAction {
 
         } finally {
             httpService.end(httpRequestLog, debitVo);
-            log.info("QM RequestBody : " + httpRequestLog.getRequestBody());
-            log.info("QM ResponseBody : " + debitVo);
+            log.info("QM Debit Request Log : " + httpRequestLog);
         }
 
         return debitVo;
@@ -137,7 +136,8 @@ public class DebitAction {
 
     }
 
-    private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpRequestLog httpRequestLog) {
+    private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
         TransactionsVo transactionsVo = new TransactionsVo();
         GameSession gameSession = null;
 
@@ -205,6 +205,7 @@ public class DebitAction {
 
         } finally {
             httpService.end(httpRequestLog, transactionsVo);
+            log.info("QM Debit Request Log : " + httpRequestLog);
         }
 
         return transactionsVo;

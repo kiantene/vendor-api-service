@@ -10,14 +10,12 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.*;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -69,7 +67,7 @@ public class CreditAction {
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
             for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
 
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, httpRequestLog));
+                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, request));
                 futures.add(future);
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -92,8 +90,7 @@ public class CreditAction {
 
         } finally {
             httpService.end(httpRequestLog, creditVo);
-            log.info("QM RequestBody : " + httpRequestLog.getRequestBody());
-            log.info("QM ResponseBody : " + creditVo);
+            log.info("QM Credit Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return creditVo;
@@ -130,7 +127,8 @@ public class CreditAction {
 
     }
 
-    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpRequestLog httpRequestLog) {
+    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = httpService.start(request);
         TransactionsVo transactionsVo = new TransactionsVo();
         GameSession gameSession = null;
 
@@ -145,10 +143,15 @@ public class CreditAction {
             // 3. Verify Credential and Currency
             this.doVerification(creditTransactionsDto, gameSession, clientId, clientSecret);
 
-            // 4. Process Result
-            ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
-
+            // 4. Process Result / Rollback
+            BigDecimal balance;
+            if (creditTransactionsDto.getTxtype().equals(Txtype.CANCEL_BET)) {
+                RollbackTransactionDto rollbackTransactionDto = new ModelMapper().map(creditTransactionsDto, RollbackTransactionDto.class);
+                balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService);
+            } else {
+                ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
+                balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
+            }
             // 5. Set transactionsVo
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
@@ -199,6 +202,7 @@ public class CreditAction {
 
         } finally {
             httpService.end(httpRequestLog, transactionsVo);
+            log.info("QM Credit Request Log : " + httpRequestLog);
         }
 
         return transactionsVo;
