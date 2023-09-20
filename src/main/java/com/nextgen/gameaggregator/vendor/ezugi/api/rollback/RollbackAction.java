@@ -138,7 +138,6 @@ public class RollbackAction {
             rollbackVo.setCurrency(rollbackDto.getCurrency());
             rollbackVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, rollbackVo);
-            log.info("Ezugi Rollback Request Log : " + httpRequestLog);
         }
         return rollbackVo;
     }

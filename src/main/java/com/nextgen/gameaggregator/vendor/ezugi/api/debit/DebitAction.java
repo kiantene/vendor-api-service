@@ -175,7 +175,6 @@ public class DebitAction {
             debitVo.setCurrency(debitDto.getCurrency());
             debitVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, debitVo);
-            log.info("Ezugi Debit Request Log : " + httpRequestLog);
         }
         return debitVo;
     }
