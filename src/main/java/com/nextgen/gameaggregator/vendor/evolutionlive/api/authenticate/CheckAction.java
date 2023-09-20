@@ -6,8 +6,8 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.evolution.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.evolutionlive.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.evolutionlive.dto.BasicDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
@@ -108,7 +108,7 @@ public class CheckAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), checkDto.getUserId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), checkDto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

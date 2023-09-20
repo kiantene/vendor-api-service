@@ -2,12 +2,16 @@ package com.nextgen.gameaggregator.vendor.evolutionlive.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import com.nextgen.gameaggregator.entity.BetNotFoundLog;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.BetNotFoundLogService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.endround.CreditDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.gameurl.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -15,6 +19,9 @@ import java.time.Instant;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    private BetNotFoundLogService betNotFoundLogService;
+
     public static Long getTimestamp() {
         return Instant.now().toEpochMilli();
     }
@@ -63,6 +70,14 @@ public class VendorService extends BaseVendorService {
         configDto.setGame(configGameDto);
         configDto.setChannel(configChannelDto);
         return configDto;
+    }
+
+    public void verifyDebitAfterRollback(Long vendorPlayerId, String externalTransactionId) throws DuplicateExternalTransactionIdException {
+        BetNotFoundLog betNotFoundLog = betNotFoundLogService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        // if have data mean have call rollback before
+        if (betNotFoundLog != null) {
+            throw new DuplicateExternalTransactionIdException();
+        }
     }
 
     @Override

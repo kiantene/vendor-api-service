@@ -13,7 +13,8 @@ public enum ResponseCode {
     BET_DOES_NOT_EXIST("BET_DOES_NOT_EXIST", "Please contact Customer Support for assistanceError Code: 10005"),
     BET_ALREADY_EXIST("BET_ALREADY_EXIST", "BET_ALREADY_EXIST"),
     BET_ALREADY_SETTLED("BET_ALREADY_SETTLED", "Bet already settled in third party system."),
-    INSUFFICIENT_FUNDS("INSUFFICIENT_FUNDS", "You do not have sufficient funds to place this betError Code: 10008");
+    INSUFFICIENT_FUNDS("INSUFFICIENT_FUNDS", "You do not have sufficient funds to place this betError Code: 10008"),
+    FINAL_ERROR_ACTION_FAILED("FINAL_ERROR_ACTION_FAILED", "The attempted action failed. Please try againError Code: 2001");
 
     public final String status;
     public final String errorMessage;
