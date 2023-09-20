@@ -1,6 +1,11 @@
 package com.nextgen.gameaggregator.operator.transactions.list;
 
+import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.util.MysqlUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,23 +21,18 @@ public class TransactionListService {
 
     @Autowired
     private BetHistoryRepository betHistoryRepository;
+    @Autowired
+    private MysqlUtils mysqlUtils;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId){
         //TODO (by Alex), to discuss and change fetch by updated time
 
         List<Sort.Order> orders = this.generateOrder();
-        Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
-
-        Page<Object> transactionsList =  betHistoryRepository.findByAgentIdAndCreateTimeBetween(
-                agentId, dto.getFromTime(), dto.getToTime(), pagingSort);
-
-        TransactionsListData transactionsListData = new TransactionsListData();
+        TransactionsListData transactionsListData = this.findByAgentIdAndCreateTimeBetween(agentId, dto);
         transactionsListData.setHeaders(this.getHeaders());
-
-        transactionsListData.setTransactions(transactionsList.getContent());
-        transactionsListData.setCurrentPage(transactionsList.getNumber() + 1);
-        transactionsListData.setTotalItems(transactionsList.getTotalElements());
-        transactionsListData.setTotalPages(transactionsList.getTotalPages());
 
         return transactionsListData;
 
@@ -103,6 +103,63 @@ public class TransactionListService {
             temp.put(aa.getKey(), aa.getValue());
         }
         return temp;
+    }
+
+    private TransactionsListData findByAgentIdAndCreateTimeBetween(Integer agentId, TransactionsListDto dto) {
+        //form partitions
+        long fromTime = dto.getFromTime();
+        long toTime = dto.getToTime();
+        String partitionsString = mysqlUtils.convertDateTimeToDayPartitions(fromTime, toTime,"bet_history");
+        String sqlStmt = "SELECT " +
+            "bh.id AS betId, " +
+            "bh.round_id AS roundId, " +
+            "bh.vendor_bet_id AS externalTransactionId, " +
+            "ap.username AS username, " +
+            "c.code AS currencyCode, " +
+            "vg.code AS gameCode, " +
+            "v.code AS vendorCode, " +
+            "gc.code AS gameCategoryCode, " +
+            "bh.bet_amount AS betAmount, " +
+            "bh.win_amount AS winAmount, " +
+            "bh.win_loss AS winLoss, " +
+            "bh.effective_turnover AS effectiveTurnover, " +
+            "bh.jackpot_amount AS jackpotAmount, " +
+            "bh.status AS status, " +
+            "bh.vendor_bet_time AS vendorBetTime, " +
+            "bh.vendor_settle_time AS vendorSettleTime, " +
+            "IF(bh.is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin "+
+            "FROM bet_history "+partitionsString+" AS bh " +
+            "INNER JOIN agent_players AS ap ON ap.id = bh.agent_player_id " +
+            "INNER JOIN vendor_players AS vp ON vp.id = bh.vendor_player_id " +
+            "INNER JOIN currencies AS c ON c.id = bh.currency_id " +
+            "INNER JOIN vendor_games AS vg ON vg.id = bh.vendor_game_id " +
+            "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
+            "INNER JOIN game_categories AS gc ON gc.id = vg.game_category_id " +
+            " WHERE bh.agent_id =:agentId AND bh.vendor_bet_time BETWEEN :fromTime AND :toTime ORDER BY bh.vendor_bet_time DESC ";
+
+
+        Map<String, Object> queryParams = new LinkedHashMap<>();
+        queryParams.put("agentId", agentId);
+        queryParams.put("fromTime", fromTime);
+        queryParams.put("toTime", toTime);
+
+        Query query = entityManager.createNativeQuery(sqlStmt);
+        //Execute query
+        for (Map.Entry<String, Object> entry : queryParams.entrySet()) {
+            query.setParameter(entry.getKey(), entry.getValue());
+        }
+        int currentPage = dto.getPageNo();
+        int offset = (currentPage - 1) * dto.getPageSize();
+        int limit = dto.getPageSize();
+
+        TransactionsListData transData = new TransactionsListData();
+        transData.setCurrentPage(currentPage);
+        transData.setTotalItems((long) query.getResultList().size());
+        transData.setTotalPages((int) Math.ceil((double) query.getResultList().size() / limit));
+        query.setFirstResult(offset).setMaxResults(limit);
+        transData.setTransactions(query.getResultList());
+
+        return transData;
     }
 
 }
