@@ -11,7 +11,7 @@ public class JackpotDto extends CommonJackpotDto {
 
     // Jackpot win
     @Positive
-    @Digits(integer = 13, fraction = 4)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "win")
     private BigDecimal win;
 

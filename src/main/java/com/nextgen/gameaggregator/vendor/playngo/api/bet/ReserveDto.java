@@ -33,7 +33,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @NotNull
     @Positive
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "real")
     private BigDecimal real;
 
@@ -72,7 +72,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @NotNull
     @Positive
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "actualValue")
     private BigDecimal actualValue;
 

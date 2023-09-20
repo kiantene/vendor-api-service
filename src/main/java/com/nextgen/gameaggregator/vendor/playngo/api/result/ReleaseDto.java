@@ -59,12 +59,12 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     private String state;
 
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "totalLoss")
     private String totalLoss;
 
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "totalGain")
     private String totalGain;
 
@@ -85,19 +85,19 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "jackpotGain")
     private BigDecimal jackpotGain;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "jackpotLoss")
     private BigDecimal jackpotLoss;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "jackpotGainSeed")
     private BigDecimal jackpotGainSeed;
 
@@ -122,13 +122,13 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "freegameGain")
     private BigDecimal freeGameGain;
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "freegameLoss")
     private BigDecimal freeGameLoss;
 
@@ -142,7 +142,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     private String channel;
 
     @PositiveOrZero
-    @Digits(integer = 13, fraction = 2)
+    @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "freegameTotalGain")
     private BigDecimal freeGameTotalGain;
 
