@@ -46,6 +46,7 @@ public class AuthAction {
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
         String gameToken = "";
+        log.info("Spribe URL : " + httpRequestLog.getUrl());
         log.info("Spribe Request Body : " + httpRequestLog.getRequestBody());
 
         try {
