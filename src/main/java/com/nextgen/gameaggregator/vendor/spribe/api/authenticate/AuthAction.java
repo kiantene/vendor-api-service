@@ -18,9 +18,11 @@ import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
+@Slf4j
 public class AuthAction {
 
     @Autowired
@@ -44,6 +46,7 @@ public class AuthAction {
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
         String gameToken = "";
+        log.info("Spribe Request Body : " + httpRequestLog.getRequestBody());
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
