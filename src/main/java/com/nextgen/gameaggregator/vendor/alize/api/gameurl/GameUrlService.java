@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.alize.api.gameurl;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
@@ -24,6 +25,7 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.alize.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.alize.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.alize.constant.GameId;
 import com.nextgen.gameaggregator.vendor.alize.service.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -42,27 +44,31 @@ public class GameUrlService implements GameUrl {
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
-            Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
+        Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
-        // Get operator by vendor line
-        String operator = "";
-        try {
-            operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
-        } catch (CredentialNotFoundException e) {
-            log.error("Credential not found : " + e.getMessage());
-        }
+      // Get operator and gameUrl by vendor line
+      String operator = "";
+      String gameUrl = "";
+      try {
+        operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
+        gameUrl = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "gameUrl");
+      } catch (CredentialNotFoundException e) {
+        log.error("Credential not found : " + e.getMessage());
+      }
 
-        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("player", gameSession.getVendorPlayerUsername());
-        formData.add("currency", gameSession.getVendorCurrencyCode());
-        formData.add("gamecode", gameSession.getVendorGameCode());
-        formData.add("lang", gameSession.getVendorLanguageCode());
-        formData.add("ip", gameSession.getIpAddress());
-        formData.add("operator", operator);
-        formData.add("playmode", "free");
-        formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
+      MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+      formData.add("currency", gameSession.getVendorCurrencyCode());
+      formData.add("gameId", this.getGameId(gameSession.getVendorGameCode()));
+      formData.add("gamecode", gameSession.getVendorGameCode());
+      formData.add("ip", gameSession.getIpAddress());
+      formData.add("lang", gameSession.getVendorLanguageCode());
+      formData.add("operator", operator);
+      formData.add("player", gameSession.getVendorPlayerUsername());
+      formData.add("playmode", "free");
+      formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
+      formData.add("url", gameUrl);
 
-        return formData;
+      return formData;
     }
 
     @Override
@@ -79,7 +85,7 @@ public class GameUrlService implements GameUrl {
 
         // Generate the signature with the API secret and form data
         String apiSecret = credentials.get(Credentials.SECRET_KEY);
-        String signatureBody = this.getSignatureBody(formData, apiKey);
+        String signatureBody = this.getSignatureBody(formData);
         Optional.ofNullable(apiSecret).orElseThrow(InvalidVendorLineException::new);
         String signature = VendorService.generateHash(apiSecret, signatureBody);
 
@@ -127,15 +133,21 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private String getSignatureBody(MultiValueMap<String, String> formData, String apiKey) {
-        Map<String, String> signatureBodyMap = new LinkedHashMap<>();
-        signatureBodyMap.put("apikey", apiKey);
-        signatureBodyMap.put("gamecode", formData.getFirst("gamecode"));
-        signatureBodyMap.put("player", formData.getFirst("player"));
-        signatureBodyMap.put("currency", formData.getFirst("currency"));
-        signatureBodyMap.put("ip", formData.getFirst("ip"));
-        signatureBodyMap.put("lang", formData.getFirst("lang"));
+    private String getSignatureBody(MultiValueMap<String, String> formData) {
+        // Convert the formData to a JSON object
+        JsonObject jsonObject = new JsonObject();
+        for (Map.Entry<String, List<String>> entry : formData.entrySet()) {
+            // Assuming each field only has one value, take the first one
+            jsonObject.addProperty(entry.getKey(), entry.getValue().get(0));
+        }
 
-        return new Gson().toJson(signatureBodyMap);
+        // Convert the JSON object to a string and sort it
+        String sortedJson = new Gson().toJson(jsonObject);
+        return sortedJson;
+    }
+
+    private String getGameId(String vendorGameCode) {
+        String gameId = GameId.getGameId(vendorGameCode);
+        return gameId;
     }
 }

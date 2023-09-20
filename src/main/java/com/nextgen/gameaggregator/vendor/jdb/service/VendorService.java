@@ -1,21 +1,24 @@
 package com.nextgen.gameaggregator.vendor.jdb.service;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
-
-import org.apache.commons.codec.binary.Base64;
-import org.springframework.stereotype.Service;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.gson.JsonParseException;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.InvalidDateException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.vendor.jdb.api.result.SettleDto;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
+import org.springframework.stereotype.Service;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 @Service
 @Slf4j
@@ -61,5 +64,30 @@ public class VendorService extends BaseVendorService {
         } catch (Exception exception) {
             throw new InvalidDateException(exception.getMessage());
         }
+    }
+
+    @Override
+    public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
+        // Get the JSON request body from the HttpRequestLog
+        String requestBody = rawData;
+
+        try{
+
+            SettleDto dto = HttpService.convertJsonToDto(requestBody, SettleDto.class);
+
+            // check the settled transaction is JDB Spribe or not
+            if(dto.getGType().equals(Formats.SPRIBE)){
+
+                // Remap vendorBetId & vendorRoundId
+                settledBet.setVendorBetId(dto.getGameRoundSeqNo().toString());
+                settledBet.setRoundId(dto.getGameSeqNo().toString());
+            }
+
+        }catch (JsonParseException |
+                JsonProcessingException e) {
+            log.error("Error parsing JSON: " + e.getMessage());
+        }
+
+        return settledBet;
     }
 }

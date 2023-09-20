@@ -7,14 +7,14 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.booongo.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.booongo.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 import com.nextgen.gameaggregator.vendor.booongo.vo.BalanceVo;
+import com.nextgen.gameaggregator.vendor.booongo.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.booongo.vo.ErrorVo;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.nextgen.gameaggregator.vendor.booongo.service.VendorService;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -89,12 +89,13 @@ public class RollbackService {
                  DisabledVendorLineException |
                  CredentialNotFoundException e) {
 
-            // vendor did not provide any error code, so using back general transaction error
-            error.setCode(ResponseCodes.OTHER_EXCEED);
+            // vendor did not provide any error code, so return http status as 503
+            error.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(error);
         }catch(BetNotFoundException |
-               BetRefundIdempotentViolationException e){
-            balance = getCurrentBalance(traceId, gameSession);
+               BetRefundIdempotentViolationException |
+               BetResultIdempotentViolationException e){
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
@@ -102,8 +103,8 @@ public class RollbackService {
             vo.setBalance(balanceVo);
         }catch(Exception exception){
             httpService.logError(httpRequestLog, exception);
-            // vendor did not provide any error code, so using back general transaction error
-            error.setCode(ResponseCodes.OTHER_EXCEED);
+            // vendor did not provide any error code, so return http status as 503
+            error.setHttpStatus(HttpStatus.SC_SERVICE_UNAVAILABLE);
             vo.setError(error);
         }
          finally{
@@ -147,12 +148,12 @@ public class RollbackService {
         ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         BigDecimal balance = BigDecimal.ZERO;
 
         try {
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } catch (Exception exception) {
 

@@ -47,5 +47,7 @@ public class GameSession {
         this.currencyCode = endRoundSettledBet.getCurrencyCode();
         this.gameCode = endRoundSettledBet.getGameCode();
         this.token = endRoundSettledBet.getGameSessionToken();
+        this.vendorId = endRoundSettledBet.getVendorId();
+        this.currencyId = endRoundSettledBet.getCurrencyId();
     }
 }

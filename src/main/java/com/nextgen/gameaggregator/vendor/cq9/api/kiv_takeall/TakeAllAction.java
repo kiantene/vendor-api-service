@@ -77,7 +77,7 @@ public class TakeAllAction {
             // 4. Send bet request to Operator
             // 4.1 check if player has enough balance
             // 4.2 used database constraint to check duplicate bet request based on external_transaction_id, round_id, vendor_line_id
-            BigDecimal walletBalance = walletService.getBalance(traceId, gameSession);
+            BigDecimal walletBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             takeAllDto.setAmount(walletBalance);
             // TODO: to revisit
 //            BetEvent betEvent = walletService.processBet(traceId, gameSession, takeAllDto, body);

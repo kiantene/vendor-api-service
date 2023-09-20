@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ezugi.service;
 
-import com.nextgen.gameaggregator.entity.BetNotFoundLog;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.entity.VendorGameCode;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -88,11 +85,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public BigDecimal getCurrentBalance(String traceId, String token) {
+    public BigDecimal getCurrentBalance(String traceId, String token, HttpRequestLog httpRequestLog) {
         BigDecimal balance = BigDecimal.ZERO;
         try {
             GameSession gameSession = gameSessionService.verifyToken(token);
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
         } catch (Exception exception) {
         }
         return balance;

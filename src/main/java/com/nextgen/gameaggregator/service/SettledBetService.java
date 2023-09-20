@@ -17,6 +17,7 @@ import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -132,7 +133,7 @@ public class SettledBetService {
         } catch (BetNotFoundException betNotFoundException) {
             // bet not found is expected
             // save the data into couchbase first for idempotency checks
-            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId);
+            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId, gameSession);
             processingSettledBet.setOperatorStatus(operatorStatusProcessing);
             processingSettledBet.setVendorId(gameSession.getVendorId());
             processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
@@ -140,5 +141,11 @@ public class SettledBetService {
         }
 
         return settledBet;
+    }
+
+    public List<SettledBet> getByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId) {
+        List<SettledBet> settledBetList = rawSettledBetRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
+
+        return settledBetList;
     }
 }

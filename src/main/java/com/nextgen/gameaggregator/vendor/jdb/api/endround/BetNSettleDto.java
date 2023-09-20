@@ -50,12 +50,10 @@ public class BetNSettleDto implements BetResultData {
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
 
-    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 10, message = ResponseCode.WRONG_DATE_FORMAT)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String reportDate;
 
-    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 19, message = ResponseCode.WRONG_DATE_FORMAT)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String gameDate;
@@ -79,21 +77,16 @@ public class BetNSettleDto implements BetResultData {
     @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private BigDecimal denom;
 
-    @NotBlank
     @Size(max = 50)
-    @Pattern(regexp = "^(([01]?\\d{1,2}|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d{1,2}|2[0-4]\\d|25[0-5])$|^(([a-fA-F\\d]{1,4}:){7}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){1,7}:|([a-fA-F\\d]{1,4}:){6}:([01][a-fA-F\\d]{1,3}:){1,4}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){5}:([01][a-fA-F\\d]{1,3}:){1,5}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){4}:([01][a-fA-F\\d]{1,3}:){1,6}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){3}:([01][a-fA-F\\d]{1,3}:){1,7}[a-fA-F\\d]{1,4}|([a-fA-F\\d]{1,4}:){2}:([01][a-fA-F\\d]{1,3}:){1,8}[a-fA-F\\d]{1,4}|[a-fA-F\\d]:([01][a-fA-F\\d]{1,3}:){1,8}:[a-fA-F\\d]{1,4}|:((:[a-fA-F\\d]{1,4}){1,7}|:)|fe80:(:[a-fA-F\\d]{0,4}){0,4}%[\\w\\d]+|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)|([a-fA-F\\d]{1,4}:){1,4}:((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?))$")
     private String ipAddress;
 
-    @NotBlank
     @Size(max = 20)
     private String clientType;
 
-    @NotNull
     @Min(value = 0)
     @Max(value = 1)
     private Integer systemTakeWin;
 
-    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 19, message = ResponseCode.WRONG_DATE_FORMAT)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String lastModifyTime;
@@ -156,7 +149,7 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return bet;
+        return bet.negate();
     }
 
     @Override

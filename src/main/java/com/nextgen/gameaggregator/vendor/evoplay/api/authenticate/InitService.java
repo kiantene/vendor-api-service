@@ -1,17 +1,21 @@
 package com.nextgen.gameaggregator.vendor.evoplay.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.VendorGameService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceService;
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,6 +23,10 @@ import java.math.BigDecimal;
 @Service
 @Slf4j
 public class InitService {
+    @Value("${vendor.evoplay.isBalancedIncreaseTestEnabled:false}")
+    private Boolean isBalancedIncreaseTestEnabled = false;
+    @Autowired
+    private BalanceService balanceService;
     @Autowired
     private WalletService walletService;
     @Autowired
@@ -28,19 +36,26 @@ public class InitService {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo init(CallbackDto callbackDto, GameSession gameSession, String traceId) throws
+    public ResponseVo init(CallbackDto callbackDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
             InvalidAgentApiCredentialException,
             InvalidOperatorResponseException,
             DisabledAgentPlayerException,
             DisabledGameException,
             DisabledVendorLineException,
-            InvalidRequestException {
+            InvalidRequestException,
+            VendorCurrencyNotSupportException {
 
         this.doValidation(callbackDto);
         this.doVerification(gameSession);
 
         // Retrieve the latest wallet balance from Operator
-        BigDecimal balance = walletService.getBalance(traceId, gameSession);
+
+        BigDecimal balance = null;
+        if (isBalancedIncreaseTestEnabled) {
+            balance = balanceService.getBalance(gameSession.getVendorPlayerUsername(), traceId, gameSession, httpRequestLog);
+        } else {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+        }
 
         ResponseDataVo responseDataVo = new ResponseDataVo();
         responseDataVo.setBalance(balance);

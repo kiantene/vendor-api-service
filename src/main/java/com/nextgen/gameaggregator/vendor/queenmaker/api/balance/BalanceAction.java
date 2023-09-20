@@ -67,7 +67,7 @@ public class BalanceAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
             for (UsersDto user : balanceDto.getUsers()) {
-
+                
                 CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
                 futures.add(future);
             }
@@ -148,7 +148,7 @@ public class BalanceAction {
             this.doVerification(usersDto, gameSession, clientId, clientSecret);
 
             // 4. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 5. Set WalletVo for each user
             WalletsVo walletVo = new WalletsVo();

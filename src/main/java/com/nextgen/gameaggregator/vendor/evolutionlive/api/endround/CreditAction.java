@@ -127,7 +127,7 @@ public class CreditAction {
         try {
             CreditDto creditDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CreditDto.class);
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
-            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession));
+            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(creditDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);

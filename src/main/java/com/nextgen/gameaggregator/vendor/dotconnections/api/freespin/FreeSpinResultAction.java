@@ -51,9 +51,11 @@ public class FreeSpinResultAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
+        GameSession gameSession = null;
 
         try {
+
+            String body = httpRequestLog.getRequestBody();
 
             /*
             TODO: This endpoint will only be triggered if Free Spin Campaign is set up.
@@ -67,7 +69,7 @@ public class FreeSpinResultAction {
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId().toString());
 
             // Verify data
             this.doVerification(dto, gameSession);
@@ -101,15 +103,15 @@ public class FreeSpinResultAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);

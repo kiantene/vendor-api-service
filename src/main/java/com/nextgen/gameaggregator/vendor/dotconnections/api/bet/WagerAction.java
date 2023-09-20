@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -49,25 +50,32 @@ public class WagerAction {
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         String traceId = httpRequestLog.getId();
-        String body = httpRequestLog.getRequestBody();
+        String brandUid = "";
+        GameSession gameSession = null;
 
         try {
 
+            // Get request body
+            String body = httpRequestLog.getRequestBody();
+
             // Convert original request body into dto
             WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
+
+            // Set brandUid for exceptional handling
+            brandUid = dto.getBrandUid();
 
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
+            gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
 
             // Verify data
             this.doVerification(dto, gameSession);
 
             // Process bet
             // Vendor identify duplicate bet by round_id and wager_id
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
             BigDecimal balance = betEvent.getLastBalance();
 
             // Set Vendor player username + Balance + Currency
@@ -91,14 +99,26 @@ public class WagerAction {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(request, traceId, body);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                responseVo.setCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.REQUEST_PARAM_ERROR)
+                );
+            } else {
+                responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            }
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
@@ -107,9 +127,9 @@ public class WagerAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-        } catch (Exception e) {
+        } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, e);
+            httpService.logError(httpRequestLog, exception);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }

@@ -61,23 +61,18 @@ public class CheckPlayerAction {
 
             responseVo.setData(true);
 
-        } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
+            log.info("CQ9 Authentication (SUCCESS), player :" + pathVariableDto.getAccount());
 
-            System.err.println("DEBUG CQ9 -1");
+        } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
-            System.err.println("DEBUG CQ9 -2");
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (InvalidRequestException invalidRequestException) { // any other exception encountered
-
-            System.err.println("DEBUG CQ9 -3");
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
 
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
-
-            System.err.println("DEBUG CQ9 -4");
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
 
         } catch (Exception exception) { // any other exception encountered
@@ -88,6 +83,8 @@ public class CheckPlayerAction {
             statusVo.setMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(statusVo.getCode()));
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
             httpService.end(httpRequestLog, responseVo);
+
+            log.info("CQ9 Authentication (ERROR), player :" + pathVariableDto.getAccount() + " | ERROR CODE : " + statusVo.getCode() + " | ERROR MESSAGE : " + statusVo.getMessage());
         }
 
         return responseVo;

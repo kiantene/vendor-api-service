@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -64,7 +65,7 @@ public class BalanceAction {
             this.doVerification(dto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -86,7 +87,19 @@ public class BalanceAction {
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
         } catch (InvalidRequestException invalidRequestException) {
-            responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                responseVo.setCode(
+                        invalidRequestException.getValidation()
+                                .entrySet()
+                                .stream()
+                                .findFirst()
+                                .map(Map.Entry::getValue) // get the value of the first element
+                                .orElse(ResponseCodes.REQUEST_PARAM_ERROR)
+                );
+            } else {
+                responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            }
         } catch (DisabledVendorLineException | DisabledAgentPlayerException | CredentialNotFoundException |
                  InvalidAgentApiCredentialException | JsonProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

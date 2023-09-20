@@ -63,14 +63,10 @@ public class EndRoundAction {
         String vendorCurrencyCode = "";
 
         try {
-            // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
-
             // Convert original request body into dto
-            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
+            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);
-            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {
-            });
+            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {});
 
             // 1. Validate request parameters from vendor
             this.doValidation(endRoundDto, endRoundDataDtoList, wToken);
@@ -102,9 +98,11 @@ public class EndRoundAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (BetNotFoundException betNotFoundException) {
             statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
@@ -121,6 +119,7 @@ public class EndRoundAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -130,6 +129,7 @@ public class EndRoundAction {
 
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (JsonProcessingException jsonProcessingException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);

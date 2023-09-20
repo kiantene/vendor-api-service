@@ -1,18 +1,18 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -65,17 +65,14 @@ public class SettleDto implements BetResultData {
     @Pattern(regexp = "^[0-9]+$")
     private String mType;
 
-    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 10)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4}$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String reportDate;
 
-    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 19)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String gameDate;
 
-    @NotBlank(message = ResponseCode.WRONG_DATE_FORMAT)
     @Size(max = 19)
     @Pattern(regexp = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\\d{4} (?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$", message = ResponseCode.WRONG_DATE_FORMAT)
     private String lastModifyTime;
@@ -119,7 +116,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.gameRoundSeqNo.toString();
+        // check provider's category to decide round id value
+        if(this.getGType().equals(Formats.SPRIBE)){
+            return String.valueOf(refTransferIds.get(0));
+        }else{
+            return this.gameRoundSeqNo.toString();
+        }
     }
 
     @Override

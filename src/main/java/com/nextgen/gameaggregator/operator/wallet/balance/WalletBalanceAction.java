@@ -5,12 +5,11 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorCurrency;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +24,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -44,8 +44,12 @@ public class WalletBalanceAction {
     private AgentApiCredentialService agentApiCredentialService;
     @Autowired
     private AuthenticationService authenticationService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
 
-    public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+    public WalletBalanceVo call(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -55,6 +59,9 @@ public class WalletBalanceAction {
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
+
+        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
+        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         WalletBalanceDto dto = this.newWalletBalanceDto(traceId, gameSession);
         WalletBalanceVo responseVo = null;
@@ -67,7 +74,7 @@ public class WalletBalanceAction {
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
             httpRequestLog.setOperatorProcessStartTime(startTime);
-            httpRequestLog.setOperatorData(dto.toString());
+            httpRequestLog.setOperatorData(dto);
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
@@ -88,7 +95,7 @@ public class WalletBalanceAction {
         long endTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             if (apiResponse != null) {
-                httpRequestLog.setOperatorResponse(apiResponse.toString());
+                httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
             }
             httpRequestLog.setOperatorProcessEndTime(endTime);
         }
@@ -103,7 +110,9 @@ public class WalletBalanceAction {
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
-            responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
+            responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            if (httpRequestLog != null) httpRequestLog.setOperatorResponse(responseVo);
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
@@ -112,6 +121,9 @@ public class WalletBalanceAction {
 
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
+
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
             RequestService.successResponseLog(requestLogVo);
 
