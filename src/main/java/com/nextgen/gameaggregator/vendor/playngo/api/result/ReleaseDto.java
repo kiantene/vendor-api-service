@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -21,11 +22,13 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
 
     @NotBlank
     @Size(min = 1, max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_COLON_REGEX)
     @JacksonXmlProperty(localName = "transactionId")
     private String transactionId;
 
@@ -118,7 +121,7 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @NotNull
     @Pattern(regexp = "^(0|1)$")
     @JacksonXmlProperty(localName = "freegameFinished")
-    private Integer freeGameFinished;
+    private String freeGameFinished;
 
     @NotNull
     @PositiveOrZero

@@ -84,7 +84,7 @@ public class BalanceAction {
                  IllegalAccessException internalErrorException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
 
-        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
+        } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INVALIDCURRENCY);
 
         } catch (AuthenticationException authenticationException) {
@@ -120,7 +120,8 @@ public class BalanceAction {
             AuthenticationException,
             CredentialNotFoundException,
             GameNotSupportedException,
-            InvalidRequestException {
+            InvalidRequestException,
+            CurrencyNotSupportedException {
 
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), balanceDto);
@@ -139,6 +140,9 @@ public class BalanceAction {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // Verify currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
 

@@ -111,7 +111,7 @@ public class AuthAction {
                                 .stream()
                                 .findFirst()
                                 .map(Map.Entry::getValue) // get the value of the first element
-                                .orElse(ResponseCodes.WRONGUSERNAMEPASSWORD)
+                                .orElse(ResponseCodes.INTERNAL)
                 );
 
             } else {

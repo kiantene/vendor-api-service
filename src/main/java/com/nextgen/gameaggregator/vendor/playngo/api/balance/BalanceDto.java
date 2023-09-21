@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.playngo.api.balance;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -16,6 +17,7 @@ public class BalanceDto extends CommonDto {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     @JacksonXmlProperty(localName = "externalId")
     private String externalId;
 
