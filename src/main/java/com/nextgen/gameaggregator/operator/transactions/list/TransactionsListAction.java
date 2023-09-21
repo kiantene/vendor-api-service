@@ -3,10 +3,6 @@ package com.nextgen.gameaggregator.operator.transactions.list;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidFromTimeException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
@@ -18,6 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidFromTimeException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.InvalidDateRangeException;
+
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -59,6 +61,8 @@ public class TransactionsListAction {
 
             // 4. Validate from time not before last 60 days
             transactionListService.isStartTimeValid(dto.getFromTime());
+            // 5. Validate date range not more than one day
+            transactionListService.isDateRangeValid(dto.getFromTime(), dto.getToTime());
 
             TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getAgent().getId());
             responseVo.setData(transactionsListData);
@@ -85,6 +89,9 @@ public class TransactionsListAction {
 
         } catch (InvalidFromTimeException invalidFromTimeException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_FROM_TIME);
+
+        } catch (InvalidDateRangeException invalidDateRangeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_DATE_RANGE);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);

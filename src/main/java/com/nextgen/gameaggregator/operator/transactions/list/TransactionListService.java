@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.operator.transactions.list;
 
+import com.nextgen.gameaggregator.exception.InvalidDateRangeException;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.util.MysqlUtils;
 import jakarta.persistence.EntityManager;
@@ -195,6 +196,19 @@ public class TransactionListService {
 
         return Long.parseLong(query.getSingleResult().toString());
 
+    }
+
+    public void isDateRangeValid(long fromTime, long toTime) throws InvalidDateRangeException {
+        // Calculate the difference in milliseconds between start and end times
+        long differenceInMillis = toTime - fromTime;
+        // Define the maximum allowed difference for 1 day (24 hours * 60 minutes * 60 seconds * 1000 milliseconds)
+        long maxDifferenceInMillis = 24L * 60L * 60L * 1000L;
+        System.err.println("differenceInMillis :" + differenceInMillis);
+        System.err.println("maxDifferenceInMillis :" + maxDifferenceInMillis);
+        // Compare the difference with the maximum allowed difference
+        if(differenceInMillis > maxDifferenceInMillis) {
+            throw new InvalidDateRangeException();
+        }
     }
 
 }

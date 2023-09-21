@@ -41,6 +41,7 @@ public class ResponseCodes {
         SC_EXCEEDED_NUMBER_OF_RETRIES(31, "Exceeded number of retries."),
         SC_OPERATOR_TIMEOUT(32, "Operator timed out"),
         SC_INVALID_FROM_TIME(33, "Data only available last 60 days"),
+        SC_INVALID_DATE_RANGE(34, "Date range should be within one day."),
         ;
 
         public final Integer code;
