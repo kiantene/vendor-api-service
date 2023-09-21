@@ -102,11 +102,8 @@ springdoc:
     tryItOutEnabled: true
   paths-to-match: /**
 logging:
-  http-request: true
+  config: 'classpath:logback-spring.xml'
   process-time: false
-logstash:
-  host: 
-  port: 
 image:
   gameurl:
 testing:
