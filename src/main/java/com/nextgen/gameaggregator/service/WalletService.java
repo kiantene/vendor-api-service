@@ -64,7 +64,10 @@ public class WalletService {
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             httpRequestLog.setVendorId(gameSession.getVendorId());
             httpRequestLog.setGameToken(gameSession.getToken());
-            httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
+
         }
 
         WalletBalanceVo balanceVo = null;
@@ -73,7 +76,7 @@ public class WalletService {
             balanceVo = walletBalanceAction.call(traceId, gameSession, httpRequestLog);
             // TODO: to handle balance returned with more than 4 decimals
             // TODO: implement error handling
-            if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException){
             throw new VendorCurrencyNotSupportException();
@@ -99,7 +102,7 @@ public class WalletService {
             InsufficientBalanceException, CouchbaseDataIntegrityException, InvalidOperatorResponseException,
             InvalidAgentApiCredentialException, BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException {
 
-        log.info("processBet (" + traceId + "): " + betResultData);
+        //log.info("processBet (" + traceId + "): " + betResultData);
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
@@ -107,7 +110,10 @@ public class WalletService {
             httpRequestLog.setVendorBetId(betResultData.getVendorBetId());
             httpRequestLog.setRoundId(betResultData.getRoundId());
             httpRequestLog.setGameToken(gameSession.getToken());
-            httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
+
         }
 
         loggingService.logStart();
@@ -153,7 +159,7 @@ public class WalletService {
 
         }
 
-        if (httpRequestLog != null) httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
+        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return betEvent;
     }
@@ -579,7 +585,9 @@ public class WalletService {
         httpRequestLog.setVendorBetId(betResultData.getVendorBetId());
         httpRequestLog.setRoundId(betResultData.getRoundId());
         httpRequestLog.setGameToken(gameSession.getToken());
-        httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
+        httpRequestLog.setBetStart(System.currentTimeMillis());
+        httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+        httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
 
         WalletBalanceVo balanceVo;
         boolean isSettled = betResultData.getBetStatus().isValueOf(BetStatus.SETTLED.code);
@@ -591,7 +599,7 @@ public class WalletService {
         } else { // bets not settled yet
             balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
         }
-        httpRequestLog.setBetProcessEndTime(System.currentTimeMillis());
+        httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return balanceVo.getData().getBalance();
     }
@@ -647,7 +655,7 @@ public class WalletService {
             InvalidOperatorResponseException, BetRefundIdempotentViolationException, BetNotFoundException,
             BetResultIdempotentViolationException, TransactionStillProcessingException, VendorCurrencyNotSupportException {
 
-        log.info("processRollback (" + traceId + "): " + rollbackData);
+        //log.info("processRollback (" + traceId + "): " + rollbackData);
         //do changes
 
         Long vendorPlayerId = gameSession.getVendorPlayerId();

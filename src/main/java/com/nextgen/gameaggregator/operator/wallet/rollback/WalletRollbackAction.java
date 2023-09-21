@@ -109,22 +109,22 @@ public class WalletRollbackAction {
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            RequestService.successResponseLog(requestLogVo);
+            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            RequestService.failResponseLog(requestLogVo, exception);
+            //RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
         return responseVo;
