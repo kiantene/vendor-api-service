@@ -52,16 +52,6 @@
 			<artifactId>jaxb-api</artifactId>
 			<version>${jaxb-api.version}</version>
 		</dependency>
-		<!--		<dependency>-->
-		<!--			<groupId>com.nextgen.sas</groupId>-->
-		<!--			<artifactId>lib</artifactId>-->
-		<!--			<version>3.0.0</version>-->
-		<!--		</dependency>-->
-		<!--		<dependency>-->
-		<!--			<groupId>com.nextgen.sas</groupId>-->
-		<!--			<artifactId>core-v2</artifactId>-->
-		<!--			<version>3.0.0</version>-->
-		<!--		</dependency>-->
 		<dependency>
 			<groupId>org.glassfish.jersey.core</groupId>
 			<artifactId>jersey-client</artifactId>
@@ -167,17 +157,6 @@
 			<artifactId>modelmapper</artifactId>
 			<version>${modelmapper.version}</version>
 		</dependency>
-		<!--grpc -->
-		<!--		<dependency>-->
-		<!--			<groupId>com.nextgen.game-aggregator</groupId>-->
-		<!--			<artifactId>game-aggregator-vendor-operator-grpc-proto</artifactId>-->
-		<!--			<version>0.0.1-SNAPSHOT</version>-->
-		<!--		</dependency>-->
-		<!--		<dependency>-->
-		<!--			<groupId>net.devh</groupId>-->
-		<!--			<artifactId>grpc-client-spring-boot-starter</artifactId>-->
-		<!--			<version>2.13.1.RELEASE</version>-->
-		<!--		</dependency>-->
 	</dependencies>
 
 	<build>

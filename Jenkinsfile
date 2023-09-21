@@ -46,6 +46,8 @@ pipeline {
 
         QA_LOGIN_SERVER = 'root@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
+
+        DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
     }
 
     stages {
@@ -63,7 +65,6 @@ pipeline {
                 script {
                     String branchName = env.BRANCH_NAME
                     String couchbase_cert_file_id = getCouchbaseCertId(branchName)
-                    String pom_file = getPomFile(branchName)
 
                     withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
                         String versionTag = getVersionTag(branchName)
@@ -71,7 +72,7 @@ pipeline {
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                         sh "mvn versions:set -DnewVersion=$versionTag"
                         sh "mvn -f pom-deploy.xml versions:set -DnewVersion=$versionTag"
-                        sh "mvn clean package spring-boot:repackage -U -f ${pom_file} -DskipTests"
+                        sh "mvn clean package spring-boot:repackage -U -DskipTests"
                     }
                 }
             }
@@ -183,7 +184,7 @@ pipeline {
                 case 'qa':
                 case 'pt':
                 case 'devops':
-                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: 'Pipeline Status', webhookURL: 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130', link: currentBuild.absoluteUrl, result: currentBuild.currentResult, showChangeset: true
+                        discordSend description: "${currentBuild.currentResult}: ${env.JOB_NAME} #${currentBuild.number}", title: "Pipeline ${currentBuild.fullProjectName} ${currentBuild.currentResult}", webhookURL: DISCORD_WEBHOOK_URL, link: currentBuild.absoluteUrl, result: currentBuild.currentResult, showChangeset: true
                         break
                 }
             }
@@ -255,23 +256,6 @@ String getCouchbaseCertId(String branchName) {
         case 'qa':
         case 'pt':
             file = 'couchbase_cert_file'
-            break
-    }
-
-    return file
-}
-
-String getPomFile(String branchName) {
-    String file = './pom.xml'
-
-    switch (branchName) {
-        case 'main':
-            file = './pom-deploy.xml'
-            break
-        case 'stg':
-        case 'qa':
-        case 'pt':
-            file = './pom.xml'
             break
     }
 
