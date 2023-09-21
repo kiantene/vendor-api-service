@@ -35,6 +35,8 @@ public class SettleAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.SETTLE_BET)
     public CommonVo settle(HttpServletRequest request) {
@@ -134,9 +136,11 @@ public class SettleAction {
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 
     private ResultType determineResultType(SettleDto dto) {
-        return dto.getPayout().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
+        return dto.getPayout().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
     }
 }

@@ -67,8 +67,6 @@ public class SessionBetDto implements BetResultData {
     @Positive
     private Integer statementType;
 
-    // public BetStatus betStatus;
-
     @Override
     public String getExternalTransactionId() {
         return String.valueOf(this.round);
@@ -106,7 +104,11 @@ public class SessionBetDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.turnover;
+        if (this.type == 1) {
+            return this.turnover;
+        }
+        return null;
+
     }
 
     @Override
