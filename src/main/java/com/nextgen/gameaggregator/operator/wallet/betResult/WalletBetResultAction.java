@@ -46,8 +46,6 @@ public class WalletBetResultAction {
     private AuthenticationService authenticationService;
 
     @Autowired
-    private VendorService vendorService;
-    @Autowired
     private CurrencyConversionService currencyConversionService;
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
@@ -66,7 +64,7 @@ public class WalletBetResultAction {
 
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
         currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
-        log.info("Request [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + dto);
+        //log.info("Request [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -74,8 +72,11 @@ public class WalletBetResultAction {
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
-            httpRequestLog.setOperatorProcessStartTime(startTime);
-            httpRequestLog.setOperatorData(dto);
+            httpRequestLog.setOperatorStart(startTime);
+
+            String jsonApiResponse = new Gson().toJson(dto);
+            httpRequestLog.setOperatorData(jsonApiResponse);
+
         }
 
         RequestLogVo requestLogVo = null;
@@ -96,23 +97,28 @@ public class WalletBetResultAction {
             long endTime = System.currentTimeMillis();
             if (httpRequestLog != null) {
                 if (apiResponse != null) {
-                    httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
                 }
-                httpRequestLog.setOperatorProcessEndTime(endTime);
+                httpRequestLog.setOperatorEnd(endTime);
             }
 
             requestLogVo = requestService.createRequestLogVo(
                     EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
                     this.getClass().getPackage().getName(), profilesActive);
 
-            log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
+            //log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
-            if (httpRequestLog != null) httpRequestLog.setOperatorResponse(responseVo);
+            if (httpRequestLog != null){
+                httpRequestLog.setOperatorResponse(apiResponse.getBody());
+                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+
+            }
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
@@ -126,18 +132,18 @@ public class WalletBetResultAction {
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            RequestService.successResponseLog(requestLogVo);
+            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
@@ -152,7 +158,7 @@ public class WalletBetResultAction {
                 defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
             }
 
-            RequestService.failResponseLog(requestLogVo, exception);
+            //RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
 
         }

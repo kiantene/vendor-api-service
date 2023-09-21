@@ -108,6 +108,7 @@ public class SessionBetDto implements BetResultData {
             return this.turnover;
         }
         return null;
+
     }
 
     @Override
