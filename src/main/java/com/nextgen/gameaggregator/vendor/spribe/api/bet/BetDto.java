@@ -107,7 +107,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return (getAction().equals("freebet")) ? 1 : 0;
     }
 
     @Override

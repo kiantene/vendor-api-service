@@ -31,9 +31,13 @@ public class SettleAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private VendorGameService vendorGameService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
     
     @PostMapping(path = Endpoints.DEPOSIT)
     public ResponseVo settle(HttpServletRequest request) {
@@ -75,6 +79,21 @@ public class SettleAction {
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
+        } catch (AuthenticationException authenticationException) {
+            vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
+            httpService.logError(httpRequestLog, authenticationException);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
+        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | 
+            InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | DisabledGameException | 
+            BetNotFoundException | InvalidOperatorResponseException | MergedBetDataIntegrityException | 
+            InsufficientBalanceException | TransactionStillProcessingException internalErrorExeption) {
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            httpService.logError(httpRequestLog, internalErrorExeption);
+
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -91,11 +110,17 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
-
-        validationService.validateEligibleBet(gameSession, dto.getUser_id());
+    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws AuthenticationException, 
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            
+        // Verify received vendor player username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
     
     private ResultType determineResultType(SettleDto dto) {

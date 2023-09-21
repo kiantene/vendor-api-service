@@ -73,6 +73,24 @@ public class BetAction {
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
+        } catch (AuthenticationException authenticationException) {
+            vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
+            httpService.logError(httpRequestLog, authenticationException);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            vo.setErrorCode(ErrorCodes.INSUFFICIENT_FUND);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
+        } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException | 
+            InvalidRequestException | InvalidOperatorResponseException | VendorCurrencyNotSupportException | 
+            CouchbaseDataIntegrityException | InvalidAgentApiCredentialException | TransactionStillProcessingException internalErrorException) {
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            httpService.logError(httpRequestLog, internalErrorException);
+
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -89,9 +107,8 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession)
-            throws InvalidPlayerException, CredentialNotFoundException, InvalidSignatureException,
-            AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
+    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws InvalidPlayerException, 
+        DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
 
         validationService.validateEligibleBet(gameSession, dto.getUser_id());
     }

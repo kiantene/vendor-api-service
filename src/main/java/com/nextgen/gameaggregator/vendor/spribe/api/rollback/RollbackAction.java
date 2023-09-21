@@ -76,6 +76,16 @@ public class RollbackAction {
             data.setProvider_tx_id(dto.getProvider_tx_id());
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
+
+        } catch (RecordNotFoundException | BetNotFoundException transactionNotFoundeException) {
+            vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
+            httpService.logError(httpRequestLog, transactionNotFoundeException);
+
+        } catch (InvalidRequestException | AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException | 
+            DisabledGameException | InvalidAgentApiCredentialException | InvalidOperatorResponseException | BetRefundIdempotentViolationException | 
+            BetResultIdempotentViolationException | TransactionStillProcessingException | VendorCurrencyNotSupportException internalErrorException) {
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            httpService.logError(httpRequestLog, internalErrorException);
         
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
