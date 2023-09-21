@@ -35,6 +35,8 @@ public class CancelBetAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.CANCEL_BET)
     public CommonVo cancelBet(HttpServletRequest request) {
@@ -130,5 +132,7 @@ public class CancelBetAction {
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 }

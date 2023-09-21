@@ -1,8 +1,5 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.result;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -10,10 +7,12 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
-
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

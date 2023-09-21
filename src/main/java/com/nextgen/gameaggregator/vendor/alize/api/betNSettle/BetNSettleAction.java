@@ -35,6 +35,8 @@ public class BetNSettleAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.BET_N_SETTLE)
     public CommonVo betResult(HttpServletRequest request) {
@@ -132,5 +134,7 @@ public class BetNSettleAction {
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 }
