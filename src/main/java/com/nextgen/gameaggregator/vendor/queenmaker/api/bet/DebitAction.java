@@ -90,7 +90,7 @@ public class DebitAction {
 
         } finally {
             httpService.end(httpRequestLog, debitVo);
-            log.info("QM Debit Request Log : " + httpRequestLog);
+            log.info("QM Debit Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return debitVo;

@@ -91,7 +91,7 @@ public class BalanceAction {
 
         } finally {
             httpService.end(httpRequestLog, balanceVo);
-            log.info("QM Debit Request Log : " + httpRequestLog);
+            log.info("QM Balance Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return balanceVo;
@@ -191,7 +191,7 @@ public class BalanceAction {
         } finally {
             usersVo.setUserid(usersDto.getUserid());
             httpService.end(httpRequestLog, usersVo);
-            log.info("QM Debit Request Log : " + httpRequestLog);
+            log.info("QM Balance Request Log : " + httpRequestLog);
         }
 
         return usersVo;
