@@ -123,13 +123,11 @@ public class ReleaseDto extends CommonDto implements BetResultData {
     @JacksonXmlProperty(localName = "freegameFinished")
     private String freeGameFinished;
 
-    @NotNull
     @PositiveOrZero
     @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "freegameGain")
     private BigDecimal freeGameGain;
 
-    @NotNull
     @PositiveOrZero
     @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "freegameLoss")
