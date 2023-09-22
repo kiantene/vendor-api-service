@@ -66,7 +66,7 @@ public class WalletBetAction {
 
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betInformation);
         dto.setAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getAmount(), fromVendorConversionRate));
-        log.info("Request [" + apiUrl + EndPoints.WALLET_BET + "]: " + dto);
+        //log.info("Request [" + apiUrl + EndPoints.WALLET_BET + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -74,8 +74,11 @@ public class WalletBetAction {
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
-            httpRequestLog.setOperatorProcessStartTime(startTime);
-            httpRequestLog.setOperatorData(dto);
+            httpRequestLog.setOperatorStart(startTime);
+
+            String jsonApiResponse = new Gson().toJson(dto);
+            httpRequestLog.setOperatorData(jsonApiResponse);
+
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
@@ -93,9 +96,10 @@ public class WalletBetAction {
         long endTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             if (apiResponse != null) {
-                httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
             }
-            httpRequestLog.setOperatorProcessEndTime(endTime);
+            httpRequestLog.setOperatorEnd(endTime);
         }
 
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
@@ -103,14 +107,19 @@ public class WalletBetAction {
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {
-            log.info("Response [" + apiUrl + EndPoints.WALLET_BET + "]: " + apiResponse);
+            //log.info("Response [" + apiUrl + EndPoints.WALLET_BET + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
-            if (httpRequestLog != null) httpRequestLog.setOperatorResponse(responseVo);
+
+            if (httpRequestLog != null){
+                httpRequestLog.setOperatorResponse(apiResponse.getBody());
+                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+
+            }
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
@@ -131,24 +140,24 @@ public class WalletBetAction {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-            RequestService.successResponseLog(requestLogVo);
+            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
 
             Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
             throw new InvalidOperatorResponseException(operatorStatus);
 
         } catch (Exception exception) {
-            RequestService.failResponseLog(requestLogVo, exception);
+            //RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
         return responseVo;

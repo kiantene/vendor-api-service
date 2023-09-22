@@ -65,8 +65,10 @@ public class WalletAdjustmentAction {
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
-        httpRequestLog.setOperatorProcessStartTime(startTime);
-        httpRequestLog.setOperatorData(dto);
+        httpRequestLog.setOperatorStart(startTime);
+
+        String jsonApiResponse = new Gson().toJson(dto);
+        httpRequestLog.setOperatorData(jsonApiResponse);
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
@@ -83,9 +85,10 @@ public class WalletAdjustmentAction {
         long endTime = System.currentTimeMillis();
 
         if (apiResponse != null) {
-            httpRequestLog.setOperatorResponseCode(apiResponse.getStatusCode().value());
+            httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
         }
-        httpRequestLog.setOperatorProcessEndTime(endTime);
+        httpRequestLog.setOperatorEnd(endTime);
 
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 EndPoints.WALLET_ADJUSTMENT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
@@ -99,7 +102,12 @@ public class WalletAdjustmentAction {
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
-            httpRequestLog.setOperatorResponse(responseVo);
+
+            if (httpRequestLog != null){
+                httpRequestLog.setOperatorResponse(apiResponse.getBody());
+                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+
+            }
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
@@ -113,22 +121,22 @@ public class WalletAdjustmentAction {
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            RequestService.successResponseLog(requestLogVo);
+            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            RequestService.failResponseLog(requestLogVo, exception);
+            //RequestService.failResponseLog(requestLogVo, exception);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
         return responseVo;

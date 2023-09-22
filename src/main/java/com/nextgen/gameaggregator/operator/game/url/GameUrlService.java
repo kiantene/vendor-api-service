@@ -72,7 +72,7 @@ public class GameUrlService {
                  InstantiationException | IllegalAccessException | InvalidVendorLineException |
                  InvalidVendorResponseException | InvalidFormatException
                 gameClassException) {
-            gameClassException.printStackTrace();
+            //gameClassException.printStackTrace();
 
             log.error("GAME CLASS ERROR :");
             gameClassException.printStackTrace();

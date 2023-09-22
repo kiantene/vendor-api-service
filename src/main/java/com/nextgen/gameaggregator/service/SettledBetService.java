@@ -91,7 +91,7 @@ public class SettledBetService {
         try {
             rawSettledBetRepository.delete(settledBet);
         } catch (Exception e) {
-            log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+            //log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
         }
     }
 
@@ -118,11 +118,11 @@ public class SettledBetService {
                 Integer operatorStatus = settledBet.getOperatorStatus();
                 // throw idempotent exception if status is processing or success
                 if (operatorStatus.equals(operatorStatusProcessing)) {
-                    log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                    //log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new TransactionStillProcessingException();
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                    //log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new BetResultIdempotentViolationException(settledBet);
 
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
