@@ -50,11 +50,8 @@ public class GameUrlAction {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             GameUrlDto dto = HttpService.convertJsonToDto(body, GameUrlDto.class);
-
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
-            httpRequestLog.setId(traceId);
-            httpRequestLog.setOperatorUsername(dto.getUsername());
 
             // 1. Validate all fields in the request object
             loggingService.logStart();
@@ -66,8 +63,6 @@ public class GameUrlAction {
             loggingService.logStart();
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
             loggingService.logProcessTime("gameUrl ｜ validationService.validateApiKey", traceId);
-
-            httpRequestLog.setAgentId(apiCredential.getAgent().getId());
 
             // 3. Validate the signature
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
@@ -142,7 +137,14 @@ public class GameUrlAction {
                     vendorCurrency, vendorLanguageCode, vendorPlatformCode, dto.getLobbyUrl(), dto.getIpAddress());
             loggingService.logProcessTime("gameUrl ｜ gameSessionService.createSession", traceId);
 
-//            gameSessionService.createSessionByVendorPlayer(gameSession);
+            // setGameSessionInfo
+            httpRequestLog.setId(traceId);
+            httpRequestLog.setAgentId(apiCredential.getAgent().getId());
+            httpRequestLog.setOperatorUsername(dto.getUsername());
+            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
+            httpRequestLog.setVendorId(gameSession.getVendorId());
+            httpRequestLog.setGameToken(gameSession.getToken());
 
             // 16. Request game url from vendor
             loggingService.logStart();
@@ -224,6 +226,7 @@ public class GameUrlAction {
 
         } finally {
             responseVo.setMessage(responseVo.getStatus().description);
+            httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
 
         }
         httpService.end(httpRequestLog, responseVo);
