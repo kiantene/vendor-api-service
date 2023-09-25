@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -31,7 +30,8 @@ public class ResponseVo implements HttpResponse {
     }
 
     public void setBalance(BigDecimal balance) {
-        this.balance = balance.setScale(2, RoundingMode.DOWN);
+//        this.balance = balance.setScale(2, RoundingMode.DOWN);
+        this.balance = balance;
     }
 
     @Override

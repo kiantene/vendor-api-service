@@ -3,8 +3,12 @@ package com.nextgen.gameaggregator.vendor.evolutionlive.api.bet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.dto.DebitCreditCancelDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -12,6 +16,11 @@ import java.math.BigDecimal;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DebitDto extends DebitCreditCancelDto implements BetResultData {
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 250)
+    private String sid; // Player session token
 
     @Override
     public String getExternalTransactionId() {
@@ -27,7 +36,8 @@ public class DebitDto extends DebitCreditCancelDto implements BetResultData {
     public String getRoundId() {
         // Vendor BackOffice only use front ID
         // e.g. (1766426e099ddd0a3aa82cba-rcj5y4fzmrmqaqtj) only ID before "-" needed
-        return this.getGame().getId().split("-")[0];
+//        return this.getGame().getId().split("-")[0];
+        return this.getTransaction().getRefId();
     }
 
     @Override
