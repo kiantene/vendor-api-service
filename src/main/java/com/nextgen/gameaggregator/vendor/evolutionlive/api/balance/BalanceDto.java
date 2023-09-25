@@ -12,6 +12,10 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BalanceDto extends BasicDto {
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 250)
+    private String sid; // Player session token
     private GameDto game; // can be null
 
     @NotBlank

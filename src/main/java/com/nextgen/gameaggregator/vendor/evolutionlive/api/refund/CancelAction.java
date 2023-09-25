@@ -94,11 +94,14 @@ public class CancelAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException e) {
+                 InvalidOperatorResponseException |
+                 TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
+        } catch (BetResultIdempotentViolationException e) {
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -127,6 +130,7 @@ public class CancelAction {
             InvalidPlayerException {
 
         // 1. Verify Username, GameCode, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getToken(), cancelDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelDto.getCurrency(), CurrencyNotSupportedException::new);
