@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.evolutionlive.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.evolutionlive.dto.BasicDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
@@ -16,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -47,8 +50,25 @@ public class CheckAction {
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(checkDto);
 
+            GameSession gameSession = null;
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(checkDto.getSid());
+            if (checkDto.getSid().isBlank()) {
+                if (httpRequestLog.getUrl().contains("check")) {
+                    throw new InvalidRequestException();
+                }
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(checkDto.getUserId());
+            } else {
+                gameSession = gameSessionService.verifyToken(checkDto.getSid());
+            }
+
+            if (httpRequestLog.getUrl().contains("check") && !checkDto.getSid().isBlank() || httpRequestLog.getUrl().contains("sid") && checkDto.getSid().isBlank()) {
+                // Regenerate token for session token (launch token only can be use once time)
+                if ((checkDto.getChannel().getType().equals("M") && gameSession.getVendorPlatformCode().equals(Platforms.H5.toString())) ||
+                        (checkDto.getChannel().getType().equals("P") && gameSession.getVendorPlatformCode().equals(Platforms.WEB.toString()))) {
+                    String newToken = UUID.randomUUID().toString();
+                    gameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
+                }
+            }
 
             this.doVerification(checkDto, gameSession);
 
@@ -59,7 +79,8 @@ public class CheckAction {
             responseVo.setResponseCode(ResponseCode.INVALID_SID);
             httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException |
-                 InvalidRequestException e) {
+                 InvalidRequestException |
+                 InvalidPlayerException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
@@ -83,11 +104,11 @@ public class CheckAction {
     }
 
     private void doVerification(CheckDto checkDto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), checkDto.getUserId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), checkDto.getUserId(), InvalidPlayerException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
