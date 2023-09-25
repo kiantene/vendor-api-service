@@ -100,7 +100,12 @@ public class WagerAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // return as 0
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -140,8 +145,20 @@ public class WagerAction {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+                // return as 0
+                responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+                responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+                responseDataVo.setBalance(BigDecimal.ZERO);
+                responseVo.setData(responseDataVo);
+                responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+
+            } else {
+                responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
+            }
 
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

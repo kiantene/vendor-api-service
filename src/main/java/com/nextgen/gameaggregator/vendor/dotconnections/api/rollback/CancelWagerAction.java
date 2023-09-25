@@ -115,12 +115,22 @@ public class CancelWagerAction {
 
         } catch (BetNotFoundException betRecordNotExistException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // return as 0
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // return as 0
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
 
         } catch (DisabledVendorLineException |
@@ -135,10 +145,13 @@ public class CancelWagerAction {
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
                 // if bet already refunded
-                responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+                responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+                responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+                responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
+                responseVo.setData(responseDataVo);
                 responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
 
-            } else if (Objects.equals(betResultIdempotentViolationException.getStatus(), BetStatus.SETTLED.code)) {
+            } else if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
                 // if bet already settled
                 responseVo = this.doAdjustment(traceId, gameSession, dto, httpRequestLog);
 
@@ -223,18 +236,33 @@ public class CancelWagerAction {
             responseVo.setData(responseDataVo);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // return as 0
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
 
-        } catch (BetNotFoundException | SettledBetNotFoundException recordNotFoundException) {
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+        } catch (BetNotFoundException recordNotFoundException) {
+            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // return as 0
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
         } catch (BetAdjustmentIdempotentViolationException betAdjustmentIdempotentViolationException) {
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            // return as 0
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
 
         } catch (InvalidAgentApiCredentialException | InvalidOperatorResponseException systemErrorException) {
