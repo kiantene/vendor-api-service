@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,8 @@ public class DebitAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debitAction(HttpServletRequest request) {
@@ -83,6 +86,8 @@ public class DebitAction {
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
             idempotentSetBalance(httpRequestLog, responseVo);
+        } catch (DuplicateExternalTransactionIdException e) {
+            responseVo.setResponseCode(ResponseCode.FINAL_ERROR_ACTION_FAILED);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -108,7 +113,8 @@ public class DebitAction {
             DisabledGameException,
             GameNotSupportedException,
             CurrencyNotSupportedException,
-            InvalidPlayerException {
+            InvalidPlayerException,
+            DuplicateExternalTransactionIdException {
 
         // 1. Verify Username, GameCode, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), debitDto.getUserId(), InvalidPlayerException::new);
@@ -117,6 +123,9 @@ public class DebitAction {
 
         // 2. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUserId());
+
+        // Verify debit after rollback or not
+        vendorService.verifyDebitAfterRollback(gameSession.getVendorPlayerId(), debitDto.getExternalTransactionId());
     }
 
     private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {

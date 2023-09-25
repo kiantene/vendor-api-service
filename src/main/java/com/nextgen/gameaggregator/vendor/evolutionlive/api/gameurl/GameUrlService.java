@@ -112,6 +112,7 @@ public class GameUrlService implements GameUrl {
             assert apiResponse != null;
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
+            responseVo.setGameUrl(apiUrl);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
