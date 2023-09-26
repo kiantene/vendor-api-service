@@ -139,6 +139,9 @@ public class CancelReserveAction {
             CurrencyNotSupportedException,
             InvalidRequestException {
 
+        // Verify product group id
+        vendorService.verifyProductId(gameSession.getVendorLineId(), dto);
+
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), dto);
 
