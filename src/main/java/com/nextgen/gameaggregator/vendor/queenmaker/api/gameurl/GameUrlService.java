@@ -47,7 +47,7 @@ public class GameUrlService implements GameUrl {
             throws InvalidVendorLineException, InvalidFormatException {
 
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode());
+        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode(), 2);
         String gpcode = parts[0];
         String gcode = parts[1];
 

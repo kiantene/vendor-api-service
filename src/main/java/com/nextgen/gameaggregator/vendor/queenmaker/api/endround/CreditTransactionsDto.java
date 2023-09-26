@@ -111,7 +111,7 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.roundid;
+        return this.externalroundid;
     }
 
     @Override

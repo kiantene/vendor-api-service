@@ -118,7 +118,7 @@ public class CreditAction {
 
         // 2. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode());
+        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode(), 2);
         String gpcode = parts[0];
         String gamecode = parts[1];
         ValidationUtils.isEquals(creditTransactionsDto.getGpcode(), gpcode, GameNotSupportedException::new);
@@ -147,7 +147,7 @@ public class CreditAction {
             BigDecimal balance;
             if (creditTransactionsDto.getTxtype().equals(Txtype.CANCEL_BET)) {
                 RollbackTransactionDto rollbackTransactionDto = new ModelMapper().map(creditTransactionsDto, RollbackTransactionDto.class);
-                balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService);
+                balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService, httpRequestLog);
             } else {
                 ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
                 balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);

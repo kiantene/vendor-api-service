@@ -24,8 +24,8 @@ public class VendorService extends BaseVendorService {
         return instant.toEpochMilli();
     }
 
-    public static String[] splitGameCode(String vendorGameCode) {
-        return vendorGameCode.split("_", 2);
+    public static String[] splitGameCode(String vendorGameCode, Integer limit) {
+        return vendorGameCode.split("_", limit);
     }
 
     public static String mergeGameCode(String prefix, String suffix) {

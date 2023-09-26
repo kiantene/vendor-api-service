@@ -12,6 +12,7 @@ public class EndPoints {
 
     // API url call to vendor
     public static final String AUTHORIZE = "/api/player/authorize";
+    public static final String HISTORY = "/api/history/providers";
 
     public static final String GAME_URL = "/gamelauncher";
 }

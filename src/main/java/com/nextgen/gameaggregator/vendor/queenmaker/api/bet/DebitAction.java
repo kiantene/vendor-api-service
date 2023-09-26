@@ -127,7 +127,7 @@ public class DebitAction {
 
         // 3. Validate Vendor Currency Code, Brand Code, Game Code
         // Split the gameCode into two parts based on the underscore character "_"
-        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode());
+        String[] parts = vendorService.splitGameCode(gameSession.getVendorGameCode(), 2);
         String gpcode = parts[0];
         String gamecode = parts[1];
         ValidationUtils.isEquals(debitTransactionsDto.getGpcode(), gpcode, GameNotSupportedException::new);

@@ -113,7 +113,7 @@ public class DebitTransactionsDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.roundid;
+        return this.externalroundid;
     }
 
     @Override
