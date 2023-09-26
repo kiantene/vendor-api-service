@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.bet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetRefundLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -10,6 +11,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.dotconnections.exception.DuplicateBetRecordException;
 import com.nextgen.gameaggregator.vendor.dotconnections.exception.InvalidProviderException;
 import com.nextgen.gameaggregator.vendor.dotconnections.service.VendorService;
 import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseDataVo;
@@ -41,6 +43,8 @@ public class WagerAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private BetRefundLogService betRefundLogService;
 
     @PostMapping(path = EndPoints.WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -68,6 +72,9 @@ public class WagerAction {
 
             // Verify data
             this.doVerification(dto, gameSession);
+
+            // Check if bet transaction has been refunded before
+            this.checkBetRefundLog(gameSession, dto);
 
             // Process bet
             // Vendor identify duplicate bet by round_id and wager_id
@@ -101,11 +108,7 @@ public class WagerAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
             // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            // return as 0
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(BigDecimal.ZERO);
-            responseVo.setData(responseDataVo);
+            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -114,6 +117,10 @@ public class WagerAction {
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
             responseVo.setData(responseDataVo);
+            responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+
+        } catch (DuplicateBetRecordException duplicateBetRecordException) {
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -147,11 +154,7 @@ public class WagerAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-                // return as 0
-                responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-                responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-                responseDataVo.setBalance(BigDecimal.ZERO);
-                responseVo.setData(responseDataVo);
+                responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
                 responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
             } else {
@@ -214,4 +217,15 @@ public class WagerAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
     }
 
+    private void checkBetRefundLog(GameSession gameSession, WagerDto dto) throws DuplicateBetRecordException {
+        RawBetRefundLog rawBetRefundLog = betRefundLogService.checkExists(
+                gameSession.getVendorPlayerId().toString(),
+                gameSession.getVendorGameId().toString(),
+                dto.getExternalTransactionId()
+        );
+
+        if (rawBetRefundLog != null) {
+            throw new DuplicateBetRecordException();
+        }
+    }
 }

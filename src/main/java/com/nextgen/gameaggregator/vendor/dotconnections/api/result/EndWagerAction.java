@@ -109,21 +109,13 @@ public class EndWagerAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
             // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            // return as 0
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(BigDecimal.ZERO);
-            responseVo.setData(responseDataVo);
+            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
             // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            // return as 0
-            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(BigDecimal.ZERO);
-            responseVo.setData(responseDataVo);
+            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -151,11 +143,7 @@ public class EndWagerAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-                // return as 0
-                responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
-                responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-                responseDataVo.setBalance(BigDecimal.ZERO);
-                responseVo.setData(responseDataVo);
+                responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
                 responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
             } else {

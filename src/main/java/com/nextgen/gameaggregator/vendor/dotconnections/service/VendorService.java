@@ -77,6 +77,25 @@ public class VendorService extends BaseVendorService {
         return responseVo;
     }
 
+    public ResponseVo getZeroBalanceResponseVo(HttpRequestLog httpRequestLog, GameSession gameSession) {
+
+        ResponseVo responseVo = new ResponseVo();
+        ResponseDataVo responseDataVo = new ResponseDataVo();
+
+        try {
+            responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
+            responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
+            responseDataVo.setBalance(BigDecimal.ZERO);
+            responseVo.setData(responseDataVo);
+
+        } catch (Exception exception) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, exception);
+        }
+
+        return responseVo;
+    }
+
     @Override
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
         return betInfo.getEffectiveTurnover();
