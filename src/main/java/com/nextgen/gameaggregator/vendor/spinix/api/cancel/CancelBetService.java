@@ -62,7 +62,7 @@ public class CancelBetService {
             this.verifyUnsettledWinTransaction(gameSession, dto);
 
             // Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             // Set Balance
             roundPayoutDataWalletVo.setBalance(balance);

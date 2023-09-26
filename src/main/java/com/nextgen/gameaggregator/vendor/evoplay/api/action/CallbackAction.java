@@ -100,7 +100,7 @@ public class CallbackAction {
                     responseVo = winService.win(callbackDto, gameSession, httpRequestLog, traceId);
                 }
                 case "refund" -> {
-                    responseVo = refundService.refund(callbackDto, gameSession, traceId);
+                    responseVo = refundService.refund(callbackDto, gameSession, traceId, httpRequestLog);
                 }
                 case "balanceincrease" -> {
                     responseVo = balanceIncreaseService.balanceIncrease(callbackDto, gameSession, traceId, httpRequestLog);

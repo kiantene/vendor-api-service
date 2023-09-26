@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.api.cancelbetnsettle;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -49,7 +50,7 @@ public class CancelBetNSettleService {
             this.doVerification(cancelBetNSettleDto, gameSession);
 
             // 4. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetNSettleDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetNSettleDto, gameSession, vendorService, actionDto.getHttpRequestLog());
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);

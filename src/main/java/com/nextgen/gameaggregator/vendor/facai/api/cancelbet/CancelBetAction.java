@@ -82,7 +82,7 @@ public class CancelBetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
 
-            BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());

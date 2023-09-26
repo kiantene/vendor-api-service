@@ -63,7 +63,7 @@ public class RollbackAction {
             this.doVerification(rollbackDto, gameSession, httpRequestLog, request);
 
             // Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
             // Construct Vo
             rollbackVo.setErrorCode(ResponseCodes.OK);

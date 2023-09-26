@@ -58,7 +58,7 @@ public class CancelSessionBetAction {
             this.doVerification(cancelSessionBetDto, gameSession);
 
             // 4. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelSessionBetDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelSessionBetDto, gameSession, vendorService, httpRequestLog);
 
             cancelSessionBetVo.setUsername(gameSession.getVendorPlayerUsername());
             cancelSessionBetVo.setCurrency(gameSession.getVendorCurrencyCode());
