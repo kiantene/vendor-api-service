@@ -190,7 +190,7 @@ public class DebitAction {
         } catch (BetResultIdempotentViolationException e) {
             transactionsVo.setBal(this.getBalance(traceId, gameSession));
             transactionsVo.setTxid(traceId);
-            transactionsVo.setPtxid(traceId);
+            transactionsVo.setPtxid(debitTransactionsDto.getPtxid());
             transactionsVo.setDup(true);
 
         } catch (TransactionStillProcessingException e) {
