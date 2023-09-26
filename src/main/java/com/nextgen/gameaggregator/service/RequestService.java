@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.ProcessEndRoundLog;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
@@ -148,7 +149,7 @@ public class RequestService {
         }
     }
 
-    public static void failResponseLog(RequestLogVo requestLogVo, Exception exception) {
+    public static void failResponseLog(RequestLogVo requestLogVo, Exception exception, GameSession gameSession) {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
 
