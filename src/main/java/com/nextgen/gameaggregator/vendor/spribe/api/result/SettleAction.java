@@ -65,7 +65,7 @@ public class SettleAction {
             BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Send bet request to Operator
-            ResultType resultType = determineResultType(dto);
+            ResultType resultType = getResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 7. Set response data
@@ -123,7 +123,15 @@ public class SettleAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
     
-    private ResultType determineResultType(SettleDto dto) {
-        return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
+    private ResultType getResultType(SettleDto dto) {
+
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        if (dto.getWinAmount().compareTo(zero) > 0) { 
+            resultType = ResultType.BET_WIN;
+        }
+
+        return resultType;
     }
 }

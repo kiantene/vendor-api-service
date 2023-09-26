@@ -92,12 +92,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
@@ -112,6 +112,6 @@ public class BetDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }

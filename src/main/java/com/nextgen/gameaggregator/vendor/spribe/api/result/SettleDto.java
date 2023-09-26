@@ -72,7 +72,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override
@@ -87,12 +87,12 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override

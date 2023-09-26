@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
@@ -32,8 +32,9 @@ public class BetAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
 
-    
     @PostMapping(path = Endpoints.WITHDRAW)
     public ResponseVo bet(HttpServletRequest request) {
 
@@ -60,11 +61,12 @@ public class BetAction {
             BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Send bet request to Operator
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+            ResultType resultType = getResultType(dto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             // 7. Set response data
             data.setOperator_tx_id(traceId);
-            data.setNew_balance(betEvent.getLastBalance());
+            data.setNew_balance(balance);
             data.setOld_balance(oldBalance);
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setCurrency(gameSession.getVendorCurrencyCode());
@@ -86,8 +88,8 @@ public class BetAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException | 
-            InvalidRequestException | InvalidOperatorResponseException | VendorCurrencyNotSupportException | 
-            CouchbaseDataIntegrityException | InvalidAgentApiCredentialException | TransactionStillProcessingException internalErrorException) {
+            InvalidRequestException | InvalidOperatorResponseException | VendorCurrencyNotSupportException | InvalidAgentApiCredentialException | 
+            TransactionStillProcessingException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -111,5 +113,17 @@ public class BetAction {
         DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
 
         validationService.validateEligibleBet(gameSession, dto.getUser_id());
+    }
+
+    private ResultType getResultType(BetDto dto) {
+
+        ResultType resultType = ResultType.BET_LOSE;
+        BigDecimal zero = BigDecimal.ZERO;
+
+        if (dto.getWinAmount().compareTo(zero) > 0) { 
+            resultType = ResultType.BET_WIN;
+        }
+
+        return resultType;
     }
 }
