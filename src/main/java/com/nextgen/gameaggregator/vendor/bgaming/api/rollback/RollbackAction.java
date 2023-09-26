@@ -87,7 +87,7 @@ public class RollbackAction {
                 transactionVoList.add(transactionVo);
             }
             rollbackDto.setTimestamp(settleTime);
-            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
             // Construct VO
             balance = balance.multiply(new BigDecimal(100));
