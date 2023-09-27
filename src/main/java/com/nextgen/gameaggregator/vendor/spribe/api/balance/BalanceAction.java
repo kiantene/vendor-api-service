@@ -62,8 +62,8 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Set response data
-            data.setUser_id(gameSession.getAgentPlayerUsername());
-            data.setUsername(gameSession.getAgentPlayerUsername());
+            data.setUser_id(gameSession.getVendorPlayerUsername());
+            data.setUsername(gameSession.getVendorPlayerUsername());
             data.setBalance(balance);
             data.setCurrency(gameSession.getVendorCurrencyCode());
             vo.setErrorCode(ErrorCodes.SUCCESS);
