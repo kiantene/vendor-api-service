@@ -91,8 +91,8 @@ public class GameDetailResultAction {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            // 6001-The system is busy (vendor proceeds to cancel the bet)
-            responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
+            // 9017 Work in process (vendor will retry)
+            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
@@ -100,7 +100,7 @@ public class GameDetailResultAction {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
             } else {
-                responseVo.setStatus(ResponseCodes.FAILED);
+                responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
             }
 

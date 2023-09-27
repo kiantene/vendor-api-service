@@ -81,13 +81,20 @@ public class CancelBetAction {
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
                 // if bet already refunded
-                responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+                responseVo.setBalance(betResultIdempotentViolationException.getBalance());
+                responseVo.setStatus(ResponseCodes.SUCCEED);
+            } if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+                // if bet already settled
+                responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
             } else {
                 responseVo.setStatus(ResponseCodes.FAILED);
             }
 
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
+
         } catch (InvalidOperatorResponseException exception) {
-            responseVo.setStatus(ResponseCodes.FAILED);
+            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
             httpService.logError(httpRequestLog, exception);
 
         } catch (Exception exception) {

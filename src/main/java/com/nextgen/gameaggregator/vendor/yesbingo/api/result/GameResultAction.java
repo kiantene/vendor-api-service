@@ -96,14 +96,14 @@ public class GameResultAction {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
-            // 6001-The system is busy (vendor proceeds to cancel the bet)
-            responseVo.setStatus(ResponseCodes.SYSTEM_BUSY);
+            // 9017 Work in process (vendor will retry)
+            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.DATA_NOT_EXIST));
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setStatus(ResponseCodes.FAILED);
+            responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
