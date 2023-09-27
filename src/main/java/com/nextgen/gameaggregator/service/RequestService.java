@@ -169,6 +169,16 @@ public class RequestService {
 
         }
 
+        if (gameSession != null) {
+            logInfo.put("VendorId: ", gameSession.getVendorId());
+            logInfo.put("GameToken: ", gameSession.getToken());
+            logInfo.put("AgentId: ", gameSession.getAgentId());
+            logInfo.put("AgentPlayerUsername: ", gameSession.getAgentPlayerUsername());
+            logInfo.put("VendorPlayerUsername: ", gameSession.getVendorPlayerUsername());
+            logInfo.put("VendorGameCode: ", gameSession.getVendorGameCode());
+
+        }
+
         logInfo.put("RequestStartTime: ", requestLogVo.getStartTime());
         logInfo.put("RequestEndTime: ", requestLogVo.getEndTime());
         logInfo.put("ServicePackage: ", requestLogVo.getPackageName());
