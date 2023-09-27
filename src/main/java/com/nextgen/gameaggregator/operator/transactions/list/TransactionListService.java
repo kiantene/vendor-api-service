@@ -203,8 +203,6 @@ public class TransactionListService {
         long differenceInMillis = toTime - fromTime;
         // Define the maximum allowed difference for 1 day (24 hours * 60 minutes * 60 seconds * 1000 milliseconds)
         long maxDifferenceInMillis = 24L * 60L * 60L * 1000L;
-        System.err.println("differenceInMillis :" + differenceInMillis);
-        System.err.println("maxDifferenceInMillis :" + maxDifferenceInMillis);
         // Compare the difference with the maximum allowed difference
         if(differenceInMillis > maxDifferenceInMillis) {
             throw new InvalidDateRangeException();
