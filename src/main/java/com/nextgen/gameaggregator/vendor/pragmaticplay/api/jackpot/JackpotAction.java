@@ -79,21 +79,26 @@ public class JackpotAction {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
             responseVo.setCash(idempotentViolationException.getBalance());
+            httpService.logError(httpRequestLog, idempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
 //        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
 //            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
@@ -109,6 +114,7 @@ public class JackpotAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
