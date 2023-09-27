@@ -46,6 +46,8 @@ public class EndWagerDto extends CommonDto implements BetResultData {
     // 0= Unfinished, 1= Round Finish
     public String isEndround;
 
+    public BetStatus betStatus;
+
     @Override
     public String getExternalTransactionId() {
         return this.wagerId;
@@ -109,14 +111,14 @@ public class EndWagerDto extends CommonDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         // Default end wager as unsettled
-        BetStatus betStatus = BetStatus.UNSETTLED;
+//        BetStatus betStatus = BetStatus.UNSETTLED;
+//
+//        // If round ended then set to settle
+//        if (this.isEndround.equals("true")) {
+//            betStatus = BetStatus.SETTLED;
+//        }
 
-        // If round ended then set to settle
-        if (this.isEndround.equals("true")) {
-            betStatus = BetStatus.SETTLED;
-        }
-
-        return betStatus;
+        return this.betStatus;
 
     }
 }

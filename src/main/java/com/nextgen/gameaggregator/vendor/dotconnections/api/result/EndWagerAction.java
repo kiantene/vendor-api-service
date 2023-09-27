@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -72,16 +73,8 @@ public class EndWagerAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // if transaction amount has more than 0 means WIN else LOSE
-            ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
-
-            // Verify for unsettle bet and update result type
-            if (dto.isEndround.equals("true")) {
-                resultType = this.processEndRoundBet(dto, gameSession, resultType);
-            }
-
             // Process bet
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            BigDecimal balance = this.processEndRoundBet(traceId, dto, gameSession, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -201,18 +194,40 @@ public class EndWagerAction {
 
     }
 
-    private ResultType processEndRoundBet(EndWagerDto dto, GameSession gameSession, ResultType resultType) throws BetNotFoundException {
+    private BigDecimal processEndRoundBet(String traceId, EndWagerDto dto, GameSession gameSession, HttpRequestLog httpRequestLog)
+            throws
+            BetNotFoundException,
+            InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException,
+            BetResultIdempotentViolationException,
+            MergedBetDataIntegrityException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            InvalidOperatorResponseException {
+
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
         if (unsettledBetList.isEmpty()) {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
         }
 
-        if (resultType.code.equals(ResultType.LOSE.code)) {
-            // if result type is LOSE and bet status is SETTLED, change to END
-            resultType = ResultType.END;
+        // Default bet status as UNSETTLED
+        dto.setBetStatus(BetStatus.UNSETTLED);
+
+        // if transaction amount has more than 0 means WIN else LOSE
+        ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
+
+        // if unsettled bets has 1 record and is end round is true set bet status as SETTLED
+        if (unsettledBetList.size() > 1 || (unsettledBetList.size() == 1 && dto.isEndround.equals("true"))) {
+            dto.setBetStatus(BetStatus.SETTLED);
+
+            if (resultType.code.equals(ResultType.LOSE.code)) {
+                // if result type is LOSE and bet status is SETTLED, change to END
+                resultType = ResultType.END;
+            }
         }
 
-        return resultType;
+        return walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
     }
 }
