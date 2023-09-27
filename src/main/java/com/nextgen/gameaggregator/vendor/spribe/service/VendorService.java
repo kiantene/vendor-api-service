@@ -6,5 +6,8 @@ import com.nextgen.gameaggregator.service.BaseVendorService;
 
 @Service
 public class VendorService extends BaseVendorService {
-
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
+    }
 }
