@@ -42,8 +42,6 @@ public class EndWagerAction {
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;
-    @Autowired
-    private SettledBetService settledBetService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
