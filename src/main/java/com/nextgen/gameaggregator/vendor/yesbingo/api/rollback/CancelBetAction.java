@@ -83,7 +83,7 @@ public class CancelBetAction {
                 // if bet already refunded
                 responseVo.setBalance(betResultIdempotentViolationException.getBalance());
                 responseVo.setStatus(ResponseCodes.SUCCEED);
-            } if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+            } else if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
                 // if bet already settled
                 responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
             } else {
