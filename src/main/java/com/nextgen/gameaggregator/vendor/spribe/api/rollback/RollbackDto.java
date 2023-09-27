@@ -43,7 +43,7 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return provider_tx_id;
+        return rollback_provider_tx_id;
     }
 
     @Override
