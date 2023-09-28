@@ -65,7 +65,7 @@ public class RollbackAction {
             BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Send rollback request to Operator
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             // 7. Set response data
             data.setOperator_tx_id(traceId);
