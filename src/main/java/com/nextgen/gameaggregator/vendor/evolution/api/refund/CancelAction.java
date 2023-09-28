@@ -60,7 +60,7 @@ public class CancelAction {
             this.doVerification(cancelDto, gameSession);
 
             // 3. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
             responseVo.setBalance(balance);
             responseVo.setUuid(cancelDto.getUuid());

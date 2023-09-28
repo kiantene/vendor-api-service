@@ -68,7 +68,7 @@ public class RollbackService {
             this.doVerification(rollbackDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
+            balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
             // Construct response data into vo
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());

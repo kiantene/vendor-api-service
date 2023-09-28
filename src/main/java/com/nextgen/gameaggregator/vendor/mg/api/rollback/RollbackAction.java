@@ -64,7 +64,7 @@ public class RollbackAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
 
