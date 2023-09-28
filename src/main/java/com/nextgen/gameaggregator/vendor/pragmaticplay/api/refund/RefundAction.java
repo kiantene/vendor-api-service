@@ -61,7 +61,7 @@ public class RefundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send refund to Operator
-            walletService.processRollback(traceId, dto, gameSession, vendorService);
+            walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);

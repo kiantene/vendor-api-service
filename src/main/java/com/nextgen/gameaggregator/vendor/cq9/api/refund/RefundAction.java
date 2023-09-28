@@ -84,7 +84,7 @@ public class RefundAction {
             this.doVerification(refundDto, wToken, unsettledBet);
 
             // 5. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setBalance(balance);
             commonVo.setCurrency(vendorCurrencyCode);

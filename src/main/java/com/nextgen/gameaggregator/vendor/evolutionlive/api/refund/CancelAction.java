@@ -70,7 +70,7 @@ public class CancelAction {
 //            }
 
             // 3. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
 //            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
             responseVo.setBalance(balance);
