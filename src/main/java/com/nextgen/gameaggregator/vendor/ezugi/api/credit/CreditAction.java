@@ -82,7 +82,7 @@ public class CreditAction extends CommonDto {
             BigDecimal balance = BigDecimal.ZERO;
             switch (creditDto.getReturnReason()) {
                 case ReturnReasons.CANCEL_BET, ReturnReasons.CANCELED_ROUND:
-                    balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService);
+                    balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
                     break;
                 default:
                     ResultType resultType = getResultType(creditDto);
