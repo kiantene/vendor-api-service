@@ -71,7 +71,7 @@ public class CancelBetAction {
             this.doVerification(httpRequestLog, cancelBetDto, gameSession);
 
             //Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);
