@@ -19,7 +19,7 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return this.code == Integer.parseInt(ResponseCodes.SUCCESS);
+        return this.code != Integer.parseInt(ResponseCodes.SUCCESS);
     }
 
     public void setCode(String responseCode) {
