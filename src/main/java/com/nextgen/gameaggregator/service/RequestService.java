@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.ProcessEndRoundLog;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
@@ -148,7 +149,7 @@ public class RequestService {
         }
     }
 
-    public static void failResponseLog(RequestLogVo requestLogVo, Exception exception) {
+    public static void failResponseLog(RequestLogVo requestLogVo, Exception exception, GameSession gameSession) {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
 
@@ -165,6 +166,16 @@ public class RequestService {
             logInfo.put("ResponseBody: ", requestLogVo.getResponseEntity().getBody());
             logInfo.put("ResponseHeaders: ", requestLogVo.getResponseEntity().getHeaders());
             logInfo.put("HttpStatusCode: ", requestLogVo.getResponseEntity().getStatusCode());
+
+        }
+
+        if (gameSession != null) {
+            logInfo.put("VendorId: ", gameSession.getVendorId());
+            logInfo.put("GameToken: ", gameSession.getToken());
+            logInfo.put("AgentId: ", gameSession.getAgentId());
+            logInfo.put("AgentPlayerUsername: ", gameSession.getAgentPlayerUsername());
+            logInfo.put("VendorPlayerUsername: ", gameSession.getVendorPlayerUsername());
+            logInfo.put("VendorGameCode: ", gameSession.getVendorGameCode());
 
         }
 

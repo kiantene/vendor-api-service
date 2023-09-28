@@ -43,7 +43,7 @@ public class RefundService {
             this.doVerification(refundDto, gameSession);
 
             //handle when unsettle bet available, refund and void the game
-            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
             //void the game
             responseVo.setResponseCode(ResponseCodes.REFUNDED);

@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.habanero.api.transfer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.habanero.service.CustomBooleanDeserializer;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -39,6 +41,7 @@ public class FundTransferRequestDto {
     public String friendlyGameInstanceId;
 
     @NotNull
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("isretry")
     public Boolean isRetry;
 
@@ -47,10 +50,12 @@ public class FundTransferRequestDto {
     public Integer retryCount;
 
     @NotNull
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("isrefund")
     public Boolean isRefund;
 
     @NotNull
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("isrecredit")
     public Boolean isRecredit;
 

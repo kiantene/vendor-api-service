@@ -6,11 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -39,14 +37,37 @@ public class HttpService {
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
             String requestBody = this.getRawRequestBody(request);
+
+            if (headers.containsKey("host")) {
+                httpRequestLog.setHost(headers.get("host"));
+            }
+
+            if (headers.containsKey("x-api-key")) {
+                httpRequestLog.setApiKey(request.getHeader("x-api-key"));
+            }
+
+            if (headers.containsKey("x-signature")) {
+                httpRequestLog.setSignature(request.getHeader("x-signature"));
+            }
+
+            if (headers.containsKey("cf-connecting-ip")) {
+                httpRequestLog.setCallerIp(request.getHeader("cf-connecting-ip"));
+            }
+
+            if (headers.containsKey("user-agent")) {
+                httpRequestLog.setUserAgent(request.getHeader("user-agent"));
+            }
+
             httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
-            httpRequestLog.setHeaders(headers);
             httpRequestLog.setRequestBody(requestBody);
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setStartTime(System.currentTimeMillis());
+            String jsonHeaders = new Gson().toJson(headers.toString());
+            httpRequestLog.setHeader(jsonHeaders);
+
         } catch (Exception exception) {
             log.error(exception.getMessage());
             exception.printStackTrace();
@@ -62,22 +83,23 @@ public class HttpService {
             requestLog.setEndTime(System.currentTimeMillis());
                 THREAD_POOL.submit(() -> {
                     try {
-                        requestLog.setResponseBody(responseVo);
+                        String jsonResponseVo = new Gson().toJson(responseVo);
+                        requestLog.setResponseBody(jsonResponseVo);
                         requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                         requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                        if (requestLog.getOperatorProcessEndTime() != null) {
-                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        if (requestLog.getOperatorEnd() != null) {
+                            requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
                         }
 
-                        if (requestLog.getBetProcessEndTime() != null) {
-                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
-                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        if (requestLog.getBetEnd() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
+                            requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
                         }
 
                         Gson gson = new Gson();
+                        //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
                         log.info(gson.toJson(requestLog));
-//                        kafkaService.send(requestLog);
 
                     } catch (Exception exception) {
                         log.error(exception.getMessage());
@@ -91,9 +113,8 @@ public class HttpService {
 
     public void logError(HttpRequestLog requestLog, Exception exception) {
         if (requestLog != null) {
-            String stackTrace = HttpService.getStackTrace(exception);
             requestLog.setStatus(ERROR);
-            requestLog.setErrorMessage(stackTrace);
+            requestLog.setErrorMessage(exception.toString());
         } else {
             log.warn("HttpService.logError: requestLog is null");
             exception.printStackTrace();
@@ -148,7 +169,7 @@ public class HttpService {
         String body = httpRequestLog.getRequestBody();
         if (body == null) throw new InvalidRequestException();
         T object = HttpService.convertQueryStringToDto(body, objectClass);
-        httpRequestLog.setRequestBodyDto(object);
+//        httpRequestLog.setRequestBodyDto(object);
 
         return object;
     }
@@ -201,7 +222,7 @@ public class HttpService {
         String body = httpRequestLog.getRequestBody();
         if (body == null) throw new InvalidRequestException();
         T object = HttpService.convertQueryStringToDtoUrlDecode(body, objectClass);
-        httpRequestLog.setRequestBodyDto(object);
+//        httpRequestLog.setRequestBodyDto(object);
 
         return object;
     }

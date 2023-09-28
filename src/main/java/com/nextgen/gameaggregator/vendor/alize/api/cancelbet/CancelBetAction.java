@@ -59,7 +59,7 @@ public class CancelBetAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Process rollback
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             // 6. Set response data
             responseVo.setResponseCode(ResponseCode.SUCCESS);

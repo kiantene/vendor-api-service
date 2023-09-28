@@ -39,8 +39,9 @@ public class WalletAdjustmentService {
         httpRequestLog.setVendorId(gameSession.getVendorId());
         httpRequestLog.setRoundId(adjustmentData.getRoundId());
         httpRequestLog.setGameToken(gameSession.getToken());
-        httpRequestLog.setBetProcessStartTime(System.currentTimeMillis());
-
+        httpRequestLog.setBetStart(System.currentTimeMillis());
+        httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+        httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
         WalletBalanceVo balanceVo = null;
 
         // check idempotent

@@ -57,6 +57,8 @@ public class VerifySessionAction {
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
+            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
             // x. Check credential line inactive
             agentApiCredentialService.getAgentApiCredential(gameSession.getAgentId());
             // 3. Validate vendor game code
@@ -81,26 +83,32 @@ public class VerifySessionAction {
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         }  catch (NoAvailableLineException noAvailableLineException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, noAvailableLineException);
 
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);
