@@ -110,15 +110,7 @@ public class FreeSpinResultDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        // Default end wager as unsettled
-        BetStatus betStatus = BetStatus.UNSETTLED;
-
-        // If round ended then set to settle
-        if (this.isEndround.equals("true")) {
-            betStatus = BetStatus.SETTLED;
-        }
-
-        return betStatus;
+        return BetStatus.SETTLED;
 
     }
 }
