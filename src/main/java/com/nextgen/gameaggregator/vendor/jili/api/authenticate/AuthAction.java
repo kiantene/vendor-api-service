@@ -72,9 +72,11 @@ public class AuthAction {
                  JsonProcessingException |
                  InvalidOperatorResponseException otherErrorException) {
             authVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, otherErrorException);
 
         } catch (AuthenticationException invalidSessionToken) {
             authVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, invalidSessionToken);
 
         } catch (Exception exception) {
             authVo.setResponseCode(ResponseCode.OTHER_ERROR);
