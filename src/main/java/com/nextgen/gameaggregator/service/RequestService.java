@@ -153,6 +153,7 @@ public class RequestService {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
 
+        logInfo.put("ResponseLog: ", "FAILURE");
         logInfo.put("ApiUrl: ", requestLogVo.getCallbackUrl() + requestLogVo.getEndpoint());
         logInfo.put("RequestHeaders: ", requestLogVo.getRequestHeaders());
         logInfo.put("RequestParam: ", requestLogVo.getRequestObject());
