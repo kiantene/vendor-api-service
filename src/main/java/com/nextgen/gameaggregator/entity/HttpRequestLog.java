@@ -33,6 +33,7 @@ public class HttpRequestLog {
     private String requestType;
     private String requestBody;
     private String responseBody;
+    private String operatorEndPoints;
     private String operatorData;
     private Integer operatorHttpStatusCode;
     private ResponseCodes.Status operatorResponseStatus;
