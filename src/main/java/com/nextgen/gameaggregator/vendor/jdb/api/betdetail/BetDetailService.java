@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -117,7 +118,8 @@ public class BetDetailService implements BetDetailUrl {
                     RequestService.successResponseLog(requestLogVo);
         
                 } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-                    RequestService.failResponseLog(requestLogVo, invalidException);
+                    GameSession gameSession = new GameSession();
+                    RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
                     throw new InvalidVendorResponseException();
                 }
         

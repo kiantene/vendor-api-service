@@ -91,6 +91,7 @@ public class BetAction {
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
             commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (
                 AuthenticationException |
@@ -103,6 +104,8 @@ public class BetAction {
                 JsonProcessingException paramException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            httpService.logError(httpRequestLog, paramException);
+
         } catch (
                 MergedBetDataIntegrityException |
                 InvalidAgentApiCredentialException |
@@ -110,6 +113,8 @@ public class BetAction {
                 TransactionStillProcessingException cancelException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+            httpService.logError(httpRequestLog, cancelException);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
@@ -121,14 +126,24 @@ public class BetAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
+
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
+
         } catch (InvalidDateException invalidDateException) {
             commonVo.setErrorResponseCode(ResponseCodes.DATE_INPUT_MISSING);
+            httpService.logError(httpRequestLog, invalidDateException);
+
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, disabledGameException);
+
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if (invalidRequestException.getValidation() != null) {
@@ -136,6 +151,8 @@ public class BetAction {
             } else {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
