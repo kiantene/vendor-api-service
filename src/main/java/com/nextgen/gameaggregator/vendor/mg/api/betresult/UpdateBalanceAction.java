@@ -65,8 +65,9 @@ public class UpdateBalanceAction {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+                    BigDecimal balance = betEvent.getLastBalance();
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
-                    updateBalanceVo.setBalance(betEvent.getLastBalance());
+                    updateBalanceVo.setBalance(balance);
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
@@ -76,26 +77,60 @@ public class UpdateBalanceAction {
                     updateBalanceVo.setBalance(balance);
                 }
                 default -> {
-                    status = HttpStatus.BAD_REQUEST;
+                    status = HttpStatus.INTERNAL_SERVER_ERROR;
                 }
             }
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            updateBalanceVo.setBalance(betResultIdempotentViolationException.getBalance());
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
 
-        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException badRequestException) {
+        } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (BetNotFoundException betNotFoundException) {
+            httpService.logError(httpRequestLog, betNotFoundException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        
+        } catch (InvalidPlayerException invalidPlayerException) {
+            httpService.logError(httpRequestLog, invalidPlayerException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             status = HttpStatus.BAD_REQUEST;
 
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             status = HttpStatus.PAYMENT_REQUIRED;
 
-        } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException playerNotFoundException) {
-            status = HttpStatus.NOT_FOUND;
-
-        } catch (BetResultIdempotentViolationException internalErrorException) {
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        } catch (TransactionStillProcessingException internalErrorException) {
+            httpService.logError(httpRequestLog, internalErrorException);
+            status = HttpStatus.BAD_REQUEST;
 
         } catch (Exception exception) { // any other exception encountered
             status = HttpStatus.INTERNAL_SERVER_ERROR;
