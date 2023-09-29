@@ -24,6 +24,7 @@ public class HttpRequestLog {
     private String vendorGameCode;
     private String gameToken;
     private String method;
+    private String header;
     private String host;
     private String apiKey;
     private String signature;
@@ -32,6 +33,7 @@ public class HttpRequestLog {
     private String requestType;
     private String requestBody;
     private String responseBody;
+    private String operatorEndPoints;
     private String operatorData;
     private Integer operatorHttpStatusCode;
     private ResponseCodes.Status operatorResponseStatus;

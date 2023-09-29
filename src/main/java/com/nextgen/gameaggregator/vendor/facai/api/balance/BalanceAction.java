@@ -96,12 +96,20 @@ public class BalanceAction {
                 JsonProcessingException paramException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            httpService.logError(httpRequestLog, paramException);
+
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
+
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, disabledGameException);
+
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if (invalidRequestException.getValidation() != null) {
@@ -109,8 +117,12 @@ public class BalanceAction {
             } else {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }
