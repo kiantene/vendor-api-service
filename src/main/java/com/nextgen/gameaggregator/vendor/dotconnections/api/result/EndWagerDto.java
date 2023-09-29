@@ -118,7 +118,7 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 //            betStatus = BetStatus.SETTLED;
 //        }
 
-        return this.betStatus;
+        return BetStatus.SETTLED;
 
     }
 }

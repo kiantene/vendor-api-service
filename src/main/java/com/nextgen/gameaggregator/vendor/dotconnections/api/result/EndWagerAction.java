@@ -211,6 +211,7 @@ public class EndWagerAction {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
         }
 
+        /*
         // Default bet status as UNSETTLED
         dto.setBetStatus(BetStatus.UNSETTLED);
 
@@ -226,6 +227,12 @@ public class EndWagerAction {
                 resultType = ResultType.END;
             }
         }
+         */
+
+        // Set as BET_WIN / BET_LOST because
+        // vendor's BO has wager and endWager records
+        // endWager's bet id is different from wager's bet id
+        ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE;
 
         return walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
