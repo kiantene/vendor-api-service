@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -23,6 +24,7 @@ import com.nextgen.gameaggregator.vendor.mg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.service.VendorTokenService;
 
+import org.telegram.telegrambots.meta.api.objects.games.Game;
 import reactor.core.publisher.Mono;
 
 public class BetDetailService implements BetDetailUrl {
@@ -100,7 +102,8 @@ public class BetDetailService implements BetDetailUrl {
                 RequestService.successResponseLog(requestLogVo);
 
             } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-                RequestService.failResponseLog(requestLogVo, invalidException);
+                GameSession gameSession = new GameSession();
+                RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             }
 
         return responseVo;

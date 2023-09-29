@@ -59,8 +59,6 @@ public class WalletAdjustmentAction {
         WalletAdjustmentDto dto = this.newWalletAdjustmentDto(traceId, gameSession, betInformation);
         dto.setAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getAmount(), fromVendorConversionRate));
 
-        log.info("Request [" + apiUrl + EndPoints.WALLET_ADJUSTMENT + "]: " + dto);
-
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
@@ -69,6 +67,7 @@ public class WalletAdjustmentAction {
 
         String jsonApiResponse = new Gson().toJson(dto);
         httpRequestLog.setOperatorData(jsonApiResponse);
+        httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_ADJUSTMENT);
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)

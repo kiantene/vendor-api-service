@@ -72,55 +72,68 @@ public class BetAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-
             String betId = betResultIdempotentViolationException.getBetId();
             responseVo.setTransactionId(VendorService.getTransactionId(betId));
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setCash(betResultIdempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidHashException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidHashException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+
         }
 
         httpService.end(httpRequestLog, responseVo);

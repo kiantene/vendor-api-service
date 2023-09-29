@@ -71,15 +71,19 @@ public class BalanceAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -91,13 +95,16 @@ public class BalanceAction {
 
         } catch (InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

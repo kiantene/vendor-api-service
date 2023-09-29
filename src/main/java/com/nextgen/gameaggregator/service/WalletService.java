@@ -79,6 +79,7 @@ public class WalletService {
             if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException){
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
             throw new VendorCurrencyNotSupportException();
         }
 

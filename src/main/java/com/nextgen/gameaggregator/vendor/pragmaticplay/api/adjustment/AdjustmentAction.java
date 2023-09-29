@@ -71,21 +71,27 @@ public class AdjustmentAction {
 
         } catch (InvalidPlayerException e) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidSignatureException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, e);
 
         } catch (AuthenticationException e) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidRequestException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, e);
 
         } catch (CredentialNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetAdjustmentIdempotentViolationException e) {
             RawBetAdjustmentLog rawBetAdjustmentLog = e.getRawBetAdjustmentLog();
@@ -93,12 +99,15 @@ public class AdjustmentAction {
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setCash(rawBetAdjustmentLog.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, e);
 
         } catch (SettledBetNotFoundException e) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } catch (TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
@@ -106,12 +115,15 @@ public class AdjustmentAction {
 
         } catch (InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, e);
 
         } catch (VendorCurrencyNotSupportException e) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);

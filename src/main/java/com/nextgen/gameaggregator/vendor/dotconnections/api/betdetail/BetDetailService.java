@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
@@ -67,6 +68,9 @@ public class BetDetailService implements BetDetailUrl {
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
+        //bet details do not have player session;
+        GameSession gameSession = new GameSession();
+
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
@@ -98,7 +102,7 @@ public class BetDetailService implements BetDetailUrl {
             RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
         }
 
