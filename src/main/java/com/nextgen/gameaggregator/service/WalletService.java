@@ -79,6 +79,7 @@ public class WalletService {
             if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException){
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
             throw new VendorCurrencyNotSupportException();
         }
 
@@ -724,7 +725,6 @@ public class WalletService {
             loggingService.logProcessTime("processRollback ｜ settledBetService.save", traceId);
 
             BetHistory betHistory = new BetHistory(settledBet);
-            log.info(new Gson().toJson(betHistory));
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
@@ -736,9 +736,7 @@ public class WalletService {
                 betRefundLogService.create(rawBetRefundLog);
                 loggingService.logProcessTime("processRollback ｜ betRefundLogService.create", traceId);
 
-                // TODO: INSERT INTO KAFKA
                 BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
-                log.info(new Gson().toJson(rawBetRefundLog));
 
                 loggingService.logStart();
                 unsettledBetService.delete(unsettledBet);

@@ -5,35 +5,15 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class PromoPayoutDto implements BetResultData {
-
-    @NotBlank
-    @Size(max = 7)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    public String brandId;
-
-    @NotBlank
-    @Size(max = 32)
-    @Pattern(regexp = "^[A-Z0-9]*$")
-    public String sign;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(min = 3, max = 20)
-    public String brandUid;
-
-    @NotBlank
-    @Size(min = 3, max = 4)
-    @Pattern(regexp = "[a-zA-Z]+")
-    public String currency;
+public class PromoPayoutDto extends CommonDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
@@ -61,7 +41,9 @@ public class PromoPayoutDto implements BetResultData {
     }
 
     @Override
-    public String getRoundId() { return this.promotionId; }
+    public String getRoundId() {
+        return this.promotionId;
+    }
 
     @Override
     public String getVendorBetId() {
@@ -95,20 +77,17 @@ public class PromoPayoutDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getResultTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override

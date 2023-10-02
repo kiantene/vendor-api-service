@@ -93,21 +93,26 @@ public class SessionBetAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             sessionBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException invalidRequest) {
             sessionBetVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, invalidRequest);
 
         } catch (AuthenticationException invalidSessionToken) {
             sessionBetVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, invalidSessionToken);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             sessionBetVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
@@ -120,6 +125,7 @@ public class SessionBetAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (DisabledVendorLineException |
                  DisabledGameException |
@@ -127,6 +133,7 @@ public class SessionBetAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException otherErrorException) {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, otherErrorException);
 
         } catch (Exception exception) {
             sessionBetVo.setResponseCode(ResponseCode.OTHER_ERROR);

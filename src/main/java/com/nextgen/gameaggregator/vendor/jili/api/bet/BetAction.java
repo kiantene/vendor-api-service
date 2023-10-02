@@ -75,24 +75,29 @@ public class BetAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             betVo.setUsername(vendorPlayerUsername);
             betVo.setCurrency(vendorCurrencyCode);
             betVo.setBalance(betResultIdempotentViolationException.getBalance());
             betVo.setToken(token);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException invalidRequest) {
             betVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, invalidRequest);
 
         } catch (AuthenticationException invalidSessionToken) {
             betVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, invalidSessionToken);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
@@ -110,6 +115,7 @@ public class BetAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException otherErrorException) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, otherErrorException);
 
         } catch (Exception exception) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);

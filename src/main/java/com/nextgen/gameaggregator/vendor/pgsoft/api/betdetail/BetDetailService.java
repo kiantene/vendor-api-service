@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
@@ -92,6 +93,8 @@ public class BetDetailService implements BetDetailUrl {
         LoginProxyVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
+        GameSession gameSession = new GameSession();
+
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .post()
@@ -126,12 +129,12 @@ public class BetDetailService implements BetDetailUrl {
             requestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
+            requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
 
         } catch (Exception exception) {
             exception.printStackTrace();
-            requestService.failResponseLog(requestLogVo, exception);
+            requestService.failResponseLog(requestLogVo, exception, gameSession);
             throw new InvalidVendorResponseException();
         }
 
