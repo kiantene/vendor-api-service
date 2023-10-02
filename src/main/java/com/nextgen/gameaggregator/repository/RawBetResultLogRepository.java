@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Scope("raw")
-@Collection("bet_result_log")
+@Collection("bet_result_logs")
 public interface RawBetResultLogRepository extends CouchbaseRepository<RawBetResultLog, String> {
 }

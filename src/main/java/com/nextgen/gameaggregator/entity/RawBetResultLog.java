@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
-@Collection("bet_result_log")
+@Collection("bet_result_logs")
 @Data
 public class RawBetResultLog {
     @Id
