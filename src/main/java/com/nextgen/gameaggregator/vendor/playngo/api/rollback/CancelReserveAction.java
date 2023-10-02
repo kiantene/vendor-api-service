@@ -61,7 +61,7 @@ public class CancelReserveAction {
             this.doVerification(gameSession, cancelReserveDto);
 
             // Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelReserveDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelReserveDto, gameSession, vendorService, httpRequestLog);
 
             // Construct VO
             cancelReserveVo.setStatusCode(ResponseCodes.OK);
@@ -88,7 +88,8 @@ public class CancelReserveAction {
             cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            cancelReserveVo.setStatusCode(ResponseCodes.OK);
+            cancelReserveVo.setReal(betResultIdempotentViolationException.getBalance());
 
         } catch (BetNotFoundException betNotFoundException) {
             cancelReserveVo.setStatusCode(ResponseCodes.OK);
@@ -99,7 +100,7 @@ public class CancelReserveAction {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
 
             } else {
-                cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+                cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }

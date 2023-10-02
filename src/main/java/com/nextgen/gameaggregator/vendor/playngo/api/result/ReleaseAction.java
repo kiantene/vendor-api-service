@@ -99,7 +99,8 @@ public class ReleaseAction {
             releaseVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            releaseVo.setStatusCode(ResponseCodes.INTERNAL);
+            releaseVo.setStatusCode(ResponseCodes.OK);
+            releaseVo.setReal(betResultIdempotentViolationException.getBalance());
 
         } catch (BetNotFoundException betNotFoundException) {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
@@ -109,7 +110,7 @@ public class ReleaseAction {
                 releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
 
             } else {
-                releaseVo.setStatusCode(ResponseCodes.INTERNAL);
+                releaseVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }

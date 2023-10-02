@@ -93,14 +93,15 @@ public class ReserveAction {
             reserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            reserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            reserveVo.setStatusCode(ResponseCodes.OK);
+            reserveVo.setReal(betResultIdempotentViolationException.getBalance());
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 reserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
 
             } else {
-                reserveVo.setStatusCode(ResponseCodes.INTERNAL);
+                reserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
                 httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }
