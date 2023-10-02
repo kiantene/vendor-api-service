@@ -1,34 +1,27 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.vo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCodes;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ResponseVo implements HttpResponse {
+public class TransactionsVo extends ResponseVo {
 
-    @JsonIgnore
-    protected ResponseCodes responseCodes;
-    private Boolean dup;
-    private Integer err;
-    private String errdesc;
+    private String txid;
+    private String ptxid;
+    private BigDecimal bal;
+    private String cur;
 
-    public void setResponseCode(ResponseCodes responseCodes) {
-        setResponseCode(responseCodes, "");
-    }
-
+    @Override
     public void setResponseCode(ResponseCodes responseCodes, String errDesc) {
         this.responseCodes = responseCodes;
+        setDup(false);
         this.setErr(responseCodes.err);
         this.setErrdesc(responseCodes.errdesc.replace(Formats.REPLACE_STRING, errDesc));
     }
 
-    @Override
-    public boolean hasError() {
-        return this.responseCodes != null;
-    }
 }
