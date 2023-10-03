@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.queenmaker.api.credit;
+package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotEmpty;
@@ -9,11 +9,11 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CreditDto {
-    
+
     private String testmode;
 
     @NotEmpty(message = "Empty Array")
-    private List<TransactionsDto> transactions;
+    private List<CreditTransactionsDto> transactions;
 }
 
 
