@@ -61,24 +61,31 @@ public class AuthenticateAction {
             responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (AuthenticationException playerNotFoundException) {
+            httpService.logError(httpRequestLog, playerNotFoundException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
+            httpService.logError(httpRequestLog, credentialNotFoundException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
