@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.entity;
 import com.nextgen.gameaggregator.operator.wallet.bet.BetData;
 import jakarta.persistence.Id;
 import lombok.Data;
+import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
+@TypeAlias("bet_result_logs")
 @Collection("bet_result_logs")
 @Data
 public class RawBetResultLog {
