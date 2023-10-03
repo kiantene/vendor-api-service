@@ -97,14 +97,12 @@ public class FreeSpinResultAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {

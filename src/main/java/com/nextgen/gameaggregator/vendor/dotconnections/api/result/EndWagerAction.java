@@ -99,14 +99,12 @@ public class EndWagerAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (BetNotFoundException betNotFoundException) {
             // get current balance
-            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -133,8 +131,7 @@ public class EndWagerAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-                responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+                responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
                 responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
             } else {
@@ -210,24 +207,6 @@ public class EndWagerAction {
         if (unsettledBetList.isEmpty()) {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
         }
-
-        /*
-        // Default bet status as UNSETTLED
-        dto.setBetStatus(BetStatus.UNSETTLED);
-
-        // if transaction amount has more than 0 means WIN else LOSE
-        ResultType resultType = (dto.getWinAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.LOSE;
-
-        // if unsettled bets has 1 record and is end round is true set bet status as SETTLED
-        if (unsettledBetList.size() > 1 || (unsettledBetList.size() == 1 && dto.isEndround.equals("true"))) {
-            dto.setBetStatus(BetStatus.SETTLED);
-
-            if (resultType.code.equals(ResultType.LOSE.code)) {
-                // if result type is LOSE and bet status is SETTLED, change to END
-                resultType = ResultType.END;
-            }
-        }
-         */
 
         // Set as BET_WIN / BET_LOST because
         // vendor's BO has wager and endWager records

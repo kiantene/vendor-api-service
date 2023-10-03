@@ -107,8 +107,7 @@ public class WagerAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
-            // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -153,8 +152,7 @@ public class WagerAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                // responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-                responseVo = vendorService.getZeroBalanceResponseVo(httpRequestLog, gameSession);
+                responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
                 responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
 
             } else {
