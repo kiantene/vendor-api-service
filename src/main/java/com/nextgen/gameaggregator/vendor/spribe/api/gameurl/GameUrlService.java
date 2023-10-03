@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.spribe.api.gameurl;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Credentials;
 
@@ -23,6 +25,8 @@ public class GameUrlService implements GameUrl {
 
     @Autowired
     VendorLineService vendorLineService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
@@ -36,9 +40,13 @@ public class GameUrlService implements GameUrl {
             log.error("Credential not found : " + e.getMessage());
         }
 
+        // Regenerate token (launch token only can be use once time)
+        String newToken = UUID.randomUUID().toString();
+        gameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
+
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("user", gameSession.getVendorPlayerUsername());
-        formData.add("token", gameSession.getToken());
+        formData.add("token", newToken);
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
         formData.add("operator", operator);

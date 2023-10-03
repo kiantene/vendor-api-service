@@ -47,7 +47,6 @@ public class SettleDto implements BetResultData {
     @NotBlank
     private String platform;
 
-    @NotBlank
     private String withdraw_provider_tx_id;
 
     @Override
