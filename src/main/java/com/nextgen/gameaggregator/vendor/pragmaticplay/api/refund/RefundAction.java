@@ -61,13 +61,14 @@ public class RefundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send refund to Operator
-            walletService.processRollback(traceId, dto, gameSession, vendorService);
+            walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
@@ -80,6 +81,7 @@ public class RefundAction {
                 responseVo.setTransactionId(transactionId);
 
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
@@ -94,40 +96,37 @@ public class RefundAction {
                 //Other operator errors
                 responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             }
-
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (
-                InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 String validations = invalidRequestException.getValidation().toString();
-                log.error(validations);
                 httpRequestLog.setErrorMessage(validations);
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (
-                InvalidPlayerException invalidPlayerException) {
+        } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (
-                AuthenticationException authenticationException) {
+        } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
-        } catch (
-                InvalidSignatureException invalidSignatureException) {
+        } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
-        } catch (
-                CredentialNotFoundException credentialNotFoundException) {
+        } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
-        } catch (
-                InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
-        } catch (
-                Exception exception) { // any other exception encountered
+        } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
         }

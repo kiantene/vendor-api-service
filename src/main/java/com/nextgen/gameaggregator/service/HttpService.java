@@ -65,6 +65,9 @@ public class HttpService {
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setStartTime(System.currentTimeMillis());
+            String jsonHeaders = new Gson().toJson(headers.toString());
+            httpRequestLog.setHeader(jsonHeaders);
+
         } catch (Exception exception) {
             log.error(exception.getMessage());
             exception.printStackTrace();

@@ -78,6 +78,7 @@ public class WalletBetAction {
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
+            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET);
 
         }
 

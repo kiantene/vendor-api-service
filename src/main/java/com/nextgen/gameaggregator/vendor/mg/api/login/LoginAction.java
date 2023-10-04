@@ -71,12 +71,32 @@ public class LoginAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.UNAUTHORIZED;
 
-        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException invalidException) {
+        } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             status = HttpStatus.UNAUTHORIZED;
 
-        } catch (AuthenticationException playerNotFoundException) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             status = HttpStatus.NOT_FOUND;
             
         } catch (Exception exception) { // any other exception encountered

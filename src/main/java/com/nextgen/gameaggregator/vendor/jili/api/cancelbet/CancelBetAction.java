@@ -61,7 +61,7 @@ public class CancelBetAction {
             this.doVerification(cancelBetDto, gameSession);
 
             // 4. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService, httpRequestLog);
 
             cancelBetVo.setUsername(vendorPlayerUsername);
             cancelBetVo.setCurrency(vendorCurrencyCode);
@@ -69,6 +69,7 @@ public class CancelBetAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             cancelBetVo.setResponseCode(ResponseCode.ROUND_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
@@ -82,9 +83,12 @@ public class CancelBetAction {
                 cancelBetVo.setBalance(betResultIdempotentViolationException.getBalance());
 
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 //insufficient balance
@@ -106,9 +110,11 @@ public class CancelBetAction {
                  GameNotSupportedException |
                  CurrencyNotSupportedException invalidRequest) {
             cancelBetVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, invalidRequest);
 
         } catch (AuthenticationException invalidSessionToken) {
             cancelBetVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, invalidSessionToken);
 
         } catch (DisabledVendorLineException |
                  DisabledGameException |
@@ -116,6 +122,7 @@ public class CancelBetAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException otherErrorException) {
             cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, otherErrorException);
 
         } catch (Exception exception) {
             cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
