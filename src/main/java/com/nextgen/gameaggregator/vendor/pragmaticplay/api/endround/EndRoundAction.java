@@ -63,25 +63,31 @@ public class EndRoundAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setCash(betResultIdempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
@@ -89,18 +95,22 @@ public class EndRoundAction {
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //Set balance to zero if agent credential is disabled
             responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

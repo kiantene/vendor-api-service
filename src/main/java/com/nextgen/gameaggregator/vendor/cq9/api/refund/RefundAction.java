@@ -84,7 +84,7 @@ public class RefundAction {
             this.doVerification(refundDto, wToken, unsettledBet);
 
             // 5. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setBalance(balance);
             commonVo.setCurrency(vendorCurrencyCode);
@@ -92,6 +92,7 @@ public class RefundAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             //if found the bet in settled status
@@ -105,9 +106,11 @@ public class RefundAction {
                 responseVo.setData(commonVo);
 
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 15) {
@@ -125,13 +128,15 @@ public class RefundAction {
                  InvalidAgentApiCredentialException |
                  InvalidVendorLineException playerNotFoundException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
+            httpService.logError(httpRequestLog, playerNotFoundException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

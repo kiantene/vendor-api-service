@@ -42,6 +42,7 @@ public class CheckPlayerAction {
     @GetMapping(path = EndPoints.AUTHENTICATE)
     public ResponseVo<Boolean> authenticate(HttpServletRequest request, @PathVariable String account) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+
         String wToken = request.getHeader("wtoken");
         CheckPlayerPathVariableDto pathVariableDto = new CheckPlayerPathVariableDto();
         pathVariableDto.setAccount(account);
@@ -61,19 +62,23 @@ public class CheckPlayerAction {
 
             responseVo.setData(true);
 
-            log.info("CQ9 Authentication (SUCCESS), player :" + pathVariableDto.getAccount());
+            //log.info("CQ9 Authentication (SUCCESS), player :" + pathVariableDto.getAccount());
 
         } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -84,7 +89,7 @@ public class CheckPlayerAction {
             statusVo.setDateTime(new SimpleDateFormat(Formats.DATE_TIME_FORMAT).format(new Date()));
             httpService.end(httpRequestLog, responseVo);
 
-            log.info("CQ9 Authentication (ERROR), player :" + pathVariableDto.getAccount() + " | ERROR CODE : " + statusVo.getCode() + " | ERROR MESSAGE : " + statusVo.getMessage());
+            //log.info("CQ9 Authentication (ERROR), player :" + pathVariableDto.getAccount() + " | ERROR CODE : " + statusVo.getCode() + " | ERROR MESSAGE : " + statusVo.getMessage());
         }
 
         return responseVo;

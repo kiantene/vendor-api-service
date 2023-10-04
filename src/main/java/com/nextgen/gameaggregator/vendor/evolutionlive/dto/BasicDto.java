@@ -11,10 +11,10 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BasicDto {
 
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @Size(min = 1, max = 250)
-    private String sid; // Player session token
+//    @NotBlank
+//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+//    @Size(min = 1, max = 250)
+//    private String sid; // Player session token
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)

@@ -23,6 +23,6 @@ public class TransactionDto {
 
     @NotNull
     @PositiveOrZero
-    @Digits(integer = 12, fraction = 2)
+    @Digits(integer = 12, fraction = 6)
     private BigDecimal amount;
 }

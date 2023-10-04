@@ -112,6 +112,7 @@ public class GameUrlService implements GameUrl {
             assert apiResponse != null;
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
+            responseVo.setGameUrl(apiUrl);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -119,7 +120,7 @@ public class GameUrlService implements GameUrl {
             RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
         }
