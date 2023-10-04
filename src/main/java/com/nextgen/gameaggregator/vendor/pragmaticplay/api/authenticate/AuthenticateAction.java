@@ -135,9 +135,9 @@ public class AuthenticateAction {
     private void doVerification(HttpRequestLog request, AuthenticateDto dto, GameSession gameSession) throws
             DisabledGameException, AuthenticationException, DisabledVendorLineException, CredentialNotFoundException,
             InvalidSignatureException, DisabledAgentPlayerException {
-        // 1. Verify received game id is the same from game session
+        // Remove Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 2. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
@@ -151,10 +151,9 @@ public class AuthenticateAction {
         // 5. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 6. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // 6. Remove Verify vendor game is active
+//        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
-        //TODO (by Alex), should have child game table for save vendor game code by language, platform
     }
 
 }
