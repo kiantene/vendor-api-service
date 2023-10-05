@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.EndPoints;
@@ -38,9 +37,6 @@ public class GameUrlService implements GameUrl {
 
     @Autowired
     RequestService requestService;
-
-    @Autowired
-    private WalletService walletService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
