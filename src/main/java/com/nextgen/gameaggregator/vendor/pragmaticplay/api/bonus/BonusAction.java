@@ -56,7 +56,8 @@ public class BonusAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+            //bonusAction dto gameId will always be empty.
+            //gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
