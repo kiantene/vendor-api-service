@@ -20,7 +20,7 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return this.status == ResponseCodes.SUCCEED;
+        return !this.status.equals(ResponseCodes.SUCCEED);
     }
 
     public void setStatus(String responseCode) {

@@ -31,9 +31,7 @@ public class GameDetailResultAction {
     @Autowired
     private ValidationService validationService;
 
-    public ResponseVo gameDetailResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
-
-        ResponseVo responseVo = new ResponseVo();
+    public void gameDetailResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData, ResponseVo responseVo) {
 
         try {
 
@@ -57,6 +55,7 @@ public class GameDetailResultAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidAgentApiCredentialException |
                  InvalidPlayerException |
@@ -65,6 +64,7 @@ public class GameDetailResultAction {
                  DisabledVendorLineException |
                  GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+            httpService.logError(httpRequestLog, noAuthorizedAccessException);
 
         } catch (InvalidRequestException invalidRequestException) {
             if (invalidRequestException.getValidation() != null) {
@@ -80,19 +80,24 @@ public class GameDetailResultAction {
                 responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
 
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (JsonProcessingException | CurrencyNotSupportedException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+            httpService.logError(httpRequestLog, parameterInputErrorException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 9017 Work in process (vendor will retry)
             responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
@@ -101,16 +106,14 @@ public class GameDetailResultAction {
                 responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
             } else {
                 responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
             httpService.logError(httpRequestLog, exception);
 
         }
-
-        return responseVo;
 
     }
 

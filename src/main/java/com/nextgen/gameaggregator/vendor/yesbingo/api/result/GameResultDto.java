@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.yesbingo.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
@@ -128,6 +130,18 @@ public class GameResultDto implements BetResultData {
     // This is used to change vendor bet id between Slot and Bingo
     public String betId;
 
+    public String getBetId() {
+        switch (this.gType) {
+            case GameTypes.SLOT -> {
+                this.setBetId(this.getTransferId().toString());
+            }
+            case GameTypes.BINGO -> {
+                this.setBetId(this.gameSeqNo);
+            }
+        }
+        return this.betId;
+    }
+
     @Override
     public String getExternalTransactionId() {
         return this.transferId.toString();
@@ -140,6 +154,14 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public String getRoundId() {
+        switch (this.gType) {
+            case GameTypes.SLOT -> {
+                this.setRoundId(this.gameSeqNo);
+            }
+            case GameTypes.BINGO -> {
+                this.setRoundId(this.getPlaySeq().toString());
+            }
+        }
         return this.roundId;
     }
 
@@ -170,17 +192,17 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return Instant.parse(this.reportDate).toEpochMilli();
+        return VendorService.getCurrentTime(this.reportDate);
     }
 
     @Override
     public Long getResultTime() {
-        return Instant.parse(this.reportDate).toEpochMilli();
+        return VendorService.getCurrentTime(this.reportDate);
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return Instant.parse(this.reportDate).toEpochMilli();
+        return VendorService.getCurrentTime(this.reportDate);
     }
 
     @Override

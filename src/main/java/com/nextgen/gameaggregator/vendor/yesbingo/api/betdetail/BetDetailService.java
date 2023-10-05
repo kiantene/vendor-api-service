@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.yesbingo.api.betdetail;
 import com.couchbase.client.core.deps.com.google.gson.JsonObject;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
@@ -23,6 +24,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,8 +32,6 @@ public class BetDetailService implements BetDetailUrl {
 
     @Autowired
     RequestService requestService;
-    @Autowired
-    VendorService vendorService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -55,9 +55,7 @@ public class BetDetailService implements BetDetailUrl {
 
         try {
 
-            System.out.println(iBetDetailUrlInfo);
-
-            long unixTimestamp = Math.round(System.currentTimeMillis() * 1000.0);
+            long unixTimestamp = Instant.now().toEpochMilli();
             String[] parts = iBetDetailUrlInfo.getGameCode().split("_");
             String gType = parts[1];
 
@@ -93,6 +91,9 @@ public class BetDetailService implements BetDetailUrl {
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
+        //BetDetails do not have game session;
+        GameSession gameSession = new GameSession();
+
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create()
                 .post()
@@ -124,7 +125,7 @@ public class BetDetailService implements BetDetailUrl {
             requestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
+            requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
         }
 

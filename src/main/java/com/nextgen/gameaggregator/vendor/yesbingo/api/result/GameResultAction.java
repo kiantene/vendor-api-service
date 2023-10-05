@@ -33,9 +33,7 @@ public class GameResultAction {
     @Autowired
     private ValidationService validationService;
 
-    public ResponseVo gameResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
-
-        ResponseVo responseVo = new ResponseVo();
+    public void gameResult(HttpRequestLog httpRequestLog, String traceId, String decryptedData, ResponseVo responseVo) {
 
         try {
 
@@ -50,9 +48,6 @@ public class GameResultAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Update round id and bet id accordingly based on different game type
-            this.setRoundIdAndBetIdByGameType(dto);
-
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
@@ -62,6 +57,7 @@ public class GameResultAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidAgentApiCredentialException |
                  InvalidPlayerException |
@@ -70,6 +66,7 @@ public class GameResultAction {
                  DisabledVendorLineException |
                  GameNotSupportedException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+            httpService.logError(httpRequestLog, noAuthorizedAccessException);
 
         } catch (InvalidRequestException invalidRequestException) {
             if (invalidRequestException.getValidation() != null) {
@@ -85,22 +82,28 @@ public class GameResultAction {
                 responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
 
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (JsonProcessingException | CurrencyNotSupportedException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+            httpService.logError(httpRequestLog, parameterInputErrorException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             responseVo.setStatus(ResponseCodes.DUPLICATE_TRANSACTIONS);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setStatus(ResponseCodes.CASH_BALANCE_NOT_ENOUGH);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             // 9017 Work in process (vendor will retry)
             responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.DATA_NOT_EXIST));
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setStatus(ResponseCodes.WORK_IN_PROCESS);
@@ -111,8 +114,6 @@ public class GameResultAction {
             httpService.logError(httpRequestLog, exception);
 
         }
-
-        return responseVo;
 
     }
 
@@ -144,17 +145,4 @@ public class GameResultAction {
 
     }
 
-    private void setRoundIdAndBetIdByGameType(GameResultDto dto) {
-        switch (dto.getGType()) {
-            case GameTypes.SLOT -> {
-                dto.setRoundId(dto.getGameSeqNo());
-                dto.setBetId(dto.getTransferId().toString());
-            }
-            case GameTypes.BINGO -> {
-                dto.setRoundId(dto.getPlaySeq().toString());
-                dto.setBetId(dto.getGameSeqNo());
-            }
-        }
-
-    }
 }

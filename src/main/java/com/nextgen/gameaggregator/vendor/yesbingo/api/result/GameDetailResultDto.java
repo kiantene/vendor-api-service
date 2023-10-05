@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.yesbingo.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -118,7 +119,7 @@ public class GameDetailResultDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.gameSeqNo.toString();
+        return this.gameSeqNo;
     }
 
     @Override
@@ -148,17 +149,17 @@ public class GameDetailResultDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return Instant.parse(this.reportDate).toEpochMilli();
+        return VendorService.getCurrentTime(this.reportDate);
     }
 
     @Override
     public Long getResultTime() {
-        return Instant.parse(this.reportDate).toEpochMilli();
+        return VendorService.getCurrentTime(this.reportDate);
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return Instant.parse(this.reportDate).toEpochMilli();
+        return VendorService.getCurrentTime(this.reportDate);
     }
 
     @Override

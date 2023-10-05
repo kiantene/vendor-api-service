@@ -31,9 +31,8 @@ public class BalanceAction {
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo balance(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
+    public void balance(HttpRequestLog httpRequestLog, String traceId, String decryptedData, ResponseVo responseVo) {
 
-        ResponseVo responseVo = new ResponseVo();
 
         try {
 
@@ -57,14 +56,20 @@ public class BalanceAction {
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setStatus(ResponseCodes.USER_ID_CANNOT_BE_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
-        } catch (InvalidAgentApiCredentialException | InvalidPlayerException | DisabledAgentPlayerException |
-                 DisabledVendorLineException e) {
+        } catch (InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledVendorLineException noAuthorizedAccessException) {
             responseVo.setStatus(ResponseCodes.NO_AUTHORIZED_ACCESS);
+            httpService.logError(httpRequestLog, noAuthorizedAccessException);
 
-        } catch (InvalidRequestException | JsonProcessingException |
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
                  DisabledGameException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+            httpService.logError(httpRequestLog, parameterInputErrorException);
 
         } catch (InvalidOperatorResponseException exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
@@ -76,7 +81,6 @@ public class BalanceAction {
 
         }
 
-        return responseVo;
 
     }
 

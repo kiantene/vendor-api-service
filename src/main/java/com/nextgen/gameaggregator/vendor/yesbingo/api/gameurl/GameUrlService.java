@@ -27,6 +27,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -63,8 +64,7 @@ public class GameUrlService implements GameUrl {
         String encrypted = "";
 
         try {
-
-            long unixTimestamp = Math.round(System.currentTimeMillis() * 1000.0);
+            long unixTimestamp = Instant.now().toEpochMilli();
             BigDecimal balance = BigDecimal.ZERO;
             String vendorGameCode = gameSession.getVendorGameCode();
             String[] parts = vendorGameCode.split("_");
@@ -142,7 +142,7 @@ public class GameUrlService implements GameUrl {
             requestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
+            requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
         }
 

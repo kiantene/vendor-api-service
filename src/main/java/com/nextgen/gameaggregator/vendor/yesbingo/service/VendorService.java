@@ -1,21 +1,22 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.service;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Base64;
 
 @Service
@@ -23,14 +24,15 @@ import java.util.Base64;
 @Data
 public class VendorService extends BaseVendorService {
 
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
+    public static String encrypt(String str, String key, String iv)
+            throws
+            NoSuchPaddingException,
+            NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException,
+            InvalidKeyException,
+            IllegalBlockSizeException,
+            BadPaddingException {
 
-    public static String encrypt(String str, String key, String iv) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
         SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(iv.getBytes(StandardCharsets.UTF_8));
@@ -38,13 +40,20 @@ public class VendorService extends BaseVendorService {
 
         byte[] encrypted = cipher.doFinal(padString(str).getBytes(StandardCharsets.UTF_8));
         String encoded = Base64.getEncoder().encodeToString(encrypted);
-        String data = encoded.replace("+", "-").replace("/", "_").replace("=", "");
 
-        return data;
+        return encoded.replace("+", "-").replace("/", "_").replace("=", "");
 
     }
 
-    public static String decrypt(String code, String key, String iv) throws Exception {
+    public static String decrypt(String code, String key, String iv)
+            throws
+            NoSuchPaddingException,
+            NoSuchAlgorithmException,
+            InvalidAlgorithmParameterException,
+            InvalidKeyException,
+            IllegalBlockSizeException,
+            BadPaddingException {
+
         code = code.replace('-', '+').replace('_', '/');
         byte[] decodedBytes = Base64.getDecoder().decode(code);
         SecretKeySpec keySpec = new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "AES");
@@ -52,9 +61,8 @@ public class VendorService extends BaseVendorService {
         Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
         cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
         byte[] decryptedBytes = cipher.doFinal(decodedBytes);
-        String decrypted = new String(decryptedBytes, StandardCharsets.UTF_8).trim();
 
-        return decrypted;
+        return new String(decryptedBytes, StandardCharsets.UTF_8).trim();
 
     }
 
@@ -63,9 +71,7 @@ public class VendorService extends BaseVendorService {
         int padSize = blockSize - (str.length() % blockSize);
         char padChar = (char) padSize;
         StringBuilder padded = new StringBuilder(str);
-        for (int i = 0; i < padSize; i++) {
-            padded.append(padChar);
-        }
+        padded.append(String.valueOf(padChar).repeat(padSize));
         return padded.toString();
 
     }
@@ -76,8 +82,8 @@ public class VendorService extends BaseVendorService {
 
     }
 
-    @Override
-    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
-        return betInfo.getEffectiveTurnover();
+    public static Long getCurrentTime(String date) {
+        return Instant.parse(date).toEpochMilli();
     }
+
 }

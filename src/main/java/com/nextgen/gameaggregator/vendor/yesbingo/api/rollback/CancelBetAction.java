@@ -26,17 +26,13 @@ public class CancelBetAction {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
 
-    public ResponseVo cancelBet(HttpRequestLog httpRequestLog, String traceId, String decryptedData) {
-
-        ResponseVo responseVo = new ResponseVo();
+    public void cancelBet(HttpRequestLog httpRequestLog, String traceId, String decryptedData, ResponseVo responseVo) {
 
         try {
 
@@ -52,7 +48,7 @@ public class CancelBetAction {
             this.doVerification(dto, gameSession);
 
             // Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             // Set Balance and Currency
             responseVo.setBalance(balance);
@@ -103,8 +99,6 @@ public class CancelBetAction {
 
         }
 
-        return responseVo;
-
     }
 
     private void doValidation(CancelBetDto dto) throws InvalidRequestException {
@@ -119,15 +113,6 @@ public class CancelBetAction {
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException {
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // Verify if is valid player
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);

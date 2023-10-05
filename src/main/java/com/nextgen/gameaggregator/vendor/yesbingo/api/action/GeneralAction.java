@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.yesbingo.api.action;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorLineService;
@@ -26,6 +28,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -33,8 +42,6 @@ public class GeneralAction {
 
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private VendorService vendorService;
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
@@ -81,8 +88,21 @@ public class GeneralAction {
             // Do the appropriate action
             responseVo = this.doAction(dto, decryptedData, traceId, httpRequestLog);
 
-        } catch (InvalidFormatException | InvalidRequestException parameterInputErrorException) {
+        } catch (InvalidFormatException |
+                 InvalidRequestException parameterInputErrorException) {
             responseVo.setStatus(ResponseCodes.PARAMETER_INPUT_ERROR);
+            httpService.logError(httpRequestLog, parameterInputErrorException);
+
+        } catch (InvalidAlgorithmParameterException |
+                 NoSuchPaddingException |
+                 IllegalBlockSizeException |
+                 NoSuchAlgorithmException |
+                 BadPaddingException |
+                 InvalidKeyException |
+                 CredentialNotFoundException |
+                 JsonProcessingException exception) {
+            responseVo.setStatus(ResponseCodes.FAILED);
+            httpService.logError(httpRequestLog, exception);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.FAILED);
@@ -103,7 +123,16 @@ public class GeneralAction {
 
     }
 
-    private String getDecryptedData(String encryptedData, String id) throws Exception {
+    private String getDecryptedData(String encryptedData, String id)
+            throws
+            CredentialNotFoundException,
+            InvalidAlgorithmParameterException,
+            NoSuchPaddingException,
+            IllegalBlockSizeException,
+            NoSuchAlgorithmException,
+            BadPaddingException,
+            InvalidKeyException {
+
         // Get the first vendor line id from list
         Integer vendorLineId = vendorLineService.getVendorLineIdListByNameAndValue(Credentials.YESBINGO_ID, id);
 
@@ -122,26 +151,26 @@ public class GeneralAction {
         switch (dto.getAction()) {
             case Actions.BALANCE -> {
                 log.info("Yesbingo BALANCE: " + decryptedData);
-                responseVo = balanceAction.balance(httpRequestLog, traceId, decryptedData);
+                balanceAction.balance(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.BET -> {
                 // For Bingo & Slot = Bet
                 log.info("Yesbingo BET: " + decryptedData);
-                responseVo = betAction.bet(httpRequestLog, traceId, decryptedData);
+                betAction.bet(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.GAME_RESULT -> {
                 // For Bingo & Slot = Win
                 log.info("Yesbingo GAME_RESULT: " + decryptedData);
-                responseVo = gameResultAction.gameResult(httpRequestLog, traceId, decryptedData);
+                gameResultAction.gameResult(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.GAME_DETAIL_RESULT -> {
                 // For fish game is Bet + Win
                 log.info("Yesbingo GAME_DETAIL_RESULT: " + decryptedData);
-                responseVo = gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData);
+                gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.CANCEL_BET -> {
                 log.info("Yesbingo CANCEL_BET: " + decryptedData);
-                responseVo = cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData);
+                cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData, responseVo);
             }
             // If the header does not match any of the expected values, return an error response
             default -> responseVo.setStatus(ResponseCodes.UNKNOWN_ACTION);
