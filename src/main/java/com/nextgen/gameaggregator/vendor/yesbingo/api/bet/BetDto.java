@@ -4,14 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yesbingo.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -97,27 +95,11 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        switch (this.gType) {
-            case GameTypes.SLOT -> {
-                this.setBetId(this.getTransferId().toString());
-            }
-            case GameTypes.BINGO -> {
-                this.setBetId(this.gameSeqNo);
-            }
-        }
         return this.betId;
     }
 
     @Override
     public String getRoundId() {
-        switch (this.gType) {
-            case GameTypes.SLOT -> {
-                this.setRoundId(this.gameSeqNo);
-            }
-            case GameTypes.BINGO -> {
-                this.setRoundId(this.getPlaySeq().toString());
-            }
-        }
         return this.roundId;
     }
 

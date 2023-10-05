@@ -130,18 +130,6 @@ public class GameResultDto implements BetResultData {
     // This is used to change vendor bet id between Slot and Bingo
     public String betId;
 
-    public String getBetId() {
-        switch (this.gType) {
-            case GameTypes.SLOT -> {
-                this.setBetId(this.getTransferId().toString());
-            }
-            case GameTypes.BINGO -> {
-                this.setBetId(this.gameSeqNo);
-            }
-        }
-        return this.betId;
-    }
-
     @Override
     public String getExternalTransactionId() {
         return this.transferId.toString();
@@ -154,14 +142,6 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        switch (this.gType) {
-            case GameTypes.SLOT -> {
-                this.setRoundId(this.gameSeqNo);
-            }
-            case GameTypes.BINGO -> {
-                this.setRoundId(this.getPlaySeq().toString());
-            }
-        }
         return this.roundId;
     }
 
