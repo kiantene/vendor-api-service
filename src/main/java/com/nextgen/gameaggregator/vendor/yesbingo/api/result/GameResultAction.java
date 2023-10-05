@@ -102,7 +102,7 @@ public class GameResultAction {
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setStatus(ResponseCodes.DATA_NOT_EXIST);
+            responseVo.setStatus(ResponseCodes.FAILED, ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.DATA_NOT_EXIST));
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
