@@ -1,13 +1,20 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.VendorGame;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 
 public abstract class BaseVendorService {
+    @Autowired
+    private VendorGameService vendorGameService;
+
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
         BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
@@ -56,5 +63,20 @@ public abstract class BaseVendorService {
     public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
 
         return settledBet;
+    }
+
+    public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {
+
+        //if vendorGameCode is not matched with gameSession vendorGameCode, then regenerate the new vendorGameCode details
+        if (vendorGameCode != gameSession.getVendorGameCode()) {
+            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, gameSession.getVendorId());
+            gameSession.setGameCode(vendorGame.getCode());
+            gameSession.setVendorGameId(vendorGame.getId());
+            gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+
+        }
+
+        return gameSession;
     }
 }

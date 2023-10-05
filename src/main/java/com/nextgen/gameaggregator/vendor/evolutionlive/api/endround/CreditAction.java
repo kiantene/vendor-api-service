@@ -53,6 +53,7 @@ public class CreditAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(creditDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(creditDto, gameSession);
 

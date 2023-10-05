@@ -52,6 +52,7 @@ public class DebitAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(debitDto, gameSession);
 
@@ -118,7 +119,7 @@ public class DebitAction {
         // 1. Verify Username, GameCode, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), debitDto.getUserId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
-        vendorGameService.getByVendorGameCodeAndVendorId(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession.getVendorId());
+        //vendorGameService.getByVendorGameCodeAndVendorId(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession.getVendorId());
 
         // 2. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUserId());

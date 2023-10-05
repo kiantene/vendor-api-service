@@ -38,6 +38,8 @@ public class AuthenticateAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
@@ -56,6 +58,7 @@ public class AuthenticateAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -136,26 +139,19 @@ public class AuthenticateAction {
     private void doVerification(HttpRequestLog request, AuthenticateDto dto, GameSession gameSession) throws
             DisabledGameException, AuthenticationException, DisabledVendorLineException, CredentialNotFoundException,
             InvalidSignatureException, DisabledAgentPlayerException, GameNotSupportedException {
-        // Remove Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-
-        // 2. Verify vendor line is active
+        // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 3. Retrieve vendor line credentials and secretKey for hash validation
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 4. Verify request signature is valid
+        // 3. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
-        // 5. Verify agent player is active
+        // 4. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 6. Remove Verify vendor game is active
-        //vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // 6. Verify vendor game is supported
+        // 5. Verify vendor game is supported
         vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
 
     }
