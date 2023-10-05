@@ -137,12 +137,28 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
+        switch (this.gType) {
+            case GameTypes.SLOT -> {
+                betId = this.transferId.toString();
+            }
+            case GameTypes.BINGO -> {
+                betId = this.gameSeqNo;
+            }
+        }
+        return betId;
     }
 
     @Override
     public String getRoundId() {
-        return this.roundId;
+        switch (this.gType) {
+            case GameTypes.SLOT -> {
+                roundId = this.gameSeqNo;
+            }
+            case GameTypes.BINGO -> {
+                roundId = this.getPlaySeq().toString();
+            }
+        }
+        return roundId;
     }
 
     @Override

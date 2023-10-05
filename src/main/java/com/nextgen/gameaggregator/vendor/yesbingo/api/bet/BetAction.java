@@ -46,7 +46,7 @@ public class BetAction {
             this.doVerification(dto, gameSession);
 
             // Update round id and bet id accordingly based on different game type
-            this.setRoundIdAndBetIdByGameType(dto);
+//            this.setRoundIdAndBetIdByGameType(dto);
 
             // Process bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, httpRequestLog.getRequestBody(), httpRequestLog);
@@ -137,18 +137,18 @@ public class BetAction {
 
     }
 
-    private void setRoundIdAndBetIdByGameType(BetDto dto) {
-        switch (dto.getGType()) {
-            case GameTypes.SLOT -> {
-                dto.setRoundId(dto.getGameSeqNo());
-                dto.setBetId(dto.getTransferId().toString());
-            }
-            case GameTypes.BINGO -> {
-                dto.setRoundId(dto.getPlaySeq().toString());
-                dto.setBetId(dto.getGameSeqNo());
-            }
-        }
-
-    }
+//    private void setRoundIdAndBetIdByGameType(BetDto dto) {
+//        switch (dto.getGType()) {
+//            case GameTypes.SLOT -> {
+//                dto.setRoundId(dto.getGameSeqNo());
+//                dto.setBetId(dto.getTransferId().toString());
+//            }
+//            case GameTypes.BINGO -> {
+//                dto.setRoundId(dto.getPlaySeq().toString());
+//                dto.setBetId(dto.getGameSeqNo());
+//            }
+//        }
+//
+//    }
 
 }

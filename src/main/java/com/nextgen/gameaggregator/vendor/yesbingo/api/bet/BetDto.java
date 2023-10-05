@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.vendor.yesbingo.constant.GameTypes;
 import com.nextgen.gameaggregator.vendor.yesbingo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yesbingo.service.VendorService;
 import jakarta.validation.constraints.*;
@@ -95,12 +96,28 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
+        switch (this.gType) {
+            case GameTypes.SLOT -> {
+                betId = this.transferId.toString();
+            }
+            case GameTypes.BINGO -> {
+                betId = this.gameSeqNo;
+            }
+        }
+        return betId;
     }
 
     @Override
     public String getRoundId() {
-        return this.roundId;
+        switch (this.gType) {
+            case GameTypes.SLOT -> {
+                roundId = this.gameSeqNo;
+            }
+            case GameTypes.BINGO -> {
+                roundId = this.getPlaySeq().toString();
+            }
+        }
+        return roundId;
     }
 
     @Override
