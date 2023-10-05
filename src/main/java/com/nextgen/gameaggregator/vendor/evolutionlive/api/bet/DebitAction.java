@@ -5,10 +5,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
@@ -35,6 +32,8 @@ public class DebitAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debitAction(HttpServletRequest request) {
@@ -118,8 +117,8 @@ public class DebitAction {
 
         // 1. Verify Username, GameCode, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), debitDto.getUserId(), InvalidPlayerException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(debitDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
+        vendorGameService.getByVendorGameCodeAndVendorId(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession.getVendorId());
 
         // 2. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUserId());
@@ -136,8 +135,10 @@ public class DebitAction {
             responseVo.setUuid(debitDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, e);
         }
     }
 }
