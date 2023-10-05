@@ -34,9 +34,10 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
-
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
@@ -122,7 +123,7 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpService.logError(httpRequestLog, disabledVendorLineException);
 
-        } catch (DisabledGameException disabledGameException) {
+        } catch (DisabledGameException | GameNotSupportedException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
             httpService.logError(httpRequestLog, disabledGameException);
 
@@ -151,7 +152,7 @@ public class BetAction {
     private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws
             AuthenticationException, InvalidPlayerException, CredentialNotFoundException,
             InvalidSignatureException, DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledGameException {
+            DisabledGameException, GameNotSupportedException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUserId());
@@ -167,5 +168,8 @@ public class BetAction {
 
         // 5. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
+
+        // 6. Verify vendor game is supported
+        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
     }
 }

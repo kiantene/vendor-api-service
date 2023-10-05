@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -98,7 +99,7 @@ public class AuthenticateAction {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
             httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
-        } catch (DisabledGameException disabledGameException) {
+        } catch (DisabledGameException | GameNotSupportedException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
             httpService.logError(httpRequestLog, disabledGameException);
 
@@ -134,7 +135,7 @@ public class AuthenticateAction {
 
     private void doVerification(HttpRequestLog request, AuthenticateDto dto, GameSession gameSession) throws
             DisabledGameException, AuthenticationException, DisabledVendorLineException, CredentialNotFoundException,
-            InvalidSignatureException, DisabledAgentPlayerException {
+            InvalidSignatureException, DisabledAgentPlayerException, GameNotSupportedException {
         // Remove Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
 //        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
@@ -152,7 +153,10 @@ public class AuthenticateAction {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
         // 6. Remove Verify vendor game is active
-//        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        //vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // 6. Verify vendor game is supported
+        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
 
     }
 

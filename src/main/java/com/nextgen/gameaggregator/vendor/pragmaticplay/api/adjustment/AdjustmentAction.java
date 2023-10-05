@@ -147,11 +147,11 @@ public class AdjustmentAction {
 
     private void doVerification(HttpRequestLog request, AdjustmentDto dto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
 
-        // 1. Verify received game id is the same from game session
+        // 1. Not Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
+//        if (!gameSession.getVendorGameCode().equals("101")) {
+//            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+//        }
 
         // 4. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
