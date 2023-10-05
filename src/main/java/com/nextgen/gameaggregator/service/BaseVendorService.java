@@ -14,6 +14,8 @@ import java.util.Optional;
 public abstract class BaseVendorService {
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
@@ -74,7 +76,7 @@ public abstract class BaseVendorService {
             gameSession.setVendorGameId(vendorGame.getId());
             gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
             gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
-
+            gameSessionService.updateSession(gameSession);
         }
 
         return gameSession;
