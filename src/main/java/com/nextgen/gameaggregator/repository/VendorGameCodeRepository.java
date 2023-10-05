@@ -14,8 +14,8 @@ public interface VendorGameCodeRepository extends JpaRepository<VendorGameCode, 
     @Cacheable(value = "VendorGameCode", key = "{#vendorGameId, #platformId, #languageId, #status}", cacheManager = "cacheManager")
     VendorGameCode findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(Integer vendorGameId, Integer platformId, Integer languageId, Integer status);
 
-    @Cacheable(value = "VendorGameCode", key = "{#status, #languageId, #platformId, #openGameCode}", cacheManager = "cacheManager")
-    VendorGameCode findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatus(String openGameCode, Integer platformId, Integer languageId, Integer status);
+    @Cacheable(value = "VendorGameCode", key = "{#status, #languageId, #platformId, #openGameCode, #vendorId}", cacheManager = "cacheManager")
+    VendorGameCode findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(String openGameCode, Integer platformId, Integer languageId, Integer status, Integer vendorId);
 
     List<VendorGameCode> findByVendorGameId(Integer vendorGameId);
 
