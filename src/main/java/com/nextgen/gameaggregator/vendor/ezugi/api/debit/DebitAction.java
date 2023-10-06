@@ -188,7 +188,7 @@ public class DebitAction {
             throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, DuplicateExternalTransactionIdException, CurrencyNotSupportedException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId().toString(), InvalidRequestException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId().toString(), AuthenticationException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
@@ -204,8 +204,8 @@ public class DebitAction {
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
-        // Verify valid game id
-        vendorService.verifyVendorGameCode(gameSession, debitDto.getGameId().toString());
+        // Verify valid game id (disable validation for witch game from game lobby)
+        //vendorService.verifyVendorGameCode(gameSession, debitDto.getGameId().toString());
 
         // Verify valid bet type id
         VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());

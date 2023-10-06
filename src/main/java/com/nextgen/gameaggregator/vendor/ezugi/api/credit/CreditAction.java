@@ -194,7 +194,7 @@ public class CreditAction extends CommonDto {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), creditDto.getUid(), InvalidPlayerException::new);
 
         // Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), creditDto.getTableId().toString(), InvalidRequestException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), creditDto.getTableId().toString(), InvalidRequestException::new);
 
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
@@ -203,8 +203,8 @@ public class CreditAction extends CommonDto {
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), creditDto.getCurrency(), CurrencyNotSupportedException::new);
 
-        // Verify valid game id
-        vendorService.verifyVendorGameCode(gameSession, creditDto.getGameId().toString());
+        // Verify valid game id (disable validation for witch game from game lobby)
+        //vendorService.verifyVendorGameCode(gameSession, creditDto.getGameId().toString());
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
