@@ -48,9 +48,6 @@ public class GameResultAction {
             // Verify data
             this.doVerification(dto, gameSession);
 
-            // Update round id and bet id accordingly based on different game type
-//            this.setRoundIdAndBetIdByGameType(dto);
-
             ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), false);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
@@ -147,19 +144,5 @@ public class GameResultAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
-
-//    private void setRoundIdAndBetIdByGameType(GameResultDto dto) {
-//        switch (dto.getGType()) {
-//            case GameTypes.SLOT -> {
-//                dto.setRoundId(dto.getGameSeqNo());
-//                dto.setBetId(dto.getTransferId().toString());
-//            }
-//            case GameTypes.BINGO -> {
-//                dto.setRoundId(dto.getPlaySeq().toString());
-//                dto.setBetId(dto.getGameSeqNo());
-//            }
-//        }
-//
-//    }
 
 }
