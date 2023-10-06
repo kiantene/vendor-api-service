@@ -75,7 +75,7 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.amount;
     }
 
     @Override
