@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true">
+	<springProperty scope="context" name="springAppName" source="spring.application.name" />
+	<springProperty scope="context" name="springProfile" source="spring.profiles.active" />
+	<springProperty scope="context" name="log.charset" source="log.charset" defaultValue="UTF-8" />
+	<springProperty scope="context" name="logstashHost" source="logstash.host" defaultValue="127.0.0.1" />
+	<springProperty scope="context" name="logstashPort" source="logstash.port" defaultValue="50000" />
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger - %msg%n</pattern>
+			<charset>${log.charset}</charset>
+		</encoder>
+	</appender>
+
+	<appender name="STDOUT-DEV" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %highlight(%-5level) %green(%logger{36}) - %msg%n</pattern>
+			<charset>${log.charset}</charset>
+		</encoder>
+	</appender>
+
+	<appender name="LOGSTASH" class="com.nextgen.sas.core.logstash.LogstashTcpSocketAppender">
+		<destination>${logstashHost}:${logstashPort}</destination>
+		<encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+			<customFields>
+				{ "app": "${springAppName:-}", "profile": "${springProfile:-}" , "hostName": "${HOSTNAME:-}" }
+			</customFields>
+		</encoder>
+
+		<connectionStrategy>
+			<roundRobin>
+				<connectionTTL>5 minutes</connectionTTL>
+			</roundRobin>
+		</connectionStrategy>
+	</appender>
+
+	<root level="info">
+		<springProfile name="dev">
+			<appender-ref ref="STDOUT-DEV" />
+		</springProfile>
+
+		<springProfile name="!dev">
+			<appender-ref ref="STDOUT" />
+		</springProfile>
+
+		<springProfile name="qa">
+			<appender-ref ref="LOGSTASH" />
+		</springProfile>
+	</root>
+</configuration>

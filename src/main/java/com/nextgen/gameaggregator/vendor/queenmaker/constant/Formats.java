@@ -52,5 +52,6 @@ public class Formats {
         put(CANCEL_FUNDOUT, 611);
     }};
 
+    public static final String REPLACE_STRING = "{replace}";
 
 }

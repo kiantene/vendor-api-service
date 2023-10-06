@@ -58,7 +58,7 @@ public class BalanceService {
             this.doVerification(balanceDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 

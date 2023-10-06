@@ -54,11 +54,8 @@ public class BetAction {
         String vendorCurrencyCode = "";
 
         try {
-            // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
-
             // Convert original request body into dto
-            BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(body, BetDto.class);
+            BetDto betDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, BetDto.class);
 
             // 1. Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto, wToken);
@@ -71,7 +68,7 @@ public class BetAction {
             this.doVerification(betDto, gameSession, wToken);
 
             // 4. Process unsettle data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
             // Construct VO
             commonVo.setBalance(betEvent.getLastBalance());
@@ -82,33 +79,43 @@ public class BetAction {
             commonVo.setBalance(betResultIdempotentViolationException.getBalance());
             commonVo.setCurrency(vendorCurrencyCode);
             responseVo.setData(commonVo);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+            httpService.logError(httpRequestLog, dateTimeParseException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
             statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -116,6 +123,7 @@ public class BetAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -123,8 +131,11 @@ public class BetAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

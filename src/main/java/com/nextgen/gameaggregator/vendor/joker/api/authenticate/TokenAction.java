@@ -66,7 +66,7 @@ public class TokenAction {
             this.doVerification(httpRequestLog, tokenDto, gameSession);
 
             //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return double balance and success code
             tokenVo.setResponseCode(ResponseCodes.SUCCESS);

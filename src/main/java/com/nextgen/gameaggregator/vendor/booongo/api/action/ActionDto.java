@@ -14,4 +14,7 @@ public class ActionDto {
     @NotBlank
     @JsonProperty("name")
     private String name;
+
+    @JsonProperty("args")
+    private ActionArgsDTO args;
 }

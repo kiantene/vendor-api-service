@@ -6,13 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.repository.HttpRequestLogRepository;
-
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,25 +31,43 @@ public class HttpService {
 
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
-    @Autowired
-    private HttpRequestLogRepository httpRequestLogRepository;
-    @Autowired
-    private KafkaService kafkaService;
 
     public HttpRequestLog start(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = new HttpRequestLog();
         try {
             Map<String, String> headers = this.getHeadersInfo(request);
-            String headersJson = new ObjectMapper().writeValueAsString(headers);
             String requestBody = this.getRawRequestBody(request);
+
+            if (headers.containsKey("host")) {
+                httpRequestLog.setHost(headers.get("host"));
+            }
+
+            if (headers.containsKey("x-api-key")) {
+                httpRequestLog.setApiKey(request.getHeader("x-api-key"));
+            }
+
+            if (headers.containsKey("x-signature")) {
+                httpRequestLog.setSignature(request.getHeader("x-signature"));
+            }
+
+            if (headers.containsKey("cf-connecting-ip")) {
+                httpRequestLog.setCallerIp(request.getHeader("cf-connecting-ip"));
+            }
+
+            if (headers.containsKey("user-agent")) {
+                httpRequestLog.setUserAgent(request.getHeader("user-agent"));
+            }
+
             httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setUrl(request.getRequestURI());
             httpRequestLog.setMethod(request.getMethod());
-            httpRequestLog.setHeaders(headersJson);
             httpRequestLog.setRequestBody(requestBody);
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setRequestIp(request.getRemoteAddr());
             httpRequestLog.setStartTime(System.currentTimeMillis());
+            String jsonHeaders = new Gson().toJson(headers.toString());
+            httpRequestLog.setHeader(jsonHeaders);
+
         } catch (Exception exception) {
             log.error(exception.getMessage());
             exception.printStackTrace();
@@ -69,23 +83,23 @@ public class HttpService {
             requestLog.setEndTime(System.currentTimeMillis());
                 THREAD_POOL.submit(() -> {
                     try {
-                        String responseBody = new ObjectMapper().writeValueAsString(responseVo);
-                        requestLog.setResponseBody(responseBody);
+                        String jsonResponseVo = new Gson().toJson(responseVo);
+                        requestLog.setResponseBody(jsonResponseVo);
                         requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
                         requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                        if (requestLog.getOperatorProcessEndTime() != null) {
-                            requestLog.setOperatorProcessTimeTaken(requestLog.getOperatorProcessEndTime() - requestLog.getOperatorProcessStartTime());
+                        if (requestLog.getOperatorEnd() != null) {
+                            requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
                         }
 
-                        if (requestLog.getBetProcessEndTime() != null) {
-                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorProcessTimeTaken()).orElse(0L);
-                            requestLog.setBetProcessTimeTaken(requestLog.getBetProcessEndTime() - requestLog.getBetProcessStartTime() - operatorProcessTime);
+                        if (requestLog.getBetEnd() != null) {
+                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
+                            requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
                         }
 
                         Gson gson = new Gson();
+                        //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
                         log.info(gson.toJson(requestLog));
-//                        kafkaService.send(requestLog);
 
                     } catch (Exception exception) {
                         log.error(exception.getMessage());
@@ -99,9 +113,8 @@ public class HttpService {
 
     public void logError(HttpRequestLog requestLog, Exception exception) {
         if (requestLog != null) {
-            String stackTrace = HttpService.getStackTrace(exception);
             requestLog.setStatus(ERROR);
-            requestLog.setErrorMessage(stackTrace);
+            requestLog.setErrorMessage(exception.toString());
         } else {
             log.warn("HttpService.logError: requestLog is null");
             exception.printStackTrace();
@@ -152,8 +165,16 @@ public class HttpService {
         return object;
     }
 
+    public static <T> T convertQueryStringToDto(HttpRequestLog httpRequestLog, Class<T> objectClass) throws InvalidRequestException {
+        String body = httpRequestLog.getRequestBody();
+        if (body == null) throw new InvalidRequestException();
+        T object = HttpService.convertQueryStringToDto(body, objectClass);
+//        httpRequestLog.setRequestBodyDto(object);
+
+        return object;
+    }
+
     public static <T> T convertQueryStringToDtoUrlDecode(String queryString, Class<T> objectClass) throws InvalidRequestException {
-//        Map<String, String> queryParameterMap = new HashMap<>();
         Map<String, Object> queryParameterMap = new HashMap<>();
 
         // TODO: To review on this exception handling
@@ -193,6 +214,15 @@ public class HttpService {
         } catch (IllegalArgumentException illegalArgumentException) {
             throw new InvalidRequestException(); // re-throw as InvalidRequest
         }
+
+        return object;
+    }
+
+    public static <T> T convertQueryStringToDtoUrlDecode(HttpRequestLog httpRequestLog, Class<T> objectClass) throws InvalidRequestException {
+        String body = httpRequestLog.getRequestBody();
+        if (body == null) throw new InvalidRequestException();
+        T object = HttpService.convertQueryStringToDtoUrlDecode(body, objectClass);
+//        httpRequestLog.setRequestBodyDto(object);
 
         return object;
     }

@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.evoplay.api.refund;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.VendorGameService;
@@ -36,7 +37,7 @@ public class RefundService {
     @Autowired
     private VendorService vendorService;
 
-    public ResponseVo refund(CallbackDto callbackDto, GameSession gameSession, String traceId)
+    public ResponseVo refund(CallbackDto callbackDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog)
             throws
             CurrencyNotSupportedException,
             InvalidRequestException,
@@ -46,7 +47,16 @@ public class RefundService {
             GameNotSupportedException,
             DisabledGameException,
             DisabledVendorLineException,
-            CredentialNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, BetRefundIdempotentViolationException, InvalidOperatorResponseException, BetNotFoundException, CouchbaseDataIntegrityException, BetResultIdempotentViolationException, TransactionStillProcessingException {
+            CredentialNotFoundException,
+            InvalidAgentApiCredentialException,
+            RecordNotFoundException,
+            BetRefundIdempotentViolationException,
+            InvalidOperatorResponseException,
+            BetNotFoundException,
+            CouchbaseDataIntegrityException,
+            BetResultIdempotentViolationException,
+            TransactionStillProcessingException,
+            VendorCurrencyNotSupportException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         RefundDto refundDto = new ModelMapper().map(callbackDto, RefundDto.class);
@@ -56,7 +66,7 @@ public class RefundService {
         this.doVerification(refundDto, gameSession);
 
         // Retrieve the latest wallet balance from Operator
-        BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
+        BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
         // Set Vendor player username + Balance + Currency
         ResponseDataVo responseDataVo = new ResponseDataVo();

@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class ValidationService {
     @Autowired
     private AgentVendorLineRepository agentVendorLineRepository;
 
+    @Cacheable(value = "AgentApiCredentialsByApiKey", key = "#apiKey", cacheManager = "cacheManager")
     public AgentApiCredential validateApiKey(String apiKey) throws AuthenticationException {
         if (apiKey == null || apiKey.isEmpty()) {
             throw new AuthenticationException();

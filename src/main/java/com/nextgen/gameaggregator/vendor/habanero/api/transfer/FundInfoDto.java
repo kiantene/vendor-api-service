@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.habanero.api.transfer;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.habanero.service.CustomBooleanDeserializer;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -40,6 +42,7 @@ public class FundInfoDto {
     public BigDecimal bonusAmount;
 
     @NotNull
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("jpwin")
     public Boolean jpWin;
 
@@ -62,6 +65,7 @@ public class FundInfoDto {
     public BigDecimal jpCont;
 
     @NotNull
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("isbonus")
     public Boolean isBonus;
 
@@ -77,6 +81,7 @@ public class FundInfoDto {
     @JsonProperty("accounttransactiontype")
     public Integer accountTransactionType;
 
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("gameinfeature")
     public Boolean gameInFeature;
 
@@ -86,6 +91,7 @@ public class FundInfoDto {
     @JsonProperty("featureno")
     public Integer featureNo;
 
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
     @JsonProperty("lastbonusaction")
     public Boolean lastBonusAction;
 }

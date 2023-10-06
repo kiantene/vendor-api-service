@@ -4,14 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.VendorCurrency;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.OperatorRequestService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +25,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -43,9 +43,14 @@ public class WalletRollbackAction {
     private AuthenticationService authenticationService;
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId)
-            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+    public WalletBalanceVo
+    call(String traceId, Integer agentId, GameSession gameSession, String betId, String roundId, String vendorBetId, Long rollbackTimestamp, String internalTransactionId, HttpRequestLog httpRequestLog)
+            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -55,35 +60,54 @@ public class WalletRollbackAction {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
 
+        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
+        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
+
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
         WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, vendorBetId, roundId, gameSession, rollbackTimestamp, internalTransactionId);
-        log.info("[" + apiUrl + EndPoints.WALLET_ROLLBACK + "] Request: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
         long startTime = System.currentTimeMillis();
+        if (httpRequestLog != null) {
+            httpRequestLog.setAgentId(agentId);
+            httpRequestLog.setOperatorStart(startTime);
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
-        long endTime = System.currentTimeMillis();
+            String jsonApiResponse = new Gson().toJson(dto);
+            httpRequestLog.setOperatorData(jsonApiResponse);
+            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_ROLLBACK);
 
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
+        }
+
+        RequestLogVo requestLogVo = null;
 
         try {
-            log.info("[" + apiUrl + EndPoints.WALLET_ROLLBACK + "] Response: " + apiResponse);
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ROLLBACK)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
+            requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_ROLLBACK, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
@@ -93,30 +117,50 @@ public class WalletRollbackAction {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
+            if (httpRequestLog != null){
+                httpRequestLog.setOperatorResponse(apiResponse.getBody());
+                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+
+            }
+
             //3. validate username and currency
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
 
-            RequestService.successResponseLog(requestLogVo);
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+
+            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            RequestService.failResponseLog(requestLogVo, exception);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            long endTime = System.currentTimeMillis();
+            Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+
+            requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_ROLLBACK, apiUrl, dto, null, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
+            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
+                defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+            }
+
+            throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
         }
+
         return responseVo;
     }
 

@@ -2,19 +2,14 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +28,6 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
-
 @Service
 @Slf4j
 public class WalletBetResultAction {
@@ -43,16 +37,19 @@ public class WalletBetResultAction {
     @Value("${spring.profiles.active}")
     private String profilesActive;
     @Autowired
-    RequestService requestService;
+    private RequestService requestService;
 
     @Autowired
-    AgentApiCredentialService agentApiCredentialService;
+    private AgentApiCredentialService agentApiCredentialService;
 
     @Autowired
-    AuthenticationService authenticationService;
+    private AuthenticationService authenticationService;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog)
-            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+    @Autowired
+    private CurrencyConversionService currencyConversionService;
+
+    public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+            throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
 
         // Call stub function instead if config file set to use stub
         if (useStub) {
@@ -64,8 +61,10 @@ public class WalletBetResultAction {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
+
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
-        log.info("Request [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + dto);
+        currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
+        //log.info("Request [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -73,42 +72,55 @@ public class WalletBetResultAction {
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
             httpRequestLog.setAgentId(agentId);
-            httpRequestLog.setOperatorProcessStartTime(startTime);
-            httpRequestLog.setOperatorData(dto.toString());
+            httpRequestLog.setOperatorStart(startTime);
+
+            String jsonApiResponse = new Gson().toJson(dto);
+            httpRequestLog.setOperatorData(jsonApiResponse);
+            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
+
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorResponse(apiResponse.toString());
-            }
-            httpRequestLog.setOperatorProcessEndTime(endTime);
-        }
-
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
+        RequestLogVo requestLogVo = null;
 
         try {
-            log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
+            requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
+            //log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            if (httpRequestLog != null){
+                httpRequestLog.setOperatorResponse(apiResponse.getBody());
+                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+
+            }
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
@@ -118,29 +130,45 @@ public class WalletBetResultAction {
             // 4. validate operator response fail status
             requestService.operatorStatusException(responseVo.getStatus());
 
-            RequestService.successResponseLog(requestLogVo);
+            // 5. add conversion rate when returning the balance to vendor
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+
+            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
+            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
             throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
-            RequestService.failResponseLog(requestLogVo, exception);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            long endTime = System.currentTimeMillis();
+            Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+
+            requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_BET_RESULT, apiUrl, dto, null, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
+            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
+                defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+            }
+
+            //RequestService.failResponseLog(requestLogVo, exception);
+            throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
+
         }
         return responseVo;
     }
 
     private WalletBetResultDto newWalletBetResultDto(String traceId, GameSession gameSession, BetInformation betInformation, ResultType resultType) {
 
+        // add conversion rate when sending all the figures to operator
         BigDecimal betAmount = (ObjectUtils.isEmpty(betInformation.getBetAmount())) ? null : this.stripZeroToString(betInformation.getBetAmount());
         BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(betInformation.getEffectiveTurnover())) ? null : this.stripZeroToString(betInformation.getEffectiveTurnover());
         BigDecimal winAmount = (ObjectUtils.isEmpty(betInformation.getWinAmount())) ? null : this.stripZeroToString(betInformation.getWinAmount());

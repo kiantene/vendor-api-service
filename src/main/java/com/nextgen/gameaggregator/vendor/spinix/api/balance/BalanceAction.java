@@ -77,6 +77,10 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             BalanceDataWalletVo balanceDataWalletVo = new BalanceDataWalletVo();
 
+//            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
+//                balance = balance.multiply(new BigDecimal("1000"));
+//            }
+
             // Set Balance and Currency
             balanceDataWalletVo.setBalance(balance);
             balanceDataWalletVo.setCurrency(gameSession.getVendorCurrencyCode());

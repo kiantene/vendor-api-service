@@ -76,12 +76,15 @@ public class AuthenticateAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -89,12 +92,15 @@ public class AuthenticateAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
@@ -103,10 +109,13 @@ public class AuthenticateAction {
         } catch (DisabledVendorLineException disabledVendorLineException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);

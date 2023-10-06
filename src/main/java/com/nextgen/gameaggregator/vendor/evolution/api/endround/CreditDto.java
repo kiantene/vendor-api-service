@@ -1,0 +1,93 @@
+package com.nextgen.gameaggregator.vendor.evolution.api.endround;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.evolution.dto.DebitCreditCancelDto;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class CreditDto extends DebitCreditCancelDto implements BetResultData {
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 250)
+    private String sid; // Player session token
+
+    @Override
+    public String getExternalTransactionId() {
+        return this.getTransaction().getRefId();
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.getTransaction().getRefId();
+    } // id or refId
+
+    @Override
+    public String getRoundId() {
+        return this.getTransaction().getRefId();
+    }
+
+    @Override
+    public String getGameId() {
+        return this.getGame().getDetails().getTable().getId();
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return this.getTransaction().getAmount();
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return getBetAmount();
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return null;
+    }
+
+    @Override
+    public Long getResultTime() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return BigDecimal.ZERO;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.SETTLED;
+    }
+}

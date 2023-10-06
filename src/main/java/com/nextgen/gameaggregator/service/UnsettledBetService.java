@@ -82,6 +82,11 @@ public class UnsettledBetService {
         rawUnsettledBetRepository.delete(entity);
     }
 
+    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    public void deleteWithoutClearingCache(UnsettledBet entity) {
+        rawUnsettledBetRepository.delete(entity);
+    }
+
     public UnsettledBet findBetsForRollback(Long vendorPlayerId, String externalTransactionId)
             throws BetNotFoundException, TransactionStillProcessingException {
 

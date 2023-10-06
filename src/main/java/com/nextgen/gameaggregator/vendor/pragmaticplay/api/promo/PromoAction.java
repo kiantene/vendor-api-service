@@ -79,17 +79,20 @@ public class PromoAction {
             responseVo.setCash(idempotentViolationException.getBalance());
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, idempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 //        } catch (CredentialNotFoundException credentialNotFoundException) {
 //            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
 //        } catch (AuthenticationException authenticationException) {
 //            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
@@ -111,6 +114,7 @@ public class PromoAction {
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+
         }
 
         httpService.end(httpRequestLog, responseVo);

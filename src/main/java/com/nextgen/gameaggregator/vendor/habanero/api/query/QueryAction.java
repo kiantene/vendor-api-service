@@ -1,17 +1,23 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
-import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,23 +32,18 @@ public class QueryAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private WalletService walletService;
-    @Autowired
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.QUERY)
-    public QueryVo balance(HttpServletRequest request) {
+    public ResponseEntity<QueryVo> balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
         // Construct VO
         QueryVo responseVo = new QueryVo();
-        FundTransferResponseVo fundTransferResponseVo = new FundTransferResponseVo();
-        StatusVo statusVo = new StatusVo();
-        fundTransferResponseVo.setStatusVo(statusVo);
-        responseVo.setFundTransferResponseVo(fundTransferResponseVo);
+        Integer httpStatus = HttpStatus.SC_OK;
 
         try {
             //Retrieve request body in original string format
@@ -64,7 +65,7 @@ public class QueryAction {
             this.checkBetAvailable(gameSession, queryDto.getQueryRequestDto());
 
             // bet not found return false respond
-            statusVo.setSuccess(false);
+            responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
 
         } catch (
                 AuthenticationException |
@@ -73,21 +74,32 @@ public class QueryAction {
                 JsonProcessingException |
                 CredentialNotFoundException generalException
         ) {
-            statusVo.setSuccess(false);
+            responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
+
         } catch (TransactionStillProcessingException TransactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
-            statusVo.setRetryStatus(true);
+            responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
+
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // bet found return true respond
-            statusVo.setSuccess(true);
+            responseVo.setResponseCode(ResponseCodes.QUERY_SUCCESS);
+
         } catch (Exception exception) {
-            statusVo.setSuccess(false);
+            responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
+
         }
 
-        return responseVo;
+        if (responseVo.getFundTransferResponseVo().getStatusVo().getRetryStatus() != null) {
+            //return invalid respond 404 to trigger vendor resend when record still in processing
+            responseVo = null;
+            httpStatus = HttpStatus.SC_NOT_FOUND;
+        }
+
+        return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(httpStatus));
     }
 
     private void doValidation(QueryDto dto) throws InvalidRequestException {
@@ -114,13 +126,13 @@ public class QueryAction {
     private void checkBetAvailable(GameSession gameSession, QueryRequestDto queryRequestDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         // settle bet Idempotent Check
-       vendorService.settledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
+        vendorService.settledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
 
         // unsettle bet Idempotent Check
-       vendorService.unsettledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
+        vendorService.unsettledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
 
         // bet result Idempotent Check
-       vendorService.betResultIdempotentCheck(gameSession, queryRequestDto.getTransferId(), queryRequestDto.getGameInstanceId());
+        vendorService.betResultIdempotentCheck(gameSession, queryRequestDto.getTransferId(), queryRequestDto.getGameInstanceId());
 
     }
 

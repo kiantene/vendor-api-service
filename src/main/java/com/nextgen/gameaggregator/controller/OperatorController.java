@@ -59,7 +59,7 @@ public class OperatorController {
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
-                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
+                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession, null);
 
                 responseMap.put("balance", balance);
             }

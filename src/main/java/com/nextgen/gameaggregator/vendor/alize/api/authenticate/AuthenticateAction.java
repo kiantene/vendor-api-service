@@ -61,21 +61,31 @@ public class AuthenticateAction {
             responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (AuthenticationException playerNotFoundException) {
+            httpService.logError(httpRequestLog, playerNotFoundException);
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            httpService.logError(httpRequestLog, credentialNotFoundException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
@@ -95,7 +105,7 @@ public class AuthenticateAction {
     }
 
     private void doVerification(AuthenticateDto dto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
         // Verify vendor line is active
@@ -104,6 +114,8 @@ public class AuthenticateAction {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 
 }

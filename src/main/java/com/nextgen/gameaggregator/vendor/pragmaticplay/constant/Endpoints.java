@@ -16,4 +16,5 @@ public class Endpoints {
     public static final String BONUS = "bonusWin";
     public static final String PROMO = "promoWin";
     public static final String END_ROUND = "endRound";
+    public static final String ADJUSTMENT = "adjustment";
 }

@@ -64,7 +64,7 @@ public class RollbackAction {
             this.doVerification(rollbackDto, gameSession, httpRequestLog, request);
 
             // Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
             // Construct Vo
             rollbackVo.setErrorCode(ResponseCodes.OK);
@@ -133,7 +133,7 @@ public class RollbackAction {
             rollbackVo.setRoundId(rollbackDto.getRoundId());
             rollbackVo.setTransactionId(rollbackDto.getTransactionId());
             if (rollbackVo.getBalance() == null) {
-                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken()).setScale(2, RoundingMode.DOWN).doubleValue());
+                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
             }
             rollbackVo.setCurrency(rollbackDto.getCurrency());
             rollbackVo.setTimestamp(System.currentTimeMillis());

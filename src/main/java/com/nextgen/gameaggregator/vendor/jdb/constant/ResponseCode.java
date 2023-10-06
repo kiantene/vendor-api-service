@@ -15,6 +15,9 @@ public class ResponseCode {
     public static final String INVALID_ACTION = "9007";
     public static final String DUPLICATE_TRANSACTION = "9011";
     public static final String FAILED = "9999";
+    public static final String CANNOT_CANCEL = "6101";
+    public static final String WORK_IN_PROCESS = "9017";
+    public static final String DATA_NOT_EXIST = "9015";
 
     public static final Map<String, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(SUCCESS, "Succeed");
@@ -27,5 +30,8 @@ public class ResponseCode {
         put(INVALID_ACTION, "Unknown action.");
         put(DUPLICATE_TRANSACTION, "Duplicate transactions.");
         put(FAILED, "Failed.");
+        put(CANNOT_CANCEL, "Can not cancel.");
+        put(WORK_IN_PROCESS, "Work in process, please try again later.");
+        put(DATA_NOT_EXIST, "Data does not exist.");
     }};
 }

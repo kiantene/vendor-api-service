@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.BetInformation;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 
 import java.math.BigDecimal;
@@ -18,7 +19,15 @@ public abstract class BaseVendorService {
     }
 
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
-        return betInfo.getBetAmount();
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //if in the end betData still have null/0 effectiveTurnover, will be using betAmount as effectiveTurnover
+        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+            effectiveTurnover = betInfo.getBetAmount();
+        }
+        
+        return effectiveTurnover;
     }
 
     //calculate ResultType for sending to operator
@@ -37,5 +46,15 @@ public abstract class BaseVendorService {
         }
 
         return resultType;
+    }
+
+    public boolean shouldRejectCancelRequest() {
+        //Temporary only BGAMING, SpadeGaming, EvoNetent need to accept cancel request
+        return true;
+    }
+
+    public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
+
+        return settledBet;
     }
 }

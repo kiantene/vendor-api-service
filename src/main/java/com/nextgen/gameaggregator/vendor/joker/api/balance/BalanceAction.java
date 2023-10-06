@@ -69,7 +69,7 @@ public class BalanceAction {
             this.doVerification(httpRequestLog, balanceDto, gameSession);
 
             //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);

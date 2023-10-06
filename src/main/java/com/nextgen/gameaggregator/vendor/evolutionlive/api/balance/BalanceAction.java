@@ -55,10 +55,15 @@ public class BalanceAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(balanceDto.getSid());
 
+            // Check if token status 0 then show invalid sid
+            if (gameSession.getStatus() == 0) {
+                throw new AuthenticationException();
+            }
+            
             this.doVerification(balanceDto, gameSession);
 
             // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             responseVo.setBalance(balance);
             responseVo.setUuid(balanceDto.getUuid());
@@ -68,7 +73,8 @@ public class BalanceAction {
             httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException |
                  InvalidRequestException |
-                 CurrencyNotSupportedException e) {
+                 CurrencyNotSupportedException |
+                 InvalidPlayerException e) {
             responseVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
             httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
@@ -99,12 +105,13 @@ public class BalanceAction {
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            CurrencyNotSupportedException {
+            CurrencyNotSupportedException,
+            InvalidPlayerException {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getSid(), AuthenticationException::new);
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getUserId(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getUserId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active
