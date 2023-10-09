@@ -165,7 +165,7 @@ public class GameUrlService {
         }
     }
 
-    @Cacheable(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}" , cacheManager = "cacheManager")
+    @CachePut(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}" , cacheManager = "cacheManager")
     public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;
