@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
+import com.nextgen.gameaggregator.vendor.saba.service.GzipUtils;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,13 +30,15 @@ public class GetBalanceAction {
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.GET_BALANCE)
-    public GetBalanceVo action(@RequestBody String request) {
+    public GetBalanceVo action(@RequestBody byte[] request) throws IOException {
 
         Map<String, String> requestLog = new HashMap<>();
 
         requestLog.put("Title", "SABA Testing");
-        requestLog.put("Request Body", request);
+        requestLog.put("Raw Request Body", Arrays.toString(request));
         log.info(requestLog.toString());
+
+        String decompressRequestBody = GzipUtils.decompress(request);
 
 //        HttpRequestLog httpRequestLog = httpService.start(request);
 //        String traceId = httpRequestLog.getId();
@@ -43,7 +48,7 @@ public class GetBalanceAction {
 
         try {
             // Convert original request body into dto
-            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(request, new TypeReference<>() {
+            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(decompressRequestBody, new TypeReference<>() {
             });
 
             vo.setStatus("0");
