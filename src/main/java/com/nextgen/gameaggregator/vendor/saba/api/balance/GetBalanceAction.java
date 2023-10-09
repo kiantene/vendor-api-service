@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -32,13 +32,14 @@ public class GetBalanceAction {
     @PostMapping(path = EndPoints.GET_BALANCE)
     public GetBalanceVo action(@RequestBody byte[] request) throws IOException {
 
-        Map<String, String> requestLog = new HashMap<>();
+        String decompressedRequestBody = GzipUtils.decompress(request);
 
+        Map<String, String> requestLog = new HashMap<>();
         requestLog.put("Title", "SABA Testing");
-        requestLog.put("Raw Request Body", Arrays.toString(request));
+        requestLog.put("Decompressed Request Body", decompressedRequestBody);
         log.info(requestLog.toString());
 
-        String decompressedRequestBody = GzipUtils.decompress(request);
+        String traceId = String.valueOf(UUID.randomUUID());
 
 //        HttpRequestLog httpRequestLog = httpService.start(request);
 //        String traceId = httpRequestLog.getId();
