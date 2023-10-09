@@ -1,20 +1,20 @@
 package com.nextgen.gameaggregator.vendor.saba.api.balance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -27,19 +27,23 @@ public class GetBalanceAction {
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.GET_BALANCE)
-    public GetBalanceVo action(HttpServletRequest request) {
+    public GetBalanceVo action(@RequestBody String request) {
 
-        log.info(new Gson().toJson(request));
+        Map<String, String> requestLog = new HashMap<>();
 
-        HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
+        requestLog.put("Title", "SABA Testing");
+        requestLog.put("Request Body", request);
+        log.info(requestLog.toString());
+
+//        HttpRequestLog httpRequestLog = httpService.start(request);
+//        String traceId = httpRequestLog.getId();
 
         // Construct Vo
         GetBalanceVo vo = new GetBalanceVo();
 
         try {
             // Convert original request body into dto
-            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
+            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(request, new TypeReference<>() {
             });
 
             vo.setStatus("0");
@@ -51,9 +55,15 @@ public class GetBalanceAction {
             System.out.println(e.getMessage());
 
         } finally {
-            httpService.end(httpRequestLog, vo);
+//            httpService.end(httpRequestLog, vo);
         }
 
         return vo;
     }
+
+//    @RequestMapping
+//    public GetBalanceVo action(@RequestBody Map<String, String> requestBody) {
+//
+//    }
+
 }
