@@ -7,10 +7,7 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.Formats;
-import com.nextgen.gameaggregator.vendor.queenmaker.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.*;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import com.nextgen.gameaggregator.vendor.queenmaker.vo.TransactionsVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -134,6 +131,9 @@ public class DebitAction {
         ValidationUtils.isEquals(debitTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
         ValidationUtils.isEquals(debitTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
+        if (!Txtype.txtTypeList.contains(debitTransactionsDto.getTxtype())) {
+            throw new InvalidRequestException();
+        }
     }
 
     private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpServletRequest request) {
@@ -160,6 +160,7 @@ public class DebitAction {
             transactionsVo.setPtxid(debitTransactionsDto.getPtxid());
             transactionsVo.setBal(betEvent.getLastBalance());
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
+            transactionsVo.setDup(false);
 
         } catch (AuthenticationException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
@@ -174,7 +175,7 @@ public class DebitAction {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
 
         } catch (InvalidRequestException e) {
-            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, Optional.ofNullable(e.getValidation().values().iterator().next()).orElse(""));
+            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
 
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |

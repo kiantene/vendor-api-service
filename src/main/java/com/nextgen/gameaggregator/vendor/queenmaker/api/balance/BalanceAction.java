@@ -67,7 +67,7 @@ public class BalanceAction {
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
             for (UsersDto user : balanceDto.getUsers()) {
-                
+
                 CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
                 futures.add(future);
             }
@@ -168,7 +168,7 @@ public class BalanceAction {
             usersVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
 
         } catch (InvalidRequestException e) {
-            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, e.getValidation().values().iterator().next().toString());
+            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
 
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |

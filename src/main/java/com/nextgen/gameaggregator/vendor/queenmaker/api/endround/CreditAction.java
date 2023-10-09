@@ -106,7 +106,7 @@ public class CreditAction {
             CredentialNotFoundException,
             InvalidVendorLineException,
             CurrencyNotSupportedException,
-            GameNotSupportedException {
+            GameNotSupportedException, InvalidRequestException {
 
         // 1. Validate Credentials
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
@@ -125,6 +125,9 @@ public class CreditAction {
         ValidationUtils.isEquals(creditTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
         ValidationUtils.isEquals(creditTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
+        if (!Txtype.txtTypeList.contains(creditTransactionsDto.getTxtype())) {
+            throw new InvalidRequestException();
+        }
     }
 
     private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
@@ -157,6 +160,7 @@ public class CreditAction {
             transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setBal(balance);
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
+            transactionsVo.setDup(false);
 
         } catch (AuthenticationException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
@@ -171,7 +175,7 @@ public class CreditAction {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
 
         } catch (InvalidRequestException e) {
-            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, Optional.ofNullable(e.getValidation().values().iterator().next()).orElse(""));
+            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
 
         } catch (InvalidVendorLineException |
                  CredentialNotFoundException |
