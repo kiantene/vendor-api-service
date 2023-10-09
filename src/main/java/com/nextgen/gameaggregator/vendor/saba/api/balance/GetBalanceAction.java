@@ -38,7 +38,7 @@ public class GetBalanceAction {
         requestLog.put("Raw Request Body", Arrays.toString(request));
         log.info(requestLog.toString());
 
-        String decompressRequestBody = GzipUtils.decompress(request);
+        String decompressedRequestBody = GzipUtils.decompress(request);
 
 //        HttpRequestLog httpRequestLog = httpService.start(request);
 //        String traceId = httpRequestLog.getId();
@@ -48,7 +48,7 @@ public class GetBalanceAction {
 
         try {
             // Convert original request body into dto
-            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(decompressRequestBody, new TypeReference<>() {
+            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(decompressedRequestBody, new TypeReference<>() {
             });
 
             vo.setStatus("0");
