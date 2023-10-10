@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.GzipUtils;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,13 +31,14 @@ public class GetBalanceAction {
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.GET_BALANCE)
-    public GetBalanceVo action(@RequestBody byte[] request) throws IOException {
+    public GetBalanceVo action(@RequestBody byte[] request, HttpServletRequest httpServletRequest) throws IOException {
 
         String decompressedRequestBody = GzipUtils.decompress(request);
 
         Map<String, String> requestLog = new HashMap<>();
         requestLog.put("Title", "SABA Testing");
         requestLog.put("Decompressed Request Body", decompressedRequestBody);
+        requestLog.put("HttpServletRequest", httpServletRequest.toString());
         log.info(requestLog.toString());
 
         String traceId = String.valueOf(UUID.randomUUID());
@@ -60,16 +62,8 @@ public class GetBalanceAction {
         } catch (Exception e) {
             System.out.println(e.getMessage());
 
-        } finally {
-//            httpService.end(httpRequestLog, vo);
         }
 
         return vo;
     }
-
-//    @RequestMapping
-//    public GetBalanceVo action(@RequestBody Map<String, String> requestBody) {
-//
-//    }
-
 }
