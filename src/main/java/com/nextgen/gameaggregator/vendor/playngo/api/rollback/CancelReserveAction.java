@@ -78,23 +78,29 @@ public class CancelReserveAction {
                  InvocationTargetException |
                  IllegalAccessException internalErrorException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, internalErrorException);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INVALIDCURRENCY);
+            httpService.logError(httpRequestLog, invalidCurrencyException);
 
         } catch (AuthenticationException authenticationException) {
             cancelReserveVo.setStatusCode(ResponseCodes.SESSIONEXPIRED);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             cancelReserveVo.setStatusCode(ResponseCodes.OK);
             cancelReserveVo.setReal(betResultIdempotentViolationException.getBalance());
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (BetNotFoundException betNotFoundException) {
             cancelReserveVo.setStatusCode(ResponseCodes.OK);
             cancelReserveVo.setExternalTransactionId("");
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
@@ -103,9 +109,9 @@ public class CancelReserveAction {
 
             } else {
                 cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);

@@ -86,26 +86,33 @@ public class ReleaseAction {
                  InvocationTargetException |
                  IllegalAccessException internalErrorException) {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, internalErrorException);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
             releaseVo.setStatusCode(ResponseCodes.INVALIDCURRENCY);
+            httpService.logError(httpRequestLog, invalidCurrencyException);
 
         } catch (AuthenticationException authenticationException) {
             releaseVo.setStatusCode(ResponseCodes.SESSIONEXPIRED);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
             vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, releaseVo);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             releaseVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             releaseVo.setStatusCode(ResponseCodes.OK);
             releaseVo.setReal(betResultIdempotentViolationException.getBalance());
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (BetNotFoundException betNotFoundException) {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
@@ -114,9 +121,9 @@ public class ReleaseAction {
 
             } else {
                 releaseVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
             releaseVo.setStatusCode(ResponseCodes.INTERNAL);
