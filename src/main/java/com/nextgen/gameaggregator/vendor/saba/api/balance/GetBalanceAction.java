@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.balance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
@@ -48,9 +49,9 @@ public class GetBalanceAction {
         Map<String, String> requestLog = new HashMap<>();
         requestLog.put("Title", "SABA Testing");
         requestLog.put("Decompressed Request Body", decompressedRequestBody);
-        requestLog.put("Request headers", headers.toString());
-        requestLog.put("Request Input Stream", httpServletRequest.getInputStream().toString());
-        log.info(requestLog.toString());
+        requestLog.put("Request headers", new Gson().toJson(headers));
+        requestLog.put("Request Input Stream", new Gson().toJson(httpServletRequest.getParameterMap()));
+        log.info(new Gson().toJson(requestLog));
 
         String traceId = String.valueOf(UUID.randomUUID());
 
