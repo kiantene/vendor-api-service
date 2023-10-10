@@ -112,12 +112,15 @@ public class AppendWagerAction {
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
             responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
+            httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
+            httpService.logError(httpRequestLog, invalidProviderException);
 
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
@@ -126,6 +129,7 @@ public class AppendWagerAction {
                  JsonProcessingException |
                  TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, systemErrorException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

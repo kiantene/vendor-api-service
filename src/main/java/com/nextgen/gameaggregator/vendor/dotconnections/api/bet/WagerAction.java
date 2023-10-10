@@ -92,23 +92,29 @@ public class WagerAction {
 
         } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
+            httpService.logError(httpRequestLog, signErrorException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (GameNotSupportedException | InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // get current balance
@@ -117,10 +123,12 @@ public class WagerAction {
             responseDataVo.setBalance(betResultIdempotentViolationException.getBalance());
             responseVo.setData(responseDataVo);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (DuplicateBetRecordException duplicateBetRecordException) {
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            httpService.logError(httpRequestLog, duplicateBetRecordException);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -138,9 +146,11 @@ public class WagerAction {
                 responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
 
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
+            httpService.logError(httpRequestLog, invalidProviderException);
 
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
@@ -149,6 +159,7 @@ public class WagerAction {
                  JsonProcessingException |
                  TransactionStillProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, systemErrorException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
@@ -157,9 +168,9 @@ public class WagerAction {
 
             } else {
                 responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

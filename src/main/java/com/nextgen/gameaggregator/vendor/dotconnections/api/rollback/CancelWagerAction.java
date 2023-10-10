@@ -97,31 +97,39 @@ public class CancelWagerAction {
 
         } catch (AuthenticationException | InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
+            httpService.logError(httpRequestLog, signErrorException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidProviderException invalidProviderException) {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
+            httpService.logError(httpRequestLog, invalidProviderException);
 
         } catch (BetNotFoundException betRecordNotExistException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+            httpService.logError(httpRequestLog, betRecordNotExistException);
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            httpService.logError(httpRequestLog, betRefundIdempotentViolationException);
 
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
@@ -148,8 +156,9 @@ public class CancelWagerAction {
             } else {
                 // if found the bet other in settled status (cancel / unsettle / settled)
                 responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
-                httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
@@ -228,17 +237,21 @@ public class CancelWagerAction {
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetNotFoundException recordNotFoundException) {
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
+            httpService.logError(httpRequestLog, recordNotFoundException);
 
         } catch (BetAdjustmentIdempotentViolationException betAdjustmentIdempotentViolationException) {
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            httpService.logError(httpRequestLog, betAdjustmentIdempotentViolationException);
 
         } catch (InvalidAgentApiCredentialException | InvalidOperatorResponseException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
