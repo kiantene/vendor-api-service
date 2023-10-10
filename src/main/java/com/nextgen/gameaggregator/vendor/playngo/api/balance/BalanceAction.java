@@ -72,7 +72,6 @@ public class BalanceAction {
 
         } catch (InvalidAgentApiCredentialException |
                  InvalidOperatorResponseException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  DisabledVendorLineException |
                  CredentialNotFoundException |
@@ -83,6 +82,9 @@ public class BalanceAction {
                  InvocationTargetException |
                  IllegalAccessException internalErrorException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            balanceVo.setStatusCodeAndMessage(ResponseCodes.ACCOUNTDISABLED);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INVALIDCURRENCY);

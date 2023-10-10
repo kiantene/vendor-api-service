@@ -50,6 +50,7 @@ public class ReleaseAction {
         ReleaseVo releaseVo = new ReleaseVo();
         XmlMapper xmlMapper = new XmlMapper();
         String releaseVoXml = "";
+        GameSession gameSession = null;
 
         try {
             // Retrieve request body in original string format
@@ -63,7 +64,7 @@ public class ReleaseAction {
             this.doValidation(releaseDto);
 
             // Get game session or verify Token
-            GameSession gameSession = vendorService.getGameSession(releaseDto);
+            gameSession = vendorService.getGameSession(releaseDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, releaseDto);
@@ -94,6 +95,7 @@ public class ReleaseAction {
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+            vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, releaseVo);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             releaseVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
@@ -108,6 +110,7 @@ public class ReleaseAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 releaseVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+                vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, releaseVo);
 
             } else {
                 releaseVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);

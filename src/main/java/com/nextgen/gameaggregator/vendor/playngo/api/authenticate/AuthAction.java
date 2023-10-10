@@ -94,13 +94,15 @@ public class AuthAction {
 
         } catch (InvalidAgentApiCredentialException |
                  InvalidOperatorResponseException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  DisabledVendorLineException |
                  CredentialNotFoundException |
                  GameNotSupportedException |
                  JsonProcessingException internalErrorException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            authVo.setStatusCodeAndMessage(ResponseCodes.ACCOUNTDISABLED);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param

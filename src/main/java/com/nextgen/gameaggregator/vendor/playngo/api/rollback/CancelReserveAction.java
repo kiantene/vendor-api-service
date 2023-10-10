@@ -42,6 +42,7 @@ public class CancelReserveAction {
         CancelReserveVo cancelReserveVo = new CancelReserveVo();
         XmlMapper xmlMapper = new XmlMapper();
         String cancelReserveVoXml = "";
+        GameSession gameSession = null;
 
         try {
             // Retrieve request body in original string format
@@ -55,7 +56,7 @@ public class CancelReserveAction {
             this.doValidation(cancelReserveDto);
 
             // Get game session or verify Token
-            GameSession gameSession = vendorService.getGameSession(cancelReserveDto);
+            gameSession = vendorService.getGameSession(cancelReserveDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, cancelReserveDto);
@@ -98,6 +99,7 @@ public class CancelReserveAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+                vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, cancelReserveVo);
 
             } else {
                 cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
@@ -146,12 +148,12 @@ public class CancelReserveAction {
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), dto);
 
+        // Verify bet game code
+        vendorService.verifyVendorGameCode(gameSession, dto.getGameId());
+
         // Verify Username, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify bet game code
-        vendorService.verifyVendorGameCode(gameSession, dto.getGameId());
 
     }
 
