@@ -138,7 +138,7 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.effectiveTurnover;
+        return null;
     }
 
     @Override
