@@ -91,7 +91,7 @@ public class DebitAction {
             }
             // Construct Vo
             debitVo.setErrorCode(ResponseCodes.OK);
-            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             debitVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -167,9 +167,9 @@ public class DebitAction {
             debitVo.setTransactionId(debitDto.getTransactionId());
             if (debitVo.getBalance() == null) {
                 if (debitVo.getErrorCode().equals(ResponseCodes.USER_NOT_FOUND)) {
-                    debitVo.setBalance(Double.valueOf(0));
+                    debitVo.setBalance(BigDecimal.ZERO.setScale(2, RoundingMode.DOWN));
                 } else {
-                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
+                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
                 }
             }
             debitVo.setCurrency(debitDto.getCurrency());
@@ -194,6 +194,7 @@ public class DebitAction {
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
 
         // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify Operator Id from vendor given

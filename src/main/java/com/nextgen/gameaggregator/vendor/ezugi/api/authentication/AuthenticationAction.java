@@ -108,7 +108,7 @@ public class AuthenticationAction {
                 authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
             }
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
-            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             authenticationVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, authenticationVo);
         }

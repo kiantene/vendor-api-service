@@ -74,6 +74,7 @@ public class CreditAction extends CommonDto {
 
             // Get GameSession by player name and vendor game id
             gameSession = gameSessionService.verifyToken(creditDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getTableId().toString(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, httpRequestLog, request);
@@ -92,7 +93,7 @@ public class CreditAction extends CommonDto {
 
             // Construct Vo
             creditVo.setErrorCode(ResponseCodes.OK);
-            creditVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            creditVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             creditVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -171,7 +172,7 @@ public class CreditAction extends CommonDto {
             creditVo.setRoundId(creditDto.getVendorRoundId());
             creditVo.setTransactionId(creditDto.getTransactionId());
             if (creditVo.getBalance() == null) {
-                creditVo.setBalance(vendorService.getCurrentBalance(traceId, creditDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
+                creditVo.setBalance(vendorService.getCurrentBalance(traceId, creditDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
             }
             creditVo.setCurrency(creditDto.getCurrency());
             creditVo.setTimestamp(System.currentTimeMillis());

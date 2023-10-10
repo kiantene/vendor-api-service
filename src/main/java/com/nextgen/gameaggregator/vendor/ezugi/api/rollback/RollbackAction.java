@@ -59,6 +59,7 @@ public class RollbackAction {
 
             // Get GameSession by player name and vendor game id
             gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(rollbackDto.getTableId().toString(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession, httpRequestLog, request);
@@ -68,7 +69,7 @@ public class RollbackAction {
 
             // Construct Vo
             rollbackVo.setErrorCode(ResponseCodes.OK);
-            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             rollbackVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -133,7 +134,7 @@ public class RollbackAction {
             rollbackVo.setRoundId(rollbackDto.getRoundId());
             rollbackVo.setTransactionId(rollbackDto.getTransactionId());
             if (rollbackVo.getBalance() == null) {
-                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
+                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
             }
             rollbackVo.setCurrency(rollbackDto.getCurrency());
             rollbackVo.setTimestamp(System.currentTimeMillis());
@@ -151,7 +152,7 @@ public class RollbackAction {
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
 
         // Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), rollbackdto.getTableId().toString(), InvalidRequestException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), rollbackdto.getTableId().toString(), InvalidRequestException::new);
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), rollbackdto.getCurrency(), CurrencyNotSupportedException::new);
@@ -161,7 +162,7 @@ public class RollbackAction {
         ValidationUtils.isEquals(operatorId, String.valueOf(rollbackdto.getOperatorId()), InvalidRequestException::new);
 
         // Verify valid game id
-        vendorService.verifyVendorGameCode(gameSession, rollbackdto.getGameId().toString());
+        //vendorService.verifyVendorGameCode(gameSession, rollbackdto.getGameId().toString());
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
