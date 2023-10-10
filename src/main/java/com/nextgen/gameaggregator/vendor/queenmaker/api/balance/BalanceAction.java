@@ -171,12 +171,14 @@ public class BalanceAction {
             usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
 
         } catch (DisabledVendorLineException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidVendorLineException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException e) {
             usersVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
+
+        } catch (DisabledAgentPlayerException e) {
+            usersVo.setResponseCode(ResponseCodes.USER_BLOCKED);
 
         } catch (InvalidPlayerException e) {
             usersVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");

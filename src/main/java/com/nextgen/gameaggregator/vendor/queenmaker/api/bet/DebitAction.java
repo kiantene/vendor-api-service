@@ -178,13 +178,15 @@ public class DebitAction {
             transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
 
         } catch (DisabledVendorLineException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidVendorLineException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException e) {
             transactionsVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
 
+        } catch (DisabledAgentPlayerException e) {
+            transactionsVo.setResponseCode(ResponseCodes.USER_BLOCKED);
+            
         } catch (InvalidPlayerException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
 
