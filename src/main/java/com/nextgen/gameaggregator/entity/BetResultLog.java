@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "bet_result_log")
+@Table(name = "bet_result_logs")
 @Data
 public class BetResultLog {
     @Id
