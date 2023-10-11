@@ -2,16 +2,10 @@ package com.nextgen.gameaggregator.vendor.playngo.api.result;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.SettledBetService;
-import com.nextgen.gameaggregator.service.UnsettledBetService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.playngo.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
@@ -193,8 +187,11 @@ public class ReleaseAction {
             // Check if bet record has been settled before
             this.verifySettledBet(releaseDto, gameSession);
 
+            // Get unsettle bet's vendor bet id
+            String vendorBetId = this.getUnsettleBetId(releaseDto, gameSession);
+
             // Get result type: (WIN / LOSE / END) or (BET_WIN / BET_LOSE)
-            ResultType resultType = this.getResultType(releaseDto, gameSession);
+            ResultType resultType = this.getResultType(vendorBetId, releaseDto);
 
             // Process Bet Result
             return walletService.processBetResult(traceId, gameSession, releaseDto, resultType, vendorService, httpRequestLog);
@@ -203,28 +200,34 @@ public class ReleaseAction {
 
     }
 
-    private ResultType getResultType(ReleaseDto dto, GameSession gameSession) {
-        Boolean isBet = this.verifyUnsettleBet(dto, gameSession);
-        ResultType resultType = vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
+    private ResultType getResultType(String vendorBetId, ReleaseDto dto) {
+        boolean isBet = vendorBetId == null;
+        this.setVendorBetId(vendorBetId, dto);
 
-        return resultType;
+        return vendorService.calculateResultType(dto.getBetAmount(), dto.getWinAmount(), dto.getJackpotAmount(), isBet);
     }
 
-    private boolean verifyUnsettleBet(ReleaseDto dto, GameSession gameSession) {
+    private void setVendorBetId(String vendorBetId, ReleaseDto dto) {
+        if (vendorBetId != null) {
+            dto.setTransactionId(vendorBetId);
+        }
+    }
+
+    private String getUnsettleBetId(ReleaseDto dto, GameSession gameSession) {
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
         if (unsettledBetList.isEmpty()) {
-            return true;
+            return null;
         }
 
-        return false;
+        return unsettledBetList.get(0).getVendorBetId();
     }
 
     private void verifySettledBet(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
         List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
         if (!settledBetList.isEmpty()) {
-            throw new BetResultIdempotentViolationException();
+            throw new BetResultIdempotentViolationException(settledBetList.get(0));
         }
     }
 
