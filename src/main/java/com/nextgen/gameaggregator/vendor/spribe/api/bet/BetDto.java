@@ -21,6 +21,7 @@ public class BetDto implements BetResultData {
 
     @NotBlank
     @Size(max = 3)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String currency;
 
     @NotNull
@@ -28,9 +29,11 @@ public class BetDto implements BetResultData {
     private BigDecimal amount;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String game;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String action_id;
 
     @NotBlank
@@ -40,9 +43,11 @@ public class BetDto implements BetResultData {
     private String provider;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String provider_tx_id;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String platform;
 
     @Override

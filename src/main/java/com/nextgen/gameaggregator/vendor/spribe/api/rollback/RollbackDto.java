@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
@@ -17,18 +18,21 @@ public class RollbackDto implements RollbackData {
     private String user_id;
 
     @NotNull
+    @Positive
     private BigDecimal amount;
 
     @NotBlank
     private String provider;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String rollback_provider_tx_id;
 
     @NotBlank
     private String provider_tx_id;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String game;
 
     @NotBlank

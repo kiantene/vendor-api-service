@@ -33,11 +33,7 @@ public class SettleAction {
     @Autowired
     private VendorService vendorService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
+    private ValidationService validationService;
     
     @PostMapping(path = Endpoints.DEPOSIT)
     public ResponseVo settle(HttpServletRequest request) {
@@ -110,17 +106,10 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
-            
-        // Verify received vendor player username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws InvalidPlayerException, 
+        DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
+
+        validationService.validateEligibleBet(gameSession, dto.getUser_id());
     }
     
     private ResultType getResultType(SettleDto dto) {
