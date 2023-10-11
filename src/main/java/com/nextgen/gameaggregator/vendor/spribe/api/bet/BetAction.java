@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -86,9 +87,17 @@ public class BetAction {
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+        
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                vo.setErrorCode(ErrorCodes.INSUFFICIENT_FUND);
+            } else {
+                vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            }
 
         } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException | 
-            InvalidRequestException | InvalidOperatorResponseException | VendorCurrencyNotSupportException | InvalidAgentApiCredentialException | 
+            InvalidRequestException | VendorCurrencyNotSupportException | InvalidAgentApiCredentialException | 
             TransactionStillProcessingException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorException);
