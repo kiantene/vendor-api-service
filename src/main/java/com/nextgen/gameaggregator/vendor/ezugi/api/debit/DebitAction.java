@@ -74,7 +74,7 @@ public class DebitAction {
 
             // Get GameSession by player name and vendor game id
             gameSession = gameSessionService.verifyToken(debitDto.getToken());
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getTableId().toString(), gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getTableId().toString(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, httpRequestLog, request);
