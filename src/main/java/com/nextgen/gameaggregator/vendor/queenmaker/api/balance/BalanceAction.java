@@ -83,7 +83,7 @@ public class BalanceAction {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, e.getValidation().values().iterator().next().toString());
 
         } catch (JsonProcessingException e) {
-            balanceVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
+            balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
 
         } catch (Exception e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
