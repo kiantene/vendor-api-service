@@ -85,7 +85,6 @@ public class WinDataDto implements BetResultData {
     
     private String betId;
     private BigDecimal vendorWinLoss;
-    private BigDecimal effectiveTurnover;
     
     public String getAcctId() {
         return this.acctId.toLowerCase();
