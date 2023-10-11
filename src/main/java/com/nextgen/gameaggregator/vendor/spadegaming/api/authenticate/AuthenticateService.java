@@ -74,27 +74,41 @@ public class AuthenticateService {
             authBalanceVo.setSerialNo(traceId);
         } catch (AuthenticationException authenticationException) {
             // token validation failed 
+            httpService.logError(httpRequestLog, authenticationException);
             authBalanceVo.setResponseCode(ResponseCode.TOKEN_VALIDATION_FAILED);
+
         } catch (CredentialNotFoundException | UnableToFindCredentialsException |
                  DisabledVendorLineException | DisabledAgentPlayerException |
-                 DisabledGameException | InvalidAgentApiCredentialException e) {
+                 DisabledGameException | InvalidAgentApiCredentialException merchantNotFoundException) {
             // merchant not found or service inaccessible 
+            httpService.logError(httpRequestLog, merchantNotFoundException);
             authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
-        } catch (InvalidRequestException | InvalidOperatorResponseException e) {
+
+        } catch (InvalidRequestException | InvalidOperatorResponseException invalidRequestException) {
             // invalid request 
+            httpService.logError(httpRequestLog, invalidRequestException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-        } catch (JsonProcessingException | InvalidFormatException e) {
+
+        } catch (JsonProcessingException | InvalidFormatException invalidFormatException) {
             // invalid format 
+            httpService.logError(httpRequestLog, invalidFormatException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
-        } catch (InvalidPlayerException e) {
+
+        } catch (InvalidPlayerException invalidPlayerException) {
             // account not found 
+            httpService.logError(httpRequestLog, invalidPlayerException);
             authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
-        } catch (IllegalArgumentException e) {  
+
+        } catch (IllegalArgumentException illegalArgumentException) {  
             // invalid parameter 
+            httpService.logError(httpRequestLog, illegalArgumentException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
-        } catch (Exception e) {
+
+        } catch (Exception exception) {
             // others
+            httpService.logError(httpRequestLog, exception);
             authBalanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+            
         }
         finally {
            // End the HTTP request logging and return the AuthBalanceVo object
