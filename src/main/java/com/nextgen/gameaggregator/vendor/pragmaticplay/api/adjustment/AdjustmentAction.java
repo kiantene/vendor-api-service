@@ -56,6 +56,7 @@ public class AdjustmentAction {
 
             // 2. Retrieve and verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
@@ -125,6 +126,10 @@ public class AdjustmentAction {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
 
+        } catch (GameNotSupportedException e) {
+            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, e);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
 
@@ -146,17 +151,10 @@ public class AdjustmentAction {
     }
 
     private void doVerification(HttpRequestLog request, AdjustmentDto dto, GameSession gameSession) throws AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
-
-        // 1. Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
-
-        // 4. Retrieve vendor line credentials and secretKey for hash validation
+        // 1. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 5. Verify request signature is valid
+        // 2. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
     }
 }
