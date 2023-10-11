@@ -13,14 +13,12 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.zip.GZIPInputStream;
 
 @Service
 @Slf4j
@@ -244,25 +242,11 @@ public class HttpService {
     }
 
     private String getRawRequestBody(HttpServletRequest request) throws IOException {
-        String acceptEncoding = request.getHeader("Accept-Encoding");
-
-        BufferedReader reader;
+        BufferedReader reader = request.getReader();
         StringBuilder requestBody = new StringBuilder();
-
-        if (acceptEncoding != null && acceptEncoding.equals("gzip")) {
-            reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(request.getInputStream())));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                requestBody.append(line);
-            }
-
-        } else {
-            reader = request.getReader();
-            int value;
-            while ((value = reader.read()) != -1) {
-                requestBody.append((char) value);
-            }
-
+        int value;
+        while((value = reader.read()) != -1) {
+            requestBody.append((char) value);
         }
 
         return requestBody.toString();
