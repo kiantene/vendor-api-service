@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -83,10 +84,19 @@ public class SettleAction {
             vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
+                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+                vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+            } else {
+                vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            }
+
         } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | 
             InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | DisabledGameException | 
-            BetNotFoundException | InvalidOperatorResponseException | MergedBetDataIntegrityException | 
-            InsufficientBalanceException | TransactionStillProcessingException internalErrorExeption) {
+            BetNotFoundException | MergedBetDataIntegrityException | InsufficientBalanceException | 
+            TransactionStillProcessingException internalErrorExeption) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorExeption);
 
