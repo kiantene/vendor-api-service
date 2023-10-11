@@ -53,6 +53,7 @@ public class CreditAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(creditDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(creditDto, gameSession);
 
@@ -120,7 +121,6 @@ public class CreditAction {
 
         // 1. Verify Username, GameCode, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), creditDto.getUserId(), InvalidPlayerException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(creditDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), creditDto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
@@ -132,8 +132,10 @@ public class CreditAction {
             responseVo.setUuid(creditDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, e);
         }
     }
 }

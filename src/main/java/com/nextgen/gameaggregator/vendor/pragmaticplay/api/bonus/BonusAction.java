@@ -56,6 +56,8 @@ public class BonusAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+            //bonusAction dto gameId will always be empty.
+            //gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
@@ -87,29 +89,10 @@ public class BonusAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
             httpService.logError(httpRequestLog, invalidRequestException);
-//        } catch (CredentialNotFoundException credentialNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
             httpService.logError(httpRequestLog, invalidPlayerException);
-
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
-
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
-
-//        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//
-//        } catch (BetNotFoundException betNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
