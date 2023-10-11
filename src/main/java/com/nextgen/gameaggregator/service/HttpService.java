@@ -6,18 +6,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.GZIPInputStream;
 
 @Service
 @Slf4j
@@ -241,11 +244,25 @@ public class HttpService {
     }
 
     private String getRawRequestBody(HttpServletRequest request) throws IOException {
-        BufferedReader reader = request.getReader();
+        String acceptEncoding = request.getHeader("Accept-Encoding");
+
+        BufferedReader reader;
         StringBuilder requestBody = new StringBuilder();
-        int value;
-        while((value = reader.read()) != -1) {
-            requestBody.append((char) value);
+
+        if (acceptEncoding != null && acceptEncoding.equals("gzip")) {
+            reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(request.getInputStream())));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                requestBody.append(line);
+            }
+
+        } else {
+            reader = request.getReader();
+            int value;
+            while ((value = reader.read()) != -1) {
+                requestBody.append((char) value);
+            }
+
         }
 
         return requestBody.toString();

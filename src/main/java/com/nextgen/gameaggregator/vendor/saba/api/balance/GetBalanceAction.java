@@ -1,26 +1,19 @@
 package com.nextgen.gameaggregator.vendor.saba.api.balance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.gson.Gson;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
-import com.nextgen.gameaggregator.vendor.saba.service.GzipUtils;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -33,38 +26,17 @@ public class GetBalanceAction {
     private VendorService vendorService;
 
     @PostMapping(path = EndPoints.GET_BALANCE)
-    public GetBalanceVo action(@RequestBody byte[] request, HttpServletRequest httpServletRequest) throws IOException {
+    public GetBalanceVo action(HttpServletRequest request) {
 
-        Map<String, String> headers = new HashMap<>();
-
-        Enumeration<String> headerNames = httpServletRequest.getHeaderNames();
-        while (headerNames.hasMoreElements()) {
-            String key = headerNames.nextElement();
-            String value = httpServletRequest.getHeader(key);
-            headers.put(key, value);
-        }
-
-        String decompressedRequestBody = GzipUtils.decompress(request);
-
-        Map<String, String> requestLog = new HashMap<>();
-        requestLog.put("Title", "SABA Testing");
-        requestLog.put("Decompressed Request Body", decompressedRequestBody);
-        requestLog.put("Request headers", new Gson().toJson(headers));
-        requestLog.put("Request Input Stream", new Gson().toJson(httpServletRequest.getParameterMap()));
-        log.info(new Gson().toJson(requestLog));
-
-        String traceId = String.valueOf(UUID.randomUUID());
-
-//        HttpRequestLog httpRequestLog = httpService.start(request);
-//        String traceId = httpRequestLog.getId();
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
 
         // Construct Vo
         GetBalanceVo vo = new GetBalanceVo();
 
         try {
             // Convert original request body into dto
-            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(decompressedRequestBody, new TypeReference<>() {
-            });
+            RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {});
 
             vo.setStatus("0");
             vo.setUserId(dto.getMessage().getUserId());
