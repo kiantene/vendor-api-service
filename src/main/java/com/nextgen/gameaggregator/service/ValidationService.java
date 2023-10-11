@@ -82,10 +82,9 @@ public class ValidationService {
                 findByAgentIdAndUsernameAndStatus(gameSession.getAgentId(), gameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
 
-        //5. verify vendor Game status with platform and language
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.
-                findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(gameSession.getVendorGameId(),
-                        gameSession.getPlatformId(), gameSession.getLanguageId(), Status.ACTIVE.code);
+        //5. verify by vendor openGameCode instead, for play game with different game code token
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(gameSession.getVendorGameCode(),
+                gameSession.getPlatformId(), gameSession.getLanguageId(), Status.ACTIVE.code, gameSession.getVendorId());
         Optional.ofNullable(vendorGameCode).orElseThrow(DisabledGameException::new);
 
         //6.  verify vendor Game status with currency

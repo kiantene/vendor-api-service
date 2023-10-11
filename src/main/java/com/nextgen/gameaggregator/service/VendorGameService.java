@@ -26,6 +26,7 @@ public class VendorGameService {
 
     @Cacheable(value = "VendorGames", key = "{#vendorGameCode, #vendorId}", cacheManager = "cacheManager")
     public VendorGame getByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) throws GameNotSupportedException {
+
         VendorGame vendorGame = vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
         Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
 
