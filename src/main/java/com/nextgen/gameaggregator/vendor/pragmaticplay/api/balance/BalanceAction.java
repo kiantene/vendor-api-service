@@ -33,7 +33,6 @@ public class BalanceAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-
     @Autowired
     private AgentPlayerService agentPlayerService;
 
@@ -57,7 +56,6 @@ public class BalanceAction {
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
-
 
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);

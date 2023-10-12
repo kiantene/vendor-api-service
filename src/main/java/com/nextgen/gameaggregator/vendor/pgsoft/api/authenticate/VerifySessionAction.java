@@ -34,9 +34,10 @@ public class VerifySessionAction {
     private VendorLineService vendorLineService;
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
-
     @Autowired
     private VendorGameRepository vendorGameRepository;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo<VerifySessionVo> authenticate(HttpServletRequest request) {
@@ -64,7 +65,8 @@ public class VerifySessionAction {
             // 3. Validate vendor game code
             VendorService.validateVendorGameCode(String.valueOf(dto.getGameId()), gameSession.getVendorGameCode());
             // x. Validate is game disabled
-            VendorGame game = vendorGameRepository.findByVendorGameCodeAndVendorId(String.valueOf(dto.getGameId()), gameSession.getVendorId());
+            VendorGame game = vendorGameService.getByVendorGameCodeAndVendorId(String.valueOf(dto.getGameId()), gameSession.getVendorId());
+
             VendorService.validateGameStatus(game);
             // 4. Retrieve vendor line operatorToken and secretKey for validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
