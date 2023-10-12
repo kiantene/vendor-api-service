@@ -25,7 +25,7 @@ public class BetDto implements BetResultData {
     private String currency;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private Integer amount;
 
     @NotBlank

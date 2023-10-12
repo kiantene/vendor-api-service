@@ -19,7 +19,7 @@ public class SettleDto implements BetResultData {
     private String session_token;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private Integer amount;
 
     @NotBlank
