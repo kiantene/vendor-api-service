@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBetRefundLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
@@ -39,6 +40,8 @@ public class RollbackAction {
     private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    BetRefundLogService betRefundLogService;
     
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseVo rollback(HttpServletRequest request) {
@@ -62,22 +65,32 @@ public class RollbackAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
-            // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            // 5. Check whether if the request is caused by error or not 
+            RawBetRefundLog rawBetRefundLog = betRefundLogService.checkExists(gameSession.getVendorPlayerId().toString(), gameSession.getVendorGameId().toString(), 
+                                                dto.getRollback_provider_tx_id());
+            Integer operatorStatus = rawBetRefundLog.getOperatorStatus();
+            
+            if (operatorStatus != ResponseCodes.Status.SC_OK.code) {
+                // 6. Retrieve the latest wallet balance from Operator
+                BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 6. Send rollback request to Operator
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+                // 7. Send rollback request to Operator
+                BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
-            // 7. Set response data
-            data.setOperator_tx_id(traceId);
-            data.setNew_balance(balance);
-            data.setOld_balance(oldBalance);
-            data.setUser_id(gameSession.getVendorPlayerUsername());
-            data.setCurrency(gameSession.getVendorCurrencyCode());
-            data.setProvider(dto.getProvider());
-            data.setProvider_tx_id(dto.getProvider_tx_id());
-            vo.setErrorCode(ErrorCodes.SUCCESS);
-            vo.setData(data);
+                // 8. Set response data
+                data.setOperator_tx_id(traceId);
+                data.setNew_balance(balance);
+                data.setOld_balance(oldBalance);
+                data.setUser_id(gameSession.getVendorPlayerUsername());
+                data.setCurrency(gameSession.getVendorCurrencyCode());
+                data.setProvider(dto.getProvider());
+                data.setProvider_tx_id(dto.getProvider_tx_id());
+                vo.setErrorCode(ErrorCodes.SUCCESS);
+                vo.setData(data);
+
+            } else {
+                vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            }
 
         } catch (RecordNotFoundException | BetNotFoundException transactionNotFoundeException) {
             vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
