@@ -127,7 +127,8 @@ pipeline {
                         String login = ecrLogin()
 
                         sh("#!/bin/sh -e\n${login}") // hide logging
-                        docker.image("${AWS_ECR_URL}:${packageVersion}").push("${packageVersion}").push("${versionTag}")
+                        docker.image("${AWS_ECR_URL}:${packageVersion}").push("${packageVersion}")
+                        docker.image("${AWS_ECR_URL}:${packageVersion}").push("${versionTag}")
                     }
                 }
             }
