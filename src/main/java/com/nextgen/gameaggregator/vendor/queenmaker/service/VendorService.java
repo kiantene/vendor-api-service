@@ -1,10 +1,15 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.service;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.InvalidFormatException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,6 +20,9 @@ import java.util.Optional;
 @Slf4j
 @Data
 public class VendorService extends BaseVendorService {
+
+    @Autowired
+    UnsettledBetService unsettledBetService;
 
     public static Long convertToTimestamp(String dateTimeString) {
         // Parse the date-time string to an Instant
@@ -48,6 +56,10 @@ public class VendorService extends BaseVendorService {
         }
 
         return resultType;
+    }
+
+    public void verifyExistDebitTransaction(Integer vendorId, String externalTransactionId) throws InvalidFormatException, BetNotFoundException, TransactionStillProcessingException {
+        unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
     }
 
 }

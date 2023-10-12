@@ -106,7 +106,7 @@ public class CreditAction {
             CredentialNotFoundException,
             InvalidVendorLineException,
             CurrencyNotSupportedException,
-            GameNotSupportedException, InvalidRequestException {
+            GameNotSupportedException, InvalidRequestException, TransactionStillProcessingException, BetNotFoundException, InvalidFormatException {
 
         // 1. Validate Credentials
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
@@ -125,9 +125,13 @@ public class CreditAction {
         ValidationUtils.isEquals(creditTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
         ValidationUtils.isEquals(creditTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
+        // 3. Validate TxType is exist
         if (!Txtype.txtTypeList.contains(creditTransactionsDto.getTxtype())) {
             throw new InvalidRequestException();
         }
+
+        // 4. Validate Debit Transaction is exist
+        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), creditTransactionsDto.getRefptxid());
     }
 
     private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {

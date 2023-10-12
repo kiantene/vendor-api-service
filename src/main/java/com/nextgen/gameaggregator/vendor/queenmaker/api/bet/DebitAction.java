@@ -131,6 +131,7 @@ public class DebitAction {
         ValidationUtils.isEquals(debitTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
         ValidationUtils.isEquals(debitTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
+        // 4. Validate TxType is exist
         if (!Txtype.txtTypeList.contains(debitTransactionsDto.getTxtype())) {
             throw new InvalidRequestException();
         }
@@ -186,7 +187,7 @@ public class DebitAction {
 
         } catch (DisabledAgentPlayerException e) {
             transactionsVo.setResponseCode(ResponseCodes.USER_BLOCKED);
-            
+
         } catch (InvalidPlayerException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
 
