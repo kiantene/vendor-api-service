@@ -131,7 +131,7 @@ public class CreditAction {
         }
 
         // 4. Validate Debit Transaction is exist
-        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), creditTransactionsDto.getRefptxid());
+        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
     }
 
     private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
