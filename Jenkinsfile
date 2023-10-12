@@ -46,6 +46,8 @@ pipeline {
 
         QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
+        
+        STG_JOB_NAME = 'game_aggregator/devs/vendor_api_service/stg'
 
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
     }
@@ -177,6 +179,60 @@ pipeline {
                         sh "git tag -a ${versionTag} -m '${commitMessage}'"
                         sh "git push origin ${versionTag}"
                     }
+                }
+            }
+        }
+
+        stage('Purge STG Builds') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    String jobName = "${STG_JOB_NAME}"
+
+                    // 1. Acquire the Jenkins instance and validate
+                    def jenkins = Jenkins.getInstanceOrNull()
+                    if (jenkins == null) {
+                        error("Cannot retrieve Jenkins instance.")
+                    }
+
+                    // 2. Check job existence
+                    def job = jenkins.getItemByFullName(jobName)
+                    if (job == null) {
+                        error("Job with name ${jobName} does not exist.")
+                    }
+
+                    // 3. Ensure we're dealing with a Job type
+                    if (!(job instanceof Job)) {
+                        error("Item ${jobName} is not a job type.")
+                    }
+
+                    // 4. Check builds existence
+                    if (job.builds.size() == 0) {
+                        println("No builds available for the job.")
+                        return
+                    }
+
+                    // 5. Iterate safely over builds and perform deletion
+                    println("Start Delete")
+                    job.builds.each { build ->
+                        if (build.isBuilding()) {
+                            println("Skipped build: ${build.number}")
+                        } else {
+                            println("Deleting build: ${build.number}")
+                            try {
+                                build.delete()
+                            } catch (Exception e) {
+                                println("Error deleting build ${build.number}: ${e.message}")
+                            }
+                        }
+                    }
+                    println("End Delete")
+
+                    // 6. Reset the build number and save
+                    job.nextBuildNumber = 1
+                    job.save()
                 }
             }
         }
