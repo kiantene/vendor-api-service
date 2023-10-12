@@ -151,7 +151,7 @@ public class CancelWagerAction {
 
             } else if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
                 // if bet already settled
-                responseVo = this.doAdjustment(traceId, gameSession, dto, httpRequestLog);
+                this.doAdjustment(traceId, gameSession, dto, responseVo, responseDataVo, httpRequestLog);
 
             } else {
                 // if found the bet other in settled status (cancel / unsettle / settled)
@@ -216,10 +216,7 @@ public class CancelWagerAction {
 
     }
 
-    private ResponseVo doAdjustment(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog) {
-
-        ResponseVo responseVo = new ResponseVo();
-        ResponseDataVo responseDataVo = new ResponseDataVo();
+    private void doAdjustment(String traceId, GameSession gameSession, CancelWagerDto dto, ResponseVo responseVo, ResponseDataVo responseDataVo, HttpRequestLog httpRequestLog) {
 
         try {
             // get the settled bet for adjustment
@@ -262,8 +259,6 @@ public class CancelWagerAction {
             httpService.logError(httpRequestLog, exception);
 
         }
-
-        return responseVo;
 
     }
 
