@@ -71,29 +71,44 @@ public class BalanceService {
             authBalanceVo.setMerchantCode(dto.getMerchantCode());
             authBalanceVo.setResponseCode(ResponseCode.SUCCESS);
             authBalanceVo.setSerialNo(traceId);
-        } catch (AuthenticationException e) {
+
+        } catch (AuthenticationException authenticationException) {
             // handle account not found errors
+            httpService.logError(httpRequestLog, authenticationException);
             authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
-        } catch (CredentialNotFoundException | UnableToFindCredentialsException e) {
+
+        } catch (CredentialNotFoundException | UnableToFindCredentialsException merchantNotFoundException) {
             // handle merchant not found errors
+            httpService.logError(httpRequestLog, merchantNotFoundException);
             authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+
         } catch (DisabledVendorLineException | DisabledAgentPlayerException |
-                DisabledGameException e) {
+                DisabledGameException serviceInaccessibleException) {
             // handle service inaccessible errors
+            httpService.logError(httpRequestLog, serviceInaccessibleException);
             authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
         } catch (InvalidRequestException | InvalidOperatorResponseException |
-                InvalidAgentApiCredentialException | GameNotSupportedException e) {
+                InvalidAgentApiCredentialException | GameNotSupportedException invalidRequestException) {
             // handle invalid request errors
+            httpService.logError(httpRequestLog, invalidRequestException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-        } catch (JsonProcessingException e) {
+
+        } catch (JsonProcessingException invalidFormatException) {
             // handle invalid format errors
+            httpService.logError(httpRequestLog, invalidFormatException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
-        } catch (IllegalArgumentException e) {
+
+        } catch (IllegalArgumentException illegalArgumentException) {
             // handle invalid parameter errors
+            httpService.logError(httpRequestLog, illegalArgumentException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
-        } catch (Exception e) {
+
+        } catch (Exception exception) {
             // others
+            httpService.logError(httpRequestLog, exception);
             authBalanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+            
         } finally {
             // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, authBalanceVo);

@@ -34,9 +34,12 @@ public class BetAction {
     private VendorLineService vendorLineService;
     @Autowired
     private WalletService walletService;
-
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.BET)
     public ResponseVo betRequest(HttpServletRequest request) {
@@ -55,6 +58,7 @@ public class BetAction {
 
             // 2. Retrieve and verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
@@ -122,7 +126,7 @@ public class BetAction {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
             httpService.logError(httpRequestLog, disabledVendorLineException);
 
-        } catch (DisabledGameException disabledGameException) {
+        } catch (DisabledGameException | GameNotSupportedException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
             httpService.logError(httpRequestLog, disabledGameException);
 
@@ -151,22 +155,17 @@ public class BetAction {
     private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws
             AuthenticationException, InvalidPlayerException, CredentialNotFoundException,
             InvalidSignatureException, DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledGameException {
+            DisabledGameException, GameNotSupportedException {
 
-        //1. validate vendor username, agent vendor line, player status, and game status
+        // 1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUserId());
 
-        // 2. Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
-
-
-        // 4. Retrieve vendor line credentials and secretKey for hash validation
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 5. Verify request signature is valid
+        // 3. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
+
+        // 4. not needed to check is game availability, because validateEligibleBet already done the checking
     }
 }
