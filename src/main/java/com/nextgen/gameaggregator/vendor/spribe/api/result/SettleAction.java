@@ -43,6 +43,11 @@ public class SettleAction {
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
+        String userId = null;
+        String currency = null;
+        String provider = null;
+        String providerTxId = null;
+        BigDecimal oldBalance = null;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -59,7 +64,7 @@ public class SettleAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 5. Retrieve the latest wallet balance from Operator
-            BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 6. Send bet request to Operator
             ResultType resultType = getResultType(dto);
@@ -81,13 +86,30 @@ public class SettleAction {
             httpService.logError(httpRequestLog, authenticationException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            data.setOperator_tx_id(traceId);
+            data.setNew_balance(betResultIdempotentViolationException.getBalance());
+            data.setOld_balance(betResultIdempotentViolationException.getBalance());
+            data.setUser_id(userId);
+            data.setCurrency(currency);
+            data.setProvider(provider);
+            data.setProvider_tx_id(betResultIdempotentViolationException.getBetId());
             vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+            vo.setData(data);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
                 invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+                data.setOperator_tx_id(traceId);
+                data.setNew_balance(oldBalance);
+                data.setOld_balance(oldBalance);
+                data.setUser_id(userId);
+                data.setCurrency(currency);
+                data.setProvider(provider);
+                data.setProvider_tx_id(providerTxId);
                 vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+                vo.setData(data);
 
             } else if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 vo.setErrorCode(ErrorCodes.INSUFFICIENT_FUND);
