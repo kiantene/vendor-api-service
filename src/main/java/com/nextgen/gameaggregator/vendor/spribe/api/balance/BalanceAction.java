@@ -73,6 +73,10 @@ public class BalanceAction {
             vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
             httpService.logError(httpRequestLog, authenticationException);
 
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
+
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -84,19 +88,25 @@ public class BalanceAction {
         return vo;
     }
 
-     private void doValidation(BalanceDto dto) throws InvalidRequestException {
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
-        DisabledGameException, CredentialNotFoundException {
+        DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }

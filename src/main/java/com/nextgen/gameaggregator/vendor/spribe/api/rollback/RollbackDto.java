@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
-import java.math.BigDecimal;
-
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
@@ -19,7 +17,7 @@ public class RollbackDto implements RollbackData {
 
     @NotNull
     @Positive
-    private BigDecimal amount;
+    private Integer amount;
 
     @NotBlank
     private String provider;

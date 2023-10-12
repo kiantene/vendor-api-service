@@ -80,6 +80,10 @@ public class AuthAction {
             httpRequestLog.setGameToken(gameToken);
             httpService.logError(httpRequestLog, authenticationException);
 
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
+
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
@@ -97,11 +101,16 @@ public class AuthAction {
     }
 
     private void doVerification(AuthDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, 
-        DisabledGameException, CredentialNotFoundException {
+        DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }

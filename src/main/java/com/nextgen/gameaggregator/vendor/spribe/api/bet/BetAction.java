@@ -89,16 +89,22 @@ public class BetAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
         
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
+                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+                vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+
+            } else if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 vo.setErrorCode(ErrorCodes.INSUFFICIENT_FUND);
+
             } else {
                 vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException | 
             InvalidRequestException | VendorCurrencyNotSupportException | InvalidAgentApiCredentialException | 
-            TransactionStillProcessingException internalErrorException) {
+            TransactionStillProcessingException | GameNotSupportedException | CurrencyNotSupportedException  internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -119,8 +125,17 @@ public class BetAction {
     }
 
     private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws InvalidPlayerException, 
-        DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException {
+        DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, GameNotSupportedException, 
+        CurrencyNotSupportedException {
 
+        // Verify received vendor player username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
+
+        // Verify vendor gameCode and currency
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+        //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUser_id());
     }
 

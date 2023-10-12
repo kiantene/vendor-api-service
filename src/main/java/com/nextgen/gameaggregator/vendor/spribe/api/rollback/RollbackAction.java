@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
@@ -82,9 +83,24 @@ public class RollbackAction {
             vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, transactionNotFoundeException);
 
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
+                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+                vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+
+            } else if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                vo.setErrorCode(ErrorCodes.INSUFFICIENT_FUND);
+
+            } else {
+                vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+
+            }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
         } catch (InvalidRequestException | AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException | 
-            DisabledGameException | InvalidAgentApiCredentialException | InvalidOperatorResponseException | BetRefundIdempotentViolationException | 
-            BetResultIdempotentViolationException | TransactionStillProcessingException | VendorCurrencyNotSupportException internalErrorException) {
+            DisabledGameException | InvalidAgentApiCredentialException | BetRefundIdempotentViolationException | 
+            BetResultIdempotentViolationException | TransactionStillProcessingException | VendorCurrencyNotSupportException | 
+            GameNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorException);
         
@@ -105,13 +121,19 @@ public class RollbackAction {
     }
 
     private void doVerification(RollbackDto dto, GameSession gameSession) throws AuthenticationException, 
-        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+        DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, GameNotSupportedException {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
+
+        // Verify vendor gameCode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()), GameNotSupportedException::new);
+
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+        
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }

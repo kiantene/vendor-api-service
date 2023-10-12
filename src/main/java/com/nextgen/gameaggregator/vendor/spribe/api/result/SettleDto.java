@@ -19,8 +19,8 @@ public class SettleDto implements BetResultData {
     private String session_token;
 
     @NotNull
-    @PositiveOrZero
-    private BigDecimal amount;
+    @Positive
+    private Integer amount;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -81,7 +81,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return amount;
+        return new BigDecimal(amount);
     }
 
     @Override

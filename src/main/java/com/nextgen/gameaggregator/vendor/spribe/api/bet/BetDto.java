@@ -25,8 +25,8 @@ public class BetDto implements BetResultData {
     private String currency;
 
     @NotNull
-    @PositiveOrZero
-    private BigDecimal amount;
+    @Positive
+    private Integer amount;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -72,7 +72,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return amount;
+        return new BigDecimal(amount);
     }
 
     @Override
@@ -87,7 +87,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return amount;
+        return new BigDecimal(amount);
     }
 
     @Override
