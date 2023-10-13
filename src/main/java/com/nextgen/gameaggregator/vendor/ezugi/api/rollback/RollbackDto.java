@@ -4,27 +4,37 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RollbackDto extends CommonDto implements RollbackData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 50)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 50)
     private String transactionId;
+    @NotNull
+    @Digits(integer = 18, fraction = 0)
+    private BigInteger roundId;
+    @NotNull
+    @Digits(integer = 4, fraction = 0)
+    private Integer gameId;
+    @NotNull
+    private Integer tableId;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String roundId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 4)
     private String currency;
     @NotNull
+    @PositiveOrZero(message = "Negative amount")
+    @Digits(integer = 25, fraction = 2, message = "Invalid amount")
     private Double rollbackAmount;
 
     @Override

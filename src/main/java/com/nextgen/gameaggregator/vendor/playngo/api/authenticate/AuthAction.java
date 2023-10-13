@@ -94,13 +94,17 @@ public class AuthAction {
 
         } catch (InvalidAgentApiCredentialException |
                  InvalidOperatorResponseException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  DisabledVendorLineException |
                  CredentialNotFoundException |
                  GameNotSupportedException |
                  JsonProcessingException internalErrorException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, internalErrorException);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            authVo.setStatusCodeAndMessage(ResponseCodes.ACCOUNTDISABLED);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -118,12 +122,15 @@ public class AuthAction {
                 authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
 
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INVALIDCURRENCY);
+            httpService.logError(httpRequestLog, vendorCurrencyNotSupportException);
 
         } catch (AuthenticationException authenticationException) {
             authVo.setStatusCodeAndMessage(ResponseCodes.WRONGUSERNAMEPASSWORD);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (Exception exception) {
             authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);

@@ -179,6 +179,9 @@ public class ReleaseDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
+        if (this.jackpotGain != null) {
+            return this.real.subtract(this.jackpotGain);
+        }
         return this.real;
     }
 
