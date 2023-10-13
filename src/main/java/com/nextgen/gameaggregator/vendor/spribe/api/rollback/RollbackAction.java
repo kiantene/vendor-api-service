@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawBetRefundLog;
-import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -77,32 +75,37 @@ public class RollbackAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Check whether if the request is caused by error
+            // 5. Check whether if the request is a place bet not result
             SettledBet rawSettledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getRollback_provider_tx_id(), dto.getAction_id(), 
                                         gameSession.getVendorId(), gameSession.getVendorPlayerId());
-            BigDecimal winAmount = rawSettledBet.getWinAmount();
-            
-            // Zero win amount = place bet
-            if (winAmount.equals(BigDecimal.ZERO)) {
-                // 6. Retrieve the latest wallet balance from Operator
-                oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-                // 7. Send rollback request to Operator
-                BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
-
-                // 8. Set response data
-                data.setOperator_tx_id(traceId);
-                data.setNew_balance(balance);
-                data.setOld_balance(oldBalance);
-                data.setUser_id(userId);
-                data.setCurrency(currency);
-                data.setProvider(provider);
-                data.setProvider_tx_id(providerTxId);
-                vo.setErrorCode(ErrorCodes.SUCCESS);
-                vo.setData(data);
+            if (rawSettledBet == null) {
+                vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
 
             } else {
-                vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+                BigDecimal winAmount = rawSettledBet.getWinAmount();
+                // Zero win amount = place bet
+                if (winAmount.equals(BigDecimal.ZERO)) {
+                    // 6. Retrieve the latest wallet balance from Operator
+                    oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+                    // 7. Send rollback request to Operator
+                    BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+
+                    // 8. Set response data
+                    data.setOperator_tx_id(traceId);
+                    data.setNew_balance(balance);
+                    data.setOld_balance(oldBalance);
+                    data.setUser_id(userId);
+                    data.setCurrency(currency);
+                    data.setProvider(provider);
+                    data.setProvider_tx_id(providerTxId);
+                    vo.setErrorCode(ErrorCodes.SUCCESS);
+                    vo.setData(data);
+
+                } else {
+                    vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
+                }
             }
 
         } catch (RecordNotFoundException | BetNotFoundException transactionNotFoundeException) {
