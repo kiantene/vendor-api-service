@@ -84,7 +84,8 @@ public class CancelWagerAction {
                 throw new BetNotFoundException();
             }
 
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            // Check if bet is settled If settled do adjustment, else do rollback
+            BigDecimal balance = doAdjustmentOrRollback(traceId, gameSession, dto, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -99,7 +100,7 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
             httpService.logError(httpRequestLog, signErrorException);
 
-        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+        } catch (CurrencyNotSupportedException | VendorCurrencyNotSupportException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
             httpService.logError(httpRequestLog, currencyNotSupportedException);
 
@@ -119,7 +120,7 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
             httpService.logError(httpRequestLog, invalidProviderException);
 
-        } catch (BetNotFoundException betRecordNotExistException) {
+        } catch (BetNotFoundException | SettledBetNotFoundException betRecordNotExistException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
@@ -149,10 +150,6 @@ public class CancelWagerAction {
                 responseVo.setData(responseDataVo);
                 responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
 
-            } else if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
-                // if bet already settled
-                this.doAdjustment(traceId, gameSession, dto, responseVo, responseDataVo, httpRequestLog);
-
             } else {
                 // if found the bet other in settled status (cancel / unsettle / settled)
                 responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
@@ -160,15 +157,30 @@ public class CancelWagerAction {
             }
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
+            // get current balance
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            responseVo.setCode(ResponseCodes.BALANCE_INSUFFICIENT);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
+
+        } catch (BetAdjustmentIdempotentViolationException betAdjustmentIdempotentViolationException) {
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
+            httpService.logError(httpRequestLog, betAdjustmentIdempotentViolationException);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (Exception exception) {
+        }/*catch (Exception exception) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
 
-        } finally {
+        }*/finally {
             httpService.end(httpRequestLog, responseVo);
 
         }
@@ -216,6 +228,38 @@ public class CancelWagerAction {
 
     }
 
+
+    private BigDecimal doAdjustmentOrRollback(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
+            throws
+            InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            BetNotFoundException,
+            SettledBetNotFoundException,
+            InvalidOperatorResponseException,
+            BetAdjustmentIdempotentViolationException,
+            RecordNotFoundException,
+            BetResultIdempotentViolationException,
+            BetRefundIdempotentViolationException {
+
+        SettledBet settledBet = null;
+
+        try {
+            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+
+        } catch (BetNotFoundException betNotFoundException) {
+            // do rollback if not settled bet found
+            return walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+
+        }
+
+        dto.setAdjustmentAmount(settledBet.getBetAmount());
+        return walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
+
+    }
+
+    /*
     private void doAdjustment(String traceId, GameSession gameSession, CancelWagerDto dto, ResponseVo responseVo, ResponseDataVo responseDataVo, HttpRequestLog httpRequestLog) {
 
         try {
@@ -261,5 +305,6 @@ public class CancelWagerAction {
         }
 
     }
+     */
 
 }
