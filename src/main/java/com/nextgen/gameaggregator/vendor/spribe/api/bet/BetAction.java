@@ -63,8 +63,8 @@ public class BetAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-            userId = dto.getUser_id();
-            currency = dto.getCurrency();
+            userId = gameSession.getVendorPlayerUsername();
+            currency = gameSession.getVendorCurrencyCode();
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 

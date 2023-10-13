@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.RawBetRefundLog;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
@@ -41,7 +43,7 @@ public class RollbackAction {
     @Autowired
     private VendorService vendorService;
     @Autowired
-    BetRefundLogService betRefundLogService;
+    SettledBetService settledBetService;
     
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseVo rollback(HttpServletRequest request) {
@@ -50,6 +52,11 @@ public class RollbackAction {
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
+        String userId = null;
+        String currency = null;
+        String provider = null;
+        String providerTxId = null;
+        BigDecimal oldBalance = null;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -65,14 +72,20 @@ public class RollbackAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
-            // 5. Check whether if the request is caused by error or not 
-            RawBetRefundLog rawBetRefundLog = betRefundLogService.checkExists(gameSession.getVendorPlayerId().toString(), gameSession.getVendorGameId().toString(), 
-                                                dto.getRollback_provider_tx_id());
-            Integer operatorStatus = rawBetRefundLog.getOperatorStatus();
+            userId = gameSession.getVendorPlayerUsername();
+            currency = gameSession.getVendorCurrencyCode();
+            provider = dto.getProvider();
+            providerTxId = dto.getProvider_tx_id();
+
+            // 5. Check whether if the request is caused by error
+            SettledBet rawSettledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getRollback_provider_tx_id(), dto.getAction_id(), 
+                                        gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            BigDecimal winAmount = rawSettledBet.getWinAmount();
             
-            if (operatorStatus != ResponseCodes.Status.SC_OK.code) {
+            // Zero win amount = place bet
+            if (winAmount.equals(BigDecimal.ZERO)) {
                 // 6. Retrieve the latest wallet balance from Operator
-                BigDecimal oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+                oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
                 // 7. Send rollback request to Operator
                 BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
@@ -81,10 +94,10 @@ public class RollbackAction {
                 data.setOperator_tx_id(traceId);
                 data.setNew_balance(balance);
                 data.setOld_balance(oldBalance);
-                data.setUser_id(gameSession.getVendorPlayerUsername());
-                data.setCurrency(gameSession.getVendorCurrencyCode());
-                data.setProvider(dto.getProvider());
-                data.setProvider_tx_id(dto.getProvider_tx_id());
+                data.setUser_id(userId);
+                data.setCurrency(currency);
+                data.setProvider(provider);
+                data.setProvider_tx_id(providerTxId);
                 vo.setErrorCode(ErrorCodes.SUCCESS);
                 vo.setData(data);
 
@@ -111,11 +124,22 @@ public class RollbackAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidRequestException | AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException | 
-            DisabledGameException | InvalidAgentApiCredentialException | BetRefundIdempotentViolationException | 
-            BetResultIdempotentViolationException | TransactionStillProcessingException | VendorCurrencyNotSupportException | 
-            GameNotSupportedException internalErrorException) {
+            DisabledGameException | InvalidAgentApiCredentialException  | TransactionStillProcessingException | 
+            VendorCurrencyNotSupportException | GameNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
-            httpService.logError(httpRequestLog, internalErrorException);
+            httpService.logError(httpRequestLog, internalErrorException);  
+
+        } catch (BetResultIdempotentViolationException | BetRefundIdempotentViolationException idempotentViolationException) {
+            data.setOperator_tx_id(traceId);
+            data.setNew_balance(oldBalance);
+            data.setOld_balance(oldBalance);
+            data.setUser_id(userId);
+            data.setCurrency(currency);
+            data.setProvider(provider);
+            data.setProvider_tx_id(providerTxId);
+            vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
+            vo.setData(data);
+            httpService.logError(httpRequestLog, idempotentViolationException);
         
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);

@@ -63,6 +63,11 @@ public class SettleAction {
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
+            userId = gameSession.getVendorPlayerUsername();
+            currency = gameSession.getVendorCurrencyCode();
+            provider = dto.getProvider();
+            providerTxId = dto.getProvider_tx_id();
+
             // 5. Retrieve the latest wallet balance from Operator
             oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
@@ -74,10 +79,10 @@ public class SettleAction {
             data.setOperator_tx_id(traceId);
             data.setNew_balance(balance);
             data.setOld_balance(oldBalance);
-            data.setUser_id(gameSession.getVendorPlayerUsername());
-            data.setCurrency(gameSession.getVendorCurrencyCode());
-            data.setProvider(dto.getProvider());
-            data.setProvider_tx_id(dto.getProvider_tx_id());
+            data.setUser_id(userId);
+            data.setCurrency(currency);
+            data.setProvider(provider);
+            data.setProvider_tx_id(providerTxId);
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
@@ -95,7 +100,6 @@ public class SettleAction {
             data.setProvider_tx_id(betResultIdempotentViolationException.getBetId());
             vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
             vo.setData(data);
-            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
