@@ -226,7 +226,7 @@ public class ReleaseAction {
     private void verifySettledBet(ReleaseDto dto, GameSession gameSession) throws BetResultIdempotentViolationException {
         List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
-        if (!settledBetList.isEmpty()) {
+        if (!settledBetList.isEmpty() && settledBetList.get(0).getOperatorStatus().equals(1)) {
             throw new BetResultIdempotentViolationException(settledBetList.get(0));
         }
     }
