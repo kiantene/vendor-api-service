@@ -84,8 +84,10 @@ public class RollbackAction {
 
             } else {
                 BigDecimal winAmount = rawSettledBet.getWinAmount();
-                // Zero win amount = place bet
-                if (winAmount.equals(BigDecimal.ZERO)) {
+                Integer freeSpin = rawSettledBet.getIsFreespin();
+
+                // Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
+                if (winAmount.equals(BigDecimal.ZERO) && freeSpin == 0) {
                     // 6. Retrieve the latest wallet balance from Operator
                     oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 

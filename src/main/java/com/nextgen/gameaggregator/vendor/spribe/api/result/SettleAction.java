@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.result;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -35,6 +37,8 @@ public class SettleAction {
     private VendorService vendorService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private SettledBetService settledBetService;
     
     @PostMapping(path = Endpoints.DEPOSIT)
     public ResponseVo settle(HttpServletRequest request) {
@@ -68,23 +72,32 @@ public class SettleAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Retrieve the latest wallet balance from Operator
-            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            // 5. Check if the round exists
+            List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
-            // 6. Send bet request to Operator
-            ResultType resultType = getResultType(dto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+            // 6. Reject the request if there's no place bet
+            if (settledBetList.isEmpty()) {
+                vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
 
-            // 7. Set response data
-            data.setOperator_tx_id(traceId);
-            data.setNew_balance(balance);
-            data.setOld_balance(oldBalance);
-            data.setUser_id(userId);
-            data.setCurrency(currency);
-            data.setProvider(provider);
-            data.setProvider_tx_id(providerTxId);
-            vo.setErrorCode(ErrorCodes.SUCCESS);
-            vo.setData(data);
+            } else {
+                // 7. Retrieve the latest wallet balance from Operator
+                oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+                // 8. Send bet request to Operator
+                ResultType resultType = getResultType(dto);
+                BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
+
+                // 9. Set response data
+                data.setOperator_tx_id(traceId);
+                data.setNew_balance(balance);
+                data.setOld_balance(oldBalance);
+                data.setUser_id(userId);
+                data.setCurrency(currency);
+                data.setProvider(provider);
+                data.setProvider_tx_id(providerTxId);
+                vo.setErrorCode(ErrorCodes.SUCCESS);
+                vo.setData(data);
+            }
 
         } catch (AuthenticationException authenticationException) {
             vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
