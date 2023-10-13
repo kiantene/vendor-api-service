@@ -250,12 +250,14 @@ public class CancelWagerAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             // do rollback if not settled bet found
-            return walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
-
         }
 
-        dto.setAdjustmentAmount(settledBet.getBetAmount());
-        return walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
+        if(settledBet != null && settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+            dto.setAdjustmentAmount(settledBet.getBetAmount());
+            return walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
+        } else {
+            return walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+        }
 
     }
 
