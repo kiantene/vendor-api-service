@@ -89,28 +89,13 @@ public class GameUrlService {
         return platform;
 
     }
-
-    @Cacheable(value = "VendorGameCode", key = "{#vendorGame.id, #language.id, #currency.id}" , cacheManager = "cacheManager")
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
 
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(vendorGame.getVendorGameCode(),
+                platform.getId(), language.getId(), Status.ACTIVE.code, vendorGame.getVendor().getId());
 
-        List<VendorGameCode> vendorGameCodes = vendorGameCodeRepository.findByVendorGameIdAndLanguageIdAndStatus(vendorGame.getId(), language.getId(), Status.ACTIVE.code);
-        //not vendor game id and language matched
-        if (vendorGameCodes.isEmpty()) {
-            throw new GameLanguageNotSupportException();
-        }
-
-        VendorGameCode vendorGameCodeMatched = null;
-        //search the game supported platform
-        for (VendorGameCode vendorGameCode : vendorGameCodes) {
-            if (vendorGameCode.getPlatformId().equals(platform.getId())) {
-                vendorGameCodeMatched = vendorGameCode;
-                break;
-            }
-        }
-        //not platform match with the requested game id
-        Optional.ofNullable(vendorGameCodeMatched).orElseThrow(GamePlatformNotSupportException::new);
+        Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
 
         VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(vendorGame.getId(), currency.getId());
 
@@ -121,7 +106,7 @@ public class GameUrlService {
             throw new GameCurrencyNotSupportException();
         }
 
-        return vendorGameCodeMatched;
+        return vendorGameCode;
     }
 
     public VendorGameCode getFirstVendorGameCode(VendorGame vendorGame) throws GameNotSupportedException {
