@@ -1,15 +1,20 @@
 package com.nextgen.gameaggregator.vendor.ifg.service;
 
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -17,6 +22,11 @@ public class VendorService extends BaseVendorService {
 
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    RawSettledBetRepository rawSettledBetRepository;
+    @Autowired
+    private SettledBetService settledBetService;
+
     public static Long getTimeStamp(String datetimeString) {
         try {
             // Use Instant.parse to directly convert the datetime string to an Instant
@@ -60,6 +70,13 @@ public class VendorService extends BaseVendorService {
     public void verifyTokenStatus(Integer status) throws AuthenticationException {
         if (status != Status.ACTIVE.code) {
             throw new AuthenticationException();
+        }
+    }
+
+    public void verifySettledRound(Long vendorPlayerId, String roundId) throws BetResultIdempotentViolationException {
+        List<SettledBet> settledBetList = rawSettledBetRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
+        if (settledBetList != null && !settledBetList.isEmpty()) {
+            throw new BetResultIdempotentViolationException();
         }
     }
 }

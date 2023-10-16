@@ -86,7 +86,8 @@ public class RollBackService {
                  DisabledGameException |
                  InvalidRequestException |
                  RecordNotFoundException |
-                 JsonProcessingException e) {
+                 JsonProcessingException |
+                 TransactionStillProcessingException e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -98,10 +99,11 @@ public class RollBackService {
 
             // set vo
             vo.setRefund(refundVo);
+
+            httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException |
                  BetNotFoundException |
-                 BetRefundIdempotentViolationException |
-                 TransactionStillProcessingException e) {
+                 BetRefundIdempotentViolationException e) {
             // this exception happened when handle repeated data or data was not found
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
@@ -118,9 +120,9 @@ public class RollBackService {
 
             // set vo
             vo.setRefund(refundVo);
-        } catch(Exception exception) {
-            httpService.logError(httpRequestLog, exception);
 
+            httpService.logError(httpRequestLog, e);
+        } catch(Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -132,6 +134,8 @@ public class RollBackService {
 
             // set vo
             vo.setRefund(refundVo);
+
+            httpService.logError(httpRequestLog, e);
         } finally{
             vo.setSession(rollBackServiceDto.getSession());
             vo.setTime(rollBackServiceDto.getTime());
