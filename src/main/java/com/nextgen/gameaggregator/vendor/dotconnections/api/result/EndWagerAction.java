@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -43,6 +43,9 @@ public class EndWagerAction {
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
+
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -212,9 +215,10 @@ public class EndWagerAction {
             TransactionStillProcessingException,
             InvalidOperatorResponseException {
 
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
-        if (unsettledBetList.isEmpty()) {
+        if (unsettledBetList.isEmpty() && settledBetList.isEmpty()) {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
         }
 

@@ -110,6 +110,7 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
+        /*
         // Default end wager as unsettled
         BetStatus betStatus = BetStatus.UNSETTLED;
 
@@ -118,7 +119,9 @@ public class EndWagerDto extends CommonDto implements BetResultData {
             betStatus = BetStatus.SETTLED;
         }
 
-        return betStatus;
+         */
+
+        return BetStatus.SETTLED;
 
     }
 }

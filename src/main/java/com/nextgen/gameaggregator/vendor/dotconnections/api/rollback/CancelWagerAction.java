@@ -45,8 +45,6 @@ public class CancelWagerAction {
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
     private SettledBetService settledBetService;
-    @Autowired
-    private BetResultLogService betResultLogService;
 
     @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -87,7 +85,14 @@ public class CancelWagerAction {
             }
 
             // Check if bet is settled If settled do adjustment, else do rollback
-            BigDecimal balance = doAdjustmentOrRollback(traceId, gameSession, dto, httpRequestLog);
+            // BigDecimal balance = doAdjustmentOrRollback(traceId, gameSession, dto, httpRequestLog);
+
+            // Get settled bet and set adjustment amount accordingly
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            dto.setAdjustmentAmount(settledBet.getBetAmount());
+
+            // Just do adjustment for rollback case as well
+            BigDecimal balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -128,22 +133,15 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
             httpService.logError(httpRequestLog, betRecordNotExistException);
 
-        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
-            // get current balance
-            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
-            responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
-            httpService.logError(httpRequestLog, betRefundIdempotentViolationException);
-
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
                  CredentialNotFoundException |
                  InvalidAgentApiCredentialException |
-                 JsonProcessingException |
-                 RecordNotFoundException systemErrorException) {
+                 JsonProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, systemErrorException);
 
-        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+        } /*catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
                 // if bet already refunded
                 responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -159,7 +157,7 @@ public class CancelWagerAction {
             }
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
-        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+        }*/ catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, transactionStillProcessingException);
 
@@ -230,6 +228,7 @@ public class CancelWagerAction {
 
     }
 
+    /*
 
     @Retryable(value = { BetNotFoundException.class }, maxAttempts = 3, backoff = @Backoff(delay = 667))
     private SettledBet getSettledBet(GameSession gameSession, CancelWagerDto dto) throws BetNotFoundException {
@@ -269,5 +268,7 @@ public class CancelWagerAction {
         }
 
     }
+
+     */
 
 }
