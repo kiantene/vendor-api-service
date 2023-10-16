@@ -10,5 +10,6 @@ import lombok.EqualsAndHashCode;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlaceBetDto extends GeneralDto {
 
+    private String userId;
     private String refId;
 }

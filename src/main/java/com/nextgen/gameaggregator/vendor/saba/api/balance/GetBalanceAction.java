@@ -55,7 +55,12 @@ public class GetBalanceAction {
             vo.setBalanceTs(vendorService.convertDateTimeFormat(System.currentTimeMillis()));
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            vo.setStatus("999");
+            vo.setMsg("System Error");
+            httpService.logError(httpRequestLog, e);
+
+        } finally {
+            httpService.end(httpRequestLog, vo);
 
         }
 
