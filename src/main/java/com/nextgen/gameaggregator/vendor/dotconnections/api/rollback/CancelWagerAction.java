@@ -247,7 +247,7 @@ public class CancelWagerAction {
             TransactionStillProcessingException,
             InvalidOperatorResponseException {
 
-        UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(gameSession.getVendorPlayerId().intValue(), dto.getExternalTransactionId());
+        UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), dto.getExternalTransactionId());
 
         if (unsettledBet != null) {
             EndWagerDto endWagerDto = new EndWagerDto();
