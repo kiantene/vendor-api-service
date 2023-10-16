@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
@@ -7,13 +8,14 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SettleBetTransactionDto implements BetResultData {
     private String userId;
     private String refId;
     private Long txId;
     private String updateTime;
     private String winlostDate;
-    private String status;
+//    private String status;
     private BigDecimal payout;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
@@ -21,22 +23,22 @@ public class SettleBetTransactionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.refId;
+        return this.getRefId();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.txId.toString();
+        return this.getTxId().toString();
     }
 
     @Override
     public String getRoundId() {
-        return this.txId.toString();
+        return this.getTxId().toString();
     }
 
     @Override
     public String getGameId() {
-        return null;
+        return "saba";
     }
 
     @Override
@@ -46,7 +48,7 @@ public class SettleBetTransactionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.payout;
+        return this.getPayout();
     }
 
     @Override
@@ -76,12 +78,12 @@ public class SettleBetTransactionDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return null;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public Integer getIsFreespin() {
-        return null;
+        return 0;
     }
 
     @Override
