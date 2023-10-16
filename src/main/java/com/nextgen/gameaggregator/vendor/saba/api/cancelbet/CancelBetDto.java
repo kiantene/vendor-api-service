@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.cancelbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.vendor.saba.dto.TransactionDto;
+import com.nextgen.gameaggregator.vendor.saba.api.confirmbet.ConfirmBetTransactionDto;
 import lombok.Data;
 
 import java.util.List;
@@ -13,5 +13,5 @@ public class CancelBetDto {
     private String operationId;
     private String userId;
     private String updateTime;
-    private List<TransactionDto> txns;
+    private List<ConfirmBetTransactionDto> txns;
 }

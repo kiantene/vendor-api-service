@@ -1,36 +1,37 @@
-package com.nextgen.gameaggregator.vendor.saba.api.confirmbet;
+package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class ConfirmBetDto implements BetResultData {
-    private String action;
-    private String operationId;
+public class SettleBetTransactionDto implements BetResultData {
     private String userId;
+    private String refId;
+    private Long txId;
     private String updateTime;
-    private String transactionTime;
-    private List<ConfirmBetTransactionDto> txns;
+    private String winlostDate;
+    private String status;
+    private BigDecimal payout;
+    private BigDecimal creditAmount;
+    private BigDecimal debitAmount;
+    private String extraStatus;
 
     @Override
     public String getExternalTransactionId() {
-        return this.getTxns().get(0).getRefId();
+        return this.refId;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.getTxns().get(0).getTxId().toString();
+        return this.txId.toString();
     }
 
     @Override
     public String getRoundId() {
-        return this.getTxns().get(0).getTxId().toString();
+        return this.txId.toString();
     }
 
     @Override
@@ -40,12 +41,12 @@ public class ConfirmBetDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getTxns().get(0).getActualAmount();
+        return null;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return null;
+        return this.payout;
     }
 
     @Override
@@ -60,17 +61,17 @@ public class ConfirmBetDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
     public Long getResultTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
@@ -80,11 +81,11 @@ public class ConfirmBetDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        return null;
     }
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }

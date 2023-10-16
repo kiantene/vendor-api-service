@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.resettle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.vendor.saba.dto.TransactionDto;
+import com.nextgen.gameaggregator.vendor.saba.api.confirmbet.ConfirmBetTransactionDto;
 import lombok.Data;
 
 import java.util.List;
@@ -11,5 +11,5 @@ import java.util.List;
 public class ResettleDto {
     private String action;
     private String operationId;
-    private List<TransactionDto> txns;
+    private List<ConfirmBetTransactionDto> txns;
 }

@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.saba.dto;
+package com.nextgen.gameaggregator.vendor.saba.api.confirmbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
@@ -7,7 +7,8 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TransactionDto {
+public class ConfirmBetTransactionDto {
+    private String userId;
     private String refId;
     private Long txId;
     private String licenseeTxId;
