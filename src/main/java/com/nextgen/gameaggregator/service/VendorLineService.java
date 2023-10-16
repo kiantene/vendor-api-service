@@ -51,7 +51,7 @@ public class VendorLineService {
         Optional.ofNullable(activeAgentVendorLine).orElseThrow(DisabledVendorLineException::new);
 
         if(activeAgentVendorLine.getVendorLine().getStatus().equals(Status.INACTIVE.code)){
-            
+            throw new DisabledVendorLineException();
         }
 
         return activeAgentVendorLine.getVendorLine();
