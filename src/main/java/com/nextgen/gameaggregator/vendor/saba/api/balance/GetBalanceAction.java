@@ -1,8 +1,11 @@
 package com.nextgen.gameaggregator.vendor.saba.api.balance;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
@@ -21,9 +24,13 @@ import java.math.BigDecimal;
 public class GetBalanceAction {
 
     @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
     private HttpService httpService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private WalletService walletService;
 
     @PostMapping(path = EndPoints.GET_BALANCE)
     public GetBalanceVo action(HttpServletRequest request) {
@@ -38,9 +45,13 @@ public class GetBalanceAction {
             // Convert original request body into dto
             RequestDto<GetBalanceDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {});
 
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getMessage().getUserId());
+
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
             vo.setStatus("0");
             vo.setUserId(dto.getMessage().getUserId());
-            vo.setBalance(BigDecimal.valueOf(1000));
+            vo.setBalance(balance);
             vo.setBalanceTs(vendorService.convertDateTimeFormat(System.currentTimeMillis()));
 
         } catch (Exception e) {
