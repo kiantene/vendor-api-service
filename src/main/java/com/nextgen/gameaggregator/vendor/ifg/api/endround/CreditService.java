@@ -101,6 +101,8 @@ public class CreditService {
 
             // set vo
             vo.setRoundwin(roundWinVo);
+
+            httpService.logError(httpRequestLog, e);
         } catch (TransactionStillProcessingException |
                  BetResultIdempotentViolationException e) {
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
@@ -118,8 +120,9 @@ public class CreditService {
 
             // set vo
             vo.setRoundwin(roundWinVo);
-        }  catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
+
+            httpService.logError(httpRequestLog, e);
+        }  catch (Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -131,6 +134,8 @@ public class CreditService {
 
             // set vo
             vo.setRoundwin(roundWinVo);
+
+            httpService.logError(httpRequestLog, e);
         }finally{
             // set vo
             vo.setSession(creditServiceDto.getSession());
@@ -156,7 +161,7 @@ public class CreditService {
             DisabledAgentPlayerException,
             DisabledGameException,
             InvalidPlayerException,
-            AuthenticationException {
+            AuthenticationException, BetResultIdempotentViolationException {
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

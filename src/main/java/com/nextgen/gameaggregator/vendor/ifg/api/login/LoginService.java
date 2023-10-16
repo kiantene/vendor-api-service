@@ -95,6 +95,8 @@ public class LoginService {
 
             // set vo
             vo.setEnter(enterVo);
+
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e){
 
             // set errorVo
@@ -113,6 +115,8 @@ public class LoginService {
                 }else{
                     errorVo.setMsg(ResponseCodes.G_N_A);
                 }
+
+                httpService.logError(httpRequestLog, e);
             } else {
                 // set errorVo
                 errorVo.setCode(ResponseCodes.INVALID_KEY);
@@ -145,8 +149,9 @@ public class LoginService {
 
             // set vo
             vo.setEnter(enterVo);
-        } catch(Exception exception) {
-            httpService.logError(httpRequestLog, exception);
+
+            httpService.logError(httpRequestLog, e);
+        } catch(Exception e) {
 
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
@@ -159,6 +164,8 @@ public class LoginService {
 
             // set vo
             vo.setEnter(enterVo);
+
+            httpService.logError(httpRequestLog, e);
         } finally{
             // set vo
             vo.setSession(loginDto.getSession());

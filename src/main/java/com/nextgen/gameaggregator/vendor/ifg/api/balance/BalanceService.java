@@ -98,9 +98,9 @@ public class BalanceService {
 
             // set vo
             vo.setGetbalanceVo(getbalanceVo);
-        } catch(Exception exception){
-            httpService.logError(httpRequestLog, exception);
 
+            httpService.logError(httpRequestLog, e);
+        } catch(Exception e){
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -112,6 +112,8 @@ public class BalanceService {
 
             // set vo
             vo.setGetbalanceVo(getbalanceVo);
+
+            httpService.logError(httpRequestLog, e);
         } finally{
             // set vo
             vo.setSession(balanceDto.getSession());

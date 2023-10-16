@@ -88,6 +88,8 @@ public class TransactionService {
 
             // set vo
             vo.setRoundbet(roundBetVo);
+
+            httpService.logError(httpRequestLog, e);
         } catch (TransactionStillProcessingException |
                  BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
@@ -106,8 +108,18 @@ public class TransactionService {
 
             // set vo
             vo.setRoundbet(roundBetVo);
+
+            httpService.logError(httpRequestLog, e);
         } catch(InvalidRequestException |
-                JsonProcessingException e) {
+                JsonProcessingException |
+                VendorCurrencyNotSupportException |
+                DisabledVendorLineException |
+                InvalidAgentApiCredentialException |
+                InvalidPlayerException |
+                DisabledAgentPlayerException |
+                DisabledGameException |
+                InvalidOperatorResponseException |
+                CouchbaseDataIntegrityException e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -119,15 +131,9 @@ public class TransactionService {
 
             // set vo
             vo.setRoundbet(roundBetVo);
-        } catch (VendorCurrencyNotSupportException |
-                 AuthenticationException |
-                 InvalidOperatorResponseException |
-                 CouchbaseDataIntegrityException |
-                 DisabledVendorLineException |
-                 InvalidAgentApiCredentialException |
-                 InvalidPlayerException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException e) {
+
+            httpService.logError(httpRequestLog, e);
+        } catch (AuthenticationException e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.MAX_TIME_EXCEED);
             errorVo.setMsg(ResponseCodes.M_T_E);
@@ -139,9 +145,9 @@ public class TransactionService {
 
             // set vo
             vo.setRoundbet(roundBetVo);
-        }  catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
 
+            httpService.logError(httpRequestLog, e);
+        }  catch (Exception e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
             errorVo.setMsg(ResponseCodes.WL_E);
@@ -153,6 +159,8 @@ public class TransactionService {
 
             // set vo
             vo.setRoundbet(roundBetVo);
+
+            httpService.logError(httpRequestLog, e);
         } finally{
             // set vo
             vo.setSession(transactionServiceDto.getSession());
@@ -173,7 +181,7 @@ public class TransactionService {
         ValidationUtils.validateRequest(dto.getRoundbet().getRoundnum());
     }
 
-    private void doVerification(TransactionServiceDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException {
+    private void doVerification(TransactionServiceDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -187,6 +195,9 @@ public class TransactionService {
         vendorService.verifyTokenStatus(gameSession.getStatus());
 
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getRoundbet().getWlid(), InvalidPlayerException::new);
+
+        // check existing round to avoid double deduct wallet balance in place bet
+        vendorService.verifySettledRound(gameSession.getVendorPlayerId(), dto.getRoundbet().getRoundnum().getId());
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
