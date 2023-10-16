@@ -1,9 +1,7 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.api.rollback;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -19,6 +17,8 @@ import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,6 +45,8 @@ public class CancelWagerAction {
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private BetResultLogService betResultLogService;
 
     @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -229,6 +231,11 @@ public class CancelWagerAction {
     }
 
 
+    @Retryable(value = { BetNotFoundException.class }, maxAttempts = 3, backoff = @Backoff(delay = 667))
+    private SettledBet getSettledBet(GameSession gameSession, CancelWagerDto dto) throws BetNotFoundException {
+        return settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+    }
+
     private BigDecimal doAdjustmentOrRollback(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
             throws
             InvalidAgentApiCredentialException,
@@ -246,7 +253,7 @@ public class CancelWagerAction {
         SettledBet settledBet = null;
 
         try {
-            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            settledBet = this.getSettledBet(gameSession, dto);
 
         } catch (BetNotFoundException betNotFoundException) {
             // do rollback if not settled bet found
