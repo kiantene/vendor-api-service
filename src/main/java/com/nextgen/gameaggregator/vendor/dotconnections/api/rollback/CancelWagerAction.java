@@ -4,8 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.api.result.EndWagerDto;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -45,6 +48,8 @@ public class CancelWagerAction {
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
 
     @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -86,6 +91,9 @@ public class CancelWagerAction {
 
             // Check if bet is settled If settled do adjustment, else do rollback
             // BigDecimal balance = doAdjustmentOrRollback(traceId, gameSession, dto, httpRequestLog);
+
+            // Settled an unsettled bet if any for adjustment
+            this.doUnsettledBet(traceId, dto, gameSession, httpRequestLog);
 
             // Get settled bet and set adjustment amount accordingly
             SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
@@ -225,6 +233,31 @@ public class CancelWagerAction {
 
         // Verify currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+    }
+
+    private void doUnsettledBet(String traceId, CancelWagerDto dto, GameSession gameSession, HttpRequestLog httpRequestLog)
+            throws
+            BetNotFoundException,
+            InvalidAgentApiCredentialException,
+            VendorCurrencyNotSupportException,
+            BetResultIdempotentViolationException,
+            MergedBetDataIntegrityException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            InvalidOperatorResponseException {
+
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+
+        if (!unsettledBetList.isEmpty()) {
+            UnsettledBet unsettledBet = unsettledBetList.get(0);
+            EndWagerDto endWagerDto = new EndWagerDto();
+            endWagerDto.setRoundId(unsettledBet.getRoundId());
+            endWagerDto.setWagerId(unsettledBet.getVendorBetId());
+            endWagerDto.setAmount(BigDecimal.ZERO);
+
+            walletService.processBetResult(traceId, gameSession, endWagerDto, ResultType.END, vendorService, httpRequestLog);
+        }
 
     }
 
