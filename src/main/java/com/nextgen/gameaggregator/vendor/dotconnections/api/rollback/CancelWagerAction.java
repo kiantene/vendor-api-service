@@ -254,6 +254,7 @@ public class CancelWagerAction {
             BetRefundIdempotentViolationException {
 
         SettledBet settledBet = null;
+        BigDecimal balance = null;
 
         try {
             // settledBet = this.getSettledBet(gameSession, dto);
@@ -263,14 +264,22 @@ public class CancelWagerAction {
             // do rollback if not settled bet found
         }
 
-        if(settledBet != null && settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-            dto.setAdjustmentAmount(settledBet.getBetAmount());
-            return walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
+        if (settledBet != null) {
+            if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+                dto.setAdjustmentAmount(settledBet.getBetAmount());
+                balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
+
+            } else if (settledBet.getStatus().equals(BetStatus.REFUNDED.code)) {
+                throw new BetRefundIdempotentViolationException();
+
+            }
 
         } else {
-            return walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+            balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
         }
+
+        return balance;
 
     }
 
