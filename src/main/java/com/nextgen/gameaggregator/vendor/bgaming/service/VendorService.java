@@ -3,20 +3,17 @@ package com.nextgen.gameaggregator.vendor.bgaming.service;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.vendor.bgaming.api.gameurl.UserDto;
-import com.nextgen.gameaggregator.vendor.bgaming.constant.CurrencyDecimals;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
@@ -88,24 +85,6 @@ public class VendorService extends BaseVendorService {
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException("Error generating signature", e);
         }
-    }
-
-    public Integer convertAmountToInteger(BigDecimal amount, String currencyCode) throws CurrencyNotSupportedException {
-        // TODO: If have new currency code need to update below method for convert Integer
-        Integer decimal = CurrencyDecimals.CURRENCY_DECIMAL.get(currencyCode);
-        if (decimal == null) {
-            throw new CurrencyNotSupportedException();
-        }
-        return amount.multiply(new BigDecimal(decimal)).intValue();
-    }
-
-    public BigDecimal convertAmountToBigDecimal(Integer amount, String currencyCode) throws CurrencyNotSupportedException {
-        // TODO: If have new currency code need to update below method for convert Integer
-        Integer decimal = CurrencyDecimals.CURRENCY_DECIMAL.get(currencyCode);
-        if (decimal == null) {
-            throw new CurrencyNotSupportedException();
-        }
-        return new BigDecimal(amount).divide(new BigDecimal(decimal));
     }
 
     @Override
