@@ -17,14 +17,11 @@ import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.Objects;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -45,8 +42,6 @@ public class CancelWagerAction {
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
     private SettledBetService settledBetService;
-    @Autowired
-    private BetResultLogService betResultLogService;
 
     @PostMapping(path = EndPoints.CANCEL_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -229,15 +224,6 @@ public class CancelWagerAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
     }
-
-
-    /*
-    @Retryable(value = { BetNotFoundException.class }, maxAttempts = 3, backoff = @Backoff(delay = 667))
-    private SettledBet getSettledBet(GameSession gameSession, CancelWagerDto dto) throws BetNotFoundException {
-        return settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-    }
-    
-     */
 
     private BigDecimal doAdjustmentOrRollback(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
             throws
