@@ -216,7 +216,18 @@ public class EndWagerAction {
             InvalidOperatorResponseException {
 
         /**
-         * Added this because when bet is settled, unsettled bet record will not be found and thus throw BetNotFoundException instead of BetResultIdempotentViolationException
+         * Test Case A:
+         * wager > endWager> endWager (same)
+         * expected: BET RECORD DUPLICATE
+         * actual: BET RECORD NOT EXIST -> (bet is settled, unsettled bet record is removed. So threw bet not found exception)
+         *
+         * Test Case B:
+         * endWager (bet not found)
+         * expected: BET RECORD NOT EXIST
+         * actual: Success (balance also updated) - if remove (unsettled bet exist check)
+         *
+         * Added the settled bet check Test Case A may test.
+         * If remove (unsettled bet exist check), Test Case B will fail.
          */
         try {
             SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
