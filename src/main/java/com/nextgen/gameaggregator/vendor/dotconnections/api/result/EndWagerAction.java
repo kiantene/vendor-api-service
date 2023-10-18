@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -43,6 +44,8 @@ public class EndWagerAction {
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -212,14 +215,23 @@ public class EndWagerAction {
             TransactionStillProcessingException,
             InvalidOperatorResponseException {
 
-        /*
+        /**
+         * Added this because when bet is settled, unsettled bet record will not be found and thus throw BetNotFoundException instead of BetResultIdempotentViolationException
+         */
+        try {
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+
+            throw new BetResultIdempotentViolationException(settledBet);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            // do nothing
+        }
+
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
         if (unsettledBetList.isEmpty()) {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
         }
-
-         */
 
         // Set as BET_WIN / BET_LOST because
         // vendor's BO has wager and endWager records
