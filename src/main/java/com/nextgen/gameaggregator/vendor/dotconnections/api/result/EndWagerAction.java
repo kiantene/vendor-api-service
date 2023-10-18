@@ -212,11 +212,14 @@ public class EndWagerAction {
             TransactionStillProcessingException,
             InvalidOperatorResponseException {
 
+        /*
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
         if (unsettledBetList.isEmpty()) {
             throw new BetNotFoundException("Cannot find round Id: " + dto.getRoundId());
         }
+
+         */
 
         // Set as BET_WIN / BET_LOST because
         // vendor's BO has wager and endWager records
