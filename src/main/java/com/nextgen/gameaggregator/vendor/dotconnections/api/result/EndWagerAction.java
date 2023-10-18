@@ -218,7 +218,6 @@ public class EndWagerAction {
         /**
          * Added this because when bet is settled, unsettled bet record will not be found and thus throw BetNotFoundException instead of BetResultIdempotentViolationException
          */
-        /*
         try {
             SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
 
@@ -227,8 +226,6 @@ public class EndWagerAction {
         } catch (BetNotFoundException betNotFoundException) {
             // do nothing
         }
-
-         */
 
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 
