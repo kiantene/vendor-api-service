@@ -171,6 +171,17 @@ public class CancelWagerAction {
             httpService.logError(httpRequestLog, betAdjustmentIdempotentViolationException);
 
         } catch (DataRetrievalFailureException dataRetrievalFailureException) {
+
+            /**
+             * This happens while endWager is processing the data, cancelWager is called too quickly.
+             * cancelWager is unable to find settled bet but found unsettled bet, so rollback is done instead.
+             * During rollbacking the data, it will delete unsettle bet record.
+             * However unsettle bet record cannot be found as processing endWager has already deleted the unsettled bet which resulted in DataRetrievalFailureException
+             *
+             * Vendor also informed that they will not cancel the wager if error response is received from their end
+             * Since the data is already processed and the balance is updated correctly, success response will be sent for this exception
+             * */
+
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.SUCCESS);
             httpService.logError(httpRequestLog, dataRetrievalFailureException);
