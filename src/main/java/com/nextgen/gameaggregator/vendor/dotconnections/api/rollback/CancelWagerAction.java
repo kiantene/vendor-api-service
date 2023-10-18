@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -168,6 +169,11 @@ public class CancelWagerAction {
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
             httpService.logError(httpRequestLog, betAdjustmentIdempotentViolationException);
+
+        } catch (DataRetrievalFailureException dataRetrievalFailureException) {
+            responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
+            responseVo.setCode(ResponseCodes.SUCCESS);
+            httpService.logError(httpRequestLog, dataRetrievalFailureException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
