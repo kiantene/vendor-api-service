@@ -149,7 +149,7 @@ public class CancelWagerAction {
                 responseVo.setCode(ResponseCodes.BET_RECORD_DUPLICATE);
 
             } else {
-                // if found the bet other in settled status (cancel / unsettle / settled)
+                // if found the bet other in settled status (cancel / unsettle)
                 responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
 
             }
@@ -253,14 +253,13 @@ public class CancelWagerAction {
             InvalidOperatorResponseException,
             BetAdjustmentIdempotentViolationException,
             RecordNotFoundException,
-            BetResultIdempotentViolationException,
-            BetRefundIdempotentViolationException {
+            BetRefundIdempotentViolationException,
+            BetResultIdempotentViolationException {
 
         SettledBet settledBet = null;
         BigDecimal balance = null;
 
         try {
-            // settledBet = this.getSettledBet(gameSession, dto);
             settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
 
         } catch (BetNotFoundException betNotFoundException) {
@@ -278,7 +277,24 @@ public class CancelWagerAction {
             }
 
         } else {
-            balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+
+            try {
+                balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+
+            } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+
+                if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
+                    // if bet already refunded
+                    throw new BetResultIdempotentViolationException();
+
+                } else if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+
+                    settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+                    dto.setAdjustmentAmount(settledBet.getBetAmount());
+                    balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
+
+                }
+            }
 
         }
 
