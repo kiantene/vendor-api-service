@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.ezugi.service.LockManager;
 import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import io.micrometer.common.util.StringUtils;
@@ -30,11 +31,13 @@ import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CreditAction extends CommonDto {
+    private final LockManager lockManager;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -54,6 +57,11 @@ public class CreditAction extends CommonDto {
     @Autowired
     private VendorPlayerService vendorPlayerService;
 
+    @Autowired
+    public CreditAction(LockManager lockManager) {
+        this.lockManager = lockManager;
+    }
+
     @PostMapping(path = EndPoints.CREDIT)
     public CommonVo credit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -62,6 +70,8 @@ public class CreditAction extends CommonDto {
         CreditVo creditVo = new CreditVo();
         CreditDto creditDto = new CreditDto();
         GameSession gameSession = null;
+        Lock userLock = null;
+        
         try {
             String body = httpRequestLog.getRequestBody();
             creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
@@ -86,6 +96,8 @@ public class CreditAction extends CommonDto {
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
                     break;
                 default:
+                    userLock = lockManager.getLockForUsername(creditDto.getUid());
+                    userLock.lock();
                     ResultType resultType = getResultType(creditDto);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
                     break;
@@ -176,6 +188,9 @@ public class CreditAction extends CommonDto {
             }
             creditVo.setCurrency(creditDto.getCurrency());
             creditVo.setTimestamp(System.currentTimeMillis());
+            if (userLock != null) {
+                userLock.unlock();
+            }
             httpService.end(httpRequestLog, creditVo);
         }
         return creditVo;
