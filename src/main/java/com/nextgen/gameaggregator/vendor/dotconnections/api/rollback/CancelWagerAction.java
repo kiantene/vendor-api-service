@@ -83,7 +83,7 @@ public class CancelWagerAction {
             }
 
             // Check if bet is settled If settled do adjustment, else do rollback
-            BigDecimal balance = doRollbackOrAdjustment(traceId, gameSession, dto, httpRequestLog);
+            BigDecimal balance = doAdjustmentOrRollback(traceId, gameSession, dto, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -118,7 +118,7 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
             httpService.logError(httpRequestLog, invalidProviderException);
 
-        } catch (BetNotFoundException betRecordNotExistException) {
+        } catch (BetNotFoundException | SettledBetNotFoundException betRecordNotExistException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
@@ -242,44 +242,6 @@ public class CancelWagerAction {
 
     }
 
-    private BigDecimal doRollbackOrAdjustment(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
-            throws
-            InvalidAgentApiCredentialException,
-            VendorCurrencyNotSupportException,
-            InsufficientBalanceException,
-            TransactionStillProcessingException,
-            BetNotFoundException,
-            SettledBetNotFoundException,
-            InvalidOperatorResponseException,
-            BetAdjustmentIdempotentViolationException,
-            RecordNotFoundException,
-            BetRefundIdempotentViolationException,
-            BetResultIdempotentViolationException {
-
-        BigDecimal balance = null;
-
-        try {
-            balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
-
-        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-
-            if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
-                SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-                dto.setAdjustmentAmount(settledBet.getBetAmount());
-                balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
-
-            } else {
-                throw betResultIdempotentViolationException;
-
-            }
-
-        }
-
-        return balance;
-
-    }
-
-    /*
     private BigDecimal doAdjustmentOrRollback(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
             throws
             InvalidAgentApiCredentialException,
@@ -339,7 +301,5 @@ public class CancelWagerAction {
         return balance;
 
     }
-
-     */
 
 }
