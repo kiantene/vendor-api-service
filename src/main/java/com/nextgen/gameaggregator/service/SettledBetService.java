@@ -152,7 +152,7 @@ public class SettledBetService {
 
             }
 
-            if (betIdempotentLog != null) {
+            if (betIdempotentLog.getId() != null) {
                 throw new BetResultIdempotentViolationException(betIdempotentLog);
 
             }
