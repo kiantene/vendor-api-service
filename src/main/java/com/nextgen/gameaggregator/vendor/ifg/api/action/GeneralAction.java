@@ -135,14 +135,4 @@ public class GeneralAction {
 
         return vo;
     }
-
-    // Utility method to check if a field (property) exists in an object
-    private static boolean hasField(Object obj, String fieldName) {
-        try {
-            obj.getClass().getDeclaredField(fieldName);
-            return true;
-        } catch (NoSuchFieldException e) {
-            return false;
-        }
-    }
 }

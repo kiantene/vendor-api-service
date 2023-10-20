@@ -81,15 +81,14 @@ public class TransactionServiceDto implements BetResultData {
         return null;
     }
 
+
     @Override
     public Long getVendorSettleTime() {
         return null;
     }
 
     @Override
-    public BigDecimal getJackpotAmount() {
-        return BigDecimal.ZERO;
-    }
+    public BigDecimal getJackpotAmount() { return BigDecimal.ZERO; }
 
     @Override
     public Integer getIsFreespin() {
