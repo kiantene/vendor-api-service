@@ -52,6 +52,8 @@ public class WalletService {
     private BetNotFoundLogService betNotFoundLogService;
     @Autowired
     private VendorService vendorCurrencyConversionService;
+    @Autowired
+    private BetIdempotentLogService betIdempotentLogService;
 
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
@@ -301,6 +303,10 @@ public class WalletService {
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
+
+            loggingService.logStart();
+            betIdempotentLogService.create(betResultData, settledBet.getBalance());
+            loggingService.logProcessTime("doSettledBetResult ｜ betIdempotentLogService.create", traceId);
 
             if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
                 loggingService.logStart();
