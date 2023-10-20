@@ -134,10 +134,10 @@ public class SettledBetService {
             }
         } catch (BetNotFoundException betNotFoundException) {
 
-            RawBetIdempotentLog betIdempotentLog = new RawBetIdempotentLog();
+            RawBetIdempotentLog betIdempotentLog = null;
 
             //check is vendorBetTime or vendorSettleTime both is null
-            if (betResultData.getVendorBetTime() != null ||  betResultData.getVendorSettleTime() != null) {
+            if (betResultData.getVendorBetTime() != null || betResultData.getVendorSettleTime() != null) {
                 Long vendorBetTime = (betResultData.getVendorBetTime() != null) ? betResultData.getVendorBetTime() : betResultData.getVendorSettleTime();
                 Long timeDifference = System.currentTimeMillis() - vendorBetTime;
 
@@ -152,10 +152,12 @@ public class SettledBetService {
 
             }
 
-            if (betIdempotentLog.getId() != null) {
+            if (betIdempotentLog != null) {
                 throw new BetResultIdempotentViolationException(betIdempotentLog);
 
             }
+
+
 
             // else just process normally as bet not found could be expected
             // save the data into couchbase first for idempotency checks
