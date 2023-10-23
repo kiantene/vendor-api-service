@@ -232,7 +232,9 @@ public class EndWagerAction {
         try {
             SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
 
-            throw new BetResultIdempotentViolationException(settledBet);
+            if (settledBet.getOperatorStatus().equals(1)) {
+                throw new BetResultIdempotentViolationException(settledBet);
+            }
 
         } catch (BetNotFoundException betNotFoundException) {
             // do nothing
