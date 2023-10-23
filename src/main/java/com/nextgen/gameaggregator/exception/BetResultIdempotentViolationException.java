@@ -45,6 +45,7 @@ public class BetResultIdempotentViolationException extends Exception {
     public BetResultIdempotentViolationException(RawBetIdempotentLog rawBetIdempotentLog) {
         super();
 
+        this.vendorSettleTime = System.currentTimeMillis();
         this.balance = rawBetIdempotentLog.getBalance();
     }
 
