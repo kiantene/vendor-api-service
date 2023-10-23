@@ -55,7 +55,9 @@ public class CreditTransactionsDto implements BetResultData {
     @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}", message = "Invalid timestamp Format")
     @Size(min = 1, max = 36, message = "Invalid timestamp Size")
     private String timestamp;
-
+    @NotNull
+    @Min(value = 0)
+    @Max(value = 1)
     private Integer platformtype;
 
     @NotBlank(message = "gpcode cannot be empty")
@@ -72,10 +74,14 @@ public class CreditTransactionsDto implements BetResultData {
     private Integer gametype;
     private String externalgameid;
     private String roundid;
+    @NotNull
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 64)
     private String externalroundid;
     private String betid; // optional
     private String externalbetid; // optional
     private String senton;
+    @NotNull
     private Boolean isclosinground;
     private BigDecimal ggr;
 
