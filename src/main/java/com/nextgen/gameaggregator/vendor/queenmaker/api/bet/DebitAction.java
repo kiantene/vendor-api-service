@@ -77,17 +77,15 @@ public class DebitAction {
 
         } catch (InvalidRequestException e) {
             debitVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
-
+            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException e) {
             debitVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
-
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             debitVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             httpService.end(httpRequestLog, debitVo);
-            log.info("QM Debit Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return debitVo;
@@ -165,51 +163,49 @@ public class DebitAction {
 
         } catch (AuthenticationException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
-
+            httpService.logError(httpRequestLog, e);
         } catch (CurrencyNotSupportedException e) {
             transactionsVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             transactionsVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUNDS);
-
+            httpService.logError(httpRequestLog, e);
         } catch (GameNotSupportedException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
             transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
-
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  InvalidVendorLineException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException e) {
             transactionsVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
-
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledAgentPlayerException e) {
             transactionsVo.setResponseCode(ResponseCodes.USER_BLOCKED);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidPlayerException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
-
+            httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
+            // return current balance
             transactionsVo.setBal(this.getBalance(traceId, gameSession));
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(debitTransactionsDto.getPtxid());
             transactionsVo.setDup(true);
-
         } catch (TransactionStillProcessingException e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Transaction Still Processing");
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
-
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             httpService.end(httpRequestLog, transactionsVo);
-            log.info("QM Debit Request Log : " + httpRequestLog);
         }
 
         return transactionsVo;

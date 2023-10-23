@@ -81,17 +81,15 @@ public class BalanceAction {
 
         } catch (InvalidRequestException e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, e.getValidation().values().iterator().next().toString());
-
+            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
-
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             httpService.end(httpRequestLog, balanceVo);
-            log.info("QM Balance Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return balanceVo;
@@ -163,37 +161,35 @@ public class BalanceAction {
 
         } catch (AuthenticationException e) {
             usersVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidCurrencyException e) {
             usersVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
             usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
-
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
                  DisabledGameException |
                  InvalidVendorLineException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException e) {
             usersVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
-
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledAgentPlayerException e) {
             usersVo.setResponseCode(ResponseCodes.USER_BLOCKED);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidPlayerException e) {
             usersVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
-
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             usersVo.setUserid(usersDto.getUserid());
             httpService.end(httpRequestLog, usersVo);
-            log.info("QM Balance Request Log : " + httpRequestLog);
         }
 
         return usersVo;
