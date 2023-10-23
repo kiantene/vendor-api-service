@@ -57,10 +57,9 @@ public class JackpotAction {
             // 1. Validate request parameters from vendor
             this.doValidation(dto);
 
-            // TODO: validate gameId with rawGameSession
-
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBonus(BigDecimal.ZERO);
@@ -100,18 +99,6 @@ public class JackpotAction {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
             httpService.logError(httpRequestLog, invalidSignatureException);
 
-//        } catch (DuplicateExternalTransactionIdException duplicateExternalTransactionIdException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-//            httpService.logError(httpRequestLog, duplicateExternalTransactionIdException);
-//
-//        } catch (BetNotFoundException betNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpService.logError(httpRequestLog, betNotFoundException);
-//
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             httpService.logError(httpRequestLog, credentialNotFoundException);
@@ -141,7 +128,7 @@ public class JackpotAction {
 
         // 2. Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

@@ -70,7 +70,7 @@ public class TransactionDetailAction {
             IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(apiCredential.getAgent().getId(), dto.getBetId());
 
             //6. check vendor line
-            VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId());
+            VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId(), iBetDetailUrlInfo.getVendorId());
 
             //7. check if vendor language supported
             VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendor(), language);
