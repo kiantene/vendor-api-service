@@ -10,12 +10,12 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
-@TypeAlias("bet_idempotent_logs")
-@Collection("bet_idempotent_logs")
+@TypeAlias("bet_idempotent_log")
+@Collection("bet_idempotent_log")
 @Data
 public class RawBetIdempotentLog {
     @Id
     private String id;
-    private Integer dailyDate;
     private BigDecimal balance;
+
 }

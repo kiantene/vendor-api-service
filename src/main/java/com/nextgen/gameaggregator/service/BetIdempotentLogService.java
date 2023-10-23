@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.deps.com.fasterxml.jackson.core.JsonProcessingException;
+import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.RawBetIdempotentLogRepository;
@@ -11,9 +13,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -21,39 +22,40 @@ public class BetIdempotentLogService {
     @Autowired
     private RawBetIdempotentLogRepository rawBetIdempotentLogRepository;
 
-    @CachePut(value = "RawBetIdempotentLogs", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
+    @CachePut(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
     public RawBetIdempotentLog create(BetResultData betResultData, BigDecimal balance) {
         RawBetIdempotentLog entity = new RawBetIdempotentLog();
-        String betIdempotentId = this.generateBetIdempotentId(betResultData.getVendorBetId(), betResultData.getRoundId(), betResultData.getBetAmount(), betResultData.getWinAmount(), betResultData.getJackpotAmount());
-        Integer dailyDate = 0;
-
-        //if both vendorBetTime and vendorSettleTime is empty, then save as 0 for dailyDate (PP would be fall under this scenario)
-        if (betResultData.getVendorBetTime() != null && betResultData.getVendorSettleTime() != null) {
-            dailyDate = this.unixTimeToDailyDateInteger(betResultData.getVendorBetTime(), betResultData.getVendorSettleTime());
-
-        }
+        String betIdempotentId = this.generateBetIdempotentId(betResultData);
 
         entity.setId(betIdempotentId);
-        entity.setDailyDate(dailyDate);
         entity.setBalance(balance);
 
         rawBetIdempotentLogRepository.save(entity);
         return entity;
     }
 
-    private Integer unixTimeToDailyDateInteger(Long vendorBetTime, Long vendorSettleTime) {
-        Long vendorBetTiming = (vendorBetTime != null) ? vendorBetTime : vendorSettleTime;
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        sdf.setTimeZone(TimeZone.getTimeZone("GMT+8"));
-        String formattedDate = sdf.format(new Date(vendorBetTiming));
+    private String generateBetIdempotentId(BetResultData betResultData) {
 
-        return (Integer.parseInt(formattedDate));
+        Map<String, String> map = new HashMap<>();
+        map.put("vendorBetId", betResultData.getVendorBetId());
+        map.put("roundId", betResultData.getRoundId());
+        map.put("betAmount", (betResultData.getBetAmount() == null) ? "0" : betResultData.getBetAmount().toString());
+        map.put("winAmount", (betResultData.getWinAmount() == null) ? "0" : betResultData.getWinAmount().toString());
+        map.put("jackpotAmount", (betResultData.getJackpotAmount() == null) ? "0" : betResultData.getJackpotAmount().toString());
 
-    }
-
-    private String generateBetIdempotentId(String vendorBetId, String roundId, BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount) {
-        String betIdempotentId = vendorBetId + roundId + betAmount + winAmount + jackpotAmount;
+        String betIdempotentId = betResultData.getVendorBetId() + "_" + betResultData.getRoundId() + "_" + betResultData.getBetAmount() + "_" +
+                betResultData.getWinAmount() + "_" + betResultData.getJackpotAmount();
         betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(map);
+            betIdempotentId = DigestUtils.md5Hex(json).toUpperCase();
+
+        } catch (JsonProcessingException e) {
+            log.error("generateBetIdempotentId ERROR : " + e.getMessage());
+
+        }
 
         return betIdempotentId;
 
@@ -66,19 +68,9 @@ public class BetIdempotentLogService {
 
     }
 
-    @Cacheable(value = "RawBetIdempotentLogs", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
-    public RawBetIdempotentLog checkExistsWithDailyDate(BetResultData betResultData) {
-        String betIdempotentId = this.generateBetIdempotentId(betResultData.getVendorBetId(), betResultData.getRoundId(), betResultData.getBetAmount(), betResultData.getWinAmount(), betResultData.getJackpotAmount());
-        Integer dailyDate = this.unixTimeToDailyDateInteger(betResultData.getVendorBetTime(), betResultData.getVendorSettleTime());
-
-        RawBetIdempotentLog betIdempotentLog = rawBetIdempotentLogRepository.findByIdAndDailyDate(betIdempotentId, dailyDate);
-        return betIdempotentLog;
-
-    }
-
-    @Cacheable(value = "RawBetIdempotentLogs", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
+    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
     public RawBetIdempotentLog checkExists(BetResultData betResultData) {
-        String betIdempotentId = this.generateBetIdempotentId(betResultData.getVendorBetId(), betResultData.getRoundId(), betResultData.getBetAmount(), betResultData.getWinAmount(), betResultData.getJackpotAmount());
+        String betIdempotentId = this.generateBetIdempotentId(betResultData);
 
         return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
 

@@ -136,18 +136,18 @@ public class SettledBetService {
 
             RawBetIdempotentLog betIdempotentLog = null;
 
-            //check is vendorBetTime or vendorSettleTime both is null
             if (betResultData.getVendorBetTime() != null || betResultData.getVendorSettleTime() != null) {
                 Long vendorBetTime = (betResultData.getVendorBetTime() != null) ? betResultData.getVendorBetTime() : betResultData.getVendorSettleTime();
                 Long timeDifference = System.currentTimeMillis() - vendorBetTime;
 
                 //if vendorBetTime is over 2 hours, check exists against bet_idempotent_log table
                 if (timeDifference > betIdempotentLogService.getTimingDifference()) {
-                    betIdempotentLog = betIdempotentLogService.checkExistsWithDailyDate(betResultData);
+                    betIdempotentLog = betIdempotentLogService.checkExists(betResultData);
 
                 }
 
             } else {
+                //if vendorBetTime and vendorSettleTime is null, then check against bet_idempotent_log table
                 betIdempotentLog = betIdempotentLogService.checkExists(betResultData);
 
             }

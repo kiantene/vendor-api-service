@@ -9,9 +9,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Scope("raw")
-@TypeAlias("bet_idempotent_logs")
-@Collection("bet_idempotent_logs")
+@TypeAlias("bet_idempotent_log")
+@Collection("bet_idempotent_log")
 public interface RawBetIdempotentLogRepository extends CouchbaseRepository<RawBetIdempotentLog, String> {
 
-    RawBetIdempotentLog findByIdAndDailyDate (String id, Integer dailyDate);
 }
