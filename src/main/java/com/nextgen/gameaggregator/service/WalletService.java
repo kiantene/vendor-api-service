@@ -305,7 +305,7 @@ public class WalletService {
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
             loggingService.logStart();
-            betIdempotentLogService.create(betResultData, settledBet.getBalance());
+            betIdempotentLogService.create(betResultData, settledBet.getBalance(), gameSession);
             loggingService.logProcessTime("doSettledBetResult ｜ betIdempotentLogService.create", traceId);
 
             if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {

@@ -22,10 +22,10 @@ public class BetIdempotentLogService {
     @Autowired
     private RawBetIdempotentLogRepository rawBetIdempotentLogRepository;
 
-    @CachePut(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
-    public RawBetIdempotentLog create(BetResultData betResultData, BigDecimal balance) {
+    @CachePut(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager")
+    public RawBetIdempotentLog create(BetResultData betResultData, BigDecimal balance, GameSession gameSession) {
         RawBetIdempotentLog entity = new RawBetIdempotentLog();
-        String betIdempotentId = this.generateBetIdempotentId(betResultData);
+        String betIdempotentId = this.generateBetIdempotentId(betResultData, gameSession);
 
         entity.setId(betIdempotentId);
         entity.setBalance(balance);
@@ -34,7 +34,7 @@ public class BetIdempotentLogService {
         return entity;
     }
 
-    private String generateBetIdempotentId(BetResultData betResultData) {
+    private String generateBetIdempotentId(BetResultData betResultData, GameSession gameSession) {
 
         Map<String, String> map = new HashMap<>();
         map.put("vendorBetId", betResultData.getVendorBetId());
@@ -42,9 +42,10 @@ public class BetIdempotentLogService {
         map.put("betAmount", (betResultData.getBetAmount() == null) ? "0" : betResultData.getBetAmount().toString());
         map.put("winAmount", (betResultData.getWinAmount() == null) ? "0" : betResultData.getWinAmount().toString());
         map.put("jackpotAmount", (betResultData.getJackpotAmount() == null) ? "0" : betResultData.getJackpotAmount().toString());
+        map.put("vendorPlayerUsername", gameSession.getVendorPlayerUsername());
 
         String betIdempotentId = betResultData.getVendorBetId() + "_" + betResultData.getRoundId() + "_" + betResultData.getBetAmount() + "_" +
-                betResultData.getWinAmount() + "_" + betResultData.getJackpotAmount();
+                betResultData.getWinAmount() + "_" + betResultData.getJackpotAmount() + "_" + gameSession.getVendorPlayerUsername();
         betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
 
         try {
@@ -68,9 +69,9 @@ public class BetIdempotentLogService {
 
     }
 
-    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount}", cacheManager = "cacheManager")
-    public RawBetIdempotentLog checkExists(BetResultData betResultData) {
-        String betIdempotentId = this.generateBetIdempotentId(betResultData);
+    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager")
+    public RawBetIdempotentLog checkExists(BetResultData betResultData, GameSession gameSession) {
+        String betIdempotentId = this.generateBetIdempotentId(betResultData, gameSession);
 
         return rawBetIdempotentLogRepository.findById(betIdempotentId).orElse(null);
 

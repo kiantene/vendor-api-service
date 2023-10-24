@@ -142,13 +142,13 @@ public class SettledBetService {
 
                 //if vendorBetTime is over 2 hours, check exists against bet_idempotent_log table
                 if (timeDifference > betIdempotentLogService.getTimingDifference()) {
-                    betIdempotentLog = betIdempotentLogService.checkExists(betResultData);
+                    betIdempotentLog = betIdempotentLogService.checkExists(betResultData, gameSession);
 
                 }
 
             } else {
                 //if vendorBetTime and vendorSettleTime is null, then check against bet_idempotent_log table
-                betIdempotentLog = betIdempotentLogService.checkExists(betResultData);
+                betIdempotentLog = betIdempotentLogService.checkExists(betResultData, gameSession);
 
             }
 
