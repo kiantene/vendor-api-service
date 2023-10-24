@@ -78,33 +78,40 @@ public class CashTransferInOutAction {
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_OPERATION_IN_PROGRESS));
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             parentResponseVo.setData(responseVo);
             responseVo.setUpdatedTime(betResultIdempotentViolationException.getVendorSettleTime());
             responseVo.setBalanceAmount(betResultIdempotentViolationException.getBalance());
             responseVo.setCurrencyCode(vendorCurrencyCode);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
             parentResponseVo.setData(null);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED));
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
 
         } catch (BetNotFoundException betNotFoundException) {
             parentResponseVo.setErrorCode(ResponseCodes.NO_BET_EXISTS);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NO_BET_EXISTS));
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
@@ -112,47 +119,58 @@ public class CashTransferInOutAction {
                 parentResponseVo.setErrorCode(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET);
                 parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.NOT_ENOUGH_CASH_BALANCE_TO_BET));
                 parentResponseVo.setData(null);
+
             } else {
                 parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
                 parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
+
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.PLAYER_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.PLAYER_DOES_NOT_EXIST));
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
+            httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (Exception exception) {
             parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
