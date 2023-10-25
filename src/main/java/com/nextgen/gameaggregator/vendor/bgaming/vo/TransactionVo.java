@@ -13,5 +13,4 @@ public class TransactionVo {
     private String txId;
     @JsonProperty("processed_at")
     private String processedAt;
-    private Integer balance;
 }

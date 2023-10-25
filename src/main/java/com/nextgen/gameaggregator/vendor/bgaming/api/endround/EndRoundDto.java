@@ -1,65 +1,50 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.endround;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
-public class EndRoundDto implements BetResultData {
-    @NotBlank
-    @JsonProperty("user_id")
-    private String userId;
-    @NotBlank
-    @JsonProperty("currency")
-    private String currency;
-    @NotBlank
-    @JsonProperty("game")
-    private String game;
-    @JsonProperty("game_id")
-    private String vendorRoundId;
-    @JsonProperty("finished")
-    private Boolean finished;
-    @JsonProperty("actions")
-    private List<ActionDto> actions;
-    private String betId;
-    private BigDecimal betAmount;
-    private BigDecimal winAmount;
-    private Long timestamp;
+public class EndRoundDto extends CommonDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.vendorRoundId;
+        return this.getVendorRoundId();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
+        if (this.getActionDto() != null) {
+            return this.getActionDto().getActionId();
+        }
+        return this.getVendorRoundId();
     }
 
     @Override
     public String getRoundId() {
-        return this.vendorRoundId;
+        return this.getVendorRoundId();
     }
 
     @Override
     public String getGameId() {
-        return this.game;
+        return this.getGame();
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.betAmount;
+        return null;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.winAmount;
+        if (this.getActionDto() != null && this.getActionDto().getAction().equals("win")) {
+            return new BigDecimal(this.getActionDto().getAmount());
+        }
+        return null;
     }
 
     @Override
@@ -74,17 +59,17 @@ public class EndRoundDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return this.timestamp;
+        return VendorService.getTimestamp();
     }
 
     @Override
     public Long getResultTime() {
-        return this.timestamp;
+        return VendorService.getTimestamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return this.timestamp;
+        return VendorService.getTimestamp();
     }
 
     @Override
@@ -99,7 +84,7 @@ public class EndRoundDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (this.finished) {
+        if (this.getFinished()) {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;

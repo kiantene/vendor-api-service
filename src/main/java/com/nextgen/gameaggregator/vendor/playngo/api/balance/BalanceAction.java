@@ -72,7 +72,6 @@ public class BalanceAction {
 
         } catch (InvalidAgentApiCredentialException |
                  InvalidOperatorResponseException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  DisabledVendorLineException |
                  CredentialNotFoundException |
@@ -83,12 +82,19 @@ public class BalanceAction {
                  InvocationTargetException |
                  IllegalAccessException internalErrorException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, internalErrorException);
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            balanceVo.setStatusCodeAndMessage(ResponseCodes.ACCOUNTDISABLED);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INVALIDCURRENCY);
+            httpService.logError(httpRequestLog, invalidCurrencyException);
 
         } catch (AuthenticationException authenticationException) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.SESSIONEXPIRED);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (Exception exception) {
             balanceVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);

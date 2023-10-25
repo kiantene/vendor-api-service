@@ -72,7 +72,6 @@ public class RefundAction {
             this.doValidation(refundDto, wToken);
 
             // 2. Gather require data
-            // TODO: get vendor id by vendor code
             Integer vendorId = vendorService.findVendorByCode(Credentials.VENDOR_CODE).getId();
             UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, refundDto.getMtcode());
 

@@ -10,6 +10,6 @@ import java.math.BigDecimal;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthenticationVo extends CommonVo {
     private String uid;
-    private Double balance;
+    private BigDecimal balance;
     private String currency;
 }

@@ -69,7 +69,6 @@ public class GeneralAction {
 
             // Handle the action and return the resulting value
             vo = this.actionHandling(dto, traceId, httpRequestLog);
-
         } catch (JsonProcessingException e) {
             // set errorVo
             errorVo.setCode(ResponseCodes.WL_ERROR);
@@ -79,8 +78,20 @@ public class GeneralAction {
             vo.setTime(dto.getTime());
             vo.setSession(dto.getSession());
             vo.setError(errorVo);
-        }
-        finally{
+
+            httpService.logError(httpRequestLog, e);
+        } catch (Exception e) {
+            // set errorVo
+            errorVo.setCode(ResponseCodes.WL_ERROR);
+            errorVo.setMsg(ResponseCodes.WL_E);
+
+            // set vo
+            vo.setTime(dto.getTime());
+            vo.setSession(dto.getSession());
+            vo.setError(errorVo);
+
+            httpService.logError(httpRequestLog, e);
+        } finally{
             httpService.end(httpRequestLog, vo);
 
             try{
@@ -123,15 +134,5 @@ public class GeneralAction {
         }
 
         return vo;
-    }
-
-    // Utility method to check if a field (property) exists in an object
-    private static boolean hasField(Object obj, String fieldName) {
-        try {
-            obj.getClass().getDeclaredField(fieldName);
-            return true;
-        } catch (NoSuchFieldException e) {
-            return false;
-        }
     }
 }

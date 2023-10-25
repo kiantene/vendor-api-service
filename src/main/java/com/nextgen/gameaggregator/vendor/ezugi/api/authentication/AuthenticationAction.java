@@ -108,7 +108,7 @@ public class AuthenticationAction {
                 authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
             }
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
-            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             authenticationVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, authenticationVo);
         }
@@ -125,6 +125,10 @@ public class AuthenticationAction {
         // comparison for game session value will always be using  AuthenticationException
         ValidationUtils.isEquals(gameSession.getToken(), authenticationDto.getToken(), AuthenticationException::new);
 
+        // Verify Operator Id from vendor given
+        String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
+        ValidationUtils.isEquals(operatorId, String.valueOf(authenticationDto.getOperatorId()), InvalidRequestException::new);
+
         // Verify token status is active
         vendorService.verifyTokenStatus(gameSession.getStatus());
 
@@ -136,10 +140,6 @@ public class AuthenticationAction {
 
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
-
-        // Verify Operator Id from vendor given
-        String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
-        ValidationUtils.isEquals(operatorId, String.valueOf(authenticationDto.getOperatorId()), InvalidRequestException::new);
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);

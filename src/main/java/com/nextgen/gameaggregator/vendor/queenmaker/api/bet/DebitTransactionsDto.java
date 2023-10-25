@@ -26,6 +26,9 @@ public class DebitTransactionsDto implements BetResultData {
     @Size(min = 1, max = 256, message = "Invalid authtoken Size")
     private String authtoken;
 
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 20)
     private String brandcode;
 
     @NotNull(message = "amt cannot be empty")
@@ -57,7 +60,8 @@ public class DebitTransactionsDto implements BetResultData {
     private String timestamp;
 
     @NotNull
-    @Range(min = 0)
+    @Min(value = 0)
+    @Max(value = 1)
     private Integer platformtype;
 
     @NotBlank
@@ -74,10 +78,14 @@ public class DebitTransactionsDto implements BetResultData {
     private Integer gametype;
     private String externalgameid;
     private String roundid;
+    @NotNull
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 64)
     private String externalroundid;
     private String betid; // optional
     private String externalbetid; // optional
     private String senton;
+    @NotNull
     private Boolean isclosinground;
     private BigDecimal ggr;
 

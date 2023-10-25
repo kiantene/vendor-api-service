@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.vendor.ezugi.dto;
 
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
@@ -10,6 +9,8 @@ public class CommonDto {
     @NotNull
     private Integer operatorId;
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 250)
     private String token;
     @NotNull
     private Integer platformId;
