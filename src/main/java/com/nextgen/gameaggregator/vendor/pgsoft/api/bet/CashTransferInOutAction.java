@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.pgsoft.api.bet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -44,6 +45,9 @@ public class CashTransferInOutAction {
     @Autowired
     private ValidationService validationService;
 
+    @Autowired
+    private LoggingService loggingService;
+
     @PostMapping(path = Endpoints.BET)
     public ResponseVo<CashTransferInOutVo> betRequest(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -60,7 +64,9 @@ public class CashTransferInOutAction {
             this.doValidation(dto);
 
             // 2. Verify session token
+            loggingService.logStart();
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
+            loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ gameSessionService.verifyToken(" + dto.getOperatorPlayerSession() + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -193,7 +199,7 @@ public class CashTransferInOutAction {
 
     private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws
             InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException,
-            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
+            CurrencyNotSupportedException, GameNotSupportedException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, InterruptedException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerName());
@@ -201,7 +207,9 @@ public class CashTransferInOutAction {
         // GA-119 PGSoft may enter game with different session
         // 2. Verify received game id is the same from game session
         // ValidationUtils.isEquals(rawGameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+        loggingService.logStart();
         VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameService.getByVendorGameCodeAndVendorId(" + dto.getGameId() + "," + gameSession.getVendorId() + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
 
         //update session games while player is using session that is not matched with the game which played.
         if (vendorGame.getId() != gameSession.getVendorGameId()) {
@@ -216,11 +224,15 @@ public class CashTransferInOutAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), CurrencyNotSupportedException::new);
 
         // 4. Retrieve vendor line credentials and secretKey to verify with raw request from vendor
+        loggingService.logStart();
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.SECRET_KEY + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
         ValidationUtils.isEquals(secretKey, dto.getSecretKey(), InvalidSignatureException::new);
 
         // 5. Retrieve vendor line credentials and operatorToken to verify with raw request from vendor
+        loggingService.logStart();
         String operatorToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_TOKEN);
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorLineService.getCredentialValueByName(" + gameSession.getVendorLineId() + "," + Credentials.OPERATOR_TOKEN + ")", gameSession.getVendorPlayerUsername(), dto.getRoundId());
         ValidationUtils.isEquals(operatorToken, dto.getOperatorToken(), InvalidSignatureException::new);
     }
 }
