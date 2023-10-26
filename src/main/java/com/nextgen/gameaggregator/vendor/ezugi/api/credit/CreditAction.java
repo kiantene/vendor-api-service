@@ -154,6 +154,7 @@ public class CreditAction extends CommonDto {
         } catch (InvalidSignatureException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid Hash");
+            creditVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidFormatException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
