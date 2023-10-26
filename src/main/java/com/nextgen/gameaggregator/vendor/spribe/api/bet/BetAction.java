@@ -15,6 +15,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -77,8 +78,8 @@ public class BetAction {
 
             // 7. Set response data
             data.setOperator_tx_id(traceId);
-            data.setNew_balance(balance);
-            data.setOld_balance(oldBalance);
+            data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setCurrency(gameSession.getVendorCurrencyCode());
             data.setProvider(dto.getProvider());
