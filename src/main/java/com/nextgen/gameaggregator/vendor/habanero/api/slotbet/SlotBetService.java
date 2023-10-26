@@ -1,9 +1,10 @@
-package com.nextgen.gameaggregator.vendor.habanero.api.result;
+package com.nextgen.gameaggregator.vendor.habanero.api.slotbet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -12,18 +13,20 @@ import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundTransferReque
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.TransferVo;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
 @Slf4j
-public class ResultService {
+public class SlotBetService {
 
+    @Autowired
+    private HttpService httpService;
     @Autowired
     private WalletService walletService;
     @Autowired
@@ -31,13 +34,13 @@ public class ResultService {
     @Autowired
     private ValidationService validationService;
 
-    public TransferVo result(FundInfoDto fundInfoDto, FundTransferRequestDto fundTransferRequestDto, TransferVo responseVo, String gameId, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog) throws
+
+    public TransferVo bet(FundInfoDto fundInfoDto, FundTransferRequestDto fundTransferRequestDto, TransferVo responseVo, String gameId, GameSession gameSession, HttpServletRequest request) throws
             InvalidAgentApiCredentialException,
-            BetNotFoundException,
+            InsufficientBalanceException,
             TransactionStillProcessingException,
             InvalidOperatorResponseException,
-            MergedBetDataIntegrityException,
-            InsufficientBalanceException,
+            CouchbaseDataIntegrityException,
             VendorCurrencyNotSupportException,
             InvalidRequestException,
             NoAvailableLineException,
@@ -45,10 +48,16 @@ public class ResultService {
             AuthenticationException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            DisabledVendorLineException
-    {
+            DisabledVendorLineException {
 
         try {
+
+            //Regenerate new trace ID
+            HttpRequestLog httpRequestLog = httpService.start(request);
+            String traceId = httpRequestLog.getId();
+
+            //Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(fundInfoDto);
@@ -56,24 +65,21 @@ public class ResultService {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(fundInfoDto, fundTransferRequestDto, gameSession);
 
-            //construct result Dto
-            ResultDto resultDto = new ModelMapper().map(fundInfoDto, ResultDto.class);
-            resultDto.setVendorBetId(fundTransferRequestDto.getFriendlyGameInstanceId());
-            resultDto.setRoundId(fundTransferRequestDto.getGameInstanceId());
-            resultDto.setGameId(gameId);
+            // Construct bet Dto
+            SlotBetDto betDto = new ModelMapper().map(fundInfoDto, SlotBetDto.class);
+            betDto.setRoundId(fundTransferRequestDto.getGameInstanceId());
+            betDto.setGameId(gameId);
 
-            ResultType resultType = this.getResultType(fundInfoDto);
-
-            //process bet result data (settle or unsettle)
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, resultDto, resultType, vendorService, httpRequestLog);
+            //process unsettle bet data
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             //return success respond
             responseVo.setResponseCode(ResponseCodes.TRANSFER_SUCCESS);
-            responseVo.getFundTransferResponseVo().setBalance(balance.setScale(2, RoundingMode.DOWN));
+            responseVo.getFundTransferResponseVo().setBalance(betEvent.getLastBalance().setScale(2, RoundingMode.DOWN));
             responseVo.getFundTransferResponseVo().setCurrencyCode(gameSession.getVendorCurrencyCode());
             if (fundTransferRequestDto.getFundDto().getDebitAndCredit()) {
                 //setup debit and credit bet type respond message
-                responseVo.getFundTransferResponseVo().getStatusVo().setSuccessCredit(true);
+                responseVo.getFundTransferResponseVo().getStatusVo().setSuccessDebit(true);
             }
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -83,7 +89,7 @@ public class ResultService {
             responseVo.getFundTransferResponseVo().setCurrencyCode(gameSession.getVendorCurrencyCode());
             if (fundTransferRequestDto.getFundDto().getDebitAndCredit()) {
                 //setup debit and credit bet type respond message
-                responseVo.getFundTransferResponseVo().getStatusVo().setSuccessCredit(true);
+                responseVo.getFundTransferResponseVo().getStatusVo().setSuccessDebit(true);
             }
 
         }
@@ -114,25 +120,7 @@ public class ResultService {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), NoAvailableLineException::new);
 
         //Validate vendor username, agent vendor line, player status, and game status
-        if(dto.getIsBonus() == true){
-            //bonus free spin will be settled without bet
-            validationService.validateEligibleBet(gameSession, fundTransferRequestDto.getAccountId());
-        }
-
+        validationService.validateEligibleBet(gameSession, fundTransferRequestDto.getAccountId());
     }
 
-    private ResultType getResultType(FundInfoDto dto) {
-
-        ResultType resultType = ResultType.WIN;
-
-        if (dto.getIsBonus() == true) {
-            //bonus free spin will be settled without bet
-            resultType = dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.BET_WIN : ResultType.BET_LOSE;
-        } else {
-            //settle bet, jackpot and free spin
-            resultType = dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
-        }
-
-        return resultType;
-    }
 }

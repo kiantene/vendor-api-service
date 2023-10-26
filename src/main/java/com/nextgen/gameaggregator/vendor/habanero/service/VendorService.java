@@ -147,7 +147,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static Long dateTimeConvert(String rawDateTime){
+    public static Long dateTimeConvert(String rawDateTime) {
 
         //convert date time string to timestamp
         Long timestamp = null;

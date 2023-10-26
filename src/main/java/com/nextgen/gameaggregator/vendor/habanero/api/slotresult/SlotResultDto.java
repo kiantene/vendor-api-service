@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.habanero.api.result;
+package com.nextgen.gameaggregator.vendor.habanero.api.slotresult;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -12,10 +12,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResultDto extends FundInfoDto implements BetResultData {
-
-
-    private String vendorBetId;
+public class SlotResultDto extends FundInfoDto implements BetResultData {
 
     private String roundId;
 
@@ -27,43 +24,38 @@ public class ResultDto extends FundInfoDto implements BetResultData {
     }
 
     @Override
+    public String getVendorBetId() {
+        return this.getTransferId();
+    }
+
+    @Override
     public BigDecimal getBetAmount() {
-        BigDecimal betAmount = null;
-        if(this.getIsBonus()){
-            //bonus free spin
-            betAmount = BigDecimal.ZERO;
-        }
-        return betAmount;
+        return BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal getWinAmount() {
         BigDecimal winAmount = this.getAmount().abs();
-        if(this.getJpWin()){
+        if (this.getJpWin()) {
             //jackpot
-            winAmount =  BigDecimal.ZERO;
+            winAmount = BigDecimal.ZERO;
         }
         return winAmount;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.getWinAmount().subtract(this.getBetAmount());
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return this.getBetAmount();
     }
 
     @Override
     public Long getVendorBetTime() {
-        Long vendorBetTime = null;
-        if(this.getIsBonus()){
-            //bonus free spin
-            vendorBetTime = VendorService.dateTimeConvert(this.getDtEvent());
-        }
-        return vendorBetTime;
+        return VendorService.dateTimeConvert(this.getDtEvent());
     }
 
     @Override
@@ -79,7 +71,7 @@ public class ResultDto extends FundInfoDto implements BetResultData {
     @Override
     public BigDecimal getJackpotAmount() {
         BigDecimal jackpotAmount = null;
-        if(this.getJpWin()){
+        if (this.getJpWin()) {
             //jackpot
             jackpotAmount = this.getAmount().abs();
         }
@@ -89,10 +81,10 @@ public class ResultDto extends FundInfoDto implements BetResultData {
     @Override
     public Integer getIsFreespin() {
         Integer isFreespin = 0;
-        if(this.getIsBonus()){
+        if (this.getIsBonus()) {
             //bonus free spin
             isFreespin = 1;
-        } else if(this.getGameStateMode().equals(GameStateMode.CREDIT) && !this.getJpWin()){
+        } else if (this.getGameStateMode().equals(GameStateMode.COUTINUEATION) && !this.getJpWin()) {
             //free spin
             isFreespin = 1;
         }
@@ -102,7 +94,7 @@ public class ResultDto extends FundInfoDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         BetStatus betStatus = BetStatus.UNSETTLED;
-        if (this.getGameStateMode().equals(GameStateMode.CREDIT_ENDROUND) || this.getGameStateMode().equals(GameStateMode.EXPIRE)) {
+        if (this.getGameStateMode().equals(GameStateMode.ENDROUND) || this.getGameStateMode().equals(GameStateMode.EXPIRE)) {
             //handle settle bet and bonus free spin
             betStatus = BetStatus.SETTLED;
         }
