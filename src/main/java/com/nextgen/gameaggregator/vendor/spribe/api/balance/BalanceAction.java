@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -53,7 +54,7 @@ public class BalanceAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUser_id());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
             
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -64,7 +65,7 @@ public class BalanceAction {
             // 6. Set response data
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setUsername(gameSession.getVendorPlayerUsername());
-            data.setBalance(balance);
+            data.setBalance(AmountConverter.convertBalanceToUnit(balance));
             data.setCurrency(gameSession.getVendorCurrencyCode());
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);

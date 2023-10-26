@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 
@@ -65,7 +66,7 @@ public class RollbackAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUser_id());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -96,8 +97,8 @@ public class RollbackAction {
 
                     // 8. Set response data
                     data.setOperator_tx_id(traceId);
-                    data.setNew_balance(balance);
-                    data.setOld_balance(oldBalance);
+                    data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
+                    data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
                     data.setUser_id(userId);
                     data.setCurrency(currency);
                     data.setProvider(provider);

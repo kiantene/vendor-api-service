@@ -46,8 +46,6 @@ public class AuthAction {
         ResponseVo vo = new ResponseVo();
         DataVo data = new DataVo();
         String gameToken = "";
-        log.info("Spribe URL : " + httpRequestLog.getUrl());
-        log.info("Spribe Request Body : " + httpRequestLog.getRequestBody());
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -59,15 +57,18 @@ public class AuthAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getUser_token());
-            gameToken = dto.getUser_token();
+
+            // 4. Regenerate token (Use vendor's session token)
+            gameSession = gameSessionService.regenerateGameSessionToken(gameSession, dto.getSession_token());
+            gameToken = dto.getSession_token();
             
-            // 4. Verify remaining parameters (Verify against database values)
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
-            // 5. Retrieve the latest wallet balance from Operator
+            // 6. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 6. Set response data
+            // 7. Set response data
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setUsername(gameSession.getVendorPlayerUsername());
             data.setBalance(balance);
