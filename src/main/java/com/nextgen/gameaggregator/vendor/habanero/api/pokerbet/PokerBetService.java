@@ -1,17 +1,20 @@
-package com.nextgen.gameaggregator.vendor.habanero.api.bet;
+package com.nextgen.gameaggregator.vendor.habanero.api.pokerbet;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundInfoDto;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundTransferRequestDto;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.TransferVo;
+import com.nextgen.gameaggregator.vendor.habanero.constant.GameStateMode;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +24,10 @@ import java.math.RoundingMode;
 
 @Service
 @Slf4j
-public class BetService {
+public class PokerBetService {
 
+    @Autowired
+    private HttpService httpService;
     @Autowired
     private WalletService walletService;
     @Autowired
@@ -31,7 +36,7 @@ public class BetService {
     private ValidationService validationService;
 
 
-    public TransferVo bet(FundInfoDto fundInfoDto, FundTransferRequestDto fundTransferRequestDto, TransferVo responseVo, String gameId, GameSession gameSession, String traceId, String body, HttpRequestLog httpRequestLog) throws
+    public TransferVo bet(FundInfoDto fundInfoDto, FundTransferRequestDto fundTransferRequestDto, TransferVo responseVo, String gameId, GameSession gameSession, HttpServletRequest request) throws
             InvalidAgentApiCredentialException,
             InsufficientBalanceException,
             TransactionStillProcessingException,
@@ -44,10 +49,16 @@ public class BetService {
             AuthenticationException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            DisabledVendorLineException
-    {
+            DisabledVendorLineException {
 
         try {
+
+            //Regenerate new trace ID
+            HttpRequestLog httpRequestLog = httpService.start(request);
+            String traceId = httpRequestLog.getId();
+
+            //Retrieve request body in original string format
+            String body = httpRequestLog.getRequestBody();
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(fundInfoDto);
@@ -56,8 +67,7 @@ public class BetService {
             this.doVerification(fundInfoDto, fundTransferRequestDto, gameSession);
 
             // Construct bet Dto
-            BetDto betDto = new ModelMapper().map(fundInfoDto, BetDto.class);
-            betDto.setVendorBetId(fundTransferRequestDto.getFriendlyGameInstanceId());
+            PokerBetDto betDto = new ModelMapper().map(fundInfoDto, PokerBetDto.class);
             betDto.setRoundId(fundTransferRequestDto.getGameInstanceId());
             betDto.setGameId(gameId);
 

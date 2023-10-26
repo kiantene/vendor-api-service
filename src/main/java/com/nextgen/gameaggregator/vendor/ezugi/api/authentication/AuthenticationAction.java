@@ -90,6 +90,7 @@ public class AuthenticationAction {
         } catch (InvalidSignatureException e) {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             authenticationVo.setErrorDescription("Invalid Hash");
+            authenticationVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException | IOException e) {
             authenticationVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
