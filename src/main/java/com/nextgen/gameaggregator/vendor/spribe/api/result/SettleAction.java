@@ -20,7 +20,6 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -90,8 +89,8 @@ public class SettleAction {
 
                 // 9. Set response data
                 data.setOperator_tx_id(traceId);
-                data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
-                data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+                data.setNew_balance(balance);
+                data.setOld_balance(oldBalance);
                 data.setUser_id(userId);
                 data.setCurrency(currency);
                 data.setProvider(provider);

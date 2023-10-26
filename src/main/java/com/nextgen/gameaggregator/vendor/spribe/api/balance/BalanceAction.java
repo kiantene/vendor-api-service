@@ -16,7 +16,6 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -65,7 +64,7 @@ public class BalanceAction {
             // 6. Set response data
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setUsername(gameSession.getVendorPlayerUsername());
-            data.setBalance(AmountConverter.convertBalanceToUnit(balance));
+            data.setBalance(balance);
             data.setCurrency(gameSession.getVendorCurrencyCode());
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);

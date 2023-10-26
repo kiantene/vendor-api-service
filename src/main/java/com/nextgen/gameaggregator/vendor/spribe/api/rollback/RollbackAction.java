@@ -17,7 +17,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
-import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 
@@ -97,8 +96,8 @@ public class RollbackAction {
 
                     // 8. Set response data
                     data.setOperator_tx_id(traceId);
-                    data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
-                    data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+                    data.setNew_balance(balance);
+                    data.setOld_balance(oldBalance);
                     data.setUser_id(userId);
                     data.setCurrency(currency);
                     data.setProvider(provider);
