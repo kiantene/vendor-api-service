@@ -70,7 +70,6 @@ public class EndWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id and wager_id)
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify data

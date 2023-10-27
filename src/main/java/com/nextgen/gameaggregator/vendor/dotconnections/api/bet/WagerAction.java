@@ -70,6 +70,9 @@ public class WagerAction {
             // Verify session token
             gameSession = gameSessionService.verifyToken(VendorService.revertToUUID(dto.getToken()));
 
+            // Regenerate new vendor game code
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
+
             // Verify data
             this.doVerification(dto, gameSession);
 
