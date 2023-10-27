@@ -197,6 +197,8 @@ public class CreditAction {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
             httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
+            transactionsVo.setTxid(traceId);
+            transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setResponseCode(ResponseCodes.TRANSACTION_DOES_NOT_EXIST);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
