@@ -83,7 +83,7 @@ public class CancelWagerAction {
             }
 
             // Check if bet is settled If settled do adjustment, else do rollback
-            BigDecimal balance = doAdjustmentOrRollback(traceId, gameSession, dto, httpRequestLog);
+            BigDecimal balance = doRollbackOrAdjustment(traceId, gameSession, dto, httpRequestLog);
 
             // Set Vendor player username + Balance + Currency
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
@@ -118,7 +118,7 @@ public class CancelWagerAction {
             responseVo.setCode(ResponseCodes.INVALID_PROVIDER);
             httpService.logError(httpRequestLog, invalidProviderException);
 
-        } catch (BetNotFoundException | SettledBetNotFoundException betRecordNotExistException) {
+        } catch (BetNotFoundException betRecordNotExistException) {
             // get current balance
             responseVo = vendorService.getCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession);
             responseVo.setCode(ResponseCodes.BET_RECORD_NOT_EXIST);
@@ -242,7 +242,7 @@ public class CancelWagerAction {
 
     }
 
-    private BigDecimal doAdjustmentOrRollback(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
+    private BigDecimal doRollbackOrAdjustment(String traceId, GameSession gameSession, CancelWagerDto dto, HttpRequestLog httpRequestLog)
             throws
             InvalidAgentApiCredentialException,
             VendorCurrencyNotSupportException,
@@ -256,44 +256,21 @@ public class CancelWagerAction {
             BetRefundIdempotentViolationException,
             BetResultIdempotentViolationException {
 
-        SettledBet settledBet = null;
         BigDecimal balance = null;
 
         try {
-            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+            balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            // do rollback if not settled bet found
-        }
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
 
-        if (settledBet != null) {
-            if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+            if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
+                SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
                 dto.setAdjustmentAmount(settledBet.getBetAmount());
                 balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
 
-            } else if (settledBet.getStatus().equals(BetStatus.REFUNDED.code)) {
-                throw new BetRefundIdempotentViolationException();
+            } else {
+                throw betResultIdempotentViolationException;
 
-            }
-
-        } else {
-
-            try {
-                balance =  walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
-
-            } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-
-                if (betResultIdempotentViolationException.getStatus().equals(BetStatus.REFUNDED.code)) {
-                    // if bet already refunded
-                    throw new BetResultIdempotentViolationException();
-
-                } else if (betResultIdempotentViolationException.getStatus().equals(BetStatus.SETTLED.code)) {
-
-                    settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getWagerId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
-                    dto.setAdjustmentAmount(settledBet.getBetAmount());
-                    balance = walletAdjustmentService.processAdjustment(traceId, gameSession, dto, httpRequestLog);
-
-                }
             }
 
         }
