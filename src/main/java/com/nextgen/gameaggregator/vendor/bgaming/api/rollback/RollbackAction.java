@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bgaming.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bgaming.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.bgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
@@ -29,8 +30,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -77,105 +76,50 @@ public class RollbackAction {
             this.doVerification(commonDto, gameSession, httpRequestLog, request);
 
             RollbackDto rollbackDto = new ModelMapper().map(commonDto, RollbackDto.class);
-            Long settleTime = System.currentTimeMillis();
-            List<TransactionVo> transactionVoList = new ArrayList<>();
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
+
+            // Construct VO
             for (ActionDto actionDto : commonDto.getActions()) {
                 TransactionVo transactionVo = new TransactionVo();
                 transactionVo.setActionId(actionDto.getActionId());
                 transactionVo.setTxId(actionDto.getActionId());
-                transactionVo.setProcessedAt(new DateTime(settleTime).toString());
-                transactionVoList.add(transactionVo);
+                transactionVo.setProcessedAt(new DateTime(rollbackDto.getVendorSettledTime()).toString());
+                responseVo.addTransactions(transactionVo);
             }
-            rollbackDto.setTimestamp(settleTime);
-            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
-
-            // Construct VO
-            balance = balance.multiply(new BigDecimal(100));
             responseVo.setBalance(balance.intValue());
             responseVo.setGameId(commonDto.getVendorRoundId());
-            responseVo.setTransactions(transactionVoList);
             responseVo.setHttpStatus(HttpStatus.SC_OK);
         } catch (InvalidSignatureException e) {
-            responseVo.setCode(HttpStatus.SC_FORBIDDEN);
-            responseVo.setMessage("Request sign doesn't match.");
-            responseVo.setHttpStatus(HttpStatus.SC_FORBIDDEN);
+            responseVo.setResponseCodes(ResponseCodes.REQUEST_SIGN_DOES_NOT_MATCH);
             httpService.logError(httpRequestLog, e);
-        } catch (AuthenticationException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+        } catch (AuthenticationException |
+                 DisabledVendorLineException |
+                 CredentialNotFoundException |
+                 InvalidAgentApiCredentialException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidRequestException |
+                 InvalidPlayerException |
+                 JsonProcessingException |
+                 TransactionStillProcessingException |
+                 InvalidOperatorResponseException e) {
+            responseVo.setResponseCodes(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
-            responseVo = handleDuplicateBet(commonDto, httpRequestLog, request);
+            handleDuplicateBet(commonDto, httpRequestLog, request, responseVo);
             responseVo.setHttpStatus(HttpStatus.SC_OK);
             httpService.logError(httpRequestLog, e);
-        } catch (TransactionStillProcessingException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidOperatorResponseException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledVendorLineException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (CredentialNotFoundException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidAgentApiCredentialException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidPlayerException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledAgentPlayerException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledGameException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
         } catch (RecordNotFoundException | BetNotFoundException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Action id not found.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (JsonProcessingException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+            responseVo.setResponseCodes(ResponseCodes.BET_ACTION_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+            responseVo.setResponseCodes(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
         } finally {
-            httpStatus = responseVo.getHttpStatus();
-            responseVo.setHttpStatus(null);
             httpService.end(httpRequestLog, responseVo);
         }
-        return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(httpStatus));
+        return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(responseVo.getHttpStatus()));
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {
@@ -196,26 +140,11 @@ public class RollbackAction {
         VendorService.verifySign(authToken, new Gson().toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
     }
 
-    private ResponseVo handleDuplicateBet(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) {
-        ResponseVo responseVo = new ResponseVo();
+    private void handleDuplicateBet(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request, ResponseVo responseVo) {
         try {
-            responseVo = balanceService.balance(commonDto, httpRequestLog, request);
-            List<TransactionVo> transactionVoList = new ArrayList<>();
-            if (commonDto.getActions() != null && !commonDto.getActions().isEmpty()) {
-                for (ActionDto actionDto : commonDto.getActions()) {
-                    TransactionVo transactionVo = new TransactionVo();
-                    transactionVo.setActionId(actionDto.getActionId());
-                    transactionVo.setTxId(actionDto.getActionId());
-                    transactionVoList.add(transactionVo);
-                }
-            }
-            responseVo.setGameId(commonDto.getVendorRoundId());
-            responseVo.setTransactions(transactionVoList);
+            balanceService.balance(commonDto, httpRequestLog, request, responseVo);
         } catch (Exception e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+            responseVo.setResponseCodes(ResponseCodes.UNKNOWN_ERROR);
         }
-        return responseVo;
     }
 }

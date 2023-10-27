@@ -126,13 +126,10 @@ public class QueryAction {
     private void checkBetAvailable(GameSession gameSession, QueryRequestDto queryRequestDto) throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         // settle bet Idempotent Check
-        vendorService.settledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
+        vendorService.settledBetIdempotentCheck(gameSession, queryRequestDto.getInitialDebitTransferId(), queryRequestDto.getGameInstanceId());
 
         // unsettle bet Idempotent Check
-        vendorService.unsettledBetIdempotentCheck(gameSession, queryRequestDto.getFriendlyGameInstanceId(), queryRequestDto.getGameInstanceId());
-
-        // bet result Idempotent Check
-        vendorService.betResultIdempotentCheck(gameSession, queryRequestDto.getTransferId(), queryRequestDto.getGameInstanceId());
+        vendorService.unsettledBetIdempotentCheck(gameSession, queryRequestDto.getTransferId(), queryRequestDto.getGameInstanceId());
 
     }
 

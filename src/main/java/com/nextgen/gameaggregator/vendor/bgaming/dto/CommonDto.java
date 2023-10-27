@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bgaming.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
@@ -25,4 +26,6 @@ public class CommonDto {
     private Boolean finished = false;
     @JsonProperty("actions")
     private List<ActionDto> actions;
+    @JsonIgnore
+    private ActionDto actionDto;
 }

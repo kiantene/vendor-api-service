@@ -105,6 +105,7 @@ public class DebitAction {
         } catch (InvalidSignatureException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Hash");
+            debitVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
@@ -205,8 +206,8 @@ public class DebitAction {
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
-        // Verify valid game id (disable validation for witch game from game lobby)
-        //vendorService.verifyVendorGameCode(gameSession, debitDto.getGameId().toString());
+        // Verify valid game id
+        vendorService.verifyVendorGameCode(gameSession, debitDto.getGameId().toString());
 
         // Verify valid bet type id
         VendorService.verifyDebitBetTypeId(debitDto.getBetTypeID());

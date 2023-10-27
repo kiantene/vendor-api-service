@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.result;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
@@ -43,6 +44,8 @@ public class EndWagerAction {
     private VendorService vendorService;
     @Autowired
     private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = EndPoints.END_WAGER)
     public ResponseVo balance(HttpServletRequest request) {
@@ -67,7 +70,6 @@ public class EndWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id and wager_id)
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify data
@@ -211,6 +213,31 @@ public class EndWagerAction {
             InsufficientBalanceException,
             TransactionStillProcessingException,
             InvalidOperatorResponseException {
+
+        /**
+         * Test Case A:
+         * wager > endWager> endWager (same)
+         * expected: BET RECORD DUPLICATE
+         * actual: BET RECORD NOT EXIST -> (bet is settled, unsettled bet record is removed. So threw bet not found exception)
+         *
+         * Test Case B:
+         * endWager (bet not found)
+         * expected: BET RECORD NOT EXIST
+         * actual: Success (balance also updated) - if remove (unsettled bet exist check)
+         *
+         * Added the settled bet check Test Case A may test.
+         * If remove (unsettled bet exist check), Test Case B will fail.
+         */
+        try {
+            SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
+
+            if (settledBet.getOperatorStatus().equals(1)) {
+                throw new BetResultIdempotentViolationException(settledBet);
+            }
+
+        } catch (BetNotFoundException betNotFoundException) {
+            // do nothing
+        }
 
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(dto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
 

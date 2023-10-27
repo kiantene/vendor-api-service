@@ -20,6 +20,6 @@ public interface AgentVendorLineRepository extends JpaRepository<AgentVendorLine
     List<AgentVendorLine> findByAgentIdAndVendorLineId(Integer agentId, Integer vendorLineId);
 
     @Cacheable(value = "AgentVendorLine", key = "{#agentId, #vendorId, #currencyId, #gameCategoryId, #status}", cacheManager = "cacheManager")
-    List<AgentVendorLine>  findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus
+    AgentVendorLine findTop1ByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus
             (Integer agentId, Integer vendorId, Integer currencyId, Integer gameCategoryId, Integer status);
 }

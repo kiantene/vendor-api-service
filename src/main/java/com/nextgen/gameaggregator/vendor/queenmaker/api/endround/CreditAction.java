@@ -80,17 +80,15 @@ public class CreditAction {
 
         } catch (InvalidRequestException e) {
             creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
-
+            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException e) {
             creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
-
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             httpService.end(httpRequestLog, creditVo);
-            log.info("QM Credit Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return creditVo;
@@ -106,7 +104,7 @@ public class CreditAction {
             CredentialNotFoundException,
             InvalidVendorLineException,
             CurrencyNotSupportedException,
-            GameNotSupportedException {
+            GameNotSupportedException, InvalidRequestException, TransactionStillProcessingException, BetNotFoundException, InvalidFormatException {
 
         // 1. Validate Credentials
         String CLIENT_ID = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.CLIENT_ID);
@@ -125,6 +123,13 @@ public class CreditAction {
         ValidationUtils.isEquals(creditTransactionsDto.getGamecode(), gamecode, GameNotSupportedException::new);
         ValidationUtils.isEquals(creditTransactionsDto.getCur(), gameSession.getVendorCurrencyCode(), CurrencyNotSupportedException::new);
 
+        // 3. Validate TxType is exist
+        if (!Txtype.txtTypeList.contains(creditTransactionsDto.getTxtype())) {
+            throw new InvalidRequestException();
+        }
+
+        // 4. Validate Debit Transaction is exist
+        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
     }
 
     private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
@@ -157,52 +162,50 @@ public class CreditAction {
             transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setBal(balance);
             transactionsVo.setCur(gameSession.getVendorCurrencyCode());
+            transactionsVo.setDup(false);
 
         } catch (AuthenticationException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
-
+            httpService.logError(httpRequestLog, e);
         } catch (CurrencyNotSupportedException e) {
             transactionsVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InsufficientBalanceException e) {
             transactionsVo.setResponseCode(ResponseCodes.INSUFFICIENT_FUNDS);
-
+            httpService.logError(httpRequestLog, e);
         } catch (GameNotSupportedException e) {
             transactionsVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Game Code");
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
-            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, Optional.ofNullable(e.getValidation().values().iterator().next()).orElse(""));
-
+            transactionsVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidVendorLineException |
                  CredentialNotFoundException |
                  InvalidAgentApiCredentialException e) {
             transactionsVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
-
+            httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
             // return current balance
             transactionsVo.setBal(this.getBalance(traceId, gameSession));
             transactionsVo.setTxid(traceId);
             transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setDup(true);
-
         } catch (TransactionStillProcessingException e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Transaction Still Processing");
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
-
+            httpService.logError(httpRequestLog, e);
         } catch (BetNotFoundException e) {
+            transactionsVo.setTxid(traceId);
+            transactionsVo.setPtxid(creditTransactionsDto.getPtxid());
             transactionsVo.setResponseCode(ResponseCodes.TRANSACTION_DOES_NOT_EXIST);
-
-        } catch (MergedBetDataIntegrityException e) {
-            throw new RuntimeException(e);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             transactionsVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             httpService.end(httpRequestLog, transactionsVo);
-            log.info("QM Credit Request Log : " + httpRequestLog);
         }
 
         return transactionsVo;

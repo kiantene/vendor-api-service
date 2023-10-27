@@ -33,4 +33,26 @@ public class LoggingService {
         logInfo.put("TotalProcessMs: ", endTime - this.startTime);
         log.info(gson.toJson(logInfo));
     }
+
+    public void logProcessTimeTempLog(String functionName, String vendorPlayerUsername, String roundId) {
+
+        Long endTime = System.currentTimeMillis();
+        Long totalProcessMs = endTime - this.startTime;
+
+        if (totalProcessMs >= 1000) {
+            Gson gson = new Gson();
+            HashMap<String, Object> logInfo = new HashMap<>();
+            logInfo.put("FunctionName: ", functionName);
+            logInfo.put("VendorPlayerUsername: ", vendorPlayerUsername);
+            logInfo.put("RoundId: ", roundId);
+            logInfo.put("StartTime: ", this.startTime);
+            logInfo.put("EndTime: ", endTime);
+            logInfo.put("TotalProcessMs: ", endTime - this.startTime);
+            log.info(gson.toJson(logInfo));
+
+        } else {
+            //if processing time less than 1sec, then no log
+        }
+
+    }
 }

@@ -1,10 +1,14 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.service;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,6 +19,11 @@ import java.util.Optional;
 @Slf4j
 @Data
 public class VendorService extends BaseVendorService {
+
+    @Autowired
+    UnsettledBetService unsettledBetService;
+    @Autowired
+    SettledBetService settledBetService;
 
     public static Long convertToTimestamp(String dateTimeString) {
         // Parse the date-time string to an Instant
@@ -30,6 +39,16 @@ public class VendorService extends BaseVendorService {
 
     public static String mergeGameCode(String prefix, String suffix) {
         return prefix + "_" + suffix;
+    }
+
+    public void verifyExistDebitTransaction(Integer vendorId, Long vendorPLayerId, String externalTransactionId) throws BetNotFoundException {
+        try {
+            // If bet is already settled, continue run
+            settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPLayerId, externalTransactionId);
+        } catch (BetNotFoundException e) {
+            // not found settled bet will check unsettled bet
+            unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+        }
     }
 
     public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet, BetStatus betStatus) {
