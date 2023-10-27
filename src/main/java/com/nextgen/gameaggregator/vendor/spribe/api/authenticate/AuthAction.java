@@ -39,7 +39,7 @@ public class AuthAction {
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
-        
+
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
@@ -60,7 +60,7 @@ public class AuthAction {
             // 4. Regenerate token (Use vendor's session token)
             gameSession = gameSessionService.regenerateGameSessionToken(gameSession, dto.getSession_token());
             gameToken = dto.getSession_token();
-            
+
             // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
@@ -91,7 +91,7 @@ public class AuthAction {
         } finally {
             httpService.end(httpRequestLog, vo);
         }
-        
+
         return vo;
     }
 
@@ -100,10 +100,12 @@ public class AuthAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, 
-        DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
+    private void doVerification(AuthDto dto, GameSession gameSession)
+            throws DisabledVendorLineException, DisabledAgentPlayerException,
+            DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
         // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(),
+                CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

@@ -65,7 +65,10 @@ public class SettleAction {
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
 
-            // 4. Verify remaining parameters (Verify against database values)
+            // 4. Check game session status (0 = inactive)
+            if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
             userId = gameSession.getVendorPlayerUsername();
@@ -73,22 +76,22 @@ public class SettleAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Check if the round exists
+            // 6. Check if the round exists
             List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
-            // 6. Reject the request if there's no place bet
+            // 7. Reject the request if there's no place bet
             if (settledBetList.isEmpty()) {
                 vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
 
             } else {
-                // 7. Retrieve the latest wallet balance from Operator
+                // 8. Retrieve the latest wallet balance from Operator
                 oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-                // 8. Send bet request to Operator
+                // 9. Send bet request to Operator
                 ResultType resultType = getResultType(dto);
                 BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-                // 9. Set response data
+                // 10. Set response data
                 data.setOperator_tx_id(traceId);
                 data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
                 data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
@@ -138,8 +141,8 @@ public class SettleAction {
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | 
-            InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | DisabledGameException | 
+        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | InvalidRequestException | 
+            DisabledVendorLineException | DisabledAgentPlayerException | DisabledGameException | 
             BetNotFoundException | MergedBetDataIntegrityException | InsufficientBalanceException | 
             TransactionStillProcessingException | GameNotSupportedException | CurrencyNotSupportedException internalErrorExeption) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
