@@ -66,9 +66,6 @@ public class AppendWagerAction {
             // Verify session token
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getBrandUid(), dto.getGameId());
 
-            // Regenerate new vendor game code
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
-
             this.doVerification(dto, gameSession);
 
             // Process jackpot as WIN
