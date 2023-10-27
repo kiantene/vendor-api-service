@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
+import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
@@ -79,8 +80,8 @@ public class SettleAction {
             // 6. Check if the round exists
             List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
 
-            // 7. Reject the request if there's no place bet
-            if (settledBetList.isEmpty()) {
+            // 7. Reject the request if there's no place bet and it's not a free bet
+            if (settledBetList.isEmpty() && !FreeBetAction.list.contains(dto.getAction())) {
                 vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
 
             } else {
