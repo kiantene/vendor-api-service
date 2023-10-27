@@ -4,6 +4,9 @@ public class EndPoints {
     // Vendor Path
     public static final String PATH = "api/v1/saba";
 
+    // Call To Vendor
+    public static final String GAME_URL = "/GetSabaUrl";
+
     // Single Bet and Cash Out
     public static final String GET_BALANCE = "/getbalance";
     public static final String PLACE_BET = "/placebet";
