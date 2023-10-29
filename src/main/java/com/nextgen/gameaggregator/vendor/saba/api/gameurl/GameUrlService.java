@@ -57,7 +57,7 @@ public class GameUrlService implements GameUrl {
         GameUrlVo responseVo = null;
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
 
-        long startTime = System.currentTimeMillis();
+        Long startTime = System.currentTimeMillis();
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
                 .uri(EndPoints.GAME_URL)
@@ -68,7 +68,7 @@ public class GameUrlService implements GameUrl {
                 .toEntity(String.class)
                 .block();
 
-        long endTime = System.currentTimeMillis();
+        Long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
                 Endpoints.GAME_URL, apiUrl, formData, apiResponse, headers, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);

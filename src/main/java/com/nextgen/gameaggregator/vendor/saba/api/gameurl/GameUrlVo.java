@@ -1,17 +1,17 @@
 package com.nextgen.gameaggregator.vendor.saba.api.gameurl;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
 @Data
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo {
-    @JsonProperty("error_code")
+    @SerializedName("error_code")
     private Integer errorCode;
 
-    @JsonProperty("message")
+    @SerializedName("message")
     private String message;
 
-    @JsonProperty("Data")
+    @SerializedName("Data")
     private String data;
 
     @Override
