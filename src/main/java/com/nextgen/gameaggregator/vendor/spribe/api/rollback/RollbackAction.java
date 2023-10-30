@@ -140,8 +140,8 @@ public class RollbackAction {
 
         } catch (BetResultIdempotentViolationException | BetRefundIdempotentViolationException idempotentViolationException) {
             data.setOperator_tx_id(traceId);
-            data.setNew_balance(oldBalance);
-            data.setOld_balance(oldBalance);
+            data.setNew_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
             data.setUser_id(userId);
             data.setCurrency(currency);
             data.setProvider(provider);
