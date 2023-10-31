@@ -36,27 +36,28 @@ public class BetIdempotentLogService {
 
     private String generateBetIdempotentId(BetResultData betResultData, GameSession gameSession) {
 
-        Map<String, String> map = new HashMap<>();
-        map.put("vendorBetId", betResultData.getVendorBetId());
-        map.put("roundId", betResultData.getRoundId());
-        map.put("betAmount", (betResultData.getBetAmount() == null) ? "0" : betResultData.getBetAmount().toString());
-        map.put("winAmount", (betResultData.getWinAmount() == null) ? "0" : betResultData.getWinAmount().toString());
-        map.put("jackpotAmount", (betResultData.getJackpotAmount() == null) ? "0" : betResultData.getJackpotAmount().toString());
-        map.put("vendorPlayerUsername", gameSession.getVendorPlayerUsername());
-
         String betIdempotentId = betResultData.getVendorBetId() + "_" + betResultData.getRoundId() + "_" + betResultData.getBetAmount() + "_" +
                 betResultData.getWinAmount() + "_" + betResultData.getJackpotAmount() + "_" + gameSession.getVendorPlayerUsername();
         betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
 
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            String json = objectMapper.writeValueAsString(map);
-            betIdempotentId = DigestUtils.md5Hex(json).toUpperCase();
-
-        } catch (JsonProcessingException e) {
-            log.error("generateBetIdempotentId ERROR : " + e.getMessage());
-
-        }
+        //avoid generating as json format data first, suspect the key of json format data will be different.
+//        Map<String, String> map = new HashMap<>();
+//        map.put("vendorBetId", betResultData.getVendorBetId());
+//        map.put("roundId", betResultData.getRoundId());
+//        map.put("betAmount", (betResultData.getBetAmount() == null) ? "0" : betResultData.getBetAmount().toString());
+//        map.put("winAmount", (betResultData.getWinAmount() == null) ? "0" : betResultData.getWinAmount().toString());
+//        map.put("jackpotAmount", (betResultData.getJackpotAmount() == null) ? "0" : betResultData.getJackpotAmount().toString());
+//        map.put("vendorPlayerUsername", gameSession.getVendorPlayerUsername());
+//
+//        try {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            String json = objectMapper.writeValueAsString(map);
+//            betIdempotentId = DigestUtils.md5Hex(json).toUpperCase();
+//
+//        } catch (JsonProcessingException e) {
+//            log.error("generateBetIdempotentId ERROR : " + e.getMessage());
+//
+//        }
 
         return betIdempotentId;
 
