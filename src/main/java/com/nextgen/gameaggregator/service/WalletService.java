@@ -227,6 +227,7 @@ public class WalletService {
                         unsettledBet.setEffectiveTurnover(betResultData.getEffectiveTurnover());
                     }
 
+                    this.mergeResultIntoBetDataForEndCondition(unsettledBet, betResultData);
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
                     walletBetResultData = settledBet;
 
@@ -622,6 +623,18 @@ public class WalletService {
         betResultLogService.create(traceId, betResultData.getVendorBetId(), betResultData, gameSession, balance, 1);
 
         return balance;
+    }
+
+    private void mergeResultIntoBetDataForEndCondition(BetInformation betData, BetResultData betResultData){
+
+        if (betResultData.getResultTime() != null) {
+            betData.setResultTime(betResultData.getResultTime());
+        }
+
+        if (betResultData.getVendorSettleTime() != null) {
+            betData.setVendorSettleTime(betResultData.getVendorSettleTime());
+        }
+
     }
 
     private void mergeResultIntoBetData(BetInformation betData, BetResultData betResultData, ResultType resultType, String traceId) {
