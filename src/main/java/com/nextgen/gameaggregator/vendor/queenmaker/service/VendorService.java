@@ -1,11 +1,16 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.service;
 
+import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawBetResultLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.BetResultLogService;
 import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.UnsettledBetService;
+import com.nextgen.gameaggregator.vendor.queenmaker.api.bet.DebitTransactionsDto;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +29,8 @@ public class VendorService extends BaseVendorService {
     UnsettledBetService unsettledBetService;
     @Autowired
     SettledBetService settledBetService;
+    @Autowired
+    BetResultLogService betResultLogService;
 
     public static Long convertToTimestamp(String dateTimeString) {
         // Parse the date-time string to an Instant
@@ -48,6 +55,14 @@ public class VendorService extends BaseVendorService {
         } catch (BetNotFoundException e) {
             // not found settled bet will check unsettled bet
             unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
+        }
+    }
+
+    public void checkExistBetResult(GameSession gameSession, DebitTransactionsDto dto) throws BetResultIdempotentViolationException {
+        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(dto.getExternalTransactionId(), dto.getRoundId(), gameSession.getVendorGameId().toString(), gameSession.getVendorPlayerId().toString());
+        // if already settled, throw BetResultIdempotentViolationException
+        if (rawBetResultLog != null) {
+            throw new BetResultIdempotentViolationException();
         }
     }
 

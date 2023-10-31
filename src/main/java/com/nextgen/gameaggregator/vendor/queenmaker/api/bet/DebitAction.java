@@ -107,7 +107,7 @@ public class DebitAction {
             InvalidVendorLineException,
             CurrencyNotSupportedException,
             GameNotSupportedException,
-            AuthenticationException {
+            AuthenticationException, BetResultIdempotentViolationException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitTransactionsDto.getUserid());
@@ -133,6 +133,9 @@ public class DebitAction {
         if (!Txtype.txtTypeList.contains(debitTransactionsDto.getTxtype())) {
             throw new InvalidRequestException();
         }
+
+        // 5. Check Transaction is settled
+        vendorService.checkExistBetResult(gameSession, debitTransactionsDto);
     }
 
     private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpServletRequest request) {

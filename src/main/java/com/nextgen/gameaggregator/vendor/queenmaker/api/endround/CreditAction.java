@@ -128,8 +128,10 @@ public class CreditAction {
             throw new InvalidRequestException();
         }
 
-        // 4. Validate Debit Transaction is exist
-        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
+        // 4. Validate Debit Transaction is exist, except txtype 590 (End Round)
+        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+            vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
+        }
     }
 
     private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
