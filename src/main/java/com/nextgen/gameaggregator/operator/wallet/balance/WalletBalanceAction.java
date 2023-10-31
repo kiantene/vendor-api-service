@@ -77,6 +77,7 @@ public class WalletBalanceAction {
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
+            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BALANCE);
 
         }
 

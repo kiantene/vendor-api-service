@@ -98,34 +98,50 @@ public class TransferService {
             transferVo.setAcctId(acctId);
             transferVo.setSerialNo(traceId);
 
-        } catch (AuthenticationException e) {
+        } catch (AuthenticationException authenticationException) {
             // account not found 
+            httpService.logError(httpRequestLog, authenticationException);
             transferVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
+
         } catch (CredentialNotFoundException | UnableToFindCredentialsException |
-                 InvalidPlayerException e) {
+                 InvalidPlayerException merchantNotFoundException) {
             // merchant not found
-            transferVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+            httpService.logError(httpRequestLog, merchantNotFoundException);
+            transferVo.setResponseCode(isCancel ? ResponseCode.INVALID_REQUEST : ResponseCode.SYSTEM_ERROR);
+
         } catch (DisabledVendorLineException | DisabledAgentPlayerException |
-                 DisabledGameException | MergedBetDataIntegrityException e) {
+                 DisabledGameException | MergedBetDataIntegrityException serviceInaccessibleException) {
             // service inaccessible 
+            httpService.logError(httpRequestLog, serviceInaccessibleException);
             transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
-        } catch (CurrencyNotSupportedException e) {
+
+        } catch (CurrencyNotSupportedException currencyInvalidException) {
             // invalid currency
+            httpService.logError(httpRequestLog, currencyInvalidException);
             transferVo.setResponseCode(ResponseCode.CURRENCY_INVALID);
-        } catch (InsufficientBalanceException e) {
+
+        } catch (InsufficientBalanceException insufficientBalanceException) {
             // insufficient balance
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             transferVo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
-        } catch (BetNotFoundException | RecordNotFoundException e) {
+
+        } catch (BetNotFoundException | RecordNotFoundException notFoundException) {
             // record ID not found
+            httpService.logError(httpRequestLog, notFoundException);
             transferVo.setResponseCode(isCancel ? ResponseCode.RELATED_ID_NOT_FOUND : ResponseCode.RECORD_ID_NOT_FOUND);
+
         } catch (InvalidRequestException | InvalidOperatorResponseException |
                  InvalidAgentApiCredentialException | GameNotSupportedException |
-                 BetRefundIdempotentViolationException e) {
+                 BetRefundIdempotentViolationException invalidRequestException) {
             // invalid request
+            httpService.logError(httpRequestLog, invalidRequestException);
             transferVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-        } catch (JsonProcessingException e) {
+
+        } catch (JsonProcessingException invalidFormatException) {
             // invalid format
+            httpService.logError(httpRequestLog, invalidFormatException);
             transferVo.setResponseCode(ResponseCode.INVALID_FORMAT);
+
         } catch (BetResultIdempotentViolationException e) {
             transferVo.setBalance(e.getBalance());
             transferVo.setMsg(ResponseCode.SUCCESS.description);
@@ -136,7 +152,7 @@ public class TransferService {
             transferVo.setAcctId(acctId);
             transferVo.setSerialNo(traceId);
         } catch (Exception exception) {
-            transferVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+            transferVo.setResponseCode(isCancel ? ResponseCode.INVALID_REQUEST : ResponseCode.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
@@ -180,8 +196,14 @@ public class TransferService {
     }
 
     private ResultType determineResultType(String type, WinDataDto winDataDto) {
-        return (type != null && type.equals("Free")) 
-            ? (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE // If free spin, use BET_WIN / BET_LOSE
-            : (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;  // Else WIN / END
+        if (type != null && type.equals("Free")) {
+            if (winDataDto.getSpecialGame().getSequence() == 0) {
+                return ResultType.END;
+            } else {
+                return (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE; // If free spin, use BET_WIN / BET_LOSE
+            }
+        } else {
+            return (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;  // Else WIN / END
+        }
     }
 }

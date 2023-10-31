@@ -8,43 +8,51 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CreditDto extends CommonDto implements BetResultData, RollbackData {
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 50)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 50)
     private String transactionId;
     @NotBlank(message = "Transaction not found")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 0, max = 50)
     private String debitTransactionId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("roundId")
-    private String vendorRoundId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String gameId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String tableId;
     @NotNull
+    @Digits(integer = 18, fraction = 0)
+    @JsonProperty("roundId")
+    private BigInteger vendorRoundId;
+    @NotNull
+    @Digits(integer = 4, fraction = 0)
+    @JsonProperty("gameId")
+    private Integer vendorGameId;
+    @NotNull
+    private Integer tableId;
+    @NotNull
+    @PositiveOrZero(message = "Negative amount")
+    @Digits(integer = 25, fraction = 2, message = "Invalid amount")
     private Double creditAmount;
     @NotNull
+    @Min(value = 0)
+    @Max(value = 2)
     private Integer returnReason;
     @NotNull
+    @Digits(integer = 4, fraction = 0)
     private Integer betTypeID;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 4)
     private String currency;
     private String gameDataString;
     private GameDataStringDto gameDataStringDto;
@@ -63,6 +71,12 @@ public class CreditDto extends CommonDto implements BetResultData, RollbackData 
     @JsonIgnore
     public String getRoundId() {
         return this.debitTransactionId;
+    }
+
+    @Override
+    @JsonIgnore
+    public String getGameId() {
+        return this.vendorGameId.toString();
     }
 
     @Override

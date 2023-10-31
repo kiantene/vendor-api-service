@@ -74,6 +74,7 @@ public class DebitAction {
 
             // Get GameSession by player name and vendor game id
             gameSession = gameSessionService.verifyToken(debitDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getTableId().toString(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, httpRequestLog, request);
@@ -91,7 +92,7 @@ public class DebitAction {
             }
             // Construct Vo
             debitVo.setErrorCode(ResponseCodes.OK);
-            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             debitVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -104,6 +105,7 @@ public class DebitAction {
         } catch (InvalidSignatureException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid Hash");
+            debitVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
@@ -127,7 +129,7 @@ public class DebitAction {
             debitVo.setErrorCode(ResponseCodes.OK);
             debitVo.setErrorDescription("Transaction already processed");
             httpService.logError(httpRequestLog, e);
-        } catch (IOException e) {
+        } catch (IOException | CurrencyNotSupportedException e) {
             debitVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             debitVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
@@ -167,9 +169,9 @@ public class DebitAction {
             debitVo.setTransactionId(debitDto.getTransactionId());
             if (debitVo.getBalance() == null) {
                 if (debitVo.getErrorCode().equals(ResponseCodes.USER_NOT_FOUND)) {
-                    debitVo.setBalance(Double.valueOf(0));
+                    debitVo.setBalance(BigDecimal.ZERO.setScale(2, RoundingMode.DOWN));
                 } else {
-                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
+                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
                 }
             }
             debitVo.setCurrency(debitDto.getCurrency());
@@ -185,14 +187,17 @@ public class DebitAction {
     }
 
     private void doVerification(DebitDto debitDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request)
-            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, DuplicateExternalTransactionIdException {
+            throws AuthenticationException, InvalidPlayerException, CredentialNotFoundException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, DuplicateExternalTransactionIdException, CurrencyNotSupportedException {
         // Verify received game id is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId(), AuthenticationException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), debitDto.getTableId().toString(), AuthenticationException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUid());
 
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
+        
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(debitDto.getOperatorId()), InvalidRequestException::new);

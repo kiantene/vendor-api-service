@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.ezugi.service.LockManager;
 import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import io.micrometer.common.util.StringUtils;
@@ -30,11 +31,13 @@ import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CreditAction extends CommonDto {
+    private final LockManager lockManager;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -54,6 +57,11 @@ public class CreditAction extends CommonDto {
     @Autowired
     private VendorPlayerService vendorPlayerService;
 
+    @Autowired
+    public CreditAction(LockManager lockManager) {
+        this.lockManager = lockManager;
+    }
+
     @PostMapping(path = EndPoints.CREDIT)
     public CommonVo credit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -62,6 +70,8 @@ public class CreditAction extends CommonDto {
         CreditVo creditVo = new CreditVo();
         CreditDto creditDto = new CreditDto();
         GameSession gameSession = null;
+        Lock userLock = null;
+        
         try {
             String body = httpRequestLog.getRequestBody();
             creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
@@ -74,6 +84,7 @@ public class CreditAction extends CommonDto {
 
             // Get GameSession by player name and vendor game id
             gameSession = gameSessionService.verifyToken(creditDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(creditDto.getTableId().toString(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, httpRequestLog, request);
@@ -85,6 +96,8 @@ public class CreditAction extends CommonDto {
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
                     break;
                 default:
+                    userLock = lockManager.getLockForUsername(creditDto.getUid());
+                    userLock.lock();
                     ResultType resultType = getResultType(creditDto);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
                     break;
@@ -92,7 +105,7 @@ public class CreditAction extends CommonDto {
 
             // Construct Vo
             creditVo.setErrorCode(ResponseCodes.OK);
-            creditVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            creditVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             creditVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -135,12 +148,13 @@ public class CreditAction extends CommonDto {
                 creditVo.setErrorDescription(violation);
             }
             httpService.logError(httpRequestLog, e);
-        } catch (IOException e) {
+        } catch (IOException | CurrencyNotSupportedException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid parameter");
         } catch (InvalidSignatureException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Invalid Hash");
+            creditVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidFormatException e) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
@@ -149,6 +163,10 @@ public class CreditAction extends CommonDto {
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             creditVo.setErrorDescription("Credit transaction is still processing");
+        } catch (GameNotSupportedException e) {
+            creditVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            creditVo.setErrorDescription("Unknown Game ID");
+            httpService.logError(httpRequestLog, e);
         } catch (MergedBetDataIntegrityException | RecordNotFoundException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | InvalidKeyException | NoSuchAlgorithmException |
                  InvalidOperatorResponseException e) {
@@ -167,10 +185,13 @@ public class CreditAction extends CommonDto {
             creditVo.setRoundId(creditDto.getVendorRoundId());
             creditVo.setTransactionId(creditDto.getTransactionId());
             if (creditVo.getBalance() == null) {
-                creditVo.setBalance(vendorService.getCurrentBalance(traceId, creditDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
+                creditVo.setBalance(vendorService.getCurrentBalance(traceId, creditDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
             }
             creditVo.setCurrency(creditDto.getCurrency());
             creditVo.setTimestamp(System.currentTimeMillis());
+            if (userLock != null) {
+                userLock.unlock();
+            }
             httpService.end(httpRequestLog, creditVo);
         }
         return creditVo;
@@ -182,26 +203,32 @@ public class CreditAction extends CommonDto {
         ValidationUtils.validateRequest(creditDto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession, HttpRequestLog
+    private void doVerification(CreditDto creditDto, GameSession gameSession, HttpRequestLog
             httpRequestLog, HttpServletRequest request)
             throws
-            InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException {
+            InvalidPlayerException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, InvalidFormatException, InvalidRequestException, JsonProcessingException, GameNotSupportedException, CurrencyNotSupportedException {
         // Verify received username is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUid(), InvalidPlayerException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), creditDto.getUid(), InvalidPlayerException::new);
 
         // Verify received game id is the same from game session
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getTableId(), AuthenticationException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), creditDto.getTableId().toString(), InvalidRequestException::new);
 
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
-        ValidationUtils.isEquals(operatorId, String.valueOf(dto.getOperatorId()), InvalidRequestException::new);
+        ValidationUtils.isEquals(operatorId, String.valueOf(creditDto.getOperatorId()), InvalidRequestException::new);
+
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), creditDto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify valid game id (disable validation for witch game from game lobby)
+        //vendorService.verifyVendorGameCode(gameSession, creditDto.getGameId().toString());
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);
         VendorService.verifyHash(hashKey, httpRequestLog.getRequestBody(), request.getHeader("hash"));
 
         // Verify valid bet type id
-        VendorService.verifyCreditBetTypeId(dto.getBetTypeID());
+        VendorService.verifyCreditBetTypeId(creditDto.getBetTypeID());
     }
 
     private ResultType getResultType(CreditDto dto) {

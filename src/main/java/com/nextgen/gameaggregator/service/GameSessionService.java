@@ -34,7 +34,6 @@ public class GameSessionService {
         GameSession session = rawGameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
-        //TODO (by Alex), validate gameId param from vendor is match with game_sessions table's vendor_game_id
         return session;
     }
 

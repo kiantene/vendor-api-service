@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -58,6 +59,7 @@ public class RollbackAction {
 
             // Get GameSession by player name and vendor game id
             gameSession = gameSessionService.verifyToken(rollbackDto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(rollbackDto.getTableId().toString(), gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto, gameSession, httpRequestLog, request);
@@ -67,7 +69,7 @@ public class RollbackAction {
 
             // Construct Vo
             rollbackVo.setErrorCode(ResponseCodes.OK);
-            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            rollbackVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
         } catch (AuthenticationException e) {
             rollbackVo.setErrorCode(ResponseCodes.TOKEN_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
@@ -81,6 +83,7 @@ public class RollbackAction {
         } catch (InvalidSignatureException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid Hash");
+            rollbackVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidFormatException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
@@ -89,11 +92,31 @@ public class RollbackAction {
         } catch (InvalidPlayerException e) {
             rollbackVo.setErrorCode(ResponseCodes.USER_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException | IOException e) {
+        } catch (InvalidRequestException e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            rollbackVo.setErrorDescription("Invalid parameter");
+            if (e.getValidation() != null) {
+                String violation = e.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse("Invalid parameter"); // if there's no value, set it to the default invalid request parameter
+                rollbackVo.setErrorDescription(violation);
+            }
+            httpService.logError(httpRequestLog, e);
+        } catch (IOException | CurrencyNotSupportedException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid parameter");
             httpService.logError(httpRequestLog, e);
-        } catch (DisabledGameException | DisabledAgentPlayerException | CurrencyNotSupportedException |
+        } catch (GameNotSupportedException e) {
+            rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
+            rollbackVo.setErrorDescription("Unknown Game ID");
+            httpService.logError(httpRequestLog, e);
+        } catch (TransactionStillProcessingException e) {
+            rollbackVo.setErrorCode(ResponseCodes.TRANSACTION_TIMED_OUT);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledGameException | DisabledAgentPlayerException |
                  RecordNotFoundException | InvalidAgentApiCredentialException |
                  CredentialNotFoundException | DisabledVendorLineException | InvalidKeyException |
                  NoSuchAlgorithmException | InvalidOperatorResponseException e) {
@@ -112,7 +135,7 @@ public class RollbackAction {
             rollbackVo.setRoundId(rollbackDto.getRoundId());
             rollbackVo.setTransactionId(rollbackDto.getTransactionId());
             if (rollbackVo.getBalance() == null) {
-                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN).doubleValue());
+                rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
             }
             rollbackVo.setCurrency(rollbackDto.getCurrency());
             rollbackVo.setTimestamp(System.currentTimeMillis());
@@ -125,9 +148,12 @@ public class RollbackAction {
         ValidationUtils.validateRequest(rollbackdto);
     }
 
-    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException, JsonProcessingException, TransactionStillProcessingException {
+    private void doVerification(RollbackDto rollbackdto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws DisabledVendorLineException, DisabledAgentPlayerException, CurrencyNotSupportedException, InvalidPlayerException, DisabledGameException, AuthenticationException, InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, CredentialNotFoundException, BetNotFoundException, InvalidFormatException, InvalidRequestException, JsonProcessingException, TransactionStillProcessingException, GameNotSupportedException {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, rollbackdto.getUid());
+
+        // Verify received game id is the same from game session
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), rollbackdto.getTableId().toString(), InvalidRequestException::new);
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), rollbackdto.getCurrency(), CurrencyNotSupportedException::new);
@@ -135,6 +161,9 @@ public class RollbackAction {
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(rollbackdto.getOperatorId()), InvalidRequestException::new);
+
+        // Verify valid game id
+        //vendorService.verifyVendorGameCode(gameSession, rollbackdto.getGameId().toString());
 
         // Verify Signature key from vendor given
         String hashKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.HASH_KEY);

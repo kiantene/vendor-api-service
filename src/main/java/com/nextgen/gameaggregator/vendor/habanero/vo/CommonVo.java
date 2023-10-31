@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class CommonVo{
+public class CommonVo {
 
     @JsonProperty("balance")
     private BigDecimal balance;

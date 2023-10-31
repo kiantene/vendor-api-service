@@ -75,7 +75,7 @@ public class EndWagerDto extends CommonDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        return this.amount;
     }
 
     @Override
@@ -111,14 +111,14 @@ public class EndWagerDto extends CommonDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         // Default end wager as unsettled
-//        BetStatus betStatus = BetStatus.UNSETTLED;
-//
-//        // If round ended then set to settle
-//        if (this.isEndround.equals("true")) {
-//            betStatus = BetStatus.SETTLED;
-//        }
+        BetStatus betStatus = BetStatus.UNSETTLED;
 
-        return this.betStatus;
+        // If round ended then set to settle
+        if (this.isEndround.equals("true")) {
+            betStatus = BetStatus.SETTLED;
+        }
+
+        return betStatus;
 
     }
 }
