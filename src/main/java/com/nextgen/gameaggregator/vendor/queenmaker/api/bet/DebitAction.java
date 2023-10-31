@@ -135,7 +135,7 @@ public class DebitAction {
         }
 
         // 5. Check Transaction is settled
-        vendorService.checkExistBetResult(gameSession, debitTransactionsDto);
+        vendorService.checkBetIsSettled(gameSession, debitTransactionsDto);
     }
 
     private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpServletRequest request) {

@@ -3,12 +3,10 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.*;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
@@ -42,6 +40,8 @@ public class CreditAction {
     private VendorService vendorService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
 
     @PostMapping(path = EndPoints.WALLET_CREDIT)
     public CreditVo CreditAction(HttpServletRequest request) {
@@ -65,10 +65,12 @@ public class CreditAction {
 
             // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
             List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
+            int size = 0;
             for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
-
+                Thread.sleep(size * 100);
                 CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, request));
                 futures.add(future);
+                size += 1;
             }
             CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
             allFutures.join();
@@ -155,6 +157,14 @@ public class CreditAction {
             if (creditTransactionsDto.getTxtype().equals(Txtype.CANCEL_BET)) {
                 RollbackTransactionDto rollbackTransactionDto = new ModelMapper().map(creditTransactionsDto, RollbackTransactionDto.class);
                 balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService, httpRequestLog);
+            } else if (creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+                List<UnsettledBet> unsettledBet = unsettledBetService.getByRoundId(creditTransactionsDto.getExternalroundid(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                if (unsettledBet.isEmpty()) {
+                    balance = this.getBalance(traceId, gameSession);
+                } else {
+                    ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
+                    balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
+                }
             } else {
                 ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
                 balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);

@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.queenmaker.service;
 
 import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -58,10 +58,13 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public void checkExistBetResult(GameSession gameSession, DebitTransactionsDto dto) throws BetResultIdempotentViolationException {
-        RawBetResultLog rawBetResultLog = betResultLogService.checkExists(dto.getExternalTransactionId(), dto.getRoundId(), gameSession.getVendorGameId().toString(), gameSession.getVendorPlayerId().toString());
-        // if already settled, throw BetResultIdempotentViolationException
-        if (rawBetResultLog != null) {
+    public void checkBetIsSettled(GameSession gameSession, DebitTransactionsDto dto) throws BetResultIdempotentViolationException {
+        SettledBet settledBet = null;
+        try {
+            settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), dto.getPtxid());
+        } catch (Exception e) {
+        }
+        if (settledBet != null) {
             throw new BetResultIdempotentViolationException();
         }
     }
