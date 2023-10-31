@@ -1,13 +1,11 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.betdetail;
 
-import java.net.URI;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.nextgen.gameaggregator.entity.VendorLanguageCode;
 import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
@@ -15,7 +13,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.vendor.spribe.constant.Credentials;
 
 import lombok.extern.slf4j.Slf4j;
 
