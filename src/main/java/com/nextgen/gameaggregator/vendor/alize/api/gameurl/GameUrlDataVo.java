@@ -5,10 +5,11 @@ import lombok.Data;
 
 @Data
 public class GameUrlDataVo {
-    @NotBlank(message = "url can not be blank")
+    @NotBlank(message = "url cannot be blank")
     private String gameUrl;
 
     private String data;
     
+    @NotBlank(message = "token cannot be blank")
     private String token;
 }

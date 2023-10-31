@@ -20,6 +20,7 @@ import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
@@ -38,6 +39,8 @@ public class GameUrlService implements GameUrl {
     RequestService requestService;
     @Autowired
     VendorLineService vendorLineService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -46,29 +49,29 @@ public class GameUrlService implements GameUrl {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
         Map<String, String> credentials) throws InvalidVendorLineException, InvalidFormatException {
 
-      // Get operator and gameUrl by vendor line
-      String operator = "";
-      String gameUrl = "";
-      try {
-        operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
-        gameUrl = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "gameUrl");
-      } catch (CredentialNotFoundException e) {
-        log.error("Credential not found : " + e.getMessage());
-      }
+        // Get operator and gameUrl by vendor line
+        String operator = "";
+        String gameUrl = "";
+        try {
+            operator = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator");
+            gameUrl = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "gameUrl");
+        } catch (CredentialNotFoundException e) {
+            log.error("Credential not found : " + e.getMessage());
+        }
 
-      MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-      formData.add("currency", gameSession.getVendorCurrencyCode());
-      formData.add("gameId", this.getGameId(gameSession.getVendorGameCode()));
-      formData.add("gamecode", gameSession.getVendorGameCode());
-      formData.add("ip", gameSession.getIpAddress());
-      formData.add("lang", gameSession.getVendorLanguageCode());
-      formData.add("operator", operator);
-      formData.add("player", gameSession.getVendorPlayerUsername());
-      formData.add("playmode", "free");
-      formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
-      formData.add("url", gameUrl);
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        formData.add("currency", gameSession.getVendorCurrencyCode());
+        formData.add("gameId", this.getGameId(gameSession.getVendorGameCode()));
+        formData.add("gamecode", gameSession.getVendorGameCode());
+        formData.add("ip", gameSession.getIpAddress());
+        formData.add("lang", gameSession.getVendorLanguageCode());
+        formData.add("operator", operator);
+        formData.add("player", gameSession.getVendorPlayerUsername());
+        formData.add("playmode", "free");
+        formData.add("timestamp", String.valueOf(System.currentTimeMillis()));
+        formData.add("url", gameUrl);
 
-      return formData;
+        return formData;
     }
 
     @Override
@@ -123,6 +126,10 @@ public class GameUrlService implements GameUrl {
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
+
+            // 3. Regenerate token (Use vendor's game session token)
+            String newToken = responseVo.getData().getToken();
+            gameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
