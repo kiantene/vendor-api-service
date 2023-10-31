@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -72,7 +73,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return new BigDecimal(amount);
+        return AmountConverter.convertUnitToBalance(amount);
     }
 
     @Override
@@ -87,7 +88,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return new BigDecimal(amount);
+        return AmountConverter.convertUnitToBalance(amount);
     }
 
     @Override
