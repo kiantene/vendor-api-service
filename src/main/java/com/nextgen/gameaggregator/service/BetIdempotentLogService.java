@@ -36,8 +36,7 @@ public class BetIdempotentLogService {
 
     private String generateBetIdempotentId(BetResultData betResultData, GameSession gameSession) {
 
-        String betIdempotentId = betResultData.getVendorBetId() + "_" + betResultData.getRoundId() + "_" + betResultData.getBetAmount() + "_" +
-                betResultData.getWinAmount() + "_" + betResultData.getJackpotAmount() + "_" + gameSession.getVendorPlayerUsername();
+        String betIdempotentId = betResultData.getVendorBetId() + "_" + betResultData.getRoundId() + "_" + gameSession.getVendorPlayerUsername();
         betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
 
         //avoid generating as json format data first, suspect the key of json format data will be different.
