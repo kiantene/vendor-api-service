@@ -70,7 +70,6 @@ public class EndWagerAction {
             this.doValidation(dto);
 
             // Get last game session
-            // TODO: To handle duplicate bet exception (vendor identify duplicate by round_id and wager_id)
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
 
             // Verify data
@@ -232,7 +231,9 @@ public class EndWagerAction {
         try {
             SettledBet settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getVendorBetId(), dto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId());
 
-            throw new BetResultIdempotentViolationException(settledBet);
+            if (settledBet.getOperatorStatus().equals(1)) {
+                throw new BetResultIdempotentViolationException(settledBet);
+            }
 
         } catch (BetNotFoundException betNotFoundException) {
             // do nothing

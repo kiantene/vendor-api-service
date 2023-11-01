@@ -14,5 +14,7 @@ public class BetDetailUrlVo implements com.nextgen.gameaggregator.operator.trans
     private String url;
 
     @Override
-    public String getBetDetailUrl() { return this.getUrl(); }
+    public String getBetDetailUrl() {
+        return this.getUrl();
+    }
 }

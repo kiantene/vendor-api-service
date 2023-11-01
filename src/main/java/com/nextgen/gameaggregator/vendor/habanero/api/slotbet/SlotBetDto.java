@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.habanero.api.bet;
+package com.nextgen.gameaggregator.vendor.habanero.api.slotbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -11,9 +11,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BetDto extends FundInfoDto implements BetResultData {
-
-    private String vendorBetId;
+public class SlotBetDto extends FundInfoDto implements BetResultData {
 
     private String roundId;
 
@@ -21,6 +19,11 @@ public class BetDto extends FundInfoDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
+        return this.getTransferId();
+    }
+
+    @Override
+    public String getVendorBetId() {
         return this.getTransferId();
     }
 
@@ -50,10 +53,14 @@ public class BetDto extends FundInfoDto implements BetResultData {
     }
 
     @Override
-    public Long getResultTime() { return null; }
+    public Long getResultTime() {
+        return null;
+    }
 
     @Override
-    public Long getVendorSettleTime() { return null; }
+    public Long getVendorSettleTime() {
+        return null;
+    }
 
     @Override
     public BigDecimal getJackpotAmount() {

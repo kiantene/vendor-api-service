@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -81,7 +83,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(amount);
+        return AmountConverter.convertUnitToBalance(amount);
     }
 
     @Override
@@ -116,7 +118,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return (getAction().equals("freebet")) ? 1 : 0;
+        return (FreeBetAction.list.contains(action)) ? 1 : 0;
     }
 
     @Override
