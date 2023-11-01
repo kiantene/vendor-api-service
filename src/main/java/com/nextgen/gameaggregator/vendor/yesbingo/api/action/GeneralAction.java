@@ -155,21 +155,17 @@ public class GeneralAction {
             }
             case Actions.BET -> {
                 // For Bingo & Slot = Bet
-                log.info("Yesbingo BET: " + decryptedData);
                 betAction.bet(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.GAME_RESULT -> {
                 // For Bingo & Slot = Win
-                log.info("Yesbingo GAME_RESULT: " + decryptedData);
                 gameResultAction.gameResult(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.GAME_DETAIL_RESULT -> {
                 // For fish game is Bet + Win
-                log.info("Yesbingo GAME_DETAIL_RESULT: " + decryptedData);
                 gameDetailResultAction.gameDetailResult(httpRequestLog, traceId, decryptedData, responseVo);
             }
             case Actions.CANCEL_BET -> {
-                log.info("Yesbingo CANCEL_BET: " + decryptedData);
                 cancelBetAction.cancelBet(httpRequestLog, traceId, decryptedData, responseVo);
             }
             // If the header does not match any of the expected values, return an error response
