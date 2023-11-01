@@ -1,8 +1,11 @@
 package com.nextgen.gameaggregator.vendor.saba.api.bet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,7 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlaceBetAction {
 
     @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
     private HttpService httpService;
+    @Autowired
+    private SportWalletService sportWalletService;
 
     @PostMapping(path = EndPoints.PLACE_BET)
     public PlaceBetVo action(HttpServletRequest request) {
@@ -33,6 +40,10 @@ public class PlaceBetAction {
             // Convert original request body into dto
             RequestDto<PlaceBetDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
+
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getMessage().getUserId());
+
+            sportWalletService.placeBet(traceId, gameSession, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
 
             vo.setStatus("0");
             vo.setRefId(dto.getMessage().getRefId());

@@ -1,19 +1,8 @@
 package com.nextgen.gameaggregator.sport.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.springframework.data.couchbase.core.mapping.Document;
-import org.springframework.data.couchbase.repository.Collection;
-import org.springframework.data.couchbase.repository.Scope;
-
 import java.math.BigDecimal;
 
-@Document
-@Scope("sport")
-@Collection("unsettled_bet")
-@Data
-@NoArgsConstructor
-public class UnsettledBet {
+public class SportBetInformation {
     private String id;
     private String betId;
     private String internalTransactionId;
@@ -29,8 +18,22 @@ public class UnsettledBet {
     private Integer operatorStatus;
     private Integer currencyId;
     private BigDecimal betAmount;
-    private BigDecimal actualBetAmount;
+    private BigDecimal winAmount;
+    private BigDecimal jackpotAmount;
+    private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
-    private BigDecimal odds;
-    private Integer oddTypeId;
+
+    private Integer resultType;
+    private Integer isFreespin;
+    private String rawData;
+    private Integer resettleNum;
+    private Integer status;
+    private String gameSessionToken;
+    private Integer gameCategoryId;
+    private Long vendorBetTime;
+    private Long vendorSettleTime;
+    private Long createTime;
+    private Long resultTime;
+    private Integer processingStatus;
+    private BigDecimal balance;
 }

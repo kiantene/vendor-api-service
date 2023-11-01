@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.confirmbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -10,7 +10,7 @@ import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ConfirmBetDto implements BetResultData {
+public class ConfirmBetDto implements SportBetResultData {
     private String action;
     private String operationId;
     private String userId;
@@ -86,5 +86,20 @@ public class ConfirmBetDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
+    }
+
+    @Override
+    public BigDecimal getActualBetAmount() {
+        return this.getTxns().get(0).getActualAmount();
+    }
+
+    @Override
+    public BigDecimal getOdds() {
+        return this.getTxns().get(0).getOdds();
+    }
+
+    @Override
+    public Integer getOddTypeId() {
+        return this.getTxns().get(0).getOddsType();
     }
 }

@@ -1,6 +1,6 @@
-package com.nextgen.gameaggregator.sport.repository.couchbase;
+package com.nextgen.gameaggregator.sport.repository;
 
-import com.nextgen.gameaggregator.sport.entity.UnsettledBet;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.CouchbaseRepository;
 import org.springframework.data.couchbase.repository.Scope;
@@ -9,5 +9,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 @Scope("sport")
 @Collection("unsettled_bet")
-public interface UnsettledBetRepository extends CouchbaseRepository<UnsettledBet, String> {
+public interface UnsettledBetCouchbaseRepository extends CouchbaseRepository<SportUnsettledBetCouchbase, String> {
 }
