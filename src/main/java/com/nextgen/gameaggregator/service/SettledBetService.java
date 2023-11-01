@@ -156,18 +156,16 @@ public class SettledBetService {
 
             if (betIdempotentLog != null) {
 
-                String jsonBetResultData = "{}";
                 try {
                     ObjectMapper objectMapper = new ObjectMapper();
-                    jsonBetResultData = objectMapper.writeValueAsString(betResultData);
+                    String jsonBetResultData = objectMapper.writeValueAsString(betResultData);
+                    //log if found matched data after 2 hours for bet idempotent log checking
+                    log.info("betIdempotentLogService.checkExists : vendorPlayerUsername = " + gameSession.getVendorPlayerUsername() + ", betResultData = " + jsonBetResultData);
 
                 } catch (JsonProcessingException e) {
                     log.error("generateBetIdempotentId ERROR : " + e.getMessage());
 
                 }
-
-                //log if found matched data after 2 hours for bet idempotent log checking
-                log.info("betIdempotentLogService.checkExists : vendorPlayerUsername = " + gameSession.getVendorPlayerUsername() + ", betResultData = " + jsonBetResultData);
 
                 throw new BetResultIdempotentViolationException(betIdempotentLog);
 
