@@ -188,7 +188,7 @@ public class GameResultDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return VendorService.getCurrentTime(this.reportDate);
+        return null;
     }
 
     @Override
