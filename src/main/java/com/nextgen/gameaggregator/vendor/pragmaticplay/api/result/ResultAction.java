@@ -111,7 +111,8 @@ public class ResultAction {
             httpService.logError(httpRequestLog, InvalidAgentApiCredentialException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            //update bet not found for result to retry due to vendor async send issue
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
             httpService.logError(httpRequestLog, betNotFoundException);
 
