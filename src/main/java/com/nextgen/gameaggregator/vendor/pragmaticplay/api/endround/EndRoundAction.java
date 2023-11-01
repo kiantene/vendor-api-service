@@ -99,7 +99,8 @@ public class EndRoundAction {
             httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            //update bet not found for end round to retry due to vendor async send issue
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
             httpService.logError(httpRequestLog, betNotFoundException);
 

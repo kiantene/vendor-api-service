@@ -83,6 +83,7 @@ public class RollbackAction {
         } catch (InvalidSignatureException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);
             rollbackVo.setErrorDescription("Invalid Hash");
+            rollbackVo.setBalance(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
         } catch (InvalidFormatException e) {
             rollbackVo.setErrorCode(ResponseCodes.GENERAL_ERROR);

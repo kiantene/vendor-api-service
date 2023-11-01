@@ -152,12 +152,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return VendorService.getCurrentTime(this.gameDate);
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.getCurrentTime(this.gameDate);
+        return null;
     }
 
     @Override

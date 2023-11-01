@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.deps.com.fasterxml.jackson.core.JsonProcessingException;
+import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.SettledBet;
@@ -153,11 +155,21 @@ public class SettledBetService {
             }
 
             if (betIdempotentLog != null) {
+
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    String jsonBetResultData = objectMapper.writeValueAsString(betResultData);
+                    //log if found matched data after 2 hours for bet idempotent log checking
+                    log.info("betIdempotentLogService.checkExists : vendorPlayerUsername = " + gameSession.getVendorPlayerUsername() + ", betResultData = " + jsonBetResultData);
+
+                } catch (JsonProcessingException e) {
+                    log.error("generateBetIdempotentId ERROR : " + e.getMessage());
+
+                }
+
                 throw new BetResultIdempotentViolationException(betIdempotentLog);
 
             }
-
-
 
             // else just process normally as bet not found could be expected
             // save the data into couchbase first for idempotency checks
