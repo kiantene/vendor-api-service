@@ -196,14 +196,20 @@ public class TransferService {
     }
 
     private ResultType determineResultType(String type, WinDataDto winDataDto) {
-        if (type != null && type.equals("Free")) {
-            if (winDataDto.getSpecialGame().getSequence() == 0) {
-                return ResultType.END;
+        BigDecimal amount = winDataDto.getAmount();
+        boolean isFreeType = type != null && type.equals("Free");
+    
+        if (amount.compareTo(BigDecimal.ZERO) > 0) {
+            if (isFreeType && winDataDto.getSpecialGame().getSequence() == 0) {
+                return ResultType.WIN;
+
             } else {
-                return (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.BET_WIN : ResultType.BET_LOSE; // If free spin, use BET_WIN / BET_LOSE
+                return isFreeType ? ResultType.BET_WIN : ResultType.WIN;
+
             }
+            
         } else {
-            return (winDataDto.getAmount().compareTo(BigDecimal.ZERO) > 0) ? ResultType.WIN : ResultType.END;  // Else WIN / END
+            return isFreeType ? ResultType.BET_LOSE : ResultType.END;
         }
-    }
+    } 
 }
