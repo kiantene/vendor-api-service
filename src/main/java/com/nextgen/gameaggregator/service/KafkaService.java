@@ -56,4 +56,12 @@ public class KafkaService {
             log.error(e.getMessage());
         }
     }
+
+    public void produceSettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
+        try {
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, new Gson().toJson(sportUnsettledBetMariaDB));
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
 }

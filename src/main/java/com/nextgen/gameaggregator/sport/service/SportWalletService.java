@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.LoggingService;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
+import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -133,7 +135,15 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent settle() {
+    public BetEvent settle(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) {
+
+        return null;
+    }
+
+    public BetEvent batchSettle(String traceId, GameSession gameSession, List<SportBetResultData> sportBetResultDataList, String rawData, HttpRequestLog httpRequestLog) {
+        for (SportBetResultData sportBetResultData : sportBetResultDataList) {
+            SportSettledBet sportSettledBet = new SportSettledBet();
+        }
 
         return null;
     }

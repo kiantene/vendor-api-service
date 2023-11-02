@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class SettledBet {
+public class SportSettledBet {
     private String id;
     private String betId;
     private String internalTransactionId;
@@ -25,4 +25,10 @@ public class SettledBet {
     private BigDecimal effectiveTurnover;
     private BigDecimal odds;
     private Integer oddTypeId;
+    private Integer retryCount;
+    private Integer nextExecutionTime;
+
+    public SportSettledBet() {
+
+    }
 }
