@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.Txtype;
 import com.nextgen.gameaggregator.vendor.queenmaker.dto.JpcontribsDto;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import jakarta.validation.constraints.*;
@@ -107,11 +108,17 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
+        if (this.txtype.equals(Txtype.END_ROUND)) {
+            return this.ptxid;
+        }
         return this.refptxid;
     }
 
     @Override
     public String getVendorBetId() {
+        if (this.txtype.equals(Txtype.END_ROUND)) {
+            return this.ptxid;
+        }
         return this.refptxid;
     }
 
