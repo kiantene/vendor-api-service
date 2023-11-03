@@ -135,16 +135,16 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent settle(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) {
+    public BetEvent settle(SportSettledBet sportSettledBet) {
+
 
         return null;
     }
 
-    public BetEvent batchSettle(String traceId, GameSession gameSession, List<SportBetResultData> sportBetResultDataList, String rawData, HttpRequestLog httpRequestLog) {
+    public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
-            SportSettledBet sportSettledBet = new SportSettledBet();
+            SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
+            kafkaService.produceSettledBet(sportSettledBet);
         }
-
-        return null;
     }
 }

@@ -2,14 +2,14 @@ package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SettleBetTransactionDto implements BetResultData {
+public class SettleBetTransactionDto implements SportBetResultData {
     private String userId;
     private String refId;
     private Long txId;
@@ -89,5 +89,20 @@ public class SettleBetTransactionDto implements BetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    @Override
+    public BigDecimal getActualBetAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getOdds() {
+        return null;
+    }
+
+    @Override
+    public Integer getOddTypeId() {
+        return null;
     }
 }
