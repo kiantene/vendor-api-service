@@ -223,6 +223,7 @@ pipeline {
                             println("Deleting build: ${build.number}")
                             try {
                                 build.delete()
+                                sleep(time:1, unit: "SECONDS")
                             } catch (Exception e) {
                                 println("Error deleting build ${build.number}: ${e.message}")
                             }

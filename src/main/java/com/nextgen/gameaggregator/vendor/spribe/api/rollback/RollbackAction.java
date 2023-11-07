@@ -17,6 +17,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 
@@ -65,9 +66,12 @@ public class RollbackAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUser_id());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
 
-            // 4. Verify remaining parameters (Verify against database values)
+            // 4. Check game session status (0 = inactive)
+            if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
             userId = gameSession.getVendorPlayerUsername();
@@ -75,7 +79,7 @@ public class RollbackAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Check whether if the request is a place bet not result
+            // 6. Check whether if the request is a place bet not result
             SettledBet rawSettledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getRollback_provider_tx_id(), dto.getAction_id(), 
                                         gameSession.getVendorId(), gameSession.getVendorPlayerId());
 
@@ -86,18 +90,18 @@ public class RollbackAction {
                 BigDecimal winAmount = rawSettledBet.getWinAmount();
                 Integer freeSpin = rawSettledBet.getIsFreespin();
 
-                // Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
+                // 7. Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
                 if (winAmount.equals(BigDecimal.ZERO) && freeSpin == 0) {
-                    // 6. Retrieve the latest wallet balance from Operator
+                    // 8. Retrieve the latest wallet balance from Operator
                     oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-                    // 7. Send rollback request to Operator
+                    // 9. Send rollback request to Operator
                     BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
-                    // 8. Set response data
+                    // 10. Set response data
                     data.setOperator_tx_id(traceId);
-                    data.setNew_balance(balance);
-                    data.setOld_balance(oldBalance);
+                    data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
+                    data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
                     data.setUser_id(userId);
                     data.setCurrency(currency);
                     data.setProvider(provider);
@@ -128,7 +132,11 @@ public class RollbackAction {
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidRequestException | AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException | 
+        } catch (AuthenticationException authenticationException) {
+            vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
+            httpService.logError(httpRequestLog, authenticationException); 
+
+        } catch (InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | 
             DisabledGameException | InvalidAgentApiCredentialException  | TransactionStillProcessingException | 
             VendorCurrencyNotSupportException | GameNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
@@ -136,8 +144,8 @@ public class RollbackAction {
 
         } catch (BetResultIdempotentViolationException | BetRefundIdempotentViolationException idempotentViolationException) {
             data.setOperator_tx_id(traceId);
-            data.setNew_balance(oldBalance);
-            data.setOld_balance(oldBalance);
+            data.setNew_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
             data.setUser_id(userId);
             data.setCurrency(currency);
             data.setProvider(provider);

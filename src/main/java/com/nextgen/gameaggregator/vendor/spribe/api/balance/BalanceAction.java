@@ -14,6 +14,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
+import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
 
@@ -38,7 +39,7 @@ public class BalanceAction {
 
     @PostMapping(path = Endpoints.INFO)
     public ResponseVo authenticate(HttpServletRequest request) {
-        
+
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
         ResponseVo vo = new ResponseVo();
@@ -53,18 +54,21 @@ public class BalanceAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUser_id());
-            
-            // 4. Verify remaining parameters (Verify against database values)
+            GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+
+            // 4. Check game session status (0 = inactive)
+            if (gameSession.getStatus() == 0) throw new AuthenticationException();
+
+            // 5. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
 
-            // 5. Retrieve the latest wallet balance from Operator
+            // 6. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 6. Set response data
+            // 7. Set response data
             data.setUser_id(gameSession.getVendorPlayerUsername());
             data.setUsername(gameSession.getVendorPlayerUsername());
-            data.setBalance(balance);
+            data.setBalance(AmountConverter.convertBalanceToUnit(balance));
             data.setCurrency(gameSession.getVendorCurrencyCode());
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
@@ -84,7 +88,7 @@ public class BalanceAction {
         } finally {
             httpService.end(httpRequestLog, vo);
         }
-        
+
         return vo;
     }
 
@@ -93,10 +97,12 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
-        DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
+    private void doVerification(BalanceDto dto, GameSession gameSession)
+            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException,
+            DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
         // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(),
+                CurrencyNotSupportedException::new);
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);

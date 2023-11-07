@@ -118,7 +118,7 @@ public class WinDataDto implements BetResultData {
     public BigDecimal getBetAmount() {
         if (getSpecialGame() != null) {
             // Bet amount is zero when free spin
-            return (getSpecialGame().getType().equals("Free")) ? BigDecimal.ZERO : null;
+            return (getSpecialGame().getType().equals("Free") && getSpecialGame().getSequence() > 0) ? BigDecimal.ZERO : null;
         } else {
             return null;
         }
@@ -162,7 +162,7 @@ public class WinDataDto implements BetResultData {
     @Override
     public Integer getIsFreespin() {
         if (getSpecialGame() != null) {
-            return (getSpecialGame().getType().equals("Free")) ? 1 : 0;
+            return (getSpecialGame().getType().equals("Free") && getSpecialGame().getSequence() > 0) ? 1 : 0;
         } else {
             return 0;
         }

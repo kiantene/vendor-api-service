@@ -63,7 +63,8 @@ public class GameUrlService {
             GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, gameSession);
 
             Optional.ofNullable(gameUrlVo).orElseThrow(InvalidVendorResponseException::new);
-
+            //token will be replaced if vendor's token is needed to verify for action files.
+            gameUrlData.setToken(gameSession.getToken());
             gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
 
             //TODO throw vendor maintenance exception
