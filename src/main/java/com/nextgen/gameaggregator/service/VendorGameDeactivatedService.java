@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.Agent;
 import com.nextgen.gameaggregator.entity.VendorGameDeactivated;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.repository.VendorGameDeactivatedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,20 +12,18 @@ public class VendorGameDeactivatedService {
 
     @Autowired
     private VendorGameDeactivatedRepository vendorGameDeactivatedRepository;
-
-    @Cacheable(value = "VendorGameDeactivated", key = "{#agentId, #vendorGameId}", cacheManager = "cacheManager")
-    public VendorGameDeactivated checkGameSupported(Integer agentId, Integer vendorGameId) throws DisabledGameException {
+    public boolean checkGameSupported(Agent agent, Integer vendorGameId) throws DisabledGameException {
         Integer gameNotDeletedFromVendorGameDeactivated = 0;
+        Integer sasEntityHierarchyId = 1;
+        VendorGameDeactivated vendorGameDeactivated = vendorGameDeactivatedRepository.findByVendorGameIdAndAgentIdAndAgentMasterIdAndHouseIdAndSasEntityHierarchyIdAndIsDeleted(vendorGameId, agent.getId(),
+                agent.getMasterAgentId(), agent.getHouseId(), gameNotDeletedFromVendorGameDeactivated, sasEntityHierarchyId);
 
-        //TODO CHECK AGAINST PARENT MASTER AGENT, HOUSE, AND SUPER ADMIN DISABLE GAME
-        //check against agent level first
-        VendorGameDeactivated vendorGameDeactivated = vendorGameDeactivatedRepository.findByVendorGameIdAndAgentIdAndIsDeleted(vendorGameId, agentId, gameNotDeletedFromVendorGameDeactivated);
-
-        if (vendorGameDeactivated == null) {
+        if (vendorGameDeactivated != null) {
             throw new DisabledGameException();
         }
 
-        return vendorGameDeactivated;
+        return false;
+
     }
 
 }

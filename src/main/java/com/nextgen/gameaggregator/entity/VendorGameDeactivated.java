@@ -12,7 +12,7 @@ public class VendorGameDeactivated extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     private Integer sasEntityId;
-    private Integer sasEntityHierarchy;
+    private Integer sasEntityHierarchyId;
     private Integer vendorGameId;
     private Integer isDeleted;
     private Integer agentId;

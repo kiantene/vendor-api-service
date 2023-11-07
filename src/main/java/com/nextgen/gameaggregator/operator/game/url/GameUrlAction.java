@@ -33,13 +33,14 @@ public class GameUrlAction {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorService vendorService;
-
     @Autowired
     private LanguageService languageService;
     @Autowired
     private VendorGameService vendorGameService;
     @Autowired
     private LoggingService loggingService;
+    @Autowired
+    private VendorGameDeactivatedService vendorGameDeactivatedService;
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
@@ -100,6 +101,11 @@ public class GameUrlAction {
             VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(
                     vendorGame, language, platform, apiCredential.getAgent().getCurrency());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkGameDetailSupported", traceId);
+
+            // Check if is game deactivated (agent, masterAgent, house level)
+            loggingService.logStart();
+            vendorGameDeactivatedService.checkGameSupported(apiCredential.getAgent(), vendorGame.getId());
+            loggingService.logProcessTime("gameUrl ｜ vendorGameDeactivatedService.checkGameSupported", traceId);
 
             // 10. Retrieve vendor line credentials by category
             loggingService.logStart();
