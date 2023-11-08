@@ -14,7 +14,7 @@ public interface VendorGameDeactivatedRepository extends JpaRepository<VendorGam
             "WHERE " +
             "(agent_id = :agentId AND vendor_game_id = :vendorGameId AND is_deleted = :isDeleted) " +
             "OR " +
-            "(house_id = :houseId AND agent_id IS NULL AND vendor_game_id = :vendorGameId AND is_deleted = :isDeleted) " +
+            "(house_id = :houseId AND master_agent_id IS NULL AND agent_id IS NULL AND vendor_game_id = :vendorGameId AND is_deleted = :isDeleted) " +
             "OR " +
             "(master_agent_id = :masterAgentId AND agent_id IS NULL AND vendor_game_id = :vendorGameId AND is_deleted = :isDeleted) " +
             "OR " +
