@@ -3,36 +3,89 @@ package com.nextgen.gameaggregator.vendor.pinnacle.api.bet;
 import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetActionsWagerInfoDto {
-    private Long WagerId;
-    private String Type;
-    private Long BetType;
-    private BigDecimal Odds;
-    private Long OddsFormat;
-    private BigDecimal ToWin;
-    private BigDecimal ToRisk;
-    private BigDecimal Stake;
-    private Long Period;
-    private String Selection;
-    private Long EventId;
-    private String EventName;
-    private String EventDateFm;
-    private Long LeagueId;
-    private Long SportId;
-    private String Sport;
-    private Boolean Inplay;
-    private String InPlayScore;
-    private BigDecimal Handicap;
-    private String SelectionType;
-    private String LeagueName;
-    private String ParentEventName;
-    private String PlayerIPAddress;
-    private Long WagerMasterId;
-    private Integer WagerNum;
-    private String RoundRobinOptions;
+    @JsonProperty("WagerId")
+    private Long wagerId;
+
+    @JsonProperty("Type")
+    private String type;
+
+    @JsonProperty("BetType")
+    private Long betType;
+
+    @JsonProperty("Odds")
+    private BigDecimal odds;
+
+    @JsonProperty("OddsFormat")
+    private Long oddsFormat;
+
+    @JsonProperty("ToWin")
+    private BigDecimal toWin;
+
+    @JsonProperty("ToRisk")
+    private BigDecimal toRisk;
+
+    @JsonProperty("Stake")
+    private BigDecimal stake;
+
+    @JsonProperty("Period")
+    private Long period;
+
+    @JsonProperty("Selection")
+    private String selection;
+
+    @JsonProperty("EventId")
+    private Long eventId;
+
+    @JsonProperty("EventName")
+    private String eventName;
+
+    @JsonProperty("EventDateFm")
+    private String eventDateFm;
+
+    @JsonProperty("LeagueId")
+    private Long leagueId;
+
+    @JsonProperty("SportId")
+    private Long sportId;
+
+    @JsonProperty("Sport")
+    private String sport;
+
+    @JsonProperty("Inplay")
+    private Boolean inplay;
+
+    @JsonProperty("InPlayScore")
+    private String inPlayScore;
+
+    @JsonProperty("Handicap")
+    private BigDecimal handicap;
+
+    @JsonProperty("SelectionType")
+    private String selectionType;
+
+    @JsonProperty("LeagueName")
+    private String leagueName;
+
+    @JsonProperty("ParentEventName")
+    private String parentEventName;
+
+    @JsonProperty("PlayerIPAddress")
+    private String playerIPAddress;
+
+    @JsonProperty("WagerMasterId")
+    private Long wagerMasterId;
+
+    @JsonProperty("WagerNum")
+    private Integer wagerNum;
+
+    @JsonProperty("RoundRobinOptions")
+    private String roundRobinOptions;
 }
+

@@ -1,6 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pinnacle.api.balance;
-
-import java.math.BigDecimal;
+package com.nextgen.gameaggregator.vendor.pinnacle.api.action;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -8,50 +6,40 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.vendor.pinnacle.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pinnacle.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
-public class BalanceAction {
+public class GeneralAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
+    private BetService betService;
     
-    @PostMapping(path = "{agentcode}/wallet/usercode/{usercode}/balance")
-    public CommonVo getBalance(@PathVariable String agentcode, @PathVariable String usercode, HttpServletRequest request) {
+    @PostMapping(path = "/{agentcode}/wagering/usercode/{usercode}/request/{requestid}")
+    public CommonVo handleApiCall(@PathVariable String agentcode, @PathVariable String usercode, @PathVariable String requestid, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         CommonVo responseVo = new CommonVo();
-        ResultVo result = new ResultVo();
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
-        String traceId = httpRequestLog.getId();
 
         try {
             String body = httpRequestLog.getRequestBody();
-            CommonDto dto = new Gson().fromJson(body, CommonDto.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            ActionsDto dto = objectMapper.readValue(body, ActionsDto.class);
 
-            GameSession gameSession = gameSessionService.verifyToken(usercode);
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-            result.setUserCode(usercode);
-            result.setAvailableBalance(balance);
-            responseVo.setResult(result);
-            responseVo.setErrorCode(ResponseCode.SUCCESS.code);
-
+            // Get action name from the first element in list
+            String actionName = dto.getActions().get(0).getName();
+            responseVo = actionsSwitching(actionName, dto, httpRequestLog);
+            
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             responseVo.setErrorCode(errorCode);
@@ -60,6 +48,16 @@ public class BalanceAction {
             httpService.end(httpRequestLog, responseVo);
         }
         
+        return responseVo;
+    }
+
+    private CommonVo actionsSwitching(String actionName, ActionsDto dto, HttpRequestLog httpRequestLog) {
+        CommonVo responseVo = new CommonVo();
+    
+        if ("BETTED".equals(actionName)) {
+            responseVo = betService.bet(dto, httpRequestLog);
+        }
+
         return responseVo;
     }
 }

@@ -1,48 +1,41 @@
-package com.nextgen.gameaggregator.vendor.pinnacle.api.ping;
+package com.nextgen.gameaggregator.vendor.pinnacle.api.bet;
+
+import java.math.BigDecimal;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Service;
 
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
 
-import jakarta.servlet.http.HttpServletRequest;
-
-@RestController
-@RequestMapping(path = Endpoints.PATH)
-public class PingAction {
+@Service
+public class BetService {
     @Autowired
     private HttpService httpService;
     
-    @PostMapping(path = Endpoints.PING)
-    public CommonVo ping(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
+    public CommonVo bet(ActionsDto dto, HttpRequestLog httpRequestLog) {
         CommonVo responseVo = new CommonVo();
         ResultVo result = new ResultVo();
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
-        String timestamp = null;
 
         try {
-            String body = httpRequestLog.getRequestBody();
-            PingDto dto = new Gson().fromJson(body, PingDto.class);
-            timestamp = dto.getTimestamp();
+            result.setUserCode(dto.getActions().get(0).getPlayerInfo().getUserCode());
+            result.setAvailableBalance(BigDecimal.valueOf(10000));
+            result.getActions().setId(dto.getActions().get(0).getId());
+            result.getActions().setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId()); 
+            result.getActions().setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
+            result.getActions().setResponseCode(ResponseCode.SUCCESS);
 
-            result.setAvailable(true);
             responseVo.setResult(result);
             responseVo.setErrorCode(ResponseCode.SUCCESS.code);
-            responseVo.setTimestamp(timestamp);
 
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
             responseVo.setErrorCode(errorCode);
-            responseVo.setTimestamp(timestamp);
 
         } finally {
             httpService.end(httpRequestLog, responseVo);
