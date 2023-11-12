@@ -17,7 +17,7 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.CommonDto;
-import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,9 +33,9 @@ public class BalanceAction {
     private WalletService walletService;
     
     @PostMapping(path = "{agentcode}/wallet/usercode/{usercode}/balance")
-    public CommonVo getBalance(@PathVariable String agentcode, @PathVariable String usercode, HttpServletRequest request) {
+    public ResponseVo getBalance(@PathVariable String agentcode, @PathVariable String usercode, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        CommonVo responseVo = new CommonVo();
+        ResponseVo responseVo = new ResponseVo();
         ResultVo result = new ResultVo();
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
         String traceId = httpRequestLog.getId();

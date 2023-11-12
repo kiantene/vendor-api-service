@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pinnacle.api.bet;
+package com.nextgen.gameaggregator.vendor.pinnacle.api.accept;
 
 import java.math.BigDecimal;
 
@@ -14,22 +14,21 @@ import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
 
 @Service
-public class BetService {
+public class AcceptService {
     @Autowired
     private HttpService httpService;
     
-    public ResponseVo bet(ActionsDto dto, HttpRequestLog httpRequestLog) {
+    public ResponseVo accept(ActionsDto dto, HttpRequestLog httpRequestLog) {
         ResponseVo responseVo = new ResponseVo();
         ResultVo result = new ResultVo();
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
 
         try {
-            BetActionsDto betActionsDto = new ObjectMapper().convertValue(dto, BetActionsDto.class);
-            result.setUserCode(betActionsDto.getActions().get(0).getPlayerInfo().getUserCode());
+            AcceptActionsDto acceptActionsDto = new ObjectMapper().convertValue(dto, AcceptActionsDto.class);
+            result.setUserCode(acceptActionsDto.getActions().get(0).getPlayerInfo().getUserCode());
             result.setAvailableBalance(BigDecimal.valueOf(10000));
-            result.getActions().setId(betActionsDto.getActions().get(0).getId());
-            result.getActions().setTransactionId(betActionsDto.getActions().get(0).getTransaction().getTransactionId()); 
-            result.getActions().setWagerId(betActionsDto.getActions().get(0).getWagerInfo().getWagerId());
+            result.getActions().setId(acceptActionsDto.getActions().get(0).getId());
+            result.getActions().setWagerId(acceptActionsDto.getActions().get(0).getWagerInfo().getWagerId());
             result.getActions().setResponseCode(ResponseCode.SUCCESS);
 
             responseVo.setResult(result);

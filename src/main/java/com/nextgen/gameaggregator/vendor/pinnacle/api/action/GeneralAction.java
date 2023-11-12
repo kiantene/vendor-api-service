@@ -9,11 +9,13 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.vendor.pinnacle.api.accept.AcceptService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.pinnacle.api.settled.SettledService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
-import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -24,11 +26,15 @@ public class GeneralAction {
     private HttpService httpService;
     @Autowired
     private BetService betService;
+    @Autowired
+    private AcceptService acceptService;
+    @Autowired
+    private SettledService settledService;
     
     @PostMapping(path = "/{agentcode}/wagering/usercode/{usercode}/request/{requestid}")
-    public CommonVo handleApiCall(@PathVariable String agentcode, @PathVariable String usercode, @PathVariable String requestid, HttpServletRequest request) {
+    public ResponseVo handleApiCall(@PathVariable String agentcode, @PathVariable String usercode, @PathVariable String requestid, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        CommonVo responseVo = new CommonVo();
+        ResponseVo responseVo = new ResponseVo();
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
 
         try {
@@ -51,13 +57,19 @@ public class GeneralAction {
         return responseVo;
     }
 
-    private CommonVo actionsSwitching(String actionName, ActionsDto dto, HttpRequestLog httpRequestLog) {
-        CommonVo responseVo = new CommonVo();
+    private ResponseVo actionsSwitching(String actionName, ActionsDto dto, HttpRequestLog httpRequestLog) {
+        ResponseVo responseVo = new ResponseVo();
     
-        if ("BETTED".equals(actionName)) {
-            responseVo = betService.bet(dto, httpRequestLog);
+        switch (actionName) {
+            case "BETTED" -> responseVo = betService.bet(dto, httpRequestLog);
+            case "ACCEPT" -> responseVo = acceptService.accept(dto, httpRequestLog);
+            case "SETTLED" -> responseVo = settledService.settled(dto, httpRequestLog);
+            default -> {
+                responseVo.setErrorCode(ResponseCode.UNKNOWN_ERROR.code);
+            }
         }
-
+    
         return responseVo;
     }
+    
 }

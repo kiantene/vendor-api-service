@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.vendor.pinnacle.api.bet.BetResultActionsVo;
 
 import lombok.Data;
 
@@ -21,6 +20,6 @@ public class ResultVo {
     private BigDecimal availableBalance;
 
     @JsonProperty("Actions")
-    private BetResultActionsVo actions = new BetResultActionsVo();
+    private CommonVo actions = new CommonVo();
 
 }

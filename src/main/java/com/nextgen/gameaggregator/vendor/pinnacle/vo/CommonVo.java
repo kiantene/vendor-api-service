@@ -1,31 +1,23 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.vo;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
-import com.nextgen.gameaggregator.service.HttpResponse;
-import com.nextgen.gameaggregator.vendor.alize.constant.ResponseCode;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 
 import lombok.Data;
 
 @Data
-public class CommonVo implements HttpResponse {
-    private ResultVo Result;
-    private Integer ErrorCode;
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class CommonVo {
+    @JsonProperty("Id")
+    private Long id;
 
-    public String getTimestamp() {
-        LocalDateTime currentDateTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        String formattedDateTime = currentDateTime.format(formatter);
-        return formattedDateTime;
-    }
+    @JsonProperty("TransactionId")
+    private Long transactionId;
 
-    public String setTimestamp(String timestamp) {
-        return timestamp;
-    }
+    @JsonProperty("WagerId")
+    private Long wagerId;
 
-    @Override
-    public boolean hasError() {
-        return !this.ErrorCode.equals(ResponseCode.SUCCESS.code);
-    }
+    @JsonProperty("ResponseCode")
+    private ResponseCode responseCode;
 }

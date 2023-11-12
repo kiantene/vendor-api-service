@@ -10,7 +10,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
+import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,9 +22,9 @@ public class PingAction {
     private HttpService httpService;
     
     @PostMapping(path = Endpoints.PING)
-    public CommonVo ping(HttpServletRequest request) {
+    public ResponseVo ping(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        CommonVo responseVo = new CommonVo();
+        ResponseVo responseVo = new ResponseVo();
         ResultVo result = new ResultVo();
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
         String timestamp = null;
