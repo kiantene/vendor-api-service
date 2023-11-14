@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VendorGameDeactivatedRepository extends JpaRepository<VendorGameDeactivated, Integer> {
     @Cacheable(value = "VendorGameDeactivated", key = "{#vendorGameId, #agentId}", cacheManager = "cacheManager")
-    @Query(value = "SELECT * FROM game_aggregator_qa.vendor_game_deactivated " +
+    @Query(value = "SELECT * FROM vendor_game_deactivated " +
             "WHERE " +
             "(agent_id = :agentId OR master_agent_id = :masterAgentId OR house_id = :houseId OR sas_entity_hierarchy_id = :sasEntityHierarchyId) " +
             "AND " +
