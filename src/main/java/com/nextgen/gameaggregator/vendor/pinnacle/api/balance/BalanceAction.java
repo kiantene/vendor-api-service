@@ -48,7 +48,7 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             result.setUserCode(usercode);
-            result.setAvailableBalance(balance);
+            result.setAvailableBalance(BigDecimal.valueOf(1000L));
             responseVo.setResult(result);
             responseVo.setErrorCode(ResponseCode.SUCCESS.code);
 
