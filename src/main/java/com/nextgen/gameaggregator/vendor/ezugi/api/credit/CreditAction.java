@@ -12,12 +12,12 @@ import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.ReturnReasons;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
-import com.nextgen.gameaggregator.vendor.ezugi.service.LockManager;
 import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,13 +31,12 @@ import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CreditAction extends CommonDto {
-    private final LockManager lockManager;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -56,11 +55,8 @@ public class CreditAction extends CommonDto {
     private BetHistoryService betHistoryService;
     @Autowired
     private VendorPlayerService vendorPlayerService;
-
     @Autowired
-    public CreditAction(LockManager lockManager) {
-        this.lockManager = lockManager;
-    }
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.CREDIT)
     public CommonVo credit(HttpServletRequest request) {
@@ -70,8 +66,8 @@ public class CreditAction extends CommonDto {
         CreditVo creditVo = new CreditVo();
         CreditDto creditDto = new CreditDto();
         GameSession gameSession = null;
-        Lock userLock = null;
-        
+        RLock userLock = null;
+
         try {
             String body = httpRequestLog.getRequestBody();
             creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
@@ -96,8 +92,8 @@ public class CreditAction extends CommonDto {
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
                     break;
                 default:
-                    userLock = lockManager.getLockForUsername(creditDto.getUid());
-                    userLock.lock();
+                    userLock = redissonService.getRedissonClient().getLock("RedissonLock:EZUGI:" + creditDto.getUid());
+                    userLock.lock(1L, TimeUnit.SECONDS);
                     ResultType resultType = getResultType(creditDto);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
                     break;
@@ -143,9 +139,13 @@ public class CreditAction extends CommonDto {
                         .map(Map.Entry::getValue) // get the value of the first element
                         .orElse("Invalid parameter"); // if there's no value, set it to the default invalid request parameter
                 if (violation.equals("Transaction not found")) {
-                    creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
+                    if (creditDto.getDebitTransactionId().isBlank() || creditDto.getDebitTransactionId() == null) {
+                        creditVo.setErrorDescription(violation);
+                        creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
+                    }
+                } else {
+                    creditVo.setErrorDescription(violation);
                 }
-                creditVo.setErrorDescription(violation);
             }
             httpService.logError(httpRequestLog, e);
         } catch (IOException | CurrencyNotSupportedException e) {
@@ -190,7 +190,7 @@ public class CreditAction extends CommonDto {
             creditVo.setCurrency(creditDto.getCurrency());
             creditVo.setTimestamp(System.currentTimeMillis());
             if (userLock != null) {
-                userLock.unlock();
+                userLock.forceUnlock();
             }
             httpService.end(httpRequestLog, creditVo);
         }
