@@ -121,6 +121,11 @@ public class BetHistory {
         this.vendorBetTime = settledBet.getVendorBetTime();
         this.vendorSettleTime = settledBet.getVendorSettleTime();
         this.resultTime = settledBet.getResultTime();
+
+        if (settledBet.getResettleNum() == null) {
+            settledBet.setResettleNum(0);
+        }
+
         this.resettleNum = settledBet.getResettleNum();
     }
 }

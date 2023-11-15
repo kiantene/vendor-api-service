@@ -302,7 +302,7 @@ public class WalletService {
 
             loggingService.logStart();
             settledBetService.save(settledBet, rawData);
-            loggingService.logProcessTime("doSettledBetResult ｜ , after walletBetResultAction.call, settledBetService.save", traceId);
+            loggingService.logProcessTime("doSettledBetResult ｜ after walletBetResultAction.call, settledBetService.save", traceId);
 
             loggingService.logStart();
             betIdempotentLogService.create(betResultData, settledBet.getBalance(), gameSession);
