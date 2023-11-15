@@ -290,12 +290,7 @@ public class WalletService {
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balanceVo.getData().getBalance());
 
-            loggingService.logStart();
-            settledBetService.save(settledBet, rawData);
-            loggingService.logProcessTime("doSettledBetResult ｜ , after walletBetResultAction.call, settledBetService.save", traceId);
-
             // remap settleBet info before insert into kafka if needed, default will be no changes
-
             settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
 
             // send settled bet to kafka
@@ -304,6 +299,10 @@ public class WalletService {
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
+
+            loggingService.logStart();
+            settledBetService.save(settledBet, rawData);
+            loggingService.logProcessTime("doSettledBetResult ｜ , after walletBetResultAction.call, settledBetService.save", traceId);
 
             loggingService.logStart();
             betIdempotentLogService.create(betResultData, settledBet.getBalance(), gameSession);
@@ -739,14 +738,14 @@ public class WalletService {
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balance);
 
-            loggingService.logStart();
-            settledBetService.save(settledBet, " ");
-            loggingService.logProcessTime("processRollback ｜ settledBetService.save", traceId);
-
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
+
+            loggingService.logStart();
+            settledBetService.save(settledBet, " ");
+            loggingService.logProcessTime("processRollback ｜ settledBetService.save", traceId);
 
             if (settledBet.getStatus().equals(BetStatus.REFUNDED.code)) {
                 //only refund request need to insert into betRefundLog and delete unsettledBet
