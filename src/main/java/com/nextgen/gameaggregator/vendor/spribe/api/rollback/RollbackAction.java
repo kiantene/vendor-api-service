@@ -132,7 +132,11 @@ public class RollbackAction {
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidRequestException | AuthenticationException | DisabledVendorLineException | DisabledAgentPlayerException | 
+        } catch (AuthenticationException authenticationException) {
+            vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
+            httpService.logError(httpRequestLog, authenticationException); 
+
+        } catch (InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | 
             DisabledGameException | InvalidAgentApiCredentialException  | TransactionStillProcessingException | 
             VendorCurrencyNotSupportException | GameNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);

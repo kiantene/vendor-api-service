@@ -29,6 +29,8 @@ public class ValidationService {
     private AgentVendorLineRepository agentVendorLineRepository;
     @Autowired
     private LoggingService loggingService;
+    @Autowired
+    private VendorGameDeactivatedService vendorGameDeactivatedService;
 
     @Cacheable(value = "AgentApiCredentialsByApiKey", key = "#apiKey", cacheManager = "cacheManager")
     public AgentApiCredential validateApiKey(String apiKey) throws AuthenticationException {
@@ -104,5 +106,11 @@ public class ValidationService {
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyIdAndStatus(" + gameSession.getVendorGameId() + ","
                 + gameSession.getCurrencyId() + Status.ACTIVE.code + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         Optional.ofNullable(vendorGameCurrency).orElseThrow(DisabledGameException::new);
+
+        //7.  verify game deactivated status for agent, master agent and house level
+        loggingService.logStart();
+        vendorGameDeactivatedService.checkGameSupported(agentVendorLines.getAgent(), gameSession.getVendorGameId());
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameDeactivatedService.checkGameSupported(" + agentVendorLines.getAgent() + ","
+                + vendorGameCode.getId() + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
     }
 }

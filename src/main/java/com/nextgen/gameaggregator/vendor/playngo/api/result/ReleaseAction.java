@@ -43,7 +43,6 @@ public class ReleaseAction {
 
         ReleaseVo releaseVo = new ReleaseVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String releaseVoXml = "";
         GameSession gameSession = null;
 
         try {
@@ -52,7 +51,6 @@ public class ReleaseAction {
 
             // Convert original request body into commonDto
             ReleaseDto releaseDto = xmlMapper.readValue(body, ReleaseDto.class);
-            log.info("Playngo Release body: " + body);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(releaseDto);
@@ -124,20 +122,12 @@ public class ReleaseAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            try {
-                releaseVoXml = xmlMapper.writeValueAsString(releaseVo);
-
-            } catch (JsonProcessingException e) {
-                releaseVo.setStatusCode(ResponseCodes.INTERNAL);
-
-            }
-
-            releaseVo.setResponseXMLFormat(releaseVoXml);
+            vendorService.buildResponseVo(releaseVo);
             httpService.end(httpRequestLog, releaseVo);
 
         }
 
-        return releaseVoXml;
+        return releaseVo.getResponseXMLFormat();
     }
 
     private void doValidation(ReleaseDto dto) throws InvalidRequestException {
