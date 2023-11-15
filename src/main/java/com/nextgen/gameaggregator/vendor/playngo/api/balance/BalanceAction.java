@@ -44,12 +44,10 @@ public class BalanceAction {
 
         BalanceVo balanceVo = new BalanceVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String balanceVoXml = "";
 
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Balance body: " + body);
 
             // Convert original request body into commonDto
             BalanceDto balanceDto = xmlMapper.readValue(body, BalanceDto.class);
@@ -101,16 +99,11 @@ public class BalanceAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            try {
-                balanceVoXml = xmlMapper.writeValueAsString(balanceVo);
-            } catch (JsonProcessingException e) {
-                balanceVo.setStatusCode(ResponseCodes.INTERNAL);
-            }
-            balanceVo.setResponseXMLFormat(balanceVoXml);
+            vendorService.buildResponseVo(balanceVo);
             httpService.end(httpRequestLog, balanceVo);
         }
 
-        return balanceVoXml;
+        return balanceVo.getResponseXMLFormat();
     }
 
     private void doValidation(BalanceDto dto) throws InvalidRequestException {
