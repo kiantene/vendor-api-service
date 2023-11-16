@@ -27,6 +27,6 @@ public class ResponseVo implements HttpResponse {
 
   @Override
   public boolean hasError() {
-    return false;
+    return !this.errorCodes.equals(ErrorCodes.SUCCESS);
   }
 }
