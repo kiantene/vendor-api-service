@@ -20,6 +20,7 @@ public class ResultVo {
     private BigDecimal availableBalance;
 
     @JsonProperty("Actions")
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = CommonVo.class)
     private CommonVo actions = new CommonVo();
 
 }

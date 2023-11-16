@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
@@ -24,12 +23,11 @@ public class BetService {
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
 
         try {
-            BetActionsDto betActionsDto = new ObjectMapper().convertValue(dto, BetActionsDto.class);
-            result.setUserCode(betActionsDto.getActions().get(0).getPlayerInfo().getUserCode());
+            result.setUserCode(dto.getActions().get(0).getPlayerInfo().getUserCode());
             result.setAvailableBalance(BigDecimal.valueOf(10000));
-            result.getActions().setId(betActionsDto.getActions().get(0).getId());
-            result.getActions().setTransactionId(betActionsDto.getActions().get(0).getTransaction().getTransactionId()); 
-            result.getActions().setWagerId(betActionsDto.getActions().get(0).getWagerInfo().getWagerId());
+            result.getActions().setId(dto.getActions().get(0).getId());
+            result.getActions().setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId()); 
+            result.getActions().setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
             result.getActions().setResponseCode(ResponseCode.SUCCESS);
 
             responseVo.setResult(result);

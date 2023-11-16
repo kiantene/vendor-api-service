@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.pinnacle.api.accept;
+package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 
 import java.math.BigDecimal;
 
@@ -9,7 +9,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AcceptActionsWagerInfoDto {
+public class ActionsWagerInfoDto {
     @JsonProperty("WagerId")
     private Long wagerId;
 

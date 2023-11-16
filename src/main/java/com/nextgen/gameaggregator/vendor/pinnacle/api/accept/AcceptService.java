@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
@@ -24,11 +23,10 @@ public class AcceptService {
         Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
 
         try {
-            AcceptActionsDto acceptActionsDto = new ObjectMapper().convertValue(dto, AcceptActionsDto.class);
-            result.setUserCode(acceptActionsDto.getActions().get(0).getPlayerInfo().getUserCode());
+            result.setUserCode(dto.getActions().get(0).getPlayerInfo().getUserCode());
             result.setAvailableBalance(BigDecimal.valueOf(10000));
-            result.getActions().setId(acceptActionsDto.getActions().get(0).getId());
-            result.getActions().setWagerId(acceptActionsDto.getActions().get(0).getWagerInfo().getWagerId());
+            result.getActions().setId(dto.getActions().get(0).getId());
+            result.getActions().setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
             result.getActions().setResponseCode(ResponseCode.SUCCESS);
 
             responseVo.setResult(result);
