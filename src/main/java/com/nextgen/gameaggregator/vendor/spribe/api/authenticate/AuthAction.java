@@ -100,12 +100,10 @@ public class AuthAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthDto dto, GameSession gameSession)
-            throws DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
+    private void doVerification(AuthDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException, 
+        CurrencyNotSupportedException {
         // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(),
-                CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

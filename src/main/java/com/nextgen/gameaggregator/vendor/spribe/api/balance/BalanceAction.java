@@ -97,12 +97,10 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession)
-            throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException,
-            DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException,
+        DisabledGameException, CredentialNotFoundException, CurrencyNotSupportedException {
         // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(),
-                CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
