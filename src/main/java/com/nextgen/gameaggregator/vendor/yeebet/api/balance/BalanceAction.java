@@ -5,15 +5,15 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.yeebet.service.VendorService;
-import com.nextgen.gameaggregator.vendor.yeebet.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -37,38 +37,32 @@ public class BalanceAction {
     VendorService vendorService;
 
     @GetMapping (path = EndPoints.BALANCE)
-    public ResponseVo balance(HttpServletRequest request, @RequestParam String appid, @RequestParam String username, @RequestParam String notifyid, @RequestParam String sign) {
+    public ResponseVo balance(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
 
-        log.info("YB @RequestParam data: " + appid + "," + username + "," + notifyid + "," + sign);
+        // Get all headers
+        Enumeration<String> headerNames = request.getHeaderNames();
+        Enumeration<String> paramNames = request.getParameterNames();
 
-        Map<String, String> paramMap = new HashMap<>();
-        paramMap.put("appid", appid);
-        paramMap.put("username", username);
-        paramMap.put("notifyid", notifyid);
-        paramMap.put("sign", sign);
+        ResponseVo vo = new ResponseVo();
+        vo.setHeadersMap(new HashMap<>());
+        vo.setParamsMap(new HashMap<>());
 
-        log.info("YB map to json data: " + mapToJson(paramMap));
-
-//        httpRequestLog.setRequestBody(params.toString());
-
-        String traceId = httpRequestLog.getId();
-
-        ResponseVo responseVo = new ResponseVo();
-
-        try{
-            String body = httpRequestLog.getRequestBody();
-
-//            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
-
-        }catch(Exception e){
-
-        }finally{
-            httpService.end(httpRequestLog, responseVo);
+        while (headerNames.hasMoreElements()) {
+            String headerName = headerNames.nextElement();
+            String headerValue = request.getHeader(headerName);
+            vo.getHeadersMap().put(headerName, headerValue);
+        }
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            String paramValue = request.getParameter(paramName);
+            vo.getParamsMap().put(paramName, paramValue);
         }
 
-        return responseVo;
+        httpService.end(httpRequestLog, vo);
+
+        return vo;
     }
 
     private String mapToJson(Map<String, String> params){
@@ -85,4 +79,18 @@ public class BalanceAction {
 
         return jsonString;
     }
+
+    @Data
+    static class ResponseVo implements HttpResponse {
+
+        private Map<String, String> headersMap;
+        private Map<String, String> paramsMap;
+
+
+        @Override
+        public boolean hasError() {
+            return false;
+        }
+    }
+
 }
