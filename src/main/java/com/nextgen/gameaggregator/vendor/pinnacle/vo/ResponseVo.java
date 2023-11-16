@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pinnacle.vo;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.service.HttpResponse;
 import com.nextgen.gameaggregator.vendor.alize.constant.ResponseCode;
 
@@ -10,8 +11,11 @@ import lombok.Data;
 
 @Data
 public class ResponseVo implements HttpResponse {
-    private ResultVo Result;
-    private Integer ErrorCode;
+    @JsonProperty("Result")
+    private ResultVo result;
+
+    @JsonProperty("ErrorCode")
+    private Integer errorCode;
 
     public String getTimestamp() {
         LocalDateTime currentDateTime = LocalDateTime.now();
@@ -20,12 +24,13 @@ public class ResponseVo implements HttpResponse {
         return formattedDateTime;
     }
 
+    @JsonProperty("Timestamp")
     public String setTimestamp(String timestamp) {
         return timestamp;
     }
 
     @Override
     public boolean hasError() {
-        return !this.ErrorCode.equals(ResponseCode.SUCCESS.code);
+        return !this.errorCode.equals(ResponseCode.SUCCESS.code);
     }
 }
