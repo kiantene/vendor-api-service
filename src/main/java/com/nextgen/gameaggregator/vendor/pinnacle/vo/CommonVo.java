@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.pinnacle.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 
 import lombok.Data;
 
@@ -19,5 +18,5 @@ public class CommonVo {
     private Long wagerId;
 
     @JsonProperty("ResponseCode")
-    private ResponseCode responseCode;
+    private Integer responseCode;
 }

@@ -28,7 +28,7 @@ public class BetService {
             result.getActions().setId(dto.getActions().get(0).getId());
             result.getActions().setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId()); 
             result.getActions().setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
-            result.getActions().setResponseCode(ResponseCode.SUCCESS);
+            result.getActions().setResponseCode(ResponseCode.SUCCESS.code);
 
             responseVo.setResult(result);
             responseVo.setErrorCode(ResponseCode.SUCCESS.code);
