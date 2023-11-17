@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.vo;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,7 +22,5 @@ public class ResultVo {
     private BigDecimal availableBalance;
 
     @JsonProperty("Actions")
-    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = CommonVo.class)
-    private CommonVo actions = new CommonVo();
-
+    private List<CommonVo> actions = new ArrayList<>();
 }

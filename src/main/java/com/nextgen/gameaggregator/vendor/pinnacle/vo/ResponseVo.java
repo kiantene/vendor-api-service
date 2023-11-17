@@ -17,16 +17,12 @@ public class ResponseVo implements HttpResponse {
     @JsonProperty("ErrorCode")
     private Integer errorCode;
 
+    @JsonProperty("Timestamp")
     public String getTimestamp() {
         LocalDateTime currentDateTime = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
         String formattedDateTime = currentDateTime.format(formatter);
         return formattedDateTime;
-    }
-
-    @JsonProperty("Timestamp")
-    public String setTimestamp(String timestamp) {
-        return timestamp;
     }
 
     @Override
