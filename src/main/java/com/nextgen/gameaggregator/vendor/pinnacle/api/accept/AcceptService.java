@@ -32,7 +32,6 @@ public class AcceptService {
             if (!dto.getActions().isEmpty()) {
                 CommonVo commonVo = new CommonVo();
                 commonVo.setId(dto.getActions().get(0).getId());
-                commonVo.setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId());
                 commonVo.setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
                 commonVo.setResponseCode(ResponseCode.SUCCESS.code);
 
