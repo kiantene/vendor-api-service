@@ -22,5 +22,6 @@ public class ResultVo {
     private BigDecimal availableBalance;
 
     @JsonProperty("Actions")
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private List<CommonVo> actions = new ArrayList<>();
 }
