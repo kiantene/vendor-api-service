@@ -62,7 +62,7 @@ public class GeneralAction {
     
         switch (actionName) {
             case "BETTED" -> responseVo = betService.bet(dto, httpRequestLog);
-            case "ACCEPT" -> responseVo = acceptService.accept(dto, httpRequestLog);
+            case "ACCEPTED" -> responseVo = acceptService.accept(dto, httpRequestLog);
             case "SETTLED" -> responseVo = settledService.settled(dto, httpRequestLog);
             default -> {
                 responseVo.setErrorCode(ResponseCode.UNKNOWN_ERROR.code);
