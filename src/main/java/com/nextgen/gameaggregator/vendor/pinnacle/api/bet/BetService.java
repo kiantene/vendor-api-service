@@ -20,37 +20,36 @@ public class BetService {
     private HttpService httpService;
     
     public ResponseVo bet(ActionsDto dto, HttpRequestLog httpRequestLog) {
-    ResponseVo responseVo = new ResponseVo();
-    ResultVo result = new ResultVo();
-    Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
+        ResponseVo responseVo = new ResponseVo();
+        ResultVo result = new ResultVo();
+        Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
 
-    try {
-        result.setUserCode(dto.getActions().get(0).getPlayerInfo().getUserCode());
-        result.setAvailableBalance(BigDecimal.valueOf(10000));
-        result.setActions(new ArrayList<>());
+        try {
+            result.setUserCode(dto.getActions().get(0).getPlayerInfo().getUserCode());
+            result.setAvailableBalance(BigDecimal.valueOf(10000));
+            result.setActions(new ArrayList<>());
 
-        if (!dto.getActions().isEmpty()) {
-            CommonVo commonVo = new CommonVo();
-            commonVo.setId(dto.getActions().get(0).getId());
-            commonVo.setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId());
-            commonVo.setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
-            commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+            if (!dto.getActions().isEmpty()) {
+                CommonVo commonVo = new CommonVo();
+                commonVo.setId(dto.getActions().get(0).getId());
+                commonVo.setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId());
+                commonVo.setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
+                commonVo.setResponseCode(ResponseCode.SUCCESS.code);
 
-            result.getActions().add(commonVo);
+                result.getActions().add(commonVo);
+            }
+
+            responseVo.setResult(result);
+            responseVo.setErrorCode(ResponseCode.SUCCESS.code);
+
+        } catch (Exception exception) {
+            httpService.logError(httpRequestLog, exception);
+            responseVo.setErrorCode(errorCode);
+
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
-        responseVo.setResult(result);
-        responseVo.setErrorCode(ResponseCode.SUCCESS.code);
-
-    } catch (Exception exception) {
-        httpService.logError(httpRequestLog, exception);
-        responseVo.setErrorCode(errorCode);
-
-    } finally {
-        httpService.end(httpRequestLog, responseVo);
+        return responseVo;
     }
-
-    return responseVo;
-}
-
 }
