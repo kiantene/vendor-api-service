@@ -139,7 +139,7 @@ public class CreditAction extends CommonDto {
                         .map(Map.Entry::getValue) // get the value of the first element
                         .orElse("Invalid parameter"); // if there's no value, set it to the default invalid request parameter
                 if (violation.equals("Transaction not found")) {
-                    if (creditDto.getDebitTransactionId().isBlank() || creditDto.getDebitTransactionId() == null) {
+                    if (creditDto.getDebitTransactionId() == null || creditDto.getDebitTransactionId().isEmpty()) {
                         creditVo.setErrorDescription(violation);
                         creditVo.setErrorCode(ResponseCodes.TRANSACTION_NOT_FOUND);
                     }
