@@ -9,6 +9,7 @@ public class EndPoints {
     public static final String WALLET_CREDIT = "/wallet/credit";
     public static final String WALLET_DEBIT = "/wallet/debit";
     public static final String WALLET_BALANCE = "/wallet/balance";
+    public static final String WALLET_REWARD = "/wallet/reward";
 
     // API url call to vendor
     public static final String AUTHORIZE = "/api/player/authorize";
