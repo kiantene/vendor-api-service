@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.queenmaker.constant.Txtype;
 import com.nextgen.gameaggregator.vendor.queenmaker.dto.JpcontribsDto;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
 import jakarta.validation.constraints.*;
@@ -55,7 +56,9 @@ public class CreditTransactionsDto implements BetResultData {
     @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}[+-]\\d{2}:\\d{2}", message = "Invalid timestamp Format")
     @Size(min = 1, max = 36, message = "Invalid timestamp Size")
     private String timestamp;
-
+    @NotNull
+    @Min(value = 0)
+    @Max(value = 1)
     private Integer platformtype;
 
     @NotBlank(message = "gpcode cannot be empty")
@@ -72,10 +75,14 @@ public class CreditTransactionsDto implements BetResultData {
     private Integer gametype;
     private String externalgameid;
     private String roundid;
+    @NotNull
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 64)
     private String externalroundid;
     private String betid; // optional
     private String externalbetid; // optional
     private String senton;
+    @NotNull
     private Boolean isclosinground;
     private BigDecimal ggr;
 
@@ -101,11 +108,17 @@ public class CreditTransactionsDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
+        if (this.txtype.equals(Txtype.END_ROUND)) {
+            return this.ptxid;
+        }
         return this.refptxid;
     }
 
     @Override
     public String getVendorBetId() {
+        if (this.txtype.equals(Txtype.END_ROUND)) {
+            return this.ptxid;
+        }
         return this.refptxid;
     }
 

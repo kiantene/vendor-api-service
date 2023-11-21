@@ -7,6 +7,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -52,6 +54,14 @@ public class VendorService extends BaseVendorService {
     }
 
     public static void verifyHash(String requestBody, String secretKey) throws InvalidSignatureException {
+
+        try {
+            requestBody = URLDecoder.decode(requestBody, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            //do nothing, and use the original requestBody.
+            log.error("URLDecoder.decode failed with " + e + " | requestBody = " + requestBody);
+        }
+
         Map<String, String> map = convertQueryStringToMap(requestBody);
         String hash = map.get("hash");
         map.remove("hash");

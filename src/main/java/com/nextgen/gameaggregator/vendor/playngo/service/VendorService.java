@@ -1,17 +1,17 @@
 package com.nextgen.gameaggregator.vendor.playngo.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorGameCode;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.VendorGameCodeService;
-import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.vendor.playngo.api.authenticate.AuthDto;
+import com.nextgen.gameaggregator.vendor.playngo.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.playngo.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.playngo.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.playngo.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,6 +30,10 @@ public class VendorService extends BaseVendorService {
     private GameSessionService gameSessionService;
     @Autowired
     private VendorGameCodeService vendorGameCodeService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private HttpService httpService;
 
     public void verifyVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
@@ -71,19 +75,52 @@ public class VendorService extends BaseVendorService {
         Method getExternalGameSessionIdMethod = dto.getClass().getMethod("getExternalGameSessionId");
         String externalGameSessionId = (String) getExternalGameSessionIdMethod.invoke(dto);
 
-        if(externalGameSessionId == null || externalGameSessionId.equals("")) {
+        if(externalGameSessionId == null || externalGameSessionId.isEmpty()) {
             Method getExternalId = dto.getClass().getMethod("getExternalId");
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsername((String) getExternalId.invoke(dto));
+
         } else {
             // validate extern game session id
             this.validateExternalGameSessionId(externalGameSessionId);
 
             // Verify session token
             gameSession = gameSessionService.verifyToken(externalGameSessionId);
+
         }
 
         return gameSession;
 
+    }
+
+    public void setCurrentBalanceResponseVo(HttpRequestLog httpRequestLog, String traceId, GameSession gameSession, CommonVo vo) {
+
+        try {
+            vo.setReal(walletService.getBalance(traceId, gameSession, httpRequestLog));
+
+        } catch (InvalidAgentApiCredentialException | InvalidOperatorResponseException internalException) {
+            vo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, internalException);
+
+        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
+            vo.setStatusCode(ResponseCodes.INVALIDCURRENCY);
+            httpService.logError(httpRequestLog, vendorCurrencyNotSupportException);
+
+        } catch (Exception exception) {
+            vo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, exception);
+
+        }
+
+    }
+
+    public void buildResponseVo(CommonVo vo) {
+        String voXml = "";
+        try {
+            voXml = new XmlMapper().writeValueAsString(vo);
+        } catch (JsonProcessingException jsonProcessingException) {
+            vo.setStatusCode(ResponseCodes.INTERNAL);
+        }
+        vo.setResponseXMLFormat(voXml);
     }
 
     public static Long getTimestamp() {

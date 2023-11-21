@@ -41,11 +41,13 @@ pipeline {
         AWS_ECS_SERVICE = ''
 
         SONAR_PROJECTKEY = 'game-aggregator'
-        SONAR_HOST_URL = 'http://192.168.88.112:9000'
+        SONAR_HOST_URL = 'http://192.168.88.136:9000'
         SONAR_LOGIN = credentials('sonar_token')
 
-        QA_LOGIN_SERVER = 'root@35.77.164.118'
+        QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
+
+        STG_JOB_NAME = 'game_aggregator/devs/vendor_api_service/stg'
 
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
     }
@@ -71,7 +73,7 @@ pipeline {
 
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                         sh "mvn versions:set -DnewVersion=$versionTag"
-                        sh "mvn clean package spring-boot:repackage -U -DskipTests"
+                        sh 'mvn clean package spring-boot:repackage -U -DskipTests'
                     }
                 }
             }
@@ -99,9 +101,9 @@ pipeline {
                 script {
                     sshagent(credentials: ['tokyo_key']) {
                         // Copy jar file to Server
-                        sh "scp -o StrictHostKeyChecking=no ./target/*.jar ${QA_LOGIN_SERVER}:/root/vendor-api/app.jar"
+                        sh "scp -o StrictHostKeyChecking=no ./target/*.jar ${QA_LOGIN_SERVER}:/home/ubuntu/vendor-api/app.jar"
 
-                        sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker build -t local-ga-vendor-api-service:qa /root/vendor-api'"
+                        sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker build -t local-ga-vendor-api-service:qa /home/ubuntu/vendor-api'"
 
                         sh "ssh -t -o StrictHostKeyChecking=no ${QA_LOGIN_SERVER} 'docker service update --force --image local-ga-vendor-api-service:qa ${PORTAINER_SERVICE_NAME}'"
                     }
@@ -119,10 +121,14 @@ pipeline {
                 // Build and push a Docker image to Amazon ECR
                 withAWS(region: "${AWS_ECR_REGION}", credentials: "${JENKINS_CREDENTIALS}") {
                     script {
-                        String packageVersion = getRepoTag(env.BRANCH_NAME)
+                        String branchName = env.BRANCH_NAME
+                        String packageVersion = getRepoTag(branchName)
+                        String versionTag = getVersionTag(branchName)
                         String login = ecrLogin()
+
                         sh("#!/bin/sh -e\n${login}") // hide logging
-                        docker.image("${AWS_ECR_URL}:${packageVersion}").push()
+                        docker.image("${AWS_ECR_URL}:${packageVersion}").push("${packageVersion}")
+                        docker.image("${AWS_ECR_URL}:${packageVersion}").push("${versionTag}")
                     }
                 }
             }
@@ -159,16 +165,75 @@ pipeline {
 
         stage('Tagging') {
             when {
-                branch 'stg'
+                anyOf {
+                    branch 'main'
+                    branch 'stg'
+                }
             }
             steps {
                 script {
                     withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
-                            String versionTag = getVersionTag('stg')
-                            String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
-                            sh "git tag -a ${versionTag} -m '${commitMessage}'"
-                            sh "git push origin ${versionTag}"
+                        String branchName = env.BRANCH_NAME
+                        String versionTag = getVersionTag(branchName)
+                        String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
+                        sh "git tag -a ${versionTag} -m '${commitMessage}'"
+                        sh "git push origin ${versionTag}"
                     }
+                }
+            }
+        }
+
+        stage('Purge STG Builds') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    String jobName = "${STG_JOB_NAME}"
+
+                    // 1. Acquire the Jenkins instance and validate
+                    def jenkins = Jenkins.getInstanceOrNull()
+                    if (jenkins == null) {
+                        error('Cannot retrieve Jenkins instance.')
+                    }
+
+                    // 2. Check job existence
+                    def job = jenkins.getItemByFullName(jobName)
+                    if (job == null) {
+                        error("Job with name ${jobName} does not exist.")
+                    }
+
+                    // 3. Ensure we're dealing with a Job type
+                    if (!(job instanceof Job)) {
+                        error("Item ${jobName} is not a job type.")
+                    }
+
+                    // 4. Check builds existence
+                    if (job.builds.size() == 0) {
+                        println('No builds available for the job.')
+                        return
+                    }
+
+                    // 5. Iterate safely over builds and perform deletion
+                    println('Start Delete')
+                    job.builds.each { build ->
+                        if (build.isBuilding()) {
+                            println("Skipped build: ${build.number}")
+                        } else {
+                            println("Deleting build: ${build.number}")
+                            try {
+                                build.delete()
+                                sleep(time:3, unit: 'SECONDS')
+                            } catch (Exception e) {
+                                println("Error deleting build ${build.number}: ${e.message}")
+                            }
+                        }
+                    }
+                    println('End Delete')
+
+                    // 6. Reset the build number and save
+                    job.nextBuildNumber = 1
+                    job.save()
                 }
             }
         }

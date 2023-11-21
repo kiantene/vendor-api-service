@@ -8,40 +8,43 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.BetTypeID;
 import com.nextgen.gameaggregator.vendor.ezugi.dto.CommonDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DebitDto extends CommonDto implements BetResultData {
     @NotBlank
-    @Pattern(message = "User not found", regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 50)
     private String uid;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 50)
     private String transactionId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @NotNull
+    @Digits(integer = 18, fraction = 0)
     @JsonProperty("roundId")
-    private String vendorRoundId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String gameId;
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    private String tableId;
+    private BigInteger vendorRoundId;
+    @NotNull
+    @Digits(integer = 4, fraction = 0)
+    @JsonProperty("gameId")
+    private Integer vendorGameId;
+    @NotNull
+    private Integer tableId;
     @NotNull
     @PositiveOrZero(message = "Negative amount")
+    @Digits(integer = 25, fraction = 2, message = "Invalid amount")
     private Double debitAmount;
     @NotNull
+    @Digits(integer = 4, fraction = 0)
     private Integer betTypeID;
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Size(min = 1, max = 4)
     private String currency;
 
     @Override
@@ -61,8 +64,9 @@ public class DebitDto extends CommonDto implements BetResultData {
     }
 
     @Override
+    @JsonIgnore
     public String getGameId() {
-        return this.gameId;
+        return this.vendorGameId.toString();
     }
 
     @Override

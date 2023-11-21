@@ -41,12 +41,11 @@ public class CancelReserveAction {
 
         CancelReserveVo cancelReserveVo = new CancelReserveVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String cancelReserveVoXml = "";
+        GameSession gameSession = null;
 
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Playngo Cancel Reserve body: " + body);
 
             // Convert original request body into commonDto
             CancelReserveDto cancelReserveDto = xmlMapper.readValue(body, CancelReserveDto.class);
@@ -55,7 +54,7 @@ public class CancelReserveAction {
             this.doValidation(cancelReserveDto);
 
             // Get game session or verify Token
-            GameSession gameSession = vendorService.getGameSession(cancelReserveDto);
+            gameSession = vendorService.getGameSession(cancelReserveDto);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(gameSession, cancelReserveDto);
@@ -77,53 +76,52 @@ public class CancelReserveAction {
                  InvocationTargetException |
                  IllegalAccessException internalErrorException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
+            httpService.logError(httpRequestLog, internalErrorException);
 
         } catch (VendorCurrencyNotSupportException | CurrencyNotSupportedException invalidCurrencyException) {
             cancelReserveVo.setStatusCode(ResponseCodes.INVALIDCURRENCY);
+            httpService.logError(httpRequestLog, invalidCurrencyException);
 
         } catch (AuthenticationException authenticationException) {
             cancelReserveVo.setStatusCode(ResponseCodes.SESSIONEXPIRED);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             cancelReserveVo.setStatusCode(ResponseCodes.OK);
             cancelReserveVo.setReal(betResultIdempotentViolationException.getBalance());
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (BetNotFoundException betNotFoundException) {
             cancelReserveVo.setStatusCode(ResponseCodes.OK);
             cancelReserveVo.setExternalTransactionId("");
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if(invalidOperatorResponseException.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 cancelReserveVo.setStatusCode(ResponseCodes.NOTENOUGHMONEY);
+                vendorService.setCurrentBalanceResponseVo(httpRequestLog, traceId, gameSession, cancelReserveVo);
 
             } else {
                 cancelReserveVo.setStatusCode(ResponseCodes.MAXCONCURRENTCALLS);
-                httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
             }
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) {
             cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            try {
-                cancelReserveVoXml = xmlMapper.writeValueAsString(cancelReserveVo);
-
-            } catch (JsonProcessingException e) {
-                cancelReserveVo.setStatusCode(ResponseCodes.INTERNAL);
-
-            }
-
-            cancelReserveVo.setResponseXMLFormat(cancelReserveVoXml);
+            vendorService.buildResponseVo(cancelReserveVo);
             httpService.end(httpRequestLog, cancelReserveVo);
 
         }
 
-        return cancelReserveVoXml;
+        return cancelReserveVo.getResponseXMLFormat();
     }
 
     private void doValidation(CancelReserveDto dto) throws InvalidRequestException {
@@ -146,12 +144,12 @@ public class CancelReserveAction {
         // Verify vendor's access token
         vendorService.verifyAccessCode(gameSession.getVendorLineId(), dto);
 
+        // Verify bet game code
+        vendorService.verifyVendorGameCode(gameSession, dto.getGameId());
+
         // Verify Username, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
-
-        // Verify bet game code
-        vendorService.verifyVendorGameCode(gameSession, dto.getGameId());
 
     }
 

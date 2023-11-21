@@ -1,61 +1,39 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.bet;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
-import jakarta.validation.constraints.NotBlank;
+import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
-public class BetDto implements BetResultData {
-
-    @NotBlank
-    @JsonProperty("user_id")
-    private String userId;
-    @NotBlank
-    @JsonProperty("currency")
-    private String currency;
-    @NotBlank
-    @JsonProperty("game")
-    private String game;
-    @JsonProperty("game_id")
-    private String vendorRoundId;
-    @JsonProperty("finished")
-    private Boolean finished;
-    @JsonProperty("actions")
-    private List<ActionDto> actions;
-    private String betId;
-    private BigDecimal betAmount;
-    private BigDecimal winAmount;
-    private Long timestamp;
+public class BetDto extends CommonDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.vendorRoundId;
+        return this.getVendorRoundId();
     }
 
     @Override
     public String getVendorBetId() {
-        return this.betId;
+        return this.getActionDto().getActionId();
     }
 
     @Override
     public String getRoundId() {
-        return this.vendorRoundId;
+        return this.getVendorRoundId();
     }
 
     @Override
     public String getGameId() {
-        return this.game;
+        return this.getGame();
     }
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.betAmount;
+        return new BigDecimal(this.getActionDto().getAmount());
     }
 
     @Override
@@ -70,12 +48,12 @@ public class BetDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.betAmount;
+        return new BigDecimal(this.getActionDto().getAmount());
     }
 
     @Override
     public Long getVendorBetTime() {
-        return this.timestamp;
+        return VendorService.getTimestamp();
     }
 
     @Override

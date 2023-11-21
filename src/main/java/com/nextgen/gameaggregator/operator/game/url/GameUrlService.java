@@ -63,7 +63,8 @@ public class GameUrlService {
             GameUrlVo gameUrlVo = gameUrl.call(formData, credentials, gameSession);
 
             Optional.ofNullable(gameUrlVo).orElseThrow(InvalidVendorResponseException::new);
-
+            //token will be replaced if vendor's token is needed to verify for action files.
+            gameUrlData.setToken(gameSession.getToken());
             gameUrlData.setGameUrl(gameUrlVo.getGameUrl());
 
             //TODO throw vendor maintenance exception
@@ -89,28 +90,13 @@ public class GameUrlService {
         return platform;
 
     }
-
-    @Cacheable(value = "VendorGameCode", key = "{#vendorGame.id, #language.id, #currency.id}" , cacheManager = "cacheManager")
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
 
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(vendorGame.getVendorGameCode(),
+                platform.getId(), language.getId(), Status.ACTIVE.code, vendorGame.getVendor().getId());
 
-        List<VendorGameCode> vendorGameCodes = vendorGameCodeRepository.findByVendorGameIdAndLanguageIdAndStatus(vendorGame.getId(), language.getId(), Status.ACTIVE.code);
-        //not vendor game id and language matched
-        if (vendorGameCodes.isEmpty()) {
-            throw new GameLanguageNotSupportException();
-        }
-
-        VendorGameCode vendorGameCodeMatched = null;
-        //search the game supported platform
-        for (VendorGameCode vendorGameCode : vendorGameCodes) {
-            if (vendorGameCode.getPlatformId().equals(platform.getId())) {
-                vendorGameCodeMatched = vendorGameCode;
-                break;
-            }
-        }
-        //not platform match with the requested game id
-        Optional.ofNullable(vendorGameCodeMatched).orElseThrow(GamePlatformNotSupportException::new);
+        Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
 
         VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(vendorGame.getId(), currency.getId());
 
@@ -121,7 +107,7 @@ public class GameUrlService {
             throw new GameCurrencyNotSupportException();
         }
 
-        return vendorGameCodeMatched;
+        return vendorGameCode;
     }
 
     public VendorGameCode getFirstVendorGameCode(VendorGame vendorGame) throws GameNotSupportedException {
@@ -165,7 +151,7 @@ public class GameUrlService {
         }
     }
 
-    @Cacheable(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}" , cacheManager = "cacheManager")
+    @CachePut(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}" , cacheManager = "cacheManager")
     public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;

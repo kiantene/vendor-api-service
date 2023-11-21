@@ -9,13 +9,12 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.habanero.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.habanero.api.pokerbet.PokerBetService;
+import com.nextgen.gameaggregator.vendor.habanero.api.pokerresult.PokerResultService;
+import com.nextgen.gameaggregator.vendor.habanero.api.slotbet.SlotBetService;
 import com.nextgen.gameaggregator.vendor.habanero.api.refund.RefundService;
-import com.nextgen.gameaggregator.vendor.habanero.api.result.ResultService;
-import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.habanero.constant.GameStateMode;
-import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.habanero.api.slotresult.SlotResultService;
+import com.nextgen.gameaggregator.vendor.habanero.constant.*;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -43,16 +42,19 @@ public class TransferAction {
     @Autowired
     private ValidationService validationService;
     @Autowired
-    private BetService betService;
+    private SlotBetService slotBetService;
     @Autowired
-    private ResultService resultService;
+    private SlotResultService slotResultService;
+    @Autowired
+    private PokerBetService pokerBetService;
+    @Autowired
+    private PokerResultService pokerResultService;
     @Autowired
     private RefundService refundService;
 
     @PostMapping(path = EndPoints.TRANSFER)
     public ResponseEntity<TransferVo> transfer(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
 
         // Construct VO
         TransferVo responseVo = new TransferVo();
@@ -80,7 +82,12 @@ public class TransferAction {
             this.doVerification(transferDto, gameSession);
 
             //handle transfer action
-            responseVo = this.processTransferAction(responseVo, transferDto, gameSession, traceId, httpRequestLog, body);
+            if (gameSession.getGameCategoryId().equals(Formats.POKER)) {
+                responseVo = this.processPokerTransferAction(responseVo, transferDto, gameSession, request);
+            } else {
+                responseVo = this.processSlotTransferAction(responseVo, transferDto, gameSession, request);
+            }
+
 
         } catch (
                 AuthenticationException |
@@ -181,7 +188,7 @@ public class TransferAction {
         return gameSession;
     }
 
-    private TransferVo processTransferAction(TransferVo responseVo, TransferDto transferDto, GameSession gameSession, String traceId, HttpRequestLog httpRequestLog, String body) throws
+    private TransferVo processSlotTransferAction(TransferVo responseVo, TransferDto transferDto, GameSession gameSession, HttpServletRequest request) throws
             InvalidRequestException,
             InvalidAgentApiCredentialException,
             BetNotFoundException,
@@ -197,24 +204,23 @@ public class TransferAction {
             AuthenticationException,
             DisabledAgentPlayerException,
             DisabledGameException,
-            DisabledVendorLineException
-    {
+            DisabledVendorLineException {
 
         if (transferDto.getFundTransferRequestDto().getIsRefund()) {
             //handle refund condition
-            responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, traceId, httpRequestLog);
+            responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, request);
         } else {
             //handle not refund condition
             //Loop bet info
             for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
                 switch (fundInfoDto.getGameStateMode()) {
-                    case GameStateMode.DEBIT -> {
+                    case GameStateMode.STARTROUND -> {
                         //process bet result into unsettle bet when gamestatemode = 1(game round start)
-                        responseVo = betService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, traceId, body, httpRequestLog);
+                        responseVo = slotBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
                     }
-                    case GameStateMode.CREDIT, GameStateMode.CREDIT_ENDROUND, GameStateMode.EXPIRE -> {
+                    case GameStateMode.COUTINUEATION, GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
                         //process bet result into settle bet when gamestatemode = 2(game round end/ bonus free spin) or 0(free spin/jackpot) or 3(expire bet round end)
-                        responseVo = resultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, traceId, httpRequestLog);
+                        responseVo = slotResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
                     }
                     // If the header does not match any of the expected values, return an error response
                     default -> {
@@ -222,6 +228,50 @@ public class TransferAction {
                     }
                 }
             }
+        }
+
+        return responseVo;
+    }
+
+    private TransferVo processPokerTransferAction(TransferVo responseVo, TransferDto transferDto, GameSession gameSession, HttpServletRequest request) throws
+            InvalidRequestException,
+            InvalidAgentApiCredentialException,
+            BetNotFoundException,
+            InsufficientBalanceException,
+            TransactionStillProcessingException,
+            InvalidOperatorResponseException,
+            BetResultIdempotentViolationException,
+            CouchbaseDataIntegrityException,
+            MergedBetDataIntegrityException,
+            VendorCurrencyNotSupportException,
+            NoAvailableLineException,
+            InvalidPlayerException,
+            AuthenticationException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            DisabledVendorLineException {
+
+        if (transferDto.getFundTransferRequestDto().getIsRefund()) {
+            //handle refund condition
+            responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, request);
+        } else {
+            FundInfoDto fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
+            //handle not refund condition
+            switch (fundInfoDto.getGameStateMode()) {
+                case GameStateMode.STARTROUND, GameStateMode.COUTINUEATION -> {
+                    //process bet result into unsettle bet when gamestatemode = 1(game round start) or 0(double)
+                    responseVo = pokerBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+                }
+                case GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
+                    //process bet result into settle bet when gamestatemode = 2(game round end) or 3(expire bet round end)
+                    responseVo = pokerResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+                }
+                // If the header does not match any of the expected values, return an error response
+                default -> {
+                    throw new InvalidRequestException();
+                }
+            }
+
         }
 
         return responseVo;

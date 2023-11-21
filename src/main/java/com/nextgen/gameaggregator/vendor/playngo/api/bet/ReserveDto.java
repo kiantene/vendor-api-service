@@ -35,7 +35,7 @@ public class ReserveDto extends CommonDto implements BetResultData {
     private String transactionId;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Digits(integer = 12, fraction = 8)
     @JacksonXmlProperty(localName = "real")
     private BigDecimal real;
@@ -146,10 +146,6 @@ public class ReserveDto extends CommonDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        // Check condition to know this bet is free spin or not
-        if (Objects.equals(this.getReal(), BigDecimal.ZERO)) {
-            return 1;
-        }
         return 0;
     }
 

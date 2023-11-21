@@ -51,7 +51,7 @@ public class VendorLineService {
         Optional.ofNullable(activeAgentVendorLine).orElseThrow(DisabledVendorLineException::new);
 
         if(activeAgentVendorLine.getVendorLine().getStatus().equals(Status.INACTIVE.code)){
-            
+            throw new DisabledVendorLineException();
         }
 
         return activeAgentVendorLine.getVendorLine();
@@ -134,8 +134,8 @@ public class VendorLineService {
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
-    @Cacheable(value = "VendorLines", key = "{#vendorLineId}" , cacheManager = "cacheManager")
-    public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException, DisabledVendorLineException {
+    @Cacheable(value = "VendorLines", key = "{#vendorLineId, #vendorId}", cacheManager = "cacheManager")
+    public VendorLine getVendorLineById(Integer vendorLineId, Integer vendorId) throws InvalidVendorLineException, DisabledVendorLineException {
 
         //1. get vendor line
         VendorLine vendorLine = vendorLineRepository.findById(vendorLineId).orElse(null);

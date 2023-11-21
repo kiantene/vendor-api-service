@@ -111,7 +111,8 @@ public class ResultAction {
             httpService.logError(httpRequestLog, InvalidAgentApiCredentialException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            //update bet not found for result to retry due to vendor async send issue
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
             httpService.logError(httpRequestLog, betNotFoundException);
 
@@ -139,11 +140,10 @@ public class ResultAction {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
-        // 2. Verify received game id is the same from game session
-        //TODO: review this exception
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
+        // 2. Remove Verify received game id is the same from game session
+//        if (!gameSession.getVendorGameCode().equals("101")) {
+//            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
+//        }
 
         // 3. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);

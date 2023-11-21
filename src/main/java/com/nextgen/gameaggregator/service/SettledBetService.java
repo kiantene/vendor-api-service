@@ -1,6 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
+import com.couchbase.client.core.deps.com.fasterxml.jackson.core.JsonProcessingException;
+import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.RawBetIdempotentLog;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -9,7 +12,6 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -25,6 +27,8 @@ public class SettledBetService {
 
     @Autowired
     RawSettledBetRepository rawSettledBetRepository;
+    @Autowired
+    BetIdempotentLogService betIdempotentLogService;
 
     @Caching(put = {
             @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
@@ -131,13 +135,50 @@ public class SettledBetService {
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
-            // bet not found is expected
+
+            RawBetIdempotentLog betIdempotentLog = null;
+
+            if (betResultData.getVendorBetTime() != null || betResultData.getVendorSettleTime() != null) {
+                Long vendorBetTime = (betResultData.getVendorBetTime() != null) ? betResultData.getVendorBetTime() : betResultData.getVendorSettleTime();
+                Long timeDifference = System.currentTimeMillis() - vendorBetTime;
+
+                //if vendorBetTime is over 2 hours, check exists against bet_idempotent_log table
+                if (timeDifference > betIdempotentLogService.getTimingDifference()) {
+                    betIdempotentLog = betIdempotentLogService.checkExists(betResultData, gameSession);
+
+                }
+
+            } else {
+                //if vendorBetTime and vendorSettleTime is null, then check against bet_idempotent_log table
+                betIdempotentLog = betIdempotentLogService.checkExists(betResultData, gameSession);
+
+            }
+
+            if (betIdempotentLog != null) {
+
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    String jsonBetResultData = objectMapper.writeValueAsString(betResultData);
+                    //log if found matched data after 2 hours for bet idempotent log checking
+                    log.info("betIdempotentLogService.checkExists : vendorPlayerUsername = " + gameSession.getVendorPlayerUsername() + ", betResultData = " + jsonBetResultData);
+
+                } catch (JsonProcessingException e) {
+                    log.error("generateBetIdempotentId ERROR : " + e.getMessage());
+
+                }
+
+                throw new BetResultIdempotentViolationException(betIdempotentLog);
+
+            }
+
+            // else just process normally as bet not found could be expected
             // save the data into couchbase first for idempotency checks
             SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId, gameSession);
             processingSettledBet.setOperatorStatus(operatorStatusProcessing);
             processingSettledBet.setVendorId(gameSession.getVendorId());
             processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
             this.save(processingSettledBet, "");
+
         }
 
         return settledBet;

@@ -21,11 +21,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -64,34 +63,25 @@ public class BalanceAction {
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(balanceDto);
 
-            // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
-            List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
+            // 2. Validate and Verified each UserDto inside balanceDto
+            List<UsersVo> usersList = new ArrayList<>();
             for (UsersDto user : balanceDto.getUsers()) {
-                
-                CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
-                futures.add(future);
+                UsersVo usersVo = processData(user, clientId, clientSecret, traceId, httpRequestLog);
+                usersList.add(usersVo);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<UsersVo> usersList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
-
             balanceVo.setUsers(usersList);
 
         } catch (InvalidRequestException e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, e.getValidation().values().iterator().next().toString());
-
+            httpService.logError(httpRequestLog, e);
         } catch (JsonProcessingException e) {
-            balanceVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
-
+            balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Body Format");
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             balanceVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             httpService.end(httpRequestLog, balanceVo);
-            log.info("QM Balance Request Log : " + httpRequestLog.getRequestBody());
         }
 
         return balanceVo;
@@ -163,35 +153,35 @@ public class BalanceAction {
 
         } catch (AuthenticationException e) {
             usersVo.setResponseCode(ResponseCodes.INVALID_OR_EXPIRED_TOKEN);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidCurrencyException e) {
             usersVo.setResponseCode(ResponseCodes.CURRENCY_MISMATCH);
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException e) {
-            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT, e.getValidation().values().iterator().next().toString());
-
+            usersVo.setResponseCode(ResponseCodes.INCORRECT_FORMAT);
+            httpService.logError(httpRequestLog, e);
         } catch (DisabledVendorLineException |
-                 DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidVendorLineException |
                  InvalidAgentApiCredentialException |
                  CredentialNotFoundException e) {
             usersVo.setResponseCode(ResponseCodes.OPERATION_FAILED_DETERMINISTICALLY);
-
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledAgentPlayerException e) {
+            usersVo.setResponseCode(ResponseCodes.USER_BLOCKED);
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidPlayerException e) {
             usersVo.setResponseCode(ResponseCodes.INVALID_ARGUMENTS, "Invalid Player");
-
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidOperatorResponseException e) {
             usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Processing Error");
-
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             usersVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             httpService.logError(httpRequestLog, e);
-
         } finally {
             usersVo.setUserid(usersDto.getUserid());
             httpService.end(httpRequestLog, usersVo);
-            log.info("QM Balance Request Log : " + httpRequestLog);
         }
 
         return usersVo;

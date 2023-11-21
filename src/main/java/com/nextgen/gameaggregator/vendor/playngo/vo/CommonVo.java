@@ -21,7 +21,7 @@ public class CommonVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return !this.statusCode.equals(ResponseCodes.OK);
+        return !this.statusCode.equals(Integer.valueOf(ResponseCodes.OK));
     }
 
     public void setStatusCodeAndMessage(String responseCode) {

@@ -30,7 +30,7 @@ public class VendorService extends BaseVendorService {
     private VendorCurrencyRepository vendorCurrencyRepository;
 
     @Autowired
-    private LanguageRepository languageRepository;
+    private VendorGameService vendorGameService;
 
 
     public Vendor verifyVendorByCodeAndWalletType(String code, Integer walletType) throws InvalidVendorException, DisabledVendorException {
@@ -122,6 +122,20 @@ public class VendorService extends BaseVendorService {
 
         return vendorCurrency;
     }
+
+//    public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {
+//
+//        //if vendorGameCode is not matched with gameSession vendorGameCode, then regenerate the new vendorGameCode details
+//        if (vendorGameCode != gameSession.getVendorGameCode()) {
+//            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, gameSession.getVendorId());
+//            gameSession.setGameCode(vendorGame.getCode());
+//            gameSession.setVendorGameId(vendorGame.getId());
+//            gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+//            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+//
+//        }
+//        return gameSession;
+//    }
 
     public VendorCurrency getCurrencyConversionRate(GameSession gameSession, String traceId) throws VendorCurrencyNotSupportException {
         BigDecimal defaultConversionRateAsOne = BigDecimal.ONE;

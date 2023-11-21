@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface VendorGameCurrencyRepository extends JpaRepository<VendorGameCurrency, Integer> {
+    @Cacheable(value = "VendorGameCurrency", key = "{#vendorGameId, #currencyId}", cacheManager = "cacheManager")
     VendorGameCurrency findByVendorGameIdAndCurrencyId(Integer vendorGameId,Integer currencyId);
 
     @Cacheable(value = "VendorGameCurrency", key = "{#vendorGameId, #currencyId, #status}", cacheManager = "cacheManager")

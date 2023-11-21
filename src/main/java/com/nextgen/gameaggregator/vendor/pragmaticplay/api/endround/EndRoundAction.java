@@ -51,6 +51,7 @@ public class EndRoundAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -98,7 +99,8 @@ public class EndRoundAction {
             httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            //update bet not found for end round to retry due to vendor async send issue
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
             httpService.logError(httpRequestLog, betNotFoundException);
 
@@ -135,15 +137,10 @@ public class EndRoundAction {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
-        // 2. Verify received game id is the same from game session
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
-
-        // 3. Retrieve vendor line credentials and secretKey for hash validation
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 4. Validate request signature
+        // 3. Validate request signature
         VendorService.verifyHash(request.getRequestBody(), secretKey);
     }
 }

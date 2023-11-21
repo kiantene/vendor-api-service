@@ -78,18 +78,23 @@ public class BalanceAction {
 
         } catch (InvalidVendorLineException | InvalidSignatureException signErrorException) {
             responseVo.setCode(ResponseCodes.SIGN_ERROR);
+            httpService.logError(httpRequestLog, signErrorException);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setCode(ResponseCodes.CURRENCY_NOT_SUPPORT);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setCode(ResponseCodes.PLAYER_NOT_EXIST);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setCode(ResponseCodes.NOT_LOGGED_IN);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledGameException disabledGameException) {
             responseVo.setCode(ResponseCodes.GAME_ID_NOT_EXIST);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
@@ -107,6 +112,7 @@ public class BalanceAction {
                 responseVo.setCode(ResponseCodes.REQUEST_PARAM_ERROR);
 
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (DisabledVendorLineException |
                  DisabledAgentPlayerException |
@@ -114,6 +120,7 @@ public class BalanceAction {
                  InvalidAgentApiCredentialException |
                  JsonProcessingException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
+            httpService.logError(httpRequestLog, systemErrorException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
