@@ -17,7 +17,7 @@ import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
-import com.nextgen.gameaggregator.sport.operator.wallet.settle.SportWalletSettleAction;
+import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;

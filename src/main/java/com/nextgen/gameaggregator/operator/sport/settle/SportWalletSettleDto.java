@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.sport.operator.wallet.settle;
+package com.nextgen.gameaggregator.operator.sport.settle;
 
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultDto;
 import lombok.Data;

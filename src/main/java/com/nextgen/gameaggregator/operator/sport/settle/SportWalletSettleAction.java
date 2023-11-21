@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.sport.operator.wallet.settle;
+package com.nextgen.gameaggregator.operator.sport.settle;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.Agent;
