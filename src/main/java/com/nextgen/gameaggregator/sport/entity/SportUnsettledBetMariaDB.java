@@ -69,7 +69,7 @@ public class SportUnsettledBetMariaDB {
     private Integer oddsTypeId;
 
     @JsonProperty("odds_type_id")
-    private Integer effectiveTurnover;
+    private BigDecimal effectiveTurnover;
 
     @JsonProperty("status")
     private Integer status;

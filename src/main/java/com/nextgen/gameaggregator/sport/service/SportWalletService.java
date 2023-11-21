@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.sport.service;
 
+import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -9,18 +10,22 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
+import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.LoggingService;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.sport.operator.wallet.settle.SportWalletSettleAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -33,9 +38,13 @@ public class SportWalletService {
     @Autowired
     private SportUnsettledBetService sportUnsettledBetService;
     @Autowired
+    private SportWalletSettleAction sportWalletSettleAction;
+    @Autowired
     private WalletBalanceAction walletBalanceAction;
     @Autowired
     private WalletBetAction walletBetAction;
+    @Autowired
+    private WalletBetResultAction walletBetResultAction;
 
     public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
@@ -87,7 +96,7 @@ public class SportWalletService {
         }
 
         loggingService.logStart();
-        sportUnsettledBetService.getByExternalTransactionId(gameSession.getVendorId().toString(), gameSession.getVendorGameId().toString(), gameSession.getVendorPlayerId().toString(), sportBetResultData.getExternalTransactionId());
+        sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorId().toString(), gameSession.getVendorGameId().toString(), gameSession.getVendorPlayerId().toString(), sportBetResultData.getExternalTransactionId());
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
         SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
         loggingService.logProcessTime("processBet ｜ unsettledBetService.idempotentCheck", traceId);
@@ -135,16 +144,20 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent settle(SportSettledBet sportSettledBet) {
-
-
-        return null;
+    @Async
+    public void settle(SportSettledBet sportSettledBet) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException {
+        String traceId = UUID.randomUUID().toString();
+        SportUnsettledBetMariaDB unsettledBet = sportUnsettledBetService.mariaDBGetByRoundIdAndVendorBetId(sportSettledBet.getVendorCode(), sportSettledBet.getRoundId(), sportSettledBet.getVendorBetId());
+        sportWalletSettleAction.call(traceId, unsettledBet, sportSettledBet);
+        BetHistory betHistory = sportSettledBet.toBetHistory(unsettledBet);
+        kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
-    public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) {
+    public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
             SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
             kafkaService.produceSettledBet(sportSettledBet);
+            this.settle(sportSettledBet);
         }
     }
 }

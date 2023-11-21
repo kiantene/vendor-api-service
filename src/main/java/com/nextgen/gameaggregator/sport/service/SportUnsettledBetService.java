@@ -2,11 +2,14 @@ package com.nextgen.gameaggregator.sport.service;
 
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.sport.repository.UnsettledBetCouchbaseRepository;
 import com.nextgen.gameaggregator.sport.repository.UnsettledBetMariaDBRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -26,7 +29,7 @@ public class SportUnsettledBetService {
         unsettledBetCouchbaseRepository.delete(sportUnsettledBetCouchbase);
     }
 
-    public SportUnsettledBetCouchbase getByExternalTransactionId(String vendorId, String vendorGameId, String vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+    public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorId, String vendorGameId, String vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
         String mergeId = vendorId + '_' + vendorGameId + '_' + vendorPlayerId + '_' + externalTransactionId;
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
 
@@ -36,5 +39,15 @@ public class SportUnsettledBetService {
         }
 
         return sportUnsettledBetCouchbase;
+    }
+
+    public List<SportUnsettledBetMariaDB> mariaDBGetByRoundId(String vendorId, String roundId) throws BetNotFoundException {
+
+        return null;
+    }
+
+    public SportUnsettledBetMariaDB mariaDBGetByRoundIdAndVendorBetId(String vendorCode, String roundId, String vendorBetId) throws BetNotFoundException {
+
+        return null;
     }
 }

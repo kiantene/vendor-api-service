@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.sport.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.entity.BetHistory;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -11,6 +12,9 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class SportSettledBet {
+    @JsonProperty("vendor_code")
+    private String vendorCode;
+
     @JsonProperty("external_transaction_id")
     private String externalTransactionId;
 
@@ -59,5 +63,14 @@ public class SportSettledBet {
         modelMapper.map(sportBetResultData, this);
 
         this.setRawData(rawData);
+    }
+
+    public BetHistory toBetHistory(SportUnsettledBetMariaDB unsettledBet) {
+        BetHistory betHistory = new BetHistory();
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(this, betHistory);
+
+        return betHistory;
     }
 }
