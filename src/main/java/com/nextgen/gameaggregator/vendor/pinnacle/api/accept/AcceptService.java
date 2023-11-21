@@ -48,8 +48,6 @@ public class AcceptService {
             httpService.logError(httpRequestLog, exception);
             responseVo.setErrorCode(errorCode);
 
-        } finally {
-            httpService.end(httpRequestLog, responseVo);
         }
         
         return responseVo;

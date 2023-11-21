@@ -46,8 +46,6 @@ public class BetService {
             httpService.logError(httpRequestLog, exception);
             responseVo.setErrorCode(errorCode);
 
-        } finally {
-            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;

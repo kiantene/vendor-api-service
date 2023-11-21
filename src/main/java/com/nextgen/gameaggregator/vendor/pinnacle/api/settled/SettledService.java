@@ -46,8 +46,6 @@ public class SettledService {
             httpService.logError(httpRequestLog, exception);
             responseVo.setErrorCode(errorCode);
 
-        } finally {
-            httpService.end(httpRequestLog, responseVo);
         }
         
         return responseVo;
