@@ -75,10 +75,12 @@ public class QueryAction {
                 CredentialNotFoundException generalException
         ) {
             responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
+            httpService.logError(httpRequestLog, generalException);
 
         } catch (TransactionStillProcessingException TransactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
             responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
+            httpService.logError(httpRequestLog, TransactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // bet found return true respond
