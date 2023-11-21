@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.action;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +22,7 @@ import com.nextgen.gameaggregator.vendor.pinnacle.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.settled.SettledService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
@@ -68,7 +70,7 @@ public class GeneralAction {
                     .flatMap(List::stream) // Flatten the list of lists into a single list
                     .collect(Collectors.toList());
 
-            responseVo = mergeResponses(commonVos);
+            responseVo = mergeResponses(commonVos, dto.getActions().get(0));
 
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
@@ -98,10 +100,12 @@ public class GeneralAction {
         return commonVos;
     }    
 
-    private ResponseVo mergeResponses(List<CommonVo> commonVos) {
+    private ResponseVo mergeResponses(List<CommonVo> commonVos, Action action) {
         ResponseVo responseVo = new ResponseVo();
         ResultVo result = new ResultVo();
 
+        result.setUserCode(action.getPlayerInfo().getUserCode());
+        result.setAvailableBalance(BigDecimal.valueOf(10000));
         result.setActions(commonVos);
         responseVo.setResult(result);
         responseVo.setErrorCode(ResponseCode.SUCCESS.code);

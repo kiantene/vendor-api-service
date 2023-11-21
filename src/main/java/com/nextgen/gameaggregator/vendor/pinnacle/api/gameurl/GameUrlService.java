@@ -18,12 +18,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
+import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
@@ -40,6 +42,8 @@ public class GameUrlService implements GameUrl {
     private RequestService requestService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -54,31 +58,44 @@ public class GameUrlService implements GameUrl {
             }  catch (Exception exception) {
                 log.error(token, exception);
             }
-        
-            String apiCreateUrl = "https://paapistg.oreo88.com/b2b/player/create";
-            MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-            headerMap.add("userCode", "PX142");
-            headerMap.add("token", token);
-
-            ResponseEntity<String> apiCreateResponse = WebClient.create()
-                .post()
-                .uri(apiCreateUrl)
-                .headers(httpHeaders -> httpHeaders.addAll(headerMap))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
-                .block();
 
             String userCode = "";
+            Optional<PinnacleVendorPlayer> pinnacleVendorPlayer = pinnacleVendorUsernameRepository.findByUsername(gameSession.getVendorPlayerUsername());
 
-            try {
-                JsonParser jsonParser = JsonParserFactory.getJsonParser();
-                userCode = jsonParser.parseMap(apiCreateResponse.getBody()).get("userCode").toString();
+            if (pinnacleVendorPlayer.isPresent()) {
+                userCode = pinnacleVendorPlayer.get().getVendorPlayerUsername();
 
-            } catch (Exception ex) {
-                log.error(apiCreateUrl, ex);
+            } else {
+                String apiCreateUrl = "https://paapistg.oreo88.com/b2b/player/create";
+                MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+                headerMap.add("userCode", "PX142");
+                headerMap.add("token", token);
+
+                ResponseEntity<String> apiCreateResponse = WebClient.create()
+                    .post()
+                    .uri(apiCreateUrl)
+                    .headers(httpHeaders -> httpHeaders.addAll(headerMap))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
+                    .block();
+
+                try {
+                    JsonParser jsonParser = JsonParserFactory.getJsonParser();
+                    userCode = jsonParser.parseMap(apiCreateResponse.getBody()).get("userCode").toString();
+
+                } catch (Exception ex) {
+                    log.error(apiCreateUrl, ex);
+                }
+
+                // Temporary store vendor player username into couchbase
+                PinnacleVendorPlayer entity = new PinnacleVendorPlayer();
+                entity.setId(gameSession.getVendorPlayerUsername() + "_" + userCode);
+                entity.setUsername(gameSession.getVendorPlayerUsername());
+                entity.setVendorPlayerUsername(userCode);
+                create(entity);
             }
 
             MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -147,5 +164,9 @@ public class GameUrlService implements GameUrl {
             }
 
         return responseVo;
+    }
+
+    public PinnacleVendorPlayer create(PinnacleVendorPlayer entity) {
+        return pinnacleVendorUsernameRepository.save(entity);
     }
 }
