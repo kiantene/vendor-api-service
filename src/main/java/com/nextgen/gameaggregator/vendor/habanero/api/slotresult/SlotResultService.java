@@ -109,19 +109,10 @@ public class SlotResultService {
     }
 
     private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession) throws
-            NoAvailableLineException,
-            InvalidPlayerException,
-            AuthenticationException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            DisabledVendorLineException {
+            NoAvailableLineException {
 
         //Verify vendor currency code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), NoAvailableLineException::new);
-
-        //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, fundTransferRequestDto.getAccountId());
-
 
     }
     

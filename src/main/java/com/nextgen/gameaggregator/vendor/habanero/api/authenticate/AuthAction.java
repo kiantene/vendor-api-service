@@ -78,12 +78,10 @@ public class AuthAction {
                  CredentialNotFoundException |
                  DisabledVendorLineException |
                  DisabledAgentPlayerException |
-                 DisabledGameException generalException) {
+                 DisabledGameException |
+                InvalidOperatorResponseException generalException) {
             responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            httpService.logError(httpRequestLog, generalException);
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
