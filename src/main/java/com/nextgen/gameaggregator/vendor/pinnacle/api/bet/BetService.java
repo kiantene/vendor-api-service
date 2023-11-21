@@ -1,53 +1,28 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.bet;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
-import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 
 @Service
 public class BetService {
-    @Autowired
-    private HttpService httpService;
-    
-    public ResponseVo bet(ActionsDto dto, HttpRequestLog httpRequestLog) {
-        ResponseVo responseVo = new ResponseVo();
-        ResultVo result = new ResultVo();
-        Integer errorCode = ResponseCode.UNKNOWN_ERROR.code;
-
-        try {
-            result.setUserCode(dto.getActions().get(0).getPlayerInfo().getUserCode());
-            result.setAvailableBalance(BigDecimal.valueOf(10000));
-            result.setActions(new ArrayList<>());
-
-            if (!dto.getActions().isEmpty()) {
-                CommonVo commonVo = new CommonVo();
-                commonVo.setId(dto.getActions().get(0).getId());
-                commonVo.setTransactionId(dto.getActions().get(0).getTransaction().getTransactionId());
-                commonVo.setWagerId(dto.getActions().get(0).getWagerInfo().getWagerId());
-                commonVo.setResponseCode(ResponseCode.SUCCESS.code);
-
-                result.getActions().add(commonVo);
-            }
-
-            responseVo.setResult(result);
-            responseVo.setErrorCode(ResponseCode.SUCCESS.code);
-
-        } catch (Exception exception) {
-            httpService.logError(httpRequestLog, exception);
-            responseVo.setErrorCode(errorCode);
-
-        }
-
-        return responseVo;
+    public List<CommonVo> bet(ActionsDto dto, HttpRequestLog httpRequestLog) {
+        return dto.getActions().stream()
+                .filter(action -> "BETTED".equals(action.getName()))
+                .map(action -> {
+                    CommonVo commonVo = new CommonVo();
+                    commonVo.setId(action.getId());
+                    commonVo.setTransactionId(action.getTransaction().getTransactionId());
+                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
+                    commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+                    return commonVo;
+                })
+                .collect(Collectors.toList());
     }
 }
