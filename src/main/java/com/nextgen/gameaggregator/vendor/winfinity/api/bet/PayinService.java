@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.bet;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -13,9 +16,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 @Service
 public class PayinService {
 
@@ -27,6 +27,8 @@ public class PayinService {
     private ValidationService validationService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     public ResponseVo payin(String traceId, String body, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();
@@ -38,15 +40,23 @@ public class PayinService {
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto);
 
-            // Get GameSession by vendor player username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
+            // Get GameSession with token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
-            
-            vo.setDataVo(traceId, betEvent.getLastBalance());
-   
+
+            // Check if the round exists
+            List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+
+            if (settledBetList.isEmpty()) {
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+                vo.setDataVo(traceId, betEvent.getLastBalance());
+
+            } else {
+                vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            }
+
         } catch (JsonProcessingException | TransactionStillProcessingException | InvalidRequestException badRequestException) {
             httpService.logError(httpRequestLog, badRequestException);
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
@@ -59,8 +69,8 @@ public class PayinService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             vo.setErrorVo(ErrorCodes.NOT_ENOUGH_FUND);
 
-        } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException | DisabledVendorLineException | 
-                DisabledAgentPlayerException unknownErrorException) {
+        } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException | DisabledVendorLineException
+                | DisabledAgentPlayerException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
 
@@ -82,7 +92,6 @@ public class PayinService {
 
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
-            log.error("Other exception encountered: " + exception.getMessage());
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
         }
 
@@ -90,14 +99,14 @@ public class PayinService {
     }
 
     private void doValidation(PayinDto dto) throws InvalidRequestException {
-       // General validation
-       ValidationUtils.validateRequest(dto);
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
     private void doVerification(PayinDto dto, GameSession gameSession) throws DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException,
             InvalidPlayerException, AuthenticationException {
-        //validate vendor username, agent vendor line, player status, and game status
+        // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUid());
     }
 }
