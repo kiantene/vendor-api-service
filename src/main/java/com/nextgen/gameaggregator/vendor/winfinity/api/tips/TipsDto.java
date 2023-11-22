@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.winfinity.api.bet;
+package com.nextgen.gameaggregator.vendor.winfinity.api.tips;
 
 import java.math.BigDecimal;
 
@@ -14,7 +14,7 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PayinDto implements BetResultData {
+public class TipsDto implements BetResultData {
     @NotBlank
     @Size(max = 32)
     private String tid;
@@ -99,12 +99,12 @@ public class PayinDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return null;
+        return (timestamp != null) ? timestamp / 1000L : System.currentTimeMillis();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return (timestamp != null) ? timestamp / 1000L : System.currentTimeMillis();
     }
 
     @Override

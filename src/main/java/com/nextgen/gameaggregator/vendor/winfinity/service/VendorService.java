@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.security.KeyFactory;
@@ -30,7 +31,7 @@ public class VendorService extends BaseVendorService {
 
     @Autowired
     private VendorLineService vendorLineService;
-    
+
     public String getToken(Integer vendorLineId) {
 
         String accessToken = "";
@@ -38,11 +39,12 @@ public class VendorService extends BaseVendorService {
         try {
             String clientId = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CLIENT_ID);
             String clientSecret = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.CLIENT_SECRET);
-            String tokenUrl = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_URL) + EndPoints.TOKEN;
-            
+            String tokenUrl = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_URL)
+                    + EndPoints.TOKEN;
+
             String requestBody = "client_id=" + clientId +
-                        "&client_secret=" + clientSecret +
-                        "&grant_type=client_credentials";
+                    "&client_secret=" + clientSecret +
+                    "&grant_type=client_credentials";
 
             // Set headers for the POST request
             HttpHeaders headers = new HttpHeaders();
@@ -53,7 +55,7 @@ public class VendorService extends BaseVendorService {
                     .post()
                     .uri(tokenUrl)
                     .headers(httpHeaders -> httpHeaders.addAll(headers))
-                    .syncBody(requestBody)
+                    .body(BodyInserters.fromValue(requestBody))
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
@@ -72,13 +74,14 @@ public class VendorService extends BaseVendorService {
         return accessToken;
     }
 
-    public String decodeRequestBody(Integer vendorLineId, String requestBody, String qa, HttpRequestLog httpRequestLog) {
+    public String decodeRequestBody(Integer vendorLineId, String requestBody, String qa,
+            HttpRequestLog httpRequestLog) {
         String publicKey = "";
         String decodedString = "";
 
         try {
-            publicKey = (qa == null) ? vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY) 
-                                : vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY_QA);
+            publicKey = (qa == null) ? vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY)
+                    : vendorLineService.getCredentialValueByName(vendorLineId, Credentials.PUBLIC_KEY_QA);
 
             decodedString = this.decodeRsaJwt(requestBody, publicKey);
 
@@ -86,7 +89,7 @@ public class VendorService extends BaseVendorService {
             log.error("Credential not found : " + e.getMessage());
         }
 
-        //Add decrypt value into request body
+        // Add decrypt value into request body
         httpRequestLog.setRequestBody(requestBody + ", Decrypt Value:" + decodedString);
 
         return decodedString;
@@ -94,7 +97,7 @@ public class VendorService extends BaseVendorService {
 
     public String decodeRsaJwt(String jwtToken, String publicKey) {
         String decodedRsaJwt = "";
-        
+
         try {
             String publicKeyWithoutWhitespace = publicKey.replaceAll("\\s", "");
             byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyWithoutWhitespace);
@@ -115,7 +118,7 @@ public class VendorService extends BaseVendorService {
         } catch (Exception e) {
             log.error("Error processing public key: " + e.getMessage());
         }
-        
+
         return decodedRsaJwt;
     }
 }

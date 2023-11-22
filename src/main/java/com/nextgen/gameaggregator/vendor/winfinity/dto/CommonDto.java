@@ -21,6 +21,7 @@ public class CommonDto {
     @Size(max = 32)
     private String tid;
 
+    @NotBlank
     @Size(max = 32)
     private String msid;
 
@@ -31,7 +32,7 @@ public class CommonDto {
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
-    
+
     @Size(max = 4)
     private String cur;
 
@@ -46,4 +47,9 @@ public class CommonDto {
 
     @PositiveOrZero
     private BigDecimal sum;
+
+    private Long timestamp;
+
+    @Size(max = 32)
+    private String refid;
 }

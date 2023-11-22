@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseVo implements HttpResponse {
-    
+
     private DataVo data;
     private ErrorVo error;
 
@@ -24,7 +24,7 @@ public class ResponseVo implements HttpResponse {
         this.data = new DataVo();
         this.data.setTransaction(traceId);
         this.data.setBalance(balance);
-        this.data.setTimestamp(System.currentTimeMillis());
+        this.data.setTimestamp(System.nanoTime() / 1000); // in microseconds
     }
 
     public void setErrorVo(ErrorCodes errorCodes) {

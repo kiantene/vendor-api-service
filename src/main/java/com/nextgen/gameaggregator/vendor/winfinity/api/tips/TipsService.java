@@ -1,6 +1,4 @@
-package com.nextgen.gameaggregator.vendor.winfinity.api.endround;
-
-import java.math.BigDecimal;
+package com.nextgen.gameaggregator.vendor.winfinity.api.tips;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -8,41 +6,38 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
-import com.nextgen.gameaggregator.vendor.winfinity.service.VendorService;
 import com.nextgen.gameaggregator.vendor.winfinity.vo.ResponseVo;
 
 @Service
-public class EndroundService {
-
+public class TipsService {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
     @Autowired
-    private VendorService vendorService;
-    @Autowired
     private HttpService httpService;
 
-    public ResponseVo endround(String traceId, String body, HttpRequestLog httpRequestLog) {
+    public ResponseVo tips(String traceId, String body, HttpRequestLog httpRequestLog) {
         ResponseVo vo = new ResponseVo();
 
         try {
             // Convert original request body into dto
-            EndroundDto dto = HttpService.convertJsonToDto(body, EndroundDto.class);
+            TipsDto dto = HttpService.convertJsonToDto(body, TipsDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(dto);
 
-            // Get GameSession with token
+            // Get GameSession by vendor player username
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
 
-            vo.setDataVo(traceId, balance);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+
+            vo.setDataVo(traceId, betEvent.getLastBalance());
 
         } catch (JsonProcessingException | TransactionStillProcessingException | InvalidRequestException badRequestException) {
             httpService.logError(httpRequestLog, badRequestException);
@@ -56,11 +51,7 @@ public class EndroundService {
             httpService.logError(httpRequestLog, insufficientBalanceException);
             vo.setErrorVo(ErrorCodes.NOT_ENOUGH_FUND);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            httpService.logError(httpRequestLog, betNotFoundException);
-            vo.setErrorVo(ErrorCodes.PAYIN_TRANS_NOT_FOUND);
-
-        } catch (MergedBetDataIntegrityException | InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
+        } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
 
@@ -76,7 +67,7 @@ public class EndroundService {
         return vo;
     }
 
-    private void doValidation(EndroundDto dto) throws InvalidRequestException {
+    private void doValidation(TipsDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
