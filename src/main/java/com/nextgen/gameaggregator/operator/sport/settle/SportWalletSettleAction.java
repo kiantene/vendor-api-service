@@ -117,7 +117,7 @@ public class SportWalletSettleAction {
         sportWalletSettleDto.setUsername(agentPlayer.getUsername());
         sportWalletSettleDto.setBetId(unsettledBet.getId());
         sportWalletSettleDto.setTransactionId(traceId);
-        sportWalletSettleDto.setExternalTransactionId(settledBet.getExternalTransactionId());
+        sportWalletSettleDto.setExternalTransactionId(settledBet.getVendorBetId());
         sportWalletSettleDto.setRoundId(unsettledBet.getRoundId());
         sportWalletSettleDto.setBetAmount(betAmount);
         sportWalletSettleDto.setWinAmount(winAmount);
@@ -128,9 +128,9 @@ public class SportWalletSettleAction {
         sportWalletSettleDto.setIsFreespin(0);
         sportWalletSettleDto.setIsEndRound(1);
         sportWalletSettleDto.setCurrency(agent.getCurrency().getCode());
-        sportWalletSettleDto.setToken(null);
-        sportWalletSettleDto.setGameCode(null);
-        sportWalletSettleDto.setBetTime(settledBet.getVendorBetTime());
+        sportWalletSettleDto.setToken("-");
+        sportWalletSettleDto.setGameCode(unsettledBet.getVendorGameId().toString());
+        sportWalletSettleDto.setBetTime(unsettledBet.getVendorBetTime());
         sportWalletSettleDto.setSettledTime(settledBet.getVendorSettleTime());
 
         return sportWalletSettleDto;

@@ -103,6 +103,11 @@ public class PlaceBetDto extends GeneralDto implements SportBetResultData {
     }
 
     @Override
+    public String getVendorPlayerUsername() {
+        return this.userId;
+    }
+
+    @Override
     public BigDecimal getActualBetAmount() {
         return this.actualAmount;
     }

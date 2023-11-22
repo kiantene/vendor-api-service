@@ -7,17 +7,18 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.LoggingService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
-import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -39,6 +40,8 @@ public class SportWalletService {
     private SportUnsettledBetService sportUnsettledBetService;
     @Autowired
     private SportWalletSettleAction sportWalletSettleAction;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
     @Autowired
     private WalletBalanceAction walletBalanceAction;
     @Autowired
@@ -96,8 +99,12 @@ public class SportWalletService {
         }
 
         loggingService.logStart();
-        sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorId().toString(), gameSession.getVendorGameId().toString(), gameSession.getVendorPlayerId().toString(), sportBetResultData.getExternalTransactionId());
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
+        sportUnsettledBetCouchbase.setBetAmount(sportBetResultData.getBetAmount());
+        sportUnsettledBetCouchbase.setRoundId(sportBetResultData.getRoundId());
+        sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
+        sportUnsettledBetCouchbase.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
+//        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
         SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
         loggingService.logProcessTime("processBet ｜ unsettledBetService.idempotentCheck", traceId);
 
@@ -108,7 +115,8 @@ public class SportWalletService {
             BigDecimal balance = balanceVo.getData().getBalance();
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balance);
-            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+//            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balance);
 
@@ -120,13 +128,13 @@ public class SportWalletService {
 
             if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 loggingService.logStart();
-                sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+//                sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
                 loggingService.logProcessTime("Sport ConfirmBet ｜ when invalidOperatorResponseException.SC_INSUFFICIENT_FUNDS", traceId);
                 throw new InsufficientBalanceException();
 
             } else {
                 loggingService.logStart();
-                sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+//                sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
                 loggingService.logProcessTime("Sport ConfirmBet ｜ when invalidOperatorResponseException", traceId);
                 throw e;
 
@@ -147,9 +155,12 @@ public class SportWalletService {
     @Async
     public void settle(SportSettledBet sportSettledBet) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException {
         String traceId = UUID.randomUUID().toString();
-        SportUnsettledBetMariaDB unsettledBet = sportUnsettledBetService.mariaDBGetByRoundIdAndVendorBetId(sportSettledBet.getVendorCode(), sportSettledBet.getRoundId(), sportSettledBet.getVendorBetId());
-        sportWalletSettleAction.call(traceId, unsettledBet, sportSettledBet);
-        BetHistory betHistory = sportSettledBet.toBetHistory(unsettledBet);
+        SportUnsettledBetCouchbase unsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportSettledBet.getVendorPlayerUsername(), sportSettledBet.getExternalTransactionId());
+        SportUnsettledBetMariaDB unsettledBetMariaDB = new SportUnsettledBetMariaDB(unsettledBetCouchbase);
+        unsettledBetMariaDB.setId(unsettledBetCouchbase.getBetId());
+//        SportUnsettledBetMariaDB unsettledBetMariaDB = sportUnsettledBetService.mariaDBGetByRoundIdAndVendorBetId(unsettledBetCouchbase.getVendorId(), sportSettledBet.getRoundId(), sportSettledBet.getVendorBetId());
+        sportWalletSettleAction.call(traceId, unsettledBetMariaDB, sportSettledBet);
+        BetHistory betHistory = sportSettledBet.toBetHistory(unsettledBetMariaDB);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 

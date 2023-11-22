@@ -29,8 +29,20 @@ public class SportUnsettledBetService {
         unsettledBetCouchbaseRepository.delete(sportUnsettledBetCouchbase);
     }
 
-    public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorId, String vendorGameId, String vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
-        String mergeId = vendorId + '_' + vendorGameId + '_' + vendorPlayerId + '_' + externalTransactionId;
+//    public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorId, String vendorGameId, String vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+//        String mergeId = vendorId + '_' + vendorGameId + '_' + vendorPlayerId + '_' + externalTransactionId;
+//        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
+//
+//        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
+//        if (sportUnsettledBetCouchbase == null) { // No matching bet record
+//            throw new BetNotFoundException("Cannot find couchbase Id: " + mergeId);
+//        }
+//
+//        return sportUnsettledBetCouchbase;
+//    }
+
+    public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorPlayerUsername, String externalTransactionId) throws BetNotFoundException {
+        String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
 
         sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
@@ -46,7 +58,7 @@ public class SportUnsettledBetService {
         return null;
     }
 
-    public SportUnsettledBetMariaDB mariaDBGetByRoundIdAndVendorBetId(String vendorCode, String roundId, String vendorBetId) throws BetNotFoundException {
+    public SportUnsettledBetMariaDB mariaDBGetByRoundIdAndVendorBetId(Integer vendorId, String roundId, String vendorBetId) throws BetNotFoundException {
 
         return null;
     }

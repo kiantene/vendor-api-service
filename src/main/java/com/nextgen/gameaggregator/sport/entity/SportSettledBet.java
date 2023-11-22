@@ -12,8 +12,8 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class SportSettledBet {
-    @JsonProperty("vendor_code")
-    private String vendorCode;
+    @JsonProperty("vendor_player_username")
+    private String vendorPlayerUsername;
 
     @JsonProperty("external_transaction_id")
     private String externalTransactionId;

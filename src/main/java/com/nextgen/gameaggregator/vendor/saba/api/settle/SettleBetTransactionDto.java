@@ -92,6 +92,11 @@ public class SettleBetTransactionDto implements SportBetResultData {
     }
 
     @Override
+    public String getVendorPlayerUsername() {
+        return this.userId;
+    }
+
+    @Override
     public BigDecimal getActualBetAmount() {
         return null;
     }

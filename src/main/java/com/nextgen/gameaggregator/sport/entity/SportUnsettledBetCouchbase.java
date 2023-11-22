@@ -21,6 +21,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
     private BigDecimal actualBetAmount;
     private BigDecimal odds;
     private Integer oddTypeId;
+    private GameSession gameSession;
 
     public SportUnsettledBetCouchbase(GameSession gameSession, String rawData, SportBetResultData sportBetResultData, String traceId, Integer resultType) {
         super(sportBetResultData);
@@ -50,11 +51,16 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setActualBetAmount(sportBetResultData.getActualBetAmount());
         this.setOdds(sportBetResultData.getOdds());
         this.setOddTypeId(sportBetResultData.getOddTypeId());
+        this.setGameSession(gameSession);
 
         this.setId(this.generateId());
     }
 
+//    public String generateId() {
+//        return this.getVendorId().toString() + '_' + this.getVendorGameId() + '_' + this.getVendorPlayerId() + '_' + this.getExternalTransactionId();
+//    }
+
     public String generateId() {
-        return this.getVendorId().toString() + '_' + this.getVendorGameId() + '_' + this.getVendorPlayerId() + '_' + this.getExternalTransactionId();
+        return this.getGameSession().getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
     }
 }
