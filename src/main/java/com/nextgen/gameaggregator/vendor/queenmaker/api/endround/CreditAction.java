@@ -20,11 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -42,6 +40,8 @@ public class CreditAction {
     private WalletService walletService;
     @Autowired
     private UnsettledBetService unsettledBetService;
+    @Autowired
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.WALLET_CREDIT)
     public CreditVo CreditAction(HttpServletRequest request) {
@@ -56,29 +56,19 @@ public class CreditAction {
             Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
 
-            String traceId = httpRequestLog.getId();
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
 
-            // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
-            List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
-            int size = 0;
+            // 2. Validate and Verified each UserDto inside balanceDto
+            List<TransactionsVo> transactionsList = new ArrayList<>();
             for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
-                Thread.sleep(size * 100);
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, request));
-                futures.add(future);
-                size += 1;
+                TransactionsVo transactionsVo = processData(transaction, clientId, clientSecret, request);
+                transactionsList.add(transactionsVo);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<TransactionsVo> transactionsList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
             creditVo.setTransactions(transactionsList);
-
 
         } catch (InvalidRequestException e) {
             creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
@@ -136,8 +126,9 @@ public class CreditAction {
         }
     }
 
-    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
+    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
         TransactionsVo transactionsVo = new TransactionsVo();
         GameSession gameSession = null;
 

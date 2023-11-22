@@ -18,16 +18,16 @@ public class BetDetailService implements BetDetailUrl {
             IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
 
-            MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-            return formData;
+        MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
+        return formData;
     }
 
     @Override
     public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
             IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-      
-            return new com.nextgen.gameaggregator.vendor.winfinity.api.betdetail.BetDetailUrlVo();
+
+        return new com.nextgen.gameaggregator.vendor.winfinity.api.betdetail.BetDetailUrlVo();
     }
-    
+
 }

@@ -27,7 +27,7 @@ public class PayinDto implements BetResultData {
     @Size(max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
-    
+
     @NotBlank
     @Size(max = 4)
     private String cur;
@@ -38,6 +38,9 @@ public class PayinDto implements BetResultData {
     @NotBlank
     @Size(max = 32)
     private String sid;
+
+    @Size(max = 32)
+    private String msid;
 
     @NotBlank
     @Size(max = 32)

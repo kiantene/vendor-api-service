@@ -32,7 +32,10 @@ public class EndroundDto implements BetResultData {
     @NotBlank
     @Size(max = 32)
     private String sid;
-    
+
+    @Size(max = 32)
+    private String msid;
+
     @NotBlank
     @Size(max = 32)
     private String gid;

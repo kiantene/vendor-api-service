@@ -40,6 +40,10 @@ public class VendorService extends BaseVendorService {
         return instant.toEpochMilli();
     }
 
+    public static Long getTimestamp() {
+        return Instant.now().toEpochMilli();
+    }
+
     public static String[] splitGameCode(String vendorGameCode, Integer limit) {
         return vendorGameCode.split("_", limit);
     }

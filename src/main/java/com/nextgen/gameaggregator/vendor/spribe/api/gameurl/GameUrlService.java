@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.exception.*;
@@ -16,6 +15,7 @@ import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,9 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 public class GameUrlService implements GameUrl {
 
     @Autowired
-    VendorLineService vendorLineService;
+    private VendorLineService vendorLineService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private VendorService vendorService;
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession,
@@ -63,17 +65,8 @@ public class GameUrlService implements GameUrl {
             throw new InvalidVendorLineException();
         }
 
-        // Build the URI needed to call the game URL API.
-        URI uri = UriComponentsBuilder.newInstance()
-            .scheme("https")
-            .host(gameUrl)
-            .path("/games")
-            .path("/launch/")
-            .path(gameSession.getVendorGameCode())
-            .queryParams(formData)
-            .build()
-            .encode()
-            .toUri();
+        String path = gameSession.getVendorGameCode();
+        URI uri = URI.create("https://" + gameUrl + "/" + path + "?" + vendorService.toQueryString(formData));
 
         // Create a new GameUrlVo object and set the game URL as its value.
         GameUrlVo responseVo = new GameUrlVo();
