@@ -56,7 +56,6 @@ public class WalletService {
     private BetIdempotentLogService betIdempotentLogService;
 
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
-
     private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
 
@@ -312,6 +311,10 @@ public class WalletService {
 
             // send settled bet to kafka
             BetHistory betHistory = new BetHistory(settledBet);
+
+            if (gameSession.getVendorPlayerUsername() == "1zqyiz") {
+                throw new TransactionStillProcessingException();
+            }
 
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);

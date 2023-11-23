@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
+import com.nextgen.gameaggregator.service.constant.BetData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -117,11 +118,12 @@ public class SettledBetService {
 
         try {
             settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+            Long betTimingDifferenceInMillieSeconds = (System.currentTimeMillis() - betResultData.getVendorBetTime());
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
                 // throw idempotent exception if status is processing or success
-                if (operatorStatus.equals(operatorStatusProcessing)) {
+                if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < BetData.byPassStillProcessingMillieSeconds) {
                     //log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new TransactionStillProcessingException();
 
