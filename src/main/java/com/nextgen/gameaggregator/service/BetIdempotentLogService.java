@@ -22,7 +22,6 @@ public class BetIdempotentLogService {
     @Autowired
     private RawBetIdempotentLogRepository rawBetIdempotentLogRepository;
 
-    @CachePut(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager")
     public RawBetIdempotentLog create(BetResultData betResultData, BigDecimal balance, GameSession gameSession) {
         RawBetIdempotentLog entity = new RawBetIdempotentLog();
         String betIdempotentId = this.generateBetIdempotentId(betResultData, gameSession);
