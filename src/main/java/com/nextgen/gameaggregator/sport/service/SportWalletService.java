@@ -24,6 +24,7 @@ import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -169,6 +170,7 @@ public class SportWalletService {
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
+    @Async
     public void settle(SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException {
 
         String traceId = UUID.randomUUID().toString();

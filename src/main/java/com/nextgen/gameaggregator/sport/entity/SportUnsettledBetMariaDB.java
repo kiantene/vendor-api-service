@@ -72,5 +72,7 @@ public class SportUnsettledBetMariaDB {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(sportUnsettledBetCouchbase, this);
+
+        this.setId(sportUnsettledBetCouchbase.getBetId());
     }
 }
