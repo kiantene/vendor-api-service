@@ -40,7 +40,7 @@ public class ConfirmBetDto implements SportBetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getTxns().get(0).getActualAmount();
+        return null;
     }
 
     @Override
@@ -94,17 +94,7 @@ public class ConfirmBetDto implements SportBetResultData {
     }
 
     @Override
-    public BigDecimal getActualBetAmount() {
+    public BigDecimal getNewBetAmount() {
         return this.getTxns().get(0).getActualAmount();
-    }
-
-    @Override
-    public BigDecimal getOdds() {
-        return this.getTxns().get(0).getOdds();
-    }
-
-    @Override
-    public Integer getOddTypeId() {
-        return this.getTxns().get(0).getOddsType();
     }
 }

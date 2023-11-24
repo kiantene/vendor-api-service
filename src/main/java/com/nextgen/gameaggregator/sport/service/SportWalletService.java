@@ -7,7 +7,9 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.sport.bet.SportBetAction;
 import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
+import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
@@ -37,7 +39,11 @@ public class SportWalletService {
     @Autowired
     private LoggingService loggingService;
     @Autowired
+    private SportBetAction sportBetAction;
+    @Autowired
     private SportUnsettledBetService sportUnsettledBetService;
+    @Autowired
+    private SportUpdateBetAction sportUpdateBetAction;
     @Autowired
     private SportWalletSettleAction sportWalletSettleAction;
     @Autowired
@@ -67,8 +73,9 @@ public class SportWalletService {
         BetEvent betEvent = null;
 
         try {
+            WalletBalanceVo balanceVo = sportBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
-            sportUnsettledBetCouchbase.setBalance(null);
+            sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 
@@ -99,19 +106,19 @@ public class SportWalletService {
         }
 
         loggingService.logStart();
+
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
-        sportUnsettledBetCouchbase.setBetAmount(sportBetResultData.getBetAmount());
-        sportUnsettledBetCouchbase.setRoundId(sportBetResultData.getRoundId());
+        sportUnsettledBetCouchbase.setNewBetAmount(sportBetResultData.getNewBetAmount());
         sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
         sportUnsettledBetCouchbase.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
-//        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
         SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+
         loggingService.logProcessTime("processBet ｜ unsettledBetService.idempotentCheck", traceId);
 
         BetEvent betEvent = null;
         try {
             // record operator processing time
-            WalletBalanceVo balanceVo = walletBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
+            WalletBalanceVo balanceVo = sportUpdateBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
             BigDecimal balance = balanceVo.getData().getBalance();
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balance);

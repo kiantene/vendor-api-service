@@ -38,12 +38,12 @@ public class PlaceBetDto extends GeneralDto implements SportBetResultData {
 
     @Override
     public String getVendorBetId() {
-        return null;
+        return this.refId;
     }
 
     @Override
     public String getRoundId() {
-        return null;
+        return this.refId;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class PlaceBetDto extends GeneralDto implements SportBetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.betAmount;
+        return this.actualAmount;
     }
 
 
@@ -108,17 +108,7 @@ public class PlaceBetDto extends GeneralDto implements SportBetResultData {
     }
 
     @Override
-    public BigDecimal getActualBetAmount() {
-        return this.actualAmount;
-    }
-
-    @Override
-    public BigDecimal getOdds() {
-        return this.odds;
-    }
-
-    @Override
-    public Integer getOddTypeId() {
-        return this.oddsType;
+    public BigDecimal getNewBetAmount() {
+        return null;
     }
 }

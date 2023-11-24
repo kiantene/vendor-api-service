@@ -1,7 +1,10 @@
 package com.nextgen.gameaggregator.sport.entity;
 
+import lombok.Data;
+
 import java.math.BigDecimal;
 
+@Data
 public class SportBetInformation {
     private String id;
     private String betId;
@@ -18,13 +21,12 @@ public class SportBetInformation {
     private Integer operatorStatus;
     private Integer currencyId;
     private BigDecimal betAmount;
+    private BigDecimal newBetAmount;
     private BigDecimal winAmount;
-    private BigDecimal jackpotAmount;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
 
     private Integer resultType;
-    private Integer isFreespin;
     private String rawData;
     private Integer resettleNum;
     private Integer status;

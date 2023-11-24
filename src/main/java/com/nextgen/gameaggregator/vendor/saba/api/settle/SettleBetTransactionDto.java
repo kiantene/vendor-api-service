@@ -97,17 +97,7 @@ public class SettleBetTransactionDto implements SportBetResultData {
     }
 
     @Override
-    public BigDecimal getActualBetAmount() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getOdds() {
-        return null;
-    }
-
-    @Override
-    public Integer getOddTypeId() {
+    public BigDecimal getNewBetAmount() {
         return null;
     }
 }
