@@ -4,12 +4,14 @@ import java.math.BigDecimal;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ActionsWagerInfoDto {
+public class ActionsWagerInfoDto implements SportBetResultData {
     @JsonProperty("WagerId")
     private Long wagerId;
 
@@ -87,4 +89,84 @@ public class ActionsWagerInfoDto {
 
     @JsonProperty("RoundRobinOptions")
     private String roundRobinOptions;
+
+    @Override
+    public String getExternalTransactionId() {
+        return wagerId.toString();
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return wagerId.toString();
+    }
+
+    @Override
+    public String getRoundId() {
+        return wagerId.toString();
+    }
+
+    @Override
+    public String getGameId() {
+        return sportId.toString();
+    }
+
+    @Override
+    public BigDecimal getBetAmount() {
+        return stake;
+    }
+
+    @Override
+    public BigDecimal getWinAmount() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getWinLoss() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getEffectiveTurnover() {
+        return stake;
+    }
+
+    @Override
+    public Long getVendorBetTime() {
+        return System.currentTimeMillis();
+    }
+
+    @Override
+    public Long getResultTime() {
+        return null;
+    }
+
+    @Override
+    public Long getVendorSettleTime() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getJackpotAmount() {
+        return null;
+    }
+
+    @Override
+    public Integer getIsFreespin() {
+        return 0;
+    }
+
+    @Override
+    public BetStatus getBetStatus() {
+        return BetStatus.UNSETTLED;
+    }
+
+    @Override
+    public String getVendorPlayerUsername() {
+        return null;
+    }
+
+    @Override
+    public BigDecimal getNewBetAmount() {
+        return null;
+    }
 }

@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
@@ -12,7 +13,7 @@ import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 
 @Service
 public class SettledService {
-    public List<CommonVo> settled(ActionsDto dto, HttpRequestLog httpRequestLog) {
+    public List<CommonVo> settled(ActionsDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
         return dto.getActions().stream()
                 .filter(action -> "SETTLED".equals(action.getName()))
                 .map(action -> {

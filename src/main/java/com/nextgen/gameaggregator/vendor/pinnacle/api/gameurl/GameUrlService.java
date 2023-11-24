@@ -22,6 +22,7 @@ import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
@@ -32,23 +33,23 @@ import reactor.core.publisher.Mono;
 @Service
 @Slf4j
 public class GameUrlService implements GameUrl {
-
     @Autowired
     private RequestService requestService;
-
     @Autowired
     private VendorService vendorService;
-
+    @Autowired
+    private GameSessionService gameSessionService;
     @Autowired
     private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
+    private String token = "";
 
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) 
         throws InvalidVendorLineException, InvalidFormatException {
-        String token = getToken();
+        token = getToken(gameSession);
         String userCode = getUserCode(gameSession, token);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
@@ -62,7 +63,6 @@ public class GameUrlService implements GameUrl {
     @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
         throws InvalidVendorLineException, InvalidVendorResponseException {
-        String token = getToken();
 
         String apiUrl = "https://paapistg.oreo88.com/b2b/player/login";
         GameUrlVo responseVo = null;
@@ -105,9 +105,12 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private String getToken() {
+    private String getToken(GameSession gameSession) {
         try {
-            return vendorService.generateToken("PX142", "a1068064-d32e-4b0a-971c-d3ea502a08c3", "tR5yueCxHALL2P7v");
+            token = vendorService.generateToken("PX142", "a1068064-d32e-4b0a-971c-d3ea502a08c3", "tR5yueCxHALL2P7v");
+            gameSessionService.regenerateGameSessionToken(gameSession, token);
+            return token;
+
         } catch (Exception exception) {
             log.error("Error generating token", exception);
             return null;
