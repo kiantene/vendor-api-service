@@ -106,6 +106,9 @@ public class PayinService {
     private void doVerification(PayinDto dto, GameSession gameSession) throws DisabledVendorLineException,
             DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException,
             InvalidPlayerException, AuthenticationException {
+
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
+        
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUid());
     }
