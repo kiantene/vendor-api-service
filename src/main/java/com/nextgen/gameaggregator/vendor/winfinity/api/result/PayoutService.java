@@ -41,6 +41,9 @@ public class PayoutService {
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession);
+
             // Determine result type
             ResultType resultType = determineResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
@@ -87,5 +90,10 @@ public class PayoutService {
     private void doValidation(PayoutDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }
