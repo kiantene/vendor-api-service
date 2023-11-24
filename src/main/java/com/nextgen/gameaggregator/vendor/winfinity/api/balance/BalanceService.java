@@ -59,7 +59,9 @@ public class BalanceService {
     }
 
     private void doVerification(CommonDto dto, GameSession gameSession)
-            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

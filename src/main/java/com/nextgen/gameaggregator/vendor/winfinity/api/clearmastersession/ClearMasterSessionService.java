@@ -38,16 +38,14 @@ public class ClearMasterSessionService {
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
-            if (gameSession.getStatus() != 0) {
-                BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-                vo.setDataVo(traceId, balance);
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession);
 
-                // Terminate master session
-                gameSessionService.terminateSessionByUserName(dto.getUid());
-                
-            } else {
-                throw new AuthenticationException();
-            }
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            vo.setDataVo(traceId, balance);
+
+            // Terminate master session
+            gameSessionService.terminateSessionByUserName(gameSession.getAgentPlayerUsername());
 
         } catch (JsonProcessingException jsonProcessingException) {
             httpService.logError(httpRequestLog, jsonProcessingException);
@@ -72,5 +70,10 @@ public class ClearMasterSessionService {
     private void doValidation(ClearMasterSessionDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }
