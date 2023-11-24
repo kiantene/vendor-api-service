@@ -3,12 +3,10 @@ package com.nextgen.gameaggregator.vendor.queenmaker.api.endround;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.queenmaker.constant.*;
 import com.nextgen.gameaggregator.vendor.queenmaker.service.VendorService;
@@ -22,11 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -42,6 +38,10 @@ public class CreditAction {
     private VendorService vendorService;
     @Autowired
     private WalletService walletService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
+    @Autowired
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.WALLET_CREDIT)
     public CreditVo CreditAction(HttpServletRequest request) {
@@ -56,27 +56,19 @@ public class CreditAction {
             Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
 
-            String traceId = httpRequestLog.getId();
             String body = httpRequestLog.getRequestBody();
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
 
-            // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
-            List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
+            // 2. Validate and Verified each UserDto inside balanceDto
+            List<TransactionsVo> transactionsList = new ArrayList<>();
             for (CreditTransactionsDto transaction : creditDto.getTransactions()) {
-
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, request));
-                futures.add(future);
+                TransactionsVo transactionsVo = processData(transaction, clientId, clientSecret, request);
+                transactionsList.add(transactionsVo);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<TransactionsVo> transactionsList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
             creditVo.setTransactions(transactionsList);
-
 
         } catch (InvalidRequestException e) {
             creditVo.setResponseCode(ResponseCodes.SYSTEM_ERROR, "Invalid Request");
@@ -128,12 +120,15 @@ public class CreditAction {
             throw new InvalidRequestException();
         }
 
-        // 4. Validate Debit Transaction is exist
-        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
+        // 4. Validate Debit Transaction is exist, except txtype 590 (End Round)
+        if (!creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+            vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), creditTransactionsDto.getRefptxid());
+        }
     }
 
-    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, String traceId, HttpServletRequest request) {
+    private TransactionsVo processData(CreditTransactionsDto creditTransactionsDto, String clientId, String clientSecret, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
         TransactionsVo transactionsVo = new TransactionsVo();
         GameSession gameSession = null;
 
@@ -153,6 +148,14 @@ public class CreditAction {
             if (creditTransactionsDto.getTxtype().equals(Txtype.CANCEL_BET)) {
                 RollbackTransactionDto rollbackTransactionDto = new ModelMapper().map(creditTransactionsDto, RollbackTransactionDto.class);
                 balance = walletService.processRollback(traceId, rollbackTransactionDto, gameSession, vendorService, httpRequestLog);
+            } else if (creditTransactionsDto.getTxtype().equals(Txtype.END_ROUND)) {
+                List<UnsettledBet> unsettledBet = unsettledBetService.getByRoundId(creditTransactionsDto.getExternalroundid(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+                if (unsettledBet.isEmpty()) {
+                    balance = this.getBalance(traceId, gameSession);
+                } else {
+                    ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
+                    balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);
+                }
             } else {
                 ResultType resultType = vendorService.calculateResultType(creditTransactionsDto.getBetAmount(), creditTransactionsDto.getWinAmount(), creditTransactionsDto.getJackpotAmount(), false, creditTransactionsDto.getBetStatus());
                 balance = walletService.processBetResult(traceId, gameSession, creditTransactionsDto, resultType, vendorService, httpRequestLog);

@@ -51,7 +51,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+    public GameUrlVendorResponseVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
@@ -84,6 +84,7 @@ public class GameUrlService implements GameUrl {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVendorResponseVo.class);
+            responseVo.setLeaveUrl(gameSession.getLobbyUrl());
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -95,6 +96,6 @@ public class GameUrlService implements GameUrl {
             throw new InvalidVendorResponseException(exceptionMsg);
         }
 
-        return responseVo.getData();
+        return responseVo;
     }
 }

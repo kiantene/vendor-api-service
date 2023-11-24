@@ -40,13 +40,11 @@ public class ReserveAction {
 
         ReserveVo reserveVo = new ReserveVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String reserveVoXml = "";
         GameSession gameSession = null;
 
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Playngo Reserve body: " + body);
 
             // Convert original request body into commonDto
             ReserveDto reserveDto = xmlMapper.readValue(body, ReserveDto.class);
@@ -123,17 +121,12 @@ public class ReserveAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            try {
-                reserveVoXml = xmlMapper.writeValueAsString(reserveVo);
-            } catch (JsonProcessingException e) {
-                reserveVo.setStatusCode(ResponseCodes.INTERNAL);
-            }
-            reserveVo.setResponseXMLFormat(reserveVoXml);
+            vendorService.buildResponseVo(reserveVo);
             httpService.end(httpRequestLog, reserveVo);
 
         }
 
-        return reserveVoXml;
+        return reserveVo.getResponseXMLFormat();
     }
 
     private void doValidation(ReserveDto dto) throws InvalidRequestException {

@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.playngo.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorGameCode;
@@ -109,6 +111,16 @@ public class VendorService extends BaseVendorService {
 
         }
 
+    }
+
+    public void buildResponseVo(CommonVo vo) {
+        String voXml = "";
+        try {
+            voXml = new XmlMapper().writeValueAsString(vo);
+        } catch (JsonProcessingException jsonProcessingException) {
+            vo.setStatusCode(ResponseCodes.INTERNAL);
+        }
+        vo.setResponseXMLFormat(voXml);
     }
 
     public static Long getTimestamp() {

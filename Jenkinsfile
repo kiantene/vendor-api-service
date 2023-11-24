@@ -41,12 +41,12 @@ pipeline {
         AWS_ECS_SERVICE = ''
 
         SONAR_PROJECTKEY = 'game-aggregator'
-        SONAR_HOST_URL = 'http://192.168.88.112:9000'
+        SONAR_HOST_URL = 'http://192.168.88.136:9000'
         SONAR_LOGIN = credentials('sonar_token')
 
         QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
-        
+
         STG_JOB_NAME = 'game_aggregator/devs/vendor_api_service/stg'
 
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
@@ -194,7 +194,7 @@ pipeline {
                     // 1. Acquire the Jenkins instance and validate
                     def jenkins = Jenkins.getInstanceOrNull()
                     if (jenkins == null) {
-                        error("Cannot retrieve Jenkins instance.")
+                        error('Cannot retrieve Jenkins instance.')
                     }
 
                     // 2. Check job existence
@@ -210,12 +210,12 @@ pipeline {
 
                     // 4. Check builds existence
                     if (job.builds.size() == 0) {
-                        println("No builds available for the job.")
+                        println('No builds available for the job.')
                         return
                     }
 
                     // 5. Iterate safely over builds and perform deletion
-                    println("Start Delete")
+                    println('Start Delete')
                     job.builds.each { build ->
                         if (build.isBuilding()) {
                             println("Skipped build: ${build.number}")
@@ -223,12 +223,13 @@ pipeline {
                             println("Deleting build: ${build.number}")
                             try {
                                 build.delete()
+                                sleep(time:3, unit: 'SECONDS')
                             } catch (Exception e) {
                                 println("Error deleting build ${build.number}: ${e.message}")
                             }
                         }
                     }
-                    println("End Delete")
+                    println('End Delete')
 
                     // 6. Reset the build number and save
                     job.nextBuildNumber = 1

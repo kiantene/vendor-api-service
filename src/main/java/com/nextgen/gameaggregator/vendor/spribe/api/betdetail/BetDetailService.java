@@ -52,9 +52,8 @@ public class BetDetailService implements BetDetailUrl {
     }
 
     @Override
-    public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
-            IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
-            throws InvalidVendorResponseException, InvalidVendorLineException {
+    public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
+        throws InvalidVendorResponseException, InvalidVendorLineException {
             
         // Wait to fix GA-3448
         // Retrieve the API domain from the credentials map.

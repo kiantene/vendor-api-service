@@ -21,11 +21,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -64,19 +63,12 @@ public class BalanceAction {
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(balanceDto);
 
-            // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
-            List<CompletableFuture<UsersVo>> futures = new LinkedList<>();
+            // 2. Validate and Verified each UserDto inside balanceDto
+            List<UsersVo> usersList = new ArrayList<>();
             for (UsersDto user : balanceDto.getUsers()) {
-
-                CompletableFuture<UsersVo> future = CompletableFuture.supplyAsync(() -> processData(user, clientId, clientSecret, traceId, httpRequestLog));
-                futures.add(future);
+                UsersVo usersVo = processData(user, clientId, clientSecret, traceId, httpRequestLog);
+                usersList.add(usersVo);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<UsersVo> usersList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
-
             balanceVo.setUsers(usersList);
 
         } catch (InvalidRequestException e) {

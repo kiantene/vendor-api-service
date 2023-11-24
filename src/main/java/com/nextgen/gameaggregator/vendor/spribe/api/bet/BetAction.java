@@ -61,10 +61,7 @@ public class BetAction {
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
 
-            // 4. Check game session status (0 = inactive)
-            if (gameSession.getStatus() == 0) throw new AuthenticationException();
-
-            // 5. Verify remaining parameters (Verify against database values)
+            // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
             userId = gameSession.getVendorPlayerUsername();
@@ -72,15 +69,14 @@ public class BetAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 6. Retrieve the latest wallet balance from Operator
+            // 5. Retrieve the latest wallet balance from Operator
             oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 7. Send bet request to Operator
+            // 6. Send bet request to Operator
             ResultType resultType = getResultType(dto);
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService,
-                    httpRequestLog);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            // 8. Set response data
+            // 7. Set response data
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
             data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
@@ -112,10 +108,8 @@ public class BetAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if (invalidOperatorResponseException.getOperatorStatus()
-                    .equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) ||
-                    invalidOperatorResponseException.getOperatorStatus()
-                            .equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
+                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
                 data.setOperator_tx_id(traceId);
                 data.setNew_balance(oldBalance);
                 data.setOld_balance(oldBalance);
@@ -126,20 +120,16 @@ public class BetAction {
                 vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
                 vo.setData(data);
 
-            } else if (invalidOperatorResponseException.getOperatorStatus()
-                    .equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+            } else if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 vo.setErrorCode(ErrorCodes.INSUFFICIENT_FUND);
 
             } else {
                 vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
-
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException
-                | DisabledGameException | InvalidRequestException | VendorCurrencyNotSupportException
-                | InvalidAgentApiCredentialException | TransactionStillProcessingException | GameNotSupportedException
-                | CurrencyNotSupportedException internalErrorException) {
+        } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException | InvalidRequestException | VendorCurrencyNotSupportException | 
+            InvalidAgentApiCredentialException | TransactionStillProcessingException | GameNotSupportedException | CurrencyNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -159,27 +149,24 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession)
-            throws InvalidPlayerException,
-            DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException,
-            GameNotSupportedException,
-            CurrencyNotSupportedException {
+    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, 
+        DisabledGameException, AuthenticationException,GameNotSupportedException, CurrencyNotSupportedException {
+
+        // Check game session status (0 = inactive)
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
 
         // Verify vendor gameCode and currency
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()),
-                GameNotSupportedException::new);
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(),
-                CurrencyNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUser_id());
     }
 
     private ResultType getResultType(BetDto dto) {
-
         ResultType resultType = ResultType.BET_LOSE;
         BigDecimal zero = BigDecimal.ZERO;
 

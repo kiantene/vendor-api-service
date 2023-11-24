@@ -18,11 +18,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -40,6 +38,8 @@ public class DebitAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.WALLET_DEBIT)
     public DebitVo DebitAction(HttpServletRequest request) {
@@ -54,25 +54,18 @@ public class DebitAction {
             Optional.ofNullable(clientId).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(clientSecret).orElseThrow(InvalidRequestException::new);
 
-            String traceId = httpRequestLog.getId();
             String body = httpRequestLog.getRequestBody();
             DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(debitDto);
 
-            // 2. Validate and Verified each UserDto inside balanceDto using Asynchronous
-            List<CompletableFuture<TransactionsVo>> futures = new LinkedList<>();
+            // 2. Validate and Verified each UserDto inside balanceDto
+            List<TransactionsVo> transactionsList = new ArrayList<>();
             for (DebitTransactionsDto transaction : debitDto.getTransactions()) {
-
-                CompletableFuture<TransactionsVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, clientId, clientSecret, traceId, body, request));
-                futures.add(future);
+                TransactionsVo transactionsVo = processData(transaction, clientId, clientSecret, body, request);
+                transactionsList.add(transactionsVo);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<TransactionsVo> transactionsList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
             debitVo.setTransactions(transactionsList);
 
         } catch (InvalidRequestException e) {
@@ -107,7 +100,7 @@ public class DebitAction {
             InvalidVendorLineException,
             CurrencyNotSupportedException,
             GameNotSupportedException,
-            AuthenticationException {
+            AuthenticationException, BetResultIdempotentViolationException {
 
         //1. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitTransactionsDto.getUserid());
@@ -133,10 +126,14 @@ public class DebitAction {
         if (!Txtype.txtTypeList.contains(debitTransactionsDto.getTxtype())) {
             throw new InvalidRequestException();
         }
+
+        // 5. Check Transaction is settled
+        vendorService.checkBetIsSettled(gameSession, debitTransactionsDto);
     }
 
-    private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String traceId, String body, HttpServletRequest request) {
+    private TransactionsVo processData(DebitTransactionsDto debitTransactionsDto, String clientId, String clientSecret, String body, HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
         TransactionsVo transactionsVo = new TransactionsVo();
         GameSession gameSession = null;
 
