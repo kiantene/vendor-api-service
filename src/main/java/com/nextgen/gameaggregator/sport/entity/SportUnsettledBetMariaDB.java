@@ -59,18 +59,6 @@ public class SportUnsettledBetMariaDB {
     @JsonProperty("bet_amount")
     private BigDecimal betAmount;
 
-    @JsonProperty("actual_bet_amount")
-    private BigDecimal actualBetAmount;
-
-    @JsonProperty("odds")
-    private BigDecimal odds;
-
-    @JsonProperty("odds_type_id")
-    private Integer oddsTypeId;
-
-    @JsonProperty("odds_type_id")
-    private BigDecimal effectiveTurnover;
-
     @JsonProperty("status")
     private Integer status;
 

@@ -52,7 +52,7 @@ public class KafkaService {
 
     public void produceUnsettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, new Gson().toJson(sportUnsettledBetMariaDB));
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, sportUnsettledBetMariaDB);
         } catch (Exception e) {
             log.error(e.getMessage());
         }

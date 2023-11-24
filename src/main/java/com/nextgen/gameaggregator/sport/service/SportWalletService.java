@@ -123,7 +123,7 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balance);
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
-//            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balance);
 
@@ -135,13 +135,11 @@ public class SportWalletService {
 
             if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 loggingService.logStart();
-//                sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
                 loggingService.logProcessTime("Sport ConfirmBet ｜ when invalidOperatorResponseException.SC_INSUFFICIENT_FUNDS", traceId);
                 throw new InsufficientBalanceException();
 
             } else {
                 loggingService.logStart();
-//                sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
                 loggingService.logProcessTime("Sport ConfirmBet ｜ when invalidOperatorResponseException", traceId);
                 throw e;
 
@@ -165,7 +163,6 @@ public class SportWalletService {
         SportUnsettledBetCouchbase unsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportSettledBet.getVendorPlayerUsername(), sportSettledBet.getExternalTransactionId());
         SportUnsettledBetMariaDB unsettledBetMariaDB = new SportUnsettledBetMariaDB(unsettledBetCouchbase);
         unsettledBetMariaDB.setId(unsettledBetCouchbase.getBetId());
-//        SportUnsettledBetMariaDB unsettledBetMariaDB = sportUnsettledBetService.mariaDBGetByRoundIdAndVendorBetId(unsettledBetCouchbase.getVendorId(), sportSettledBet.getRoundId(), sportSettledBet.getVendorBetId());
         sportWalletSettleAction.call(traceId, unsettledBetMariaDB, sportSettledBet);
         BetHistory betHistory = sportSettledBet.toBetHistory(unsettledBetMariaDB);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
@@ -176,6 +173,7 @@ public class SportWalletService {
             SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
             kafkaService.produceSettledBet(sportSettledBet);
             this.settle(sportSettledBet);
+
         }
     }
 }

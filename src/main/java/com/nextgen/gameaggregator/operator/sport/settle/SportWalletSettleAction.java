@@ -104,8 +104,8 @@ public class SportWalletSettleAction {
     private SportWalletSettleDto newSportWalletSettleDto(String traceId, SportUnsettledBetMariaDB unsettledBet, SportSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) {
 
         // add conversion rate when sending all the figures to operator
-        BigDecimal betAmount = (ObjectUtils.isEmpty(unsettledBet.getActualBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());
-        BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(unsettledBet.getEffectiveTurnover())) ? null : this.stripZeroToString(unsettledBet.getEffectiveTurnover());
+        BigDecimal betAmount = (ObjectUtils.isEmpty(unsettledBet.getBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());
+        BigDecimal effectiveTurnover = (ObjectUtils.isEmpty(unsettledBet.getBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());
         BigDecimal winAmount = (ObjectUtils.isEmpty(settledBet.getWinAmount())) ? null : this.stripZeroToString(settledBet.getWinAmount());
         assert winAmount != null;
         assert betAmount != null;
