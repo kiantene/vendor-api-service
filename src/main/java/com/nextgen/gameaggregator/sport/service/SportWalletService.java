@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.sport.bet.SportBetAction;
+import com.nextgen.gameaggregator.operator.sport.settle.SportSettleAction;
 import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
@@ -23,7 +24,6 @@ import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -40,6 +40,8 @@ public class SportWalletService {
     private LoggingService loggingService;
     @Autowired
     private SportBetAction sportBetAction;
+    @Autowired
+    private SportSettleAction sportSettleAction;
     @Autowired
     private SportUnsettledBetService sportUnsettledBetService;
     @Autowired
@@ -157,8 +159,7 @@ public class SportWalletService {
         return betEvent;
     }
 
-    @Async
-    public void settle(SportSettledBet sportSettledBet) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException {
+    public void settle2(SportSettledBet sportSettledBet) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException {
         String traceId = UUID.randomUUID().toString();
         SportUnsettledBetCouchbase unsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportSettledBet.getVendorPlayerUsername(), sportSettledBet.getExternalTransactionId());
         SportUnsettledBetMariaDB unsettledBetMariaDB = new SportUnsettledBetMariaDB(unsettledBetCouchbase);
@@ -168,12 +169,34 @@ public class SportWalletService {
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
-    public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException {
+    public void settle(SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException {
+
+        String traceId = UUID.randomUUID().toString();
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
+        sportUnsettledBetCouchbase.setWinAmount(sportBetResultData.getWinAmount());
+        sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(sportUnsettledBetCouchbase.getNewBetAmount()));
+        sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
+
+        try {
+            sportSettleAction.call(traceId, sportUnsettledBetCouchbase.getGameSession(), sportUnsettledBetCouchbase, httpRequestLog);
+            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+
+        } catch (Exception e) {
+            sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+            throw new InvalidOperatorResponseException();
+
+        }
+
+        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory();
+        kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+    }
+
+    public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
             SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
-            kafkaService.produceSettledBet(sportSettledBet);
-            this.settle(sportSettledBet);
-
+//            kafkaService.produceSettledBet(sportSettledBet);
+            this.settle(sportBetResultData, null);
         }
     }
 }
