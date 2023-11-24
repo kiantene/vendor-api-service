@@ -194,6 +194,7 @@ public class SportWalletService {
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
+    @Async
     public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
             SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
