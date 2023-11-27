@@ -1,11 +1,14 @@
 package com.nextgen.gameaggregator.sport.entity;
 
+import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
@@ -54,5 +57,17 @@ public class SportUnsettledBetCouchbase extends BetInformation {
 
     public String generateId() {
         return this.getGameSession().getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
+    }
+
+    public BetHistory toBetHistory() {
+        BetHistory betHistory = new BetHistory();
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(this, betHistory);
+
+        betHistory.setId(this.getBetId());
+        betHistory.setResettleNum(0);
+
+        return betHistory;
     }
 }

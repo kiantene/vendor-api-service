@@ -25,7 +25,7 @@ public class EndPoints {
 
     public static final String SPORT_BET = "/sports/bet";
     public static final String SPORT_UPDATE_BET = "/sports/update-bet";
-    public static final String SPORT_SETTLE = "/sports/settle";
+    public static final String SPORT_SETTLE = "/sports/settled";
     public static final String SPORT_CANCEL_BET = "/sports/cancel-bet";
     public static final String SPORT_UNSETTLE = "/sports/unsetlle";
 }

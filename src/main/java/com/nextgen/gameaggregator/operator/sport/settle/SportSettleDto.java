@@ -1,14 +1,21 @@
 package com.nextgen.gameaggregator.operator.sport.settle;
 
-import com.nextgen.gameaggregator.operator.sport.bet.SportBetDto;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
-@EqualsAndHashCode(callSuper = true)
 @Data
-public class SportSettleDto extends SportBetDto {
+public class SportSettleDto {
+    private String traceId;
+    private String username;
+    private String transactionId;
+    private String externalTransactionId;
+    private String roundId;
+    private String betId;
+    private String gameCode;
+    private String currency;
+    private Long timestamp;
+    private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
