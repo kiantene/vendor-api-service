@@ -21,6 +21,8 @@ public class BetAdjustmentLogService {
 
     @Autowired
     private RawBetAdjustmentLogRepository rawBetAdjustmentLogRepository;
+    @Autowired
+    private BetIdempotentLogService betIdempotentLogService;
 
     public RawBetAdjustmentLog create(RawBetAdjustmentLog entity) {
         return rawBetAdjustmentLogRepository.save(entity);
@@ -31,13 +33,12 @@ public class BetAdjustmentLogService {
 
         if (rawBetAdjustmentLog != null) {
             Integer operatorStatus = rawBetAdjustmentLog.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(rawBetAdjustmentLog.getCreateTime());
 
-            if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code)) {
-                log.warn("idempotentCheckForBetResultLog.processing [" + traceId + "]: transactionId (" + adjustmentData.getExternalTransactionId() + ") roundId (" + rawBetAdjustmentLog.getRoundId() + ")");
+            if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
-                log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + adjustmentData.getExternalTransactionId() + ") roundId (" + rawBetAdjustmentLog.getRoundId() + ")");
                 throw new BetAdjustmentIdempotentViolationException(rawBetAdjustmentLog);
 
             } else {

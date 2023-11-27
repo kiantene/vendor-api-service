@@ -68,6 +68,20 @@ public class BetIdempotentLogService {
 
     }
 
+    public Long getTimingDifferenceForStillProcessing() {
+        Long tenSecondsInMillis = 10L * 1000L;
+        return tenSecondsInMillis;
+
+    }
+
+    public Long compareWithExistingTimingDifference(Long createdDate) {
+
+        Long existingTime = System.currentTimeMillis();
+        Long timingDifference = existingTime - createdDate;
+        return timingDifference;
+
+    }
+
     @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager")
     public RawBetIdempotentLog checkExists(BetResultData betResultData, GameSession gameSession) {
         String betIdempotentId = this.generateBetIdempotentId(betResultData, gameSession);

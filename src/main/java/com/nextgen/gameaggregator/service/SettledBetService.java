@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
-import com.nextgen.gameaggregator.service.constant.BetData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -118,17 +117,15 @@ public class SettledBetService {
 
         try {
             settledBet = this.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
-            Long betTimingDifferenceInMillieSeconds = (System.currentTimeMillis() - betResultData.getVendorBetTime());
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
+                Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
                 // throw idempotent exception if status is processing or success
-                if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < BetData.byPassStillProcessingMillieSeconds) {
-                    //log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                     throw new TransactionStillProcessingException();
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    //log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new BetResultIdempotentViolationException(settledBet);
 
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator

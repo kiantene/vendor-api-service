@@ -312,10 +312,6 @@ public class WalletService {
             // send settled bet to kafka
             BetHistory betHistory = new BetHistory(settledBet);
 
-            if (gameSession.getVendorPlayerUsername() == "1zqyiz") {
-                throw new TransactionStillProcessingException();
-            }
-
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
@@ -381,19 +377,18 @@ public class WalletService {
             loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
 
             Integer operatorStatus = settledBet.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
+
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
-                log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
                 if (vendorService.shouldRejectCancelRequest()) {
-                    log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
                     throw new BetResultIdempotentViolationException(settledBet);
 
                 } else {
                     if (!settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                        log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
                         throw new BetResultIdempotentViolationException(settledBet);
 
                     } else {
@@ -676,6 +671,7 @@ public class WalletService {
         betData.setResultTime(betResultData.getResultTime());
         betData.setVendorSettleTime(betResultData.getVendorSettleTime());
         betData.setIsFreespin(Optional.ofNullable(betResultData.getIsFreespin()).orElse(0));
+
     }
 
     /**
