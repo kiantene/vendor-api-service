@@ -22,11 +22,13 @@ public class SettledService {
     private SportWalletService sportWalletService;
 
     public List<CommonVo> settled(ActionsDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
         return dto.getActions().stream()
                 .filter(action -> "SETTLED".equals(action.getName()))
                 .map(action -> {
 
                     try {
+                        action.getWagerInfo().setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
                         sportWalletService.settle(action.getWagerInfo(), httpRequestLog);
                     } catch (Exception e) {
                         log.error("Exception: " + e.getMessage());

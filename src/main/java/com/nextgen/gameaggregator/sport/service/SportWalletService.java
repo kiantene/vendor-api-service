@@ -170,13 +170,14 @@ public class SportWalletService {
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
-    @Async
     public void settle(SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException {
 
         String traceId = UUID.randomUUID().toString();
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
         sportUnsettledBetCouchbase.setWinAmount(sportBetResultData.getWinAmount());
-        sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(sportUnsettledBetCouchbase.getNewBetAmount()));
+
+        BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
+        sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
         sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
 
         try {

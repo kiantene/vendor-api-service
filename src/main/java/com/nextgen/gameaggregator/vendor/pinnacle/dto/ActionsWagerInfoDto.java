@@ -12,6 +12,8 @@ import lombok.Data;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ActionsWagerInfoDto implements SportBetResultData {
+    private String vendorPlayerUsername;
+
     @JsonProperty("WagerId")
     private Long wagerId;
 
@@ -117,7 +119,7 @@ public class ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return null;
+        return toWin;
     }
 
     @Override
@@ -162,7 +164,7 @@ public class ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public String getVendorPlayerUsername() {
-        return null;
+        return vendorPlayerUsername;
     }
 
     @Override

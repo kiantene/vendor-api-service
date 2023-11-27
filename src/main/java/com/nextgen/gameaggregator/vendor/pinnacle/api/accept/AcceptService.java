@@ -28,10 +28,12 @@ public class AcceptService {
                 .filter(action -> "ACCEPTED".equals(action.getName()))
                 .map(action -> {
 
-                    try {
-                        sportWalletService.confirmBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
-                    } catch (Exception e) {
-                        log.error("Exception: " + e.getMessage());
+                    if (action.getTransaction() != null) {
+                        try {
+                            sportWalletService.confirmBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
+                        } catch (Exception e) {
+                            log.error("Exception: " + e.getMessage());
+                        }
                     }
 
                     CommonVo commonVo = new CommonVo();
