@@ -79,7 +79,7 @@ public class RefundService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_REFUNDED);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             httpService.logError(httpRequestLog, betRefundIdempotentViolationException);

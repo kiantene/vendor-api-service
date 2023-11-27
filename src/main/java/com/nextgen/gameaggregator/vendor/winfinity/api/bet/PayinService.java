@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.winfinity.api.bet;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,7 +55,8 @@ public class PayinService {
                 vo.setDataVo(traceId, betEvent.getLastBalance());
 
             } else {
-                vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+                BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+                vo.setDataVo(traceId, balance);
             }
 
         } catch (JsonProcessingException | TransactionStillProcessingException | InvalidRequestException badRequestException) {
@@ -76,7 +78,7 @@ public class PayinService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (DisabledGameException disabledGameException) {
             httpService.logError(httpRequestLog, disabledGameException);
