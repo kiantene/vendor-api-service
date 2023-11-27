@@ -169,6 +169,6 @@ public class ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public BigDecimal getNewBetAmount() {
-        return null;
+        return toRisk;
     }
 }
