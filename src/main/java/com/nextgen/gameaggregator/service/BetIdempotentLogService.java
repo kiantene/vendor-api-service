@@ -69,8 +69,8 @@ public class BetIdempotentLogService {
     }
 
     public Long getTimingDifferenceForStillProcessing() {
-        Long tenSecondsInMillis = 10L * 1000L;
-        return tenSecondsInMillis;
+        Long fiveSecondsInMillis = 5L * 1000L;
+        return fiveSecondsInMillis;
 
     }
 
