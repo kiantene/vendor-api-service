@@ -60,12 +60,12 @@ public class SettleAction {
 
         } catch (Exception e) {
             vo.setStatus("999");
-            vo.setMsg("System Error");
+//            vo.setMsg("System Error");
             httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, vo);
-
+            vo.setStatus("0");
         }
 
         return vo;

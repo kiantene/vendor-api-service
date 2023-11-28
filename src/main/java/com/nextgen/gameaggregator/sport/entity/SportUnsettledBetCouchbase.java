@@ -66,6 +66,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         modelMapper.map(this, betHistory);
 
         betHistory.setId(this.getBetId());
+        betHistory.setStatus(BetStatus.SETTLED.code);
         betHistory.setResettleNum(0);
 
         return betHistory;
