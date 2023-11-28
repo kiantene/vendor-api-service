@@ -24,6 +24,7 @@ import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +47,8 @@ public class GameUrlService implements GameUrl {
     @Override
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) 
         throws InvalidVendorLineException, InvalidFormatException {
-        token = getToken(gameSession);
-        String userCode = getUserCode(gameSession, token);
+        token = getToken(gameSession, credentials);
+        String userCode = getUserCode(gameSession, token, credentials);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("userCode", userCode);
@@ -61,9 +62,9 @@ public class GameUrlService implements GameUrl {
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
         throws InvalidVendorLineException, InvalidVendorResponseException {
 
-        String apiUrl = "https://paapistg.oreo88.com/b2b/player/login";
+        String apiUrl = credentials.get(Credentials.LOGIN_URL);
         GameUrlVo responseVo = null;
-        HttpHeaders headerMap = createHeaders("PX142", token);
+        HttpHeaders headerMap = createHeaders(credentials.get(Credentials.AGENT_CODE), token);
 
         long startTime = System.currentTimeMillis();
 
@@ -102,9 +103,9 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private String getToken(GameSession gameSession) {
+    private String getToken(GameSession gameSession, Map<String, String> credentials) {
         try {
-            token = vendorService.generateToken("PX142", "a1068064-d32e-4b0a-971c-d3ea502a08c3", "tR5yueCxHALL2P7v");
+            token = vendorService.generateToken(credentials.get(Credentials.AGENT_CODE), credentials.get(Credentials.AGENT_KEY), credentials.get(Credentials.SECRET_KEY));
             return token;
 
         } catch (Exception exception) {
@@ -113,23 +114,23 @@ public class GameUrlService implements GameUrl {
         }
     }
 
-    private String getUserCode(GameSession gameSession, String token) {
+    private String getUserCode(GameSession gameSession, String token, Map<String, String> credentials) {
         String userCode = "";
         Optional<PinnacleVendorPlayer> pinnacleVendorPlayer = pinnacleVendorUsernameRepository.findByUsername(gameSession.getVendorPlayerUsername());
 
         if (pinnacleVendorPlayer.isPresent()) {
             userCode = pinnacleVendorPlayer.get().getVendorPlayerUsername();
         } else {
-            userCode = createUserCode(gameSession, token);
+            userCode = createUserCode(gameSession, token, credentials);
         }
 
         return userCode;
     }
 
-    private String createUserCode(GameSession gameSession, String token) {
+    private String createUserCode(GameSession gameSession, String token, Map<String, String> credentials) {
         String userCode = "";
-        String apiCreateUrl = "https://paapistg.oreo88.com/b2b/player/create";
-        HttpHeaders headerMap = createHeaders("PX142", token);
+        String apiCreateUrl = credentials.get(Credentials.CREATE_URL);
+        HttpHeaders headerMap = createHeaders(credentials.get(Credentials.AGENT_CODE), token);
 
         ResponseEntity<String> apiCreateResponse = WebClient.create()
                 .post()
