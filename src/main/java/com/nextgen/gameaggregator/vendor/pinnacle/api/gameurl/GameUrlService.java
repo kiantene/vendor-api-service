@@ -92,6 +92,9 @@ public class GameUrlService implements GameUrl {
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
+            // Replace GA token with vendor token
+            gameSessionService.regenerateGameSessionToken(gameSession, responseVo.getToken());
+
             // 2. validate vendor response
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
@@ -108,7 +111,6 @@ public class GameUrlService implements GameUrl {
     private String getToken(GameSession gameSession) {
         try {
             token = vendorService.generateToken("PX142", "a1068064-d32e-4b0a-971c-d3ea502a08c3", "tR5yueCxHALL2P7v");
-            gameSessionService.regenerateGameSessionToken(gameSession, token);
             return token;
 
         } catch (Exception exception) {
