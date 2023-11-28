@@ -121,6 +121,13 @@ public class WalletBetResultAction {
 
             }
 
+            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
+                responseVo.getData().setBalance(BigDecimal.ZERO);
+                responseVo.getData().setUsername(gameSession.getAgentPlayerUsername());
+                responseVo.getData().setCurrency(gameSession.getCurrencyCode());
+
+            }
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
