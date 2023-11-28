@@ -22,7 +22,6 @@ import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
@@ -37,8 +36,6 @@ public class GameUrlService implements GameUrl {
     private RequestService requestService;
     @Autowired
     private VendorService vendorService;
-    @Autowired
-    private GameSessionService gameSessionService;
     @Autowired
     private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
 
@@ -91,9 +88,6 @@ public class GameUrlService implements GameUrl {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
-
-            // Replace GA token with vendor token
-            gameSessionService.regenerateGameSessionToken(gameSession, responseVo.getToken());
 
             // 2. validate vendor response
             RequestService.validateResponse(responseVo);

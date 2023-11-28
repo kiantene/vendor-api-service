@@ -14,4 +14,6 @@ import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
 @Collection("pinnacle_vendor_username")
 public interface PinnacleVendorUsernameRepository extends CouchbaseRepository<PinnacleVendorPlayer, String> {
     Optional<PinnacleVendorPlayer> findByUsername(String username);
+
+    Optional<PinnacleVendorPlayer> findByVendorPlayerUsername(String vendorPlayerUsername);
 }

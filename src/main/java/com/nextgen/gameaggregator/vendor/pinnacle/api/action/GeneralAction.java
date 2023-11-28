@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
+import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -50,6 +53,8 @@ public class GeneralAction {
     private WalletService walletService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
 
     @PostMapping(path = "/{agentcode}/wagering/usercode/{usercode}/request/{requestid}")
     public ResponseVo handleApiCall(@PathVariable String agentcode, @PathVariable String usercode, @PathVariable String requestid, HttpServletRequest request) {
@@ -62,8 +67,13 @@ public class GeneralAction {
             ObjectMapper objectMapper = new ObjectMapper();
             ActionsDto dto = objectMapper.readValue(body, ActionsDto.class);
 
-            // Get game session with signature from dto
-            GameSession gameSession = gameSessionService.verifyToken(dto.getSignature());
+            // Get GA username from couchbase
+            String userCode = dto.getActions().get(0).getPlayerInfo().getUserCode();
+            Optional<PinnacleVendorPlayer> player = pinnacleVendorUsernameRepository.findByVendorPlayerUsername(userCode);
+
+            // Get game session with username
+            String username = player.get().getUsername();
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(username);
 
             // Create a set to store action name
             Set<String> uniqueActionNames = new HashSet<>();

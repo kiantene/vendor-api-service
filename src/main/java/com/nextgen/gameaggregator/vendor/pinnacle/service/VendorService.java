@@ -2,12 +2,13 @@ package com.nextgen.gameaggregator.vendor.pinnacle.service;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
-
+import com.nextgen.gameaggregator.vendor.pinnacle.utils.Signature;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -37,5 +38,41 @@ public class VendorService {
         }
 
         return null;  
+    }
+
+    /**
+     * Decode string to verify signature in request.
+     *
+     * @param token - string value of singature.
+     * @param aesKey - it is `secret_key` that will provided from platform.
+     * @return Signature
+     */
+    public Signature decode(String token, String aesKey) {
+        String tokenPayload = decryptAES(token, aesKey);
+        String[] tmp = tokenPayload.split("\\|");
+        Signature signature = new Signature(tmp[0], tmp[2], aesKey);
+        signature.setTimestamp(tmp[1]);
+        return signature;
+    }
+
+    /**
+     * Descrypt String by secret_key base on ASE algorithm.
+     *
+     * @param encryptedText - String is return from {#link encryptAES()}
+     * @param aesKey - secrect_key be provide by platform.
+     * @return String | NULL.
+     */
+    public static String decryptAES(String encryptedText, String aesKey) {
+        try {
+            SecretKeySpec secretKeySpec = new SecretKeySpec(aesKey.getBytes(), ALGORITHM);
+            IvParameterSpec iv = new IvParameterSpec(INIT_VECTOR.getBytes("UTF-8"));
+            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
+            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, iv);
+            byte[] original = cipher.doFinal(Base64.getDecoder().decode(encryptedText));
+            return new String(original);
+        } catch (Exception ex) {
+            log.error("encryptAES error : ", ex);
+        }
+        return null;
     }
 }
