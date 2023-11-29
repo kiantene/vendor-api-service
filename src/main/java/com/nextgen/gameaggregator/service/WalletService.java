@@ -375,7 +375,6 @@ public class WalletService {
             loggingService.logStart();
             settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
             loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
-
             Integer operatorStatus = settledBet.getOperatorStatus();
             Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
 
@@ -773,7 +772,9 @@ public class WalletService {
                 BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
 
                 loggingService.logStart();
-                unsettledBetService.delete(unsettledBet);
+                if (unsettledBet != null) {
+                    unsettledBetService.delete(unsettledBet);
+                }
                 loggingService.logProcessTime("processRollback ｜ unsettledBetService.delete", traceId);
             }
 
