@@ -50,8 +50,7 @@ public class PayoutService {
 
             vo.setDataVo(traceId, balance);
 
-        } catch (JsonProcessingException | TransactionStillProcessingException
-                | InvalidRequestException badRequestException) {
+        } catch (JsonProcessingException | TransactionStillProcessingException | InvalidRequestException badRequestException) {
             httpService.logError(httpRequestLog, badRequestException);
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
 
@@ -73,7 +72,7 @@ public class PayoutService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);

@@ -60,7 +60,7 @@ public class TipsService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
