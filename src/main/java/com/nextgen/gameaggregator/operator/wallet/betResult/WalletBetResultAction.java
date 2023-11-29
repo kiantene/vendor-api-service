@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -121,6 +122,31 @@ public class WalletBetResultAction {
 
             }
 
+            boolean specialCaseForPP = false;
+
+            //if its PP and settledBet (endRound) and responseVo is null (not success responses from operator)
+            //then will still consider success and assign default success params with 0 balance return out
+            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
+                if (responseVo == null || !responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+
+                    JsonObject originalJson = new Gson().fromJson(apiResponse.getBody(), JsonObject.class);
+                    JsonObject additionalData = new JsonObject();
+                    long operatorResponseTimeStamp = System.currentTimeMillis();
+
+                    additionalData.addProperty("username", gameSession.getAgentPlayerUsername());
+                    additionalData.addProperty("currency", gameSession.getCurrencyCode());
+                    additionalData.addProperty("balance", 0);
+                    additionalData.addProperty("timestamp", operatorResponseTimeStamp);
+
+                    originalJson.add("data", additionalData);
+                    String updatedJsonString = new Gson().toJson(originalJson);
+
+                    responseVo = new Gson().fromJson(updatedJsonString, WalletBalanceVo.class);
+                    specialCaseForPP = true;
+
+                }
+            }
+
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
@@ -128,7 +154,10 @@ public class WalletBetResultAction {
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
-            requestService.operatorStatusException(responseVo.getStatus());
+            // only special handling for PP, the rest will still process as normal
+            if (!specialCaseForPP) {
+                requestService.operatorStatusException(responseVo.getStatus());
+            }
 
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
