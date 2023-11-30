@@ -109,7 +109,10 @@ public class AuthenticationAction {
                 authenticationVo.setErrorDescription(ResponseCodes.RESPONSE_DESCRIPTION.get(authenticationVo.getErrorCode()));
             }
             authenticationVo.setOperatorId(authenticationDto.getOperatorId());
-            authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
+            // No return balance when token not found
+            if (!authenticationVo.getErrorCode().equals(ResponseCodes.TOKEN_NOT_FOUND)) {
+                authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
+            }
             authenticationVo.setTimestamp(System.currentTimeMillis());
             httpService.end(httpRequestLog, authenticationVo);
         }

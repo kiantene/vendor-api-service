@@ -50,12 +50,10 @@ public class AuthAction {
 
         AuthVo authVo = new AuthVo();
         XmlMapper xmlMapper = new XmlMapper();
-        String authVoXml = "";
 
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
-            log.info("Playngo Auth body: " + body);
 
             // Convert original request body into commonDto
             AuthDto authDto = xmlMapper.readValue(body, AuthDto.class);
@@ -137,20 +135,12 @@ public class AuthAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
-            try {
-                authVoXml = xmlMapper.writeValueAsString(authVo);
-
-            } catch (JsonProcessingException e) {
-                authVo.setStatusCodeAndMessage(ResponseCodes.INTERNAL);
-
-            }
-
-            authVo.setResponseXMLFormat(authVoXml);
+            vendorService.buildResponseVo(authVo);
             httpService.end(httpRequestLog, authVo);
 
         }
 
-        return authVoXml;
+        return authVo.getResponseXMLFormat();
     }
 
     private void doValidation(AuthDto dto) throws InvalidRequestException {

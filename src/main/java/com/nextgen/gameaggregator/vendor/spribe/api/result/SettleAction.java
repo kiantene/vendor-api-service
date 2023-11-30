@@ -66,10 +66,7 @@ public class SettleAction {
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
 
-            // 4. Check game session status (0 = inactive)
-            if (gameSession.getStatus() == 0) throw new AuthenticationException();
-
-            // 5. Verify remaining parameters (Verify against database values)
+            // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
             userId = gameSession.getVendorPlayerUsername();
@@ -77,36 +74,34 @@ public class SettleAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 6. Check if the round exists
-            List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+            // 5. Reject the request if there's no place bet and it's not a free bet
+            this.checkRoundExists(dto, gameSession);
 
-            // 7. Reject the request if there's no place bet and it's not a free bet
-            if (settledBetList.isEmpty() && !FreeBetAction.list.contains(dto.getAction())) {
-                vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
+            // 6. Retrieve the latest wallet balance from Operator
+            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            } else {
-                // 8. Retrieve the latest wallet balance from Operator
-                oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            // 7. Send bet request to Operator
+            ResultType resultType = getResultType(dto);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-                // 9. Send bet request to Operator
-                ResultType resultType = getResultType(dto);
-                BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
-
-                // 10. Set response data
-                data.setOperator_tx_id(traceId);
-                data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
-                data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
-                data.setUser_id(userId);
-                data.setCurrency(currency);
-                data.setProvider(provider);
-                data.setProvider_tx_id(providerTxId);
-                vo.setErrorCode(ErrorCodes.SUCCESS);
-                vo.setData(data);
-            }
+            // 8. Set response data
+            data.setOperator_tx_id(traceId);
+            data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setUser_id(userId);
+            data.setCurrency(currency);
+            data.setProvider(provider);
+            data.setProvider_tx_id(providerTxId);
+            vo.setErrorCode(ErrorCodes.SUCCESS);
+            vo.setData(data);
 
         } catch (AuthenticationException authenticationException) {
             vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
             httpService.logError(httpRequestLog, authenticationException);
+
+        } catch (BetNotFoundException betNotFoundException) {
+            vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             data.setOperator_tx_id(traceId);
@@ -142,10 +137,9 @@ public class SettleAction {
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | InvalidRequestException | 
-            DisabledVendorLineException | DisabledAgentPlayerException | DisabledGameException | 
-            BetNotFoundException | MergedBetDataIntegrityException | InsufficientBalanceException | 
-            TransactionStillProcessingException | GameNotSupportedException | CurrencyNotSupportedException internalErrorExeption) {
+        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | 
+            DisabledGameException | MergedBetDataIntegrityException | InsufficientBalanceException | TransactionStillProcessingException | GameNotSupportedException | 
+            CurrencyNotSupportedException internalErrorExeption) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorExeption);
 
@@ -165,9 +159,11 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws InvalidPlayerException, 
-        DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException, AuthenticationException, GameNotSupportedException, 
-        CurrencyNotSupportedException {
+    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, 
+        DisabledGameException, AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
+
+        // Check game session status (0 = inactive)
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser_id(), AuthenticationException::new);
@@ -181,7 +177,6 @@ public class SettleAction {
     }
     
     private ResultType getResultType(SettleDto dto) {
-
         ResultType resultType = ResultType.BET_LOSE;
         BigDecimal zero = BigDecimal.ZERO;
 
@@ -190,5 +185,11 @@ public class SettleAction {
         }
 
         return resultType;
+    }
+
+    private void checkRoundExists(SettleDto dto, GameSession gameSession) throws BetNotFoundException {
+        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
+
+        if (settledBetList.isEmpty() && !FreeBetAction.list.contains(dto.getAction())) throw new BetNotFoundException();
     }
 }

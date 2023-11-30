@@ -33,8 +33,8 @@ public class AuthenticateService {
         ResponseVo vo = new ResponseVo();
 
         try {
-            // Get GameSession by vendor player username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
+            // Get game session with token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -49,7 +49,7 @@ public class AuthenticateService {
         } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
-            
+
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
@@ -58,7 +58,10 @@ public class AuthenticateService {
         return vo;
     }
 
-    private void doVerification(CommonDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(CommonDto dto, GameSession gameSession)
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException {
+
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

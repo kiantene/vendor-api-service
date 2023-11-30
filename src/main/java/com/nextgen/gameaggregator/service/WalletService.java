@@ -167,16 +167,33 @@ public class WalletService {
         return betEvent;
     }
 
-    private UnsettledBet getUnsettledBetFromRound(List<UnsettledBet> betList, String roundId) throws BetNotFoundException {
+    private UnsettledBet getUnsettledBetFromRound(List<UnsettledBet> betList, String roundId, BetResultData betResultData) throws BetNotFoundException {
         if (betList.isEmpty()) throw new BetNotFoundException("Cannot find unsettled bets with round Id: " + roundId);
 
         UnsettledBet unsettledBet;
+
+        //default will be using first unsettledBet from the list
         if (betList.size() == 1) { // single bet
             unsettledBet = betList.get(0);
         } else {
             // this is to handle PP multihand blackjack
             unsettledBet = betList.get(betList.size() - 1);
         }
+
+        if (betResultData.getVendorBetId() != null) {
+            //will check across with the vendorBetId pass in
+            Optional<UnsettledBet> matchingBet = betList.stream()
+                    .filter(isUnsettledBetMatch -> betResultData.getVendorBetId().equals(isUnsettledBetMatch.getVendorBetId()))
+                    .findFirst();
+
+            //if found matched then unsettledBet reassign to the unsettledBet that is matched
+            //else then will be using the default unsettledBet
+            if (matchingBet.isPresent()) {
+                unsettledBet = matchingBet.get();
+
+            }
+        }
+
         return unsettledBet;
     }
 
@@ -217,7 +234,7 @@ public class WalletService {
             switch (resultType) {
                 case LOSE, END -> { // PP
 
-                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
+                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
 
                     // handle if settle end/lose resultType having isFreeSpin = 1.
                     unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1) ? betResultData.getIsFreespin() : unsettledBet.getIsFreespin());
@@ -244,7 +261,7 @@ public class WalletService {
                         internalTransactionId = settledBet.getInternalTransactionId();
                     }
 
-                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
+                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
                     this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
 
@@ -290,12 +307,7 @@ public class WalletService {
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balanceVo.getData().getBalance());
 
-            loggingService.logStart();
-            settledBetService.save(settledBet, rawData);
-            loggingService.logProcessTime("doSettledBetResult ｜ , after walletBetResultAction.call, settledBetService.save", traceId);
-
             // remap settleBet info before insert into kafka if needed, default will be no changes
-
             settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
 
             // send settled bet to kafka
@@ -304,6 +316,10 @@ public class WalletService {
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
+
+            loggingService.logStart();
+            settledBetService.save(settledBet, rawData);
+            loggingService.logProcessTime("doSettledBetResult ｜ after walletBetResultAction.call, settledBetService.save", traceId);
 
             loggingService.logStart();
             betIdempotentLogService.create(betResultData, settledBet.getBalance(), gameSession);
@@ -474,7 +490,7 @@ public class WalletService {
                 List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
                 loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
-                unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
+                unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
 
                 // when betHistoryId is 0, it means this is a new request, so it is not a retry
                 boolean retry = !rawBetResultLog.getBetHistoryId().equals("0");
@@ -739,14 +755,14 @@ public class WalletService {
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balance);
 
-            loggingService.logStart();
-            settledBetService.save(settledBet, " ");
-            loggingService.logProcessTime("processRollback ｜ settledBetService.save", traceId);
-
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
+
+            loggingService.logStart();
+            settledBetService.save(settledBet, " ");
+            loggingService.logProcessTime("processRollback ｜ settledBetService.save", traceId);
 
             if (settledBet.getStatus().equals(BetStatus.REFUNDED.code)) {
                 //only refund request need to insert into betRefundLog and delete unsettledBet
