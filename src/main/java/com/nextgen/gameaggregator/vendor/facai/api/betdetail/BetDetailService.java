@@ -77,7 +77,7 @@ public class BetDetailService implements BetDetailUrl {
 
         //setup form data
         formData.add("AgentCode", credentials.get(Credentials.AGENT_CODE));
-        formData.add("Currency", iBetDetailUrlInfo.getCurrencyCode());
+        formData.add("Currency", iBetDetailUrlInfo.getVendorCurrencyCode());
         formData.add("Params", encryptParam);
         formData.add("Sign", md5Param);
 

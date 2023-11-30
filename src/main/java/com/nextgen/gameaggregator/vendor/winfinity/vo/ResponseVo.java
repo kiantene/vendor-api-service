@@ -21,10 +21,14 @@ public class ResponseVo implements HttpResponse {
     }
 
     public void setDataVo(String traceId, BigDecimal balance) {
+        // Convert to microseconds
+        long currentTimeMillis = System.currentTimeMillis();
+        long currentTimeMicros = currentTimeMillis * 1000;
+
         this.data = new DataVo();
         this.data.setTransaction(traceId);
         this.data.setBalance(balance);
-        this.data.setTimestamp(System.nanoTime() / 1000); // in microseconds
+        this.data.setTimestamp(currentTimeMicros);
     }
 
     public void setErrorVo(ErrorCodes errorCodes) {
@@ -34,6 +38,6 @@ public class ResponseVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return !this.getError().getErrorCodes().equals(null);
+        return this.getError() != null && this.getError().getErrorCodes() != null;
     }
 }

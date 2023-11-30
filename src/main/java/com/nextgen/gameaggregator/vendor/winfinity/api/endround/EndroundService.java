@@ -40,6 +40,10 @@ public class EndroundService {
 
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession);
+
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
 
             vo.setDataVo(traceId, balance);
@@ -66,7 +70,7 @@ public class EndroundService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
@@ -79,5 +83,10 @@ public class EndroundService {
     private void doValidation(EndroundDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }

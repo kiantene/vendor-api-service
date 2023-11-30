@@ -38,6 +38,10 @@ public class RefundService {
 
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession);
+            
             BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             vo.setDataVo(traceId, balance);
@@ -75,7 +79,7 @@ public class RefundService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_REFUNDED);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
             httpService.logError(httpRequestLog, betRefundIdempotentViolationException);
@@ -96,5 +100,10 @@ public class RefundService {
     private void doValidation(RefundDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }

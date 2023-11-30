@@ -35,6 +35,9 @@ public class TipsService {
             // Get GameSession by vendor player username
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession);
+
             BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
 
             vo.setDataVo(traceId, betEvent.getLastBalance());
@@ -57,7 +60,7 @@ public class TipsService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
@@ -70,5 +73,10 @@ public class TipsService {
     private void doValidation(TipsDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }
