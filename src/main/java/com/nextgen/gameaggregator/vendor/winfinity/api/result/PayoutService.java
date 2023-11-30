@@ -41,14 +41,16 @@ public class PayoutService {
             // Get GameSession with token
             GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession);
+
             // Determine result type
             ResultType resultType = determineResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
             vo.setDataVo(traceId, balance);
 
-        } catch (JsonProcessingException | TransactionStillProcessingException
-                | InvalidRequestException badRequestException) {
+        } catch (JsonProcessingException | TransactionStillProcessingException | InvalidRequestException badRequestException) {
             httpService.logError(httpRequestLog, badRequestException);
             vo.setErrorVo(ErrorCodes.BAD_REQUEST);
 
@@ -70,7 +72,7 @@ public class PayoutService {
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
-            vo.setErrorVo(ErrorCodes.TRANS_ALREADY_EXISTS);
+            vo.setDataVo(traceId, betResultIdempotentViolationException.getBalance());
 
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
@@ -87,5 +89,10 @@ public class PayoutService {
     private void doValidation(PayoutDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(GameSession gameSession) throws AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
     }
 }

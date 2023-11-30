@@ -23,6 +23,7 @@ public class UnsettledBet extends BetInformation {
         this.setVendorPlayerId(vendorPlayerId);
         this.setId(this.generateId());
         this.setStatus(BetStatus.UNSETTLED.code);
+        this.setCreateTime(System.currentTimeMillis());
     }
 
     public UnsettledBet(SettledBet settledBet) {

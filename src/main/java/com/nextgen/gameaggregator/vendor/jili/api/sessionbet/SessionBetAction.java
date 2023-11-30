@@ -26,7 +26,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping({EndPoints.PATH_JILI, EndPoints.PATH_TADA})
 @Slf4j
 public class SessionBetAction {
     @Autowired
