@@ -229,6 +229,9 @@ public class SportWalletService {
 
         if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
+        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory();
+        kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+
         return betEvent;
     }
 }
