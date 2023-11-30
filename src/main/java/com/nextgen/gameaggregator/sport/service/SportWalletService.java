@@ -8,21 +8,18 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.sport.bet.SportBetAction;
+import com.nextgen.gameaggregator.operator.sport.refund.SportRefundAction;
 import com.nextgen.gameaggregator.operator.sport.settle.SportSettleAction;
 import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
-import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.LoggingService;
-import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -32,7 +29,6 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-@Slf4j
 public class SportWalletService {
 
     @Autowired
@@ -50,13 +46,7 @@ public class SportWalletService {
     @Autowired
     private SportWalletSettleAction sportWalletSettleAction;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private WalletBalanceAction walletBalanceAction;
-    @Autowired
-    private WalletBetAction walletBetAction;
-    @Autowired
-    private WalletBetResultAction walletBetResultAction;
+    private SportRefundAction sportRefundAction;
 
     public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
@@ -202,5 +192,42 @@ public class SportWalletService {
 //            kafkaService.produceSettledBet(sportSettledBet);
             this.settle(sportBetResultData, null);
         }
+    }
+
+    public BetEvent refund(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
+        InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
+            httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
+            httpRequestLog.setVendorId(gameSession.getVendorId());
+            httpRequestLog.setVendorBetId(sportBetResultData.getVendorBetId());
+            httpRequestLog.setRoundId(sportBetResultData.getRoundId());
+            httpRequestLog.setGameToken(gameSession.getToken());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
+        }
+
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.WIN.code);
+        BetEvent betEvent = null;
+
+        try {
+            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
+            sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+            betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
+
+        } catch (Exception e) {
+            sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+            throw new InvalidOperatorResponseException();
+
+        }
+
+        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
+
+        return betEvent;
     }
 }
