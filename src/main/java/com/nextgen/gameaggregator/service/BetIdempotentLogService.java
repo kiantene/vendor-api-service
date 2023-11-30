@@ -38,25 +38,6 @@ public class BetIdempotentLogService {
         String betIdempotentId = betResultData.getVendorBetId() + "_" + betResultData.getRoundId() + "_" + gameSession.getVendorPlayerUsername();
         betIdempotentId = DigestUtils.md5Hex(betIdempotentId).toUpperCase();
 
-        //avoid generating as json format data first, suspect the key of json format data will be different.
-//        Map<String, String> map = new HashMap<>();
-//        map.put("vendorBetId", betResultData.getVendorBetId());
-//        map.put("roundId", betResultData.getRoundId());
-//        map.put("betAmount", (betResultData.getBetAmount() == null) ? "0" : betResultData.getBetAmount().toString());
-//        map.put("winAmount", (betResultData.getWinAmount() == null) ? "0" : betResultData.getWinAmount().toString());
-//        map.put("jackpotAmount", (betResultData.getJackpotAmount() == null) ? "0" : betResultData.getJackpotAmount().toString());
-//        map.put("vendorPlayerUsername", gameSession.getVendorPlayerUsername());
-//
-//        try {
-//            ObjectMapper objectMapper = new ObjectMapper();
-//            String json = objectMapper.writeValueAsString(map);
-//            betIdempotentId = DigestUtils.md5Hex(json).toUpperCase();
-//
-//        } catch (JsonProcessingException e) {
-//            log.error("generateBetIdempotentId ERROR : " + e.getMessage());
-//
-//        }
-
         return betIdempotentId;
 
     }
@@ -82,7 +63,7 @@ public class BetIdempotentLogService {
 
     }
 
-    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager")
+    @Cacheable(value = "RawBetIdempotentLog", key = "{#betResultData.vendorBetId, #betResultData.roundId, #betResultData.betAmount, #betResultData.winAmount, #betResultData.jackpotAmount, #gameSession.vendorPlayerUsername}", cacheManager = "cacheManager", unless = "#result == null")
     public RawBetIdempotentLog checkExists(BetResultData betResultData, GameSession gameSession) {
         String betIdempotentId = this.generateBetIdempotentId(betResultData, gameSession);
 
