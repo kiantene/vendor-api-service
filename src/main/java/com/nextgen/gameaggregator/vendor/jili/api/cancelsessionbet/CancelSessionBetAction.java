@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping({EndPoints.PATH_JILI, EndPoints.PATH_TADA})
 @Slf4j
 public class CancelSessionBetAction {
     @Autowired
