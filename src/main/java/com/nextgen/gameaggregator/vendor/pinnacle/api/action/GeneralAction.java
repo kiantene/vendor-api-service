@@ -25,6 +25,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.accept.AcceptService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.pinnacle.api.refund.RefundService;
 import com.nextgen.gameaggregator.vendor.pinnacle.api.settled.SettledService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
@@ -53,6 +54,8 @@ public class GeneralAction {
     private WalletService walletService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private RefundService refundService;
     @Autowired
     private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
 
@@ -112,6 +115,7 @@ public class GeneralAction {
             case "BETTED" -> commonVos.addAll(betService.bet(dto, gameSession, httpRequestLog));
             case "ACCEPTED" -> commonVos.addAll(acceptService.accept(dto, gameSession, httpRequestLog));
             case "SETTLED" -> commonVos.addAll(settledService.settled(dto, gameSession, httpRequestLog));
+            case "REJECTED" -> commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
             default -> {
                 CommonVo commonVo = new CommonVo();
                 commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
