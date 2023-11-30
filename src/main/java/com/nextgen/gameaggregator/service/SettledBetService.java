@@ -120,13 +120,12 @@ public class SettledBetService {
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
+                Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
                 // throw idempotent exception if status is processing or success
-                if (operatorStatus.equals(operatorStatusProcessing)) {
-                    //log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                     throw new TransactionStillProcessingException();
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    //log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new BetResultIdempotentViolationException(settledBet);
 
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
