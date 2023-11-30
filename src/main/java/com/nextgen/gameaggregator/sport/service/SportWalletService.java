@@ -195,7 +195,7 @@ public class SportWalletService {
     }
 
     public BetEvent refund(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
-        InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+        InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
@@ -209,7 +209,8 @@ public class SportWalletService {
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
         }
 
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.WIN.code);
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), 
+                                                                sportBetResultData.getExternalTransactionId());
         BetEvent betEvent = null;
 
         try {
