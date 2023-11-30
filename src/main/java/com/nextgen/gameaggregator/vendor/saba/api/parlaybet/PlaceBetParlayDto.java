@@ -25,5 +25,5 @@ public class PlaceBetParlayDto extends GeneralDto {
     private BigDecimal debitAmount;
     private String vendorTransId;
     private List<PlaceBetParlayTxnsDto> txns;
-    private List<String> ticketDetail;
+//    private List<String> ticketDetail;
 }

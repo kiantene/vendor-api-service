@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -36,6 +38,7 @@ public class PlaceBetParlayAction {
 
         // Construct Vo
         PlaceBetParlayVo vo = new PlaceBetParlayVo();
+        List<PlaceBetParlayTxnsVo> txnsVoList = new ArrayList<>();
 
         try {
             // Convert original request body into dto
@@ -49,9 +52,10 @@ public class PlaceBetParlayAction {
                 txnsVo.setRefId(txnsDto.getRefId());
                 txnsVo.setLicenseeTxId(betId);
 
-                vo.getTxns().add(txnsVo);
+                txnsVoList.add(txnsVo);
             }
 
+            vo.setTxns(txnsVoList);
             vo.setStatus("0");
 
         } catch (Exception e) {
