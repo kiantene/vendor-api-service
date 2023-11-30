@@ -6,6 +6,7 @@ public class EndPoints {
 
     // Call To Vendor
     public static final String GAME_URL = "/GetSabaUrl";
+    public static final String CREATE_MEMBER = "/CreateMember";
 
     // Single Bet and Cash Out
     public static final String GET_BALANCE = "/getbalance";
