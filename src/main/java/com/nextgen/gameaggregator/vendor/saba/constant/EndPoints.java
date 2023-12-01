@@ -16,4 +16,8 @@ public class EndPoints {
     public static final String SETTLE = "/settle";
     public static final String RESETTLE = "/resettle";
     public static final String UNSETTLE = "/unsettle";
+
+    // Parlay Bet
+    public static final String PLACE_BET_PARLAY = "/placebetparlay";
+    public static final String CONFIRM_BET_PARLAY = "/confirmbetparlay";
 }
