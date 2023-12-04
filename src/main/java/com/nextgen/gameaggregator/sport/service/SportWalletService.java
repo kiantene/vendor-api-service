@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.sport.service;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.SportsUnsettleBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -229,6 +230,7 @@ public class SportWalletService {
             WalletBalanceVo balanceVo = sportRefundAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
+            sportUnsettledBetCouchbase.setResultType(2);
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 
@@ -252,19 +254,20 @@ public class SportWalletService {
 
         BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorId(sportUnsettleData.getExternalTransactionId(), sportUnsettleData.getVendorId());
         if (betHistory == null) throw new BetNotFoundException();
-
+        
+        SportsUnsettleBet sportsUnsettleBet = new SportsUnsettleBet(betHistory);
         BetEvent betEvent = null;
 
         try {
-            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettleData, httpRequestLog);
+            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportsUnsettleBet, httpRequestLog);
     
-            sportUnsettleData.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
-            sportUnsettleData.setBalance(balanceVo.getData().getBalance());
+            sportsUnsettleBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            sportsUnsettleBet.setBalance(balanceVo.getData().getBalance());
     
             // Generate new bet history to offset the old records
             betHistory = this.offsetOldBetHistory(betHistory);
     
-            betEvent = new BetEvent(sportUnsettleData, balanceVo.getData().getBalance());
+            betEvent = new BetEvent(sportsUnsettleBet, balanceVo.getData().getBalance());
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     
         } catch (Exception e) {
