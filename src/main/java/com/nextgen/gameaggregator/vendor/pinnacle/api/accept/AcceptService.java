@@ -27,22 +27,20 @@ public class AcceptService {
         return dto.getActions().stream()
                 .filter(action -> "ACCEPTED".equals(action.getName()))
                 .map(action -> {
-
-                    if (action.getTransaction() != null) {
-                        try {
-                            sportWalletService.confirmBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
-                        } catch (Exception e) {
-                            log.error("Exception: " + e.getMessage());
-                        }
-                    }
-
                     CommonVo commonVo = new CommonVo();
                     commonVo.setId(action.getId());
-                    if (action.getTransaction() != null) {
-                        commonVo.setTransactionId(action.getTransaction().getTransactionId());
+
+                    try {
+                        if (action.getTransaction() != null) {
+                            sportWalletService.confirmBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
+                        }
+                        commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+
+                    } catch (Exception e) {
+                        log.error("Exception while accepting bet: {}", e.getMessage());
+                        commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
                     }
-                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
-                    commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+
                     return commonVo;
                 })
                 .collect(Collectors.toList());

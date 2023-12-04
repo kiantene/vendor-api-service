@@ -111,16 +111,22 @@ public class GeneralAction {
     private List<CommonVo> actionsSwitching(String actionName, ActionsDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
         List<CommonVo> commonVos = new ArrayList<>();
     
-        switch (actionName) {
-            case "BETTED" -> commonVos.addAll(betService.bet(dto, gameSession, httpRequestLog));
-            case "ACCEPTED" -> commonVos.addAll(acceptService.accept(dto, gameSession, httpRequestLog));
-            case "SETTLED" -> commonVos.addAll(settledService.settled(dto, gameSession, httpRequestLog));
-            case "REJECTED" -> commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
-            default -> {
-                CommonVo commonVo = new CommonVo();
-                commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-                commonVos.add(commonVo);
+        try {
+            switch (actionName) {
+                case "BETTED" -> commonVos.addAll(betService.bet(dto, gameSession, httpRequestLog));
+                case "ACCEPTED" -> commonVos.addAll(acceptService.accept(dto, gameSession, httpRequestLog));
+                case "SETTLED" -> commonVos.addAll(settledService.settled(dto, gameSession, httpRequestLog));
+                case "REJECTED" -> commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
+                default -> {
+                    CommonVo commonVo = new CommonVo();
+                    commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+                    commonVos.add(commonVo);
+                }
             }
+        } catch (Exception e) {
+            CommonVo commonVo = new CommonVo();
+            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+            commonVos.add(commonVo);
         }
     
         return commonVos;
@@ -132,14 +138,20 @@ public class GeneralAction {
         String traceId = httpRequestLog.getId();
 
         try {
+            // Check if any CommonVo has error
+            boolean hasUnknownError = commonVos.stream().anyMatch(commonVo -> commonVo.getResponseCode() != 0);
+    
             // Get latest balance after all actions are done
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             result.setUserCode(action.getPlayerInfo().getUserCode());
             result.setAvailableBalance(balance);
             result.setActions(commonVos);
+            
+            // Set errorCode based on the condition
+            responseVo.setErrorCode(hasUnknownError ? ResponseCode.UNKNOWN_ERROR.code : ResponseCode.SUCCESS.code);
+            
             responseVo.setResult(result);
-            responseVo.setErrorCode(ResponseCode.SUCCESS.code);
-
+    
         } catch (Exception e) {
             log.error("Exception: " + e.getMessage());
         }

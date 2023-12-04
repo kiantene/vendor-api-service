@@ -26,21 +26,24 @@ public class SettledService {
         return dto.getActions().stream()
                 .filter(action -> "SETTLED".equals(action.getName()))
                 .map(action -> {
+                    CommonVo commonVo = new CommonVo();
+                    commonVo.setId(action.getId());
 
                     try {
                         action.getWagerInfo().setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
                         sportWalletService.settle(action.getWagerInfo(), httpRequestLog);
+                        commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+
                     } catch (Exception e) {
-                        log.error("Exception: " + e.getMessage());
+                        log.error("Exception while settling bet: {}", e.getMessage());
+                        commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
                     }
 
-                    CommonVo commonVo = new CommonVo();
-                    commonVo.setId(action.getId());
                     if (action.getTransaction() != null) {
                         commonVo.setTransactionId(action.getTransaction().getTransactionId());
                     }
+                    
                     commonVo.setWagerId(action.getWagerInfo().getWagerId());
-                    commonVo.setResponseCode(ResponseCode.SUCCESS.code);
                     return commonVo;
                 })
                 .collect(Collectors.toList());

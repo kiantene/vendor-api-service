@@ -27,20 +27,21 @@ public class BetService {
         return dto.getActions().stream()
                 .filter(action -> "BETTED".equals(action.getName()))
                 .map(action -> {
-
-                    try {
-                        sportWalletService.placeBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
-                    } catch (Exception e) {
-                        log.error("Exception: " + e.getMessage());
-                    }
-
                     CommonVo commonVo = new CommonVo();
                     commonVo.setId(action.getId());
                     commonVo.setTransactionId(action.getTransaction().getTransactionId());
                     commonVo.setWagerId(action.getWagerInfo().getWagerId());
-                    commonVo.setResponseCode(ResponseCode.SUCCESS.code);
-                    return commonVo;
 
+                    try {
+                        sportWalletService.placeBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
+                        commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+
+                    } catch (Exception e) {
+                        log.error("Exception while placing bet: {}", e.getMessage());
+                        commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+                    }
+
+                    return commonVo;
                 })
                 .collect(Collectors.toList());
     }

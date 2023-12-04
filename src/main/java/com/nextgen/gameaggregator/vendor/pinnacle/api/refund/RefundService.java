@@ -27,18 +27,20 @@ public class RefundService {
         return dto.getActions().stream()
                 .filter(action -> "REJECTED".equals(action.getName()))
                 .map(action -> {
+                    CommonVo commonVo = new CommonVo();
+                    commonVo.setId(action.getId());
 
                     try {
                         sportWalletService.refund(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
+                        commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+
                     } catch (Exception e) {
-                        log.error("Exception: " + e.getMessage());
+                        log.error("Exception while refunding bet: {}", e.getMessage());
+                        commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
                     }
 
-                    CommonVo commonVo = new CommonVo();
-                    commonVo.setId(action.getId());
                     commonVo.setTransactionId(action.getTransaction().getTransactionId());
                     commonVo.setWagerId(action.getWagerInfo().getWagerId());
-                    commonVo.setResponseCode(ResponseCode.SUCCESS.code);
                     return commonVo;
 
                 })
