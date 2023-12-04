@@ -78,6 +78,10 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+
+            SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 
         } catch (Exception e) {
