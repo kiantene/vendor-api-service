@@ -246,6 +246,9 @@ public class SportWalletService {
 
         if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
+        SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+        kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
 
