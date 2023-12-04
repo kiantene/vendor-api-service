@@ -60,4 +60,19 @@ public abstract class BetInformation {
 
         this.vendorSettleTime = Optional.ofNullable(betResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
     }
+
+    public BetInformation(BetHistory betHistory) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(betHistory, this);
+
+        if (this.isFreespin == null) this.isFreespin = 0;
+        if (this.betAmount == null) this.betAmount = BigDecimal.ZERO;
+        if (this.winAmount == null) this.winAmount = BigDecimal.ZERO;
+        if (this.jackpotAmount == null) this.jackpotAmount = BigDecimal.ZERO;
+        if (this.winLoss == null) this.winLoss = BigDecimal.ZERO;
+        if (this.effectiveTurnover == null) this.effectiveTurnover = BigDecimal.ZERO;
+
+        this.vendorSettleTime = Optional.ofNullable(betHistory.getVendorSettleTime()).orElse(System.currentTimeMillis());
+    }
 }
