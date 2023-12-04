@@ -59,14 +59,14 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         return this.getGameSession().getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
     }
 
-    public BetHistory toBetHistory() {
+    public BetHistory toBetHistory(Integer betStatus) {
         BetHistory betHistory = new BetHistory();
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(this, betHistory);
 
         betHistory.setId(this.getBetId());
-        betHistory.setStatus(BetStatus.SETTLED.code);
+        betHistory.setStatus(betStatus);
         betHistory.setResettleNum(0);
 
         return betHistory;

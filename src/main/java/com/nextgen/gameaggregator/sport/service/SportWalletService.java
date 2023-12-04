@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.SportsUnsettleBet;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -194,7 +195,8 @@ public class SportWalletService {
 
         }
 
-        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory();
+        Integer betStatus = BetStatus.SETTLED.code;
+        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
@@ -225,12 +227,13 @@ public class SportWalletService {
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), 
                                                                 sportBetResultData.getExternalTransactionId());
         BetEvent betEvent = null;
+        Integer betStatus = BetStatus.REFUNDED.code;
 
         try {
             WalletBalanceVo balanceVo = sportRefundAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
-            sportUnsettledBetCouchbase.setResultType(2);
+            sportUnsettledBetCouchbase.setStatus(betStatus);
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 
@@ -243,7 +246,7 @@ public class SportWalletService {
 
         if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
-        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory();
+        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
 
         return betEvent;
