@@ -271,7 +271,7 @@ public class SportWalletService {
             SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(rawData, betHistory, traceId, ResultType.BET.code, couchbaseId);
 
             SportsUnsettleBet sportsUnsettleBet = new SportsUnsettleBet(betHistory);
-            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportsUnsettleBet, httpRequestLog);
+            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportsUnsettleBet, httpRequestLog, betHistory);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
@@ -304,9 +304,10 @@ public class SportWalletService {
 
         betHistory.setBetAmount(newBetAmount);
         betHistory.setWinAmount(newWinAmount);
-        betHistory.setWinAmount(newWinLoss);
+        betHistory.setWinLoss(newWinLoss);
         betHistory.setEffectiveTurnover(newEffectiveTurnover);
         betHistory.setResettleNum(newResettleNum + 1);
+        betHistory.setResultType(BetResultType.BET.code);
 
         return betHistory;
     }
