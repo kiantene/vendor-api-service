@@ -141,12 +141,12 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleDat
 
     @Override
     public Long getResultTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override

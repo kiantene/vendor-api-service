@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,10 @@ public class UnsettleService {
 
                     try {
                         if (action.getTransaction() != null) {
-                            sportWalletService.unsettle(traceId, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
+                            ActionsWagerInfoDto actionsWagerInfoDto = action.getWagerInfo();
+                            actionsWagerInfoDto.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+                            actionsWagerInfoDto.setVendorId(gameSession.getVendorId());
+                            sportWalletService.unsettle(traceId, actionsWagerInfoDto, httpRequestLog.getRequestBody(), httpRequestLog);
                         }
                         commonVo.setResponseCode(ResponseCode.SUCCESS.code);
 
