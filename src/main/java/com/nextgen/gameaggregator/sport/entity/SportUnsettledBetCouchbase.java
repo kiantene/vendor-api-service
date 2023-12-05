@@ -59,7 +59,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         return this.getGameSession().getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
     }
 
-    public BetHistory toBetHistory(Integer betStatus) {
+    public BetHistory toBetHistory(Integer betStatus, Integer resultType) {
         BetHistory betHistory = new BetHistory();
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
@@ -67,8 +67,32 @@ public class SportUnsettledBetCouchbase extends BetInformation {
 
         betHistory.setId(this.getBetId());
         betHistory.setStatus(betStatus);
+        betHistory.setResultType(resultType);
         betHistory.setResettleNum(0);
 
         return betHistory;
+    }
+
+    public SportUnsettledBetCouchbase(String rawData, BetHistory betHistory, String traceId, Integer resultType, String couchbaseId) {
+        super(betHistory);
+
+        this.setStatus(BetStatus.UNSETTLED.code);
+        this.setInternalTransactionId(traceId);
+        this.setBetId(traceId);
+        this.setVendorGameId(betHistory.getVendorGameId());
+        this.setVendorPlayerId(betHistory.getVendorPlayerId());
+        this.setVendorId(betHistory.getVendorId());
+        this.setAgentPlayerId(betHistory.getAgentPlayerId());
+        this.setAgentId(betHistory.getAgentId());
+        this.setVendorLineId(betHistory.getVendorLineId());
+        this.setGameCategoryId(betHistory.getGameCategoryId());
+        this.setCurrencyId(betHistory.getCurrencyId());
+        this.setGameSessionToken(betHistory.getGameSessionToken());
+        this.setResultType(resultType);
+        this.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+        this.setRawData(rawData);
+        this.setIsFreespin(0);
+        this.setBalance(BigDecimal.ZERO);
+        this.setId(couchbaseId);
     }
 }

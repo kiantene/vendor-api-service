@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.SportsUnsettleBet;
+import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -196,7 +197,10 @@ public class SportWalletService {
         }
 
         Integer betStatus = BetStatus.SETTLED.code;
-        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus);
+        BigDecimal winAmount = sportBetResultData.getWinAmount();
+        BigDecimal betAmount = sportBetResultData.getBetAmount();
+        int resultType = winAmount.compareTo(betAmount) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
+        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     }
 
@@ -247,10 +251,9 @@ public class SportWalletService {
         if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-        sportUnsettledBetMariaDB.setStatus(betStatus);
         kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
-        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus);
+        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, BetResultType.BET.code);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
 
         return betEvent;
@@ -258,23 +261,31 @@ public class SportWalletService {
 
     public BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
         InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
-
+        
+        BetEvent betEvent = null;
         BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorId(sportUnsettleData.getExternalTransactionId(), sportUnsettleData.getVendorId());
         if (betHistory == null) throw new BetNotFoundException();
-        
-        SportsUnsettleBet sportsUnsettleBet = new SportsUnsettleBet(betHistory);
-        BetEvent betEvent = null;
 
         try {
+            String couchbaseId = sportUnsettleData.getVendorPlayerUsername() + '_' + sportUnsettleData.getExternalTransactionId();
+            SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(rawData, betHistory, traceId, ResultType.BET.code, couchbaseId);
+
+            SportsUnsettleBet sportsUnsettleBet = new SportsUnsettleBet(betHistory);
             WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportsUnsettleBet, httpRequestLog);
-    
+            sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+
+            // Insert new unsettled bet into maria db
+            SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+            
             sportsUnsettleBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportsUnsettleBet.setBalance(balanceVo.getData().getBalance());
-    
+            betEvent = new BetEvent(sportsUnsettleBet, balanceVo.getData().getBalance());
+
             // Generate new bet history to offset the old records
             betHistory = this.offsetOldBetHistory(betHistory);
-    
-            betEvent = new BetEvent(sportsUnsettleBet, balanceVo.getData().getBalance());
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
     
         } catch (Exception e) {
