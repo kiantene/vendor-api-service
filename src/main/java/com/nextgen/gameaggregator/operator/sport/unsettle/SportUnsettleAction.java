@@ -33,7 +33,6 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.CurrencyConversionService;
@@ -59,15 +58,12 @@ public class SportUnsettleAction {
     AgentPlayerRepository agentPlayerRepository;
     @Autowired
     private CurrencyConversionService currencyConversionService;
-    @Autowired
-    private BetHistoryRepository betHistoryRepository;
 
-    public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
+    public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog, BetHistory betHistory) throws VendorCurrencyNotSupportException, 
         InvalidAgentApiCredentialException, InvalidOperatorResponseException {
             
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
-        BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorId(betInformation.getExternalTransactionId(), betInformation.getVendorId());
         Integer agentId = betHistory.getAgentId();
 
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betHistory.getVendorId(), betHistory.getCurrencyId());
@@ -166,8 +162,8 @@ public class SportUnsettleAction {
     private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String vendorCurrencyCode, BetInformation betInformation) {
         SportUnsettleDto sportUnsettleDto = new SportUnsettleDto();
         sportUnsettleDto.setTraceId(traceId);
-        sportUnsettleDto.setBetId(betInformation.getBetId());
-        sportUnsettleDto.setTransactionId(betInformation.getInternalTransactionId());
+        sportUnsettleDto.setBetId(betInformation.getId());
+        sportUnsettleDto.setTransactionId(betInformation.getId());
         sportUnsettleDto.setUsername(agentPlayerUsername);
         sportUnsettleDto.setCurrency(vendorCurrencyCode);
         sportUnsettleDto.setExternalTransactionId(betInformation.getExternalTransactionId());
