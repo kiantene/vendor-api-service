@@ -66,6 +66,9 @@ public class PlaceBetAction {
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
             httpService.logError(httpRequestLog, e);
+        } catch (GameNotSupportedException e) {
+            vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  VendorCurrencyNotSupportException |
