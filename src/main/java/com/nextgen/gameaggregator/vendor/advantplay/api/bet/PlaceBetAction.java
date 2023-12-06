@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.advantplay.api.bet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -62,6 +63,22 @@ public class PlaceBetAction {
             vo.setSeq(placeBetDto.getSeq());
             vo.setBalance(betEvent.getLastBalance());
 
+        } catch (AuthenticationException e) {
+            vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 VendorCurrencyNotSupportException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 CouchbaseDataIntegrityException e) {
+
+            vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
