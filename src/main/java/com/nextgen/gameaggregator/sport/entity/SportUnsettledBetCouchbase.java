@@ -78,7 +78,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
 
         this.setStatus(BetStatus.UNSETTLED.code);
         this.setInternalTransactionId(traceId);
-        this.setBetId(traceId);
+        this.setBetId(betHistory.getId());
         this.setVendorGameId(betHistory.getVendorGameId());
         this.setVendorPlayerId(betHistory.getVendorPlayerId());
         this.setVendorId(betHistory.getVendorId());
