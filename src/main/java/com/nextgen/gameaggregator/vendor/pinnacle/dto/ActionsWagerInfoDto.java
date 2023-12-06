@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -85,6 +86,9 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleDat
     @JsonProperty("PlayerIPAddress")
     private String playerIPAddress;
 
+    @JsonProperty("Legs")
+    private List<ActionsWagerInfoLegsDto> legs;
+
     @JsonProperty("WagerMasterId")
     private Long wagerMasterId;
 
@@ -92,7 +96,7 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleDat
     private Integer wagerNum;
 
     @JsonProperty("RoundRobinOptions")
-    private String roundRobinOptions;
+    private List<String> roundRobinOptions;
 
     @Override
     public String getExternalTransactionId() {
