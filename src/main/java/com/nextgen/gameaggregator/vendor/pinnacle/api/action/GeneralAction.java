@@ -119,7 +119,7 @@ public class GeneralAction {
                 case "BETTED" -> commonVos.addAll(betService.bet(dto, gameSession, httpRequestLog));
                 case "ACCEPTED" -> commonVos.addAll(acceptService.accept(dto, gameSession, httpRequestLog));
                 case "SETTLED" -> commonVos.addAll(settledService.settled(dto, gameSession, httpRequestLog));
-                case "REJECTED" -> commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
+                case "REJECTED", "ROLLBACKED", "CANCELLED" -> commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
                 case "UNSETTLED" -> commonVos.addAll(unsettleService.unsettle(dto, gameSession, httpRequestLog));
                 default -> {
                     CommonVo commonVo = new CommonVo();
