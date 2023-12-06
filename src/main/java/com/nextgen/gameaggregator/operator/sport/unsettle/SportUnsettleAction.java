@@ -55,7 +55,7 @@ public class SportUnsettleAction {
     @Autowired
     private VendorService vendorService;
     @Autowired
-    AgentPlayerRepository agentPlayerRepository;
+    private AgentPlayerRepository agentPlayerRepository;
     @Autowired
     private CurrencyConversionService currencyConversionService;
 
