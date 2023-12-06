@@ -68,7 +68,6 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         betHistory.setId(this.getBetId());
         betHistory.setStatus(betStatus);
         betHistory.setResultType(resultType);
-        betHistory.setResettleNum(0);
 
         return betHistory;
     }

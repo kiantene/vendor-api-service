@@ -184,7 +184,7 @@ public class SportWalletService {
         BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
         sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
         sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
-        sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() >= 1) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
+        sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() >= 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
 
         try {
             sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
@@ -275,6 +275,8 @@ public class SportWalletService {
             WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportsUnsettleBet, httpRequestLog, betHistory);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
+            sportUnsettledBetCouchbase.setNewBetAmount(sportUnsettledBetCouchbase.getBetAmount());
+            sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() >= 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
             // Insert new unsettled bet into maria db
