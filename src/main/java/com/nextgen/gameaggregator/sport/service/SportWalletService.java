@@ -186,7 +186,7 @@ public class SportWalletService {
         sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
 
         try {
-            sportSettleAction.call(traceId, sportUnsettledBetCouchbase.getGameSession(), sportUnsettledBetCouchbase, httpRequestLog);
+            sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
 
         } catch (Exception e) {
