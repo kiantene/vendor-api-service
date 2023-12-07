@@ -25,7 +25,10 @@ public class RefundService {
         String traceId = httpRequestLog.getId();
 
         return dto.getActions().stream()
-                .filter(action -> "REJECTED".equals(action.getName()))
+                .filter(action -> {
+                    String actionName = action.getName();
+                    return "REJECTED".equals(actionName) || "ROLLBACKED".equals(actionName) || "CANCELLED".equals(actionName);
+                })
                 .map(action -> {
                     CommonVo commonVo = new CommonVo();
                     commonVo.setId(action.getId());
