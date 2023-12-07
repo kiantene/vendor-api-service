@@ -25,7 +25,7 @@ public class PlaceBetDto extends BetSettleRefundDto implements BetResultData {
     private BigDecimal stake;
     @NotBlank
     @Size(min = 1, max = 50)
-    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}[+-]\\d{2}:\\d{2}")
+//    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}[+-]\\d{2}:\\d{2}")
     private String betTime;
     private String ip;
 
