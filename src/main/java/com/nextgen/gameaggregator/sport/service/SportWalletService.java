@@ -214,22 +214,10 @@ public class SportWalletService {
         }
     }
 
-    public BetEvent refund(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
+    public BetEvent refund(String traceId, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
         InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
-        if (httpRequestLog != null) {
-            httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
-            httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
-            httpRequestLog.setVendorId(gameSession.getVendorId());
-            httpRequestLog.setVendorBetId(sportBetResultData.getVendorBetId());
-            httpRequestLog.setRoundId(sportBetResultData.getRoundId());
-            httpRequestLog.setGameToken(gameSession.getToken());
-            httpRequestLog.setBetStart(System.currentTimeMillis());
-            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
-            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
-        }
-
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), 
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), 
                                                                 sportBetResultData.getExternalTransactionId());
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
