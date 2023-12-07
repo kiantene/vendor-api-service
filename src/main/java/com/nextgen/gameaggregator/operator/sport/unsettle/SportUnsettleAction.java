@@ -73,7 +73,7 @@ public class SportUnsettleAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(betHistory.getAgentPlayerId()).orElse(null);
-        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getVendorCurrencyCode(), betInformation);
+        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
