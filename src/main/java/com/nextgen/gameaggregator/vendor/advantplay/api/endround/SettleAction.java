@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.advantplay.api.endround;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -65,6 +66,37 @@ public class SettleAction {
             vo.setSeq(settleDto.getSeq());
             vo.setBalance(balance);
 
+        } catch (AuthenticationException e) {
+            vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
+            httpService.logError(httpRequestLog, e);
+        } catch (GameNotSupportedException e) {
+            vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 VendorCurrencyNotSupportException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledGameException e) {
+
+            vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledAgentPlayerException e) {
+            vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetNotFoundException e) {
+            vo.setResponseCodes(ResponseCodes.DATA_INVALID);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
+            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            vo.setResponseCodes(ResponseCodes.PLAYER_HAS_INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
+            vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
@@ -94,8 +126,9 @@ public class SettleAction {
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
 
-        // Verify vendor gameCode and currency
+        // Verify vendor gameCode, username and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
 
     }
 }

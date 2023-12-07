@@ -75,12 +75,21 @@ public class PlaceBetAction {
                  DisabledVendorLineException |
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
-                 DisabledAgentPlayerException |
-                 DisabledGameException |
-                 InvalidOperatorResponseException |
-                 CouchbaseDataIntegrityException e) {
+                 DisabledGameException e) {
 
             vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledAgentPlayerException e) {
+            vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
+            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            vo.setResponseCodes(ResponseCodes.PLAYER_HAS_INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
+            vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);

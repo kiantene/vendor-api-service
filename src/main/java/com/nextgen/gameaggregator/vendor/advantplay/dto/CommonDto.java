@@ -28,6 +28,7 @@ public class CommonDto {
     private String brandCode;
     @NotBlank
     @Size(min = 1, max = 20)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String siteCode;
     @NotBlank
     @Size(min = 1, max = 20)

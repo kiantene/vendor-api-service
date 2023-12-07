@@ -1,13 +1,10 @@
 package com.nextgen.gameaggregator.vendor.advantplay.api.refund;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
@@ -28,6 +25,12 @@ import java.math.BigDecimal;
 public class RefundBetAction {
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
@@ -66,6 +69,34 @@ public class RefundBetAction {
             vo.setSeq(refundBetDto.getSeq());
             vo.setBalance(balance);
 
+        } catch (AuthenticationException e) {
+            vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
+            httpService.logError(httpRequestLog, e);
+        } catch (GameNotSupportedException e) {
+            vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 VendorCurrencyNotSupportException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledGameException e) {
+
+            vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
+            httpService.logError(httpRequestLog, e);
+        } catch (DisabledAgentPlayerException e) {
+            vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
+            httpService.logError(httpRequestLog, e);
+        } catch (RecordNotFoundException |
+                 BetNotFoundException e) {
+            vo.setResponseCodes(ResponseCodes.DATA_INVALID);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetRefundIdempotentViolationException | BetResultIdempotentViolationException e) {
+            vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
+        } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
+            vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
@@ -83,10 +114,26 @@ public class RefundBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RefundBetDto dto, GameSession gameSession) throws GameNotSupportedException {
+    private void doVerification(RefundBetDto dto, GameSession gameSession)
+            throws
+            GameNotSupportedException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException,
+            InvalidPlayerException {
 
-        // Verify vendor gameCode and currency
+        // Verify vendor gameCode, username and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
+
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }
