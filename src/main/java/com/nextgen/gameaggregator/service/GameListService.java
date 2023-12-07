@@ -34,7 +34,7 @@ public class GameListService {
 
 
 
-    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Vendor vendor, Currency currency, Language language) {
+    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Vendor vendor, List<Integer> currencyIds, Language language) {
         GameListData gameListData = new GameListData();
 
         List<Integer> gameCategoryIds = new ArrayList<>();
@@ -46,7 +46,7 @@ public class GameListService {
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
         Page<Object> gameList = vendorGameRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
-                (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currency.getId(), language.getId(), imageUrl, pagingSort);
+                (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl, pagingSort);
 
         gameListData.setHeaders(this.getHeaders());
         gameListData.setGames(gameList.getContent());
@@ -65,6 +65,7 @@ public class GameListService {
             put("imageLandscape", 4);
             put("languageCode", 5);
             put("platformCode", 6);
+            put("currencyCode", 7);
         }});
 
         return sortByValue(hm);

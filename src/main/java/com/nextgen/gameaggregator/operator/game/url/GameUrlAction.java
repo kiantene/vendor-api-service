@@ -76,9 +76,12 @@ public class GameUrlAction {
             gameUrlService.checkDuplicateRequest(apiCredential.getAgent().getId(), dto.getTraceId());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkDuplicateRequest", traceId);
 
-            // 5. Check if Agent currency is supported
+            // 5.1 Check if Currency exist
             loggingService.logStart();
-            gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent().getCurrency(), dto.getCurrency());
+            Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
+            // 5.2 Check if Agent Currency supported
+            AgentCurrency agentCurrency =
+                    gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentCurrencySupported", traceId);
 
             // 6. check if platform supported
@@ -99,7 +102,7 @@ public class GameUrlAction {
             // 9 Check if game details is supported (platform, language, currency)
             loggingService.logStart();
             VendorGameCode vendorGameCode = gameUrlService.checkGameDetailSupported(
-                    vendorGame, language, platform, apiCredential.getAgent().getCurrency());
+                    vendorGame, language, platform, agentCurrency.getCurrency());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkGameDetailSupported", traceId);
 
             // Check if is game deactivated (agent, masterAgent, house level)
@@ -110,7 +113,7 @@ public class GameUrlAction {
             // 10. Retrieve vendor line credentials by category
             loggingService.logStart();
             VendorLine vendorLine = vendorLineService.findAgentVendorLine(
-                    apiCredential.getAgent(), vendorGame.getVendor(), apiCredential.getAgent().getCurrency(), vendorGame.getGameCategory());
+                    apiCredential.getAgent(), vendorGame.getVendor(), agentCurrency.getCurrency(), vendorGame.getGameCategory());
             loggingService.logProcessTime("gameUrl ｜ vendorLineService.findAgentVendorLine", traceId);
 
             // 11. get vendor line credential
@@ -123,7 +126,7 @@ public class GameUrlAction {
 
             // 13. check if vendor currency supported
             loggingService.logStart();
-            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendor().getId(), apiCredential.getAgent().getCurrency().getId());
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendor().getId(), agentCurrency.getCurrency().getId());
             loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorCurrency", traceId);
 
             // 14. check if vendor platform supported
@@ -134,12 +137,12 @@ public class GameUrlAction {
             // 15. Check if vendor player account exists
             loggingService.logStart();
             GameSession gameSession = gameUrlService.checkPlayer(apiCredential.getAgent(),
-                    dto.getUsername(), vendorLine, apiCredential.getAgent().getCurrency());
+                    dto.getUsername(), vendorLine, agentCurrency.getCurrency());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkPlayer", traceId);
 
             loggingService.logStart();
             gameSession = gameSessionService.createSession(
-                    gameSession, dto, vendorGame, vendorGameCode, apiCredential.getAgent().getCurrency(),
+                    gameSession, dto, vendorGame, vendorGameCode, agentCurrency.getCurrency(),
                     vendorCurrency, vendorLanguageCode, vendorPlatformCode, dto.getLobbyUrl(), dto.getIpAddress());
             loggingService.logProcessTime("gameUrl ｜ gameSessionService.createSession", traceId);
 
@@ -178,6 +181,9 @@ public class GameUrlAction {
 
         } catch (DuplicateRequestException duplicateRequestException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_DUPLICATE_REQUEST);
+
+        } catch (InvalidCurrencyException invalidCurrencyException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_WRONG_CURRENCY);
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
@@ -230,7 +236,7 @@ public class GameUrlAction {
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
 
-        } finally {
+        }finally {
             responseVo.setMessage(responseVo.getStatus().description);
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
 

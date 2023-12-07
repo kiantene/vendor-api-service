@@ -1,9 +1,11 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.Currency;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.*;
+import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +17,7 @@ import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -26,8 +25,6 @@ public class GameUrlService {
 
     @Autowired
     private AutowireCapableBeanFactory autowireCapableBeanFactory;
-    @Autowired
-    private VendorGameRepository vendorGameRepository;
     @Autowired
     private RawGameSessionRepository rawGameSessionRepository;
     @Autowired
@@ -39,13 +36,13 @@ public class GameUrlService {
     @Autowired
     private PlatformRepository platformRepository;
     @Autowired
-    private LanguageRepository languageRepository;
-    @Autowired
-    private VendorLanguageCodeRepository vendorLanguageCodeRepository;
-    @Autowired
     VendorGameCurrencyRepository vendorGameCurrencyRepository;
     @Autowired
-    private VendorRepository vendorRepository;
+    CurrencyRepository currencyRepository;
+    @Autowired
+    AgentCurrencyRepository agentCurrencyRepository;
+    @Autowired
+    AgentApiCredentialService agentApiCredentialService;
 
     private static final String USERTYPE = "operator-api-service";
 
@@ -138,10 +135,18 @@ public class GameUrlService {
         return vendorPlatformCode;
     }
 
-    public void checkAgentCurrencySupported(Currency currency, String currencyCode) throws CurrencyNotSupportedException {
-        if (!currency.getCode().equalsIgnoreCase(currencyCode)) {
-            throw new CurrencyNotSupportedException();
-        }
+    public Currency checkCurrency( String currencyCode) throws InvalidCurrencyException {
+        Currency currency = currencyRepository.findByCode(currencyCode);
+        Optional.ofNullable(currency).orElseThrow(InvalidCurrencyException::new);
+        return currency;
+    }
+
+    public AgentCurrency checkAgentCurrencySupported(Agent agent, Currency currency) throws CurrencyNotSupportedException {
+
+        AgentCurrency agentCurrency = agentCurrencyRepository.
+                findAgentCurrencyByAgentIdAndCurrencyIdAndStatus(agent.getId(), currency.getId(), Status.ACTIVE.code);
+        Optional.ofNullable(agentCurrency).orElseThrow(CurrencyNotSupportedException::new);
+        return agentCurrency;
     }
 
     public void checkDuplicateRequest(Integer agentId, String traceId) throws DuplicateRequestException {

@@ -59,10 +59,10 @@ public class VendorLineService {
 
 
 
-    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, Currency currency) throws InvalidVendorLineException, DisabledVendorLineException {
+    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, List<Integer> currencyIds ) throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
-                findByAgentIdAndVendorIdAndCurrencyId(agent.getId(), vendor.getId(), currency.getId());
+                findByAgentIdAndVendorIdAndCurrencyIdIn(agent.getId(), vendor.getId(), currencyIds);
 
         //vendor line not found
         if (agentVendorLines.isEmpty()) {
