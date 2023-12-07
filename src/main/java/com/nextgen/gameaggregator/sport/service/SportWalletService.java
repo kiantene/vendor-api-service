@@ -235,7 +235,7 @@ public class SportWalletService {
         Integer betStatus = BetStatus.REFUNDED.code;
 
         try {
-            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
+            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setStatus(betStatus);

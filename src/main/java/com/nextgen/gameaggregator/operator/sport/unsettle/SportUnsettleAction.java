@@ -159,13 +159,13 @@ public class SportUnsettleAction {
         return responseVo;
     }
 
-    private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String vendorCurrencyCode, BetInformation betInformation) {
+    private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation) {
         SportUnsettleDto sportUnsettleDto = new SportUnsettleDto();
         sportUnsettleDto.setTraceId(traceId);
         sportUnsettleDto.setBetId(betInformation.getId());
         sportUnsettleDto.setTransactionId(betInformation.getId());
         sportUnsettleDto.setUsername(agentPlayerUsername);
-        sportUnsettleDto.setCurrency(vendorCurrencyCode);
+        sportUnsettleDto.setCurrency(currencyCode);
         sportUnsettleDto.setExternalTransactionId(betInformation.getExternalTransactionId());
         sportUnsettleDto.setRoundId(betInformation.getRoundId());
         sportUnsettleDto.setTimestamp(betInformation.getVendorBetTime());
