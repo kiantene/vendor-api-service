@@ -29,6 +29,7 @@ public class AcceptService {
                 .map(action -> {
                     CommonVo commonVo = new CommonVo();
                     commonVo.setId(action.getId());
+                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
 
                     try {
                         if (action.getTransaction() != null) {
