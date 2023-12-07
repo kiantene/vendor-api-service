@@ -32,6 +32,7 @@ public class RefundService {
                 .map(action -> {
                     CommonVo commonVo = new CommonVo();
                     commonVo.setId(action.getId());
+                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
 
                     try {
                         sportWalletService.refund(traceId, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
