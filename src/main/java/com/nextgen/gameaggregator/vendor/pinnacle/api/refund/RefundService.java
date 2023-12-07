@@ -34,7 +34,7 @@ public class RefundService {
                     commonVo.setId(action.getId());
 
                     try {
-                        sportWalletService.refund(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
+                        sportWalletService.refund(traceId, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
                         commonVo.setResponseCode(ResponseCode.SUCCESS.code);
 
                     } catch (Exception e) {
