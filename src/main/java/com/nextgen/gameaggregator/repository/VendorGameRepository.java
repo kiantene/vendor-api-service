@@ -32,7 +32,8 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
             "IFNULL( concat(:gameUrl, (IFNULL(languageList.langImageSquare, gamelist.defaultImageSquare))), null) AS imageSquare, " +
             "IFNULL( concat( :gameUrl, (IFNULL(languageList.langImageLandscape, gamelist.defaultImageLanscape))), null) AS imageLanscape, " +
             "gamelist.languageCode, " +
-            "gamelist.platformCode " +
+            "gamelist.platformCode, " +
+            "gamelist.currencyCode " +
             "FROM " +
             "(SELECT " +
             "vg.id AS gameID, " +
@@ -42,7 +43,7 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
             "gc.code AS categoryCode, v.code AS vendorCode, " +
             "GROUP_CONCAT(DISTINCT l.code SEPARATOR ',') AS languageCode, " +
             "GROUP_CONCAT(DISTINCT p.code SEPARATOR ',') AS platformCode, " +
-            "c.code AS currencyCode " +
+            "GROUP_CONCAT(DISTINCT c.code SEPARATOR ',') AS currencyCode " +
             "FROM vendor_game_codes AS vgc " +
             "INNER JOIN vendor_games vg ON vgc.vendor_game_id = vg.id " +
             "INNER JOIN languages l on l.id = vgc.language_id  " +
@@ -54,7 +55,7 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
             "WHERE vgc.status = :status " +
             "AND vgcurrency.status = :status " +
             "AND vgc.vendor_id = :vendorId " +
-            "AND vgcurrency.currency_id = :currencyId " +
+            "AND vgcurrency.currency_id IN (:currencyIds) " +
             "AND vg.game_category_id IN (:categoryIds) " +
             "GROUP BY  vg.id " +
             "ORDER BY vg.code, l.code,  p.code) AS gamelist " +
@@ -78,7 +79,7 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
                             "WHERE vgc.status = :status " +
                             "AND vgcurrency.status = :status " +
                             "AND vgc.vendor_id = :vendorId " +
-                            "AND vgcurrency.currency_id = :currencyId " +
+                            "AND vgcurrency.currency_id IN (:currencyIds) " +
                             "AND vg.game_category_id IN (:categoryIds) " +
                             "GROUP BY  vg.id " +
                             ") AS gamelist " +
@@ -92,7 +93,7 @@ public interface VendorGameRepository extends JpaRepository<VendorGame, Integer>
             @Param("vendorId") Integer vendorId,
             @Param("status") Integer status,
             @Param("categoryIds") List<Integer> categoryIds,
-            @Param("currencyId") Integer currencyId,
+            @Param("currencyIds") List<Integer> currencyIds,
             @Param("languageId") Integer languageId,
             @Param("gameUrl") String gameUrl,
             Pageable pageable);

@@ -20,4 +20,8 @@ public class GameVendorDto {
     @Size(min = 2, max = 2, message = " 2 alphanumeric only")
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = "2 alphanumeric only") // Only alphanumeric allowed
     private String displayLanguage = "en";
+
+    //@NotBlank( message = "min 3 and max 10  characters")
+    @Size(min = 3, max = 10, message = "min 3 and max 10  characters")
+    private String currency;
 }
