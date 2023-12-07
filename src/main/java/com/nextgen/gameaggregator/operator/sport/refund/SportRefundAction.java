@@ -18,7 +18,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.AgentPlayer;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.VendorCurrency;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
@@ -30,6 +30,7 @@ import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.CurrencyConversionService;
@@ -53,22 +54,25 @@ public class SportRefundAction {
     @Autowired
     private VendorService vendorService;
     @Autowired
+    private AgentPlayerRepository agentPlayerRepository;
+    @Autowired
     private CurrencyConversionService currencyConversionService;
 
-    public WalletBalanceVo call(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
         InvalidAgentApiCredentialException, InvalidOperatorResponseException {
             
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
-        Integer agentId = gameSession.getAgentId();
+        Integer agentId = betInformation.getAgentId();
 
-        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
+        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
-
-        SportRefundDto dto = this.newSportRefundDto(traceId, gameSession, betInformation);
+        
+        AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
+        SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -154,17 +158,16 @@ public class SportRefundAction {
         return responseVo;
     }
 
-    private SportRefundDto newSportRefundDto(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation) {
+    private SportRefundDto newSportRefundDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase betInformation) {
         SportRefundDto sportRefundDto = new SportRefundDto();
         sportRefundDto.setTraceId(traceId);
         sportRefundDto.setBetId(betInformation.getBetId());
         sportRefundDto.setTransactionId(betInformation.getInternalTransactionId());
-        sportRefundDto.setUsername(gameSession.getAgentPlayerUsername());
-        sportRefundDto.setCurrency(gameSession.getCurrencyCode());
+        sportRefundDto.setUsername(agentPlayerUsername);
+        sportRefundDto.setCurrency(currencyCode);
         sportRefundDto.setExternalTransactionId(betInformation.getVendorBetId());
         sportRefundDto.setRoundId(betInformation.getRoundId());
         sportRefundDto.setTimestamp(betInformation.getVendorBetTime());
-        sportRefundDto.setGameCode(gameSession.getVendorGameCode());
 
         return sportRefundDto;
     }

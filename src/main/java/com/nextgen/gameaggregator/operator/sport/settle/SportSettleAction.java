@@ -59,7 +59,7 @@ public class SportSettleAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(sportUnsettledBetCouchbase.getAgentPlayerId()).orElse(null);
-        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getVendorCurrencyCode(), betInformation);
+        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
         dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -145,18 +145,17 @@ public class SportSettleAction {
         return responseVo;
     }
 
-    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String vendorCurrencyCode, BetInformation betInformation) {
+    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation) {
         BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal winAmount = new BigDecimal(betInformation.getWinAmount().stripTrailingZeros().toPlainString());
         BigDecimal winLoss = new BigDecimal(betInformation.getWinLoss().stripTrailingZeros().toPlainString());
-
 
         SportSettleDto sportSettleDto = new SportSettleDto();
         sportSettleDto.setTraceId(traceId);
         sportSettleDto.setBetId(betInformation.getBetId());
         sportSettleDto.setTransactionId(betInformation.getInternalTransactionId());
         sportSettleDto.setUsername(agentPlayerUsername);
-        sportSettleDto.setCurrency(vendorCurrencyCode);
+        sportSettleDto.setCurrency(currencyCode);
         sportSettleDto.setExternalTransactionId(betInformation.getVendorBetId());
         sportSettleDto.setBetAmount(betAmount);
         sportSettleDto.setRoundId(betInformation.getRoundId());

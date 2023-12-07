@@ -73,7 +73,7 @@ public class SportUnsettleAction {
         String apiUrl = agentApiCredential.getCallbackUrl();
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(betHistory.getAgentPlayerId()).orElse(null);
-        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getVendorCurrencyCode(), betInformation);
+        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -159,13 +159,13 @@ public class SportUnsettleAction {
         return responseVo;
     }
 
-    private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String vendorCurrencyCode, BetInformation betInformation) {
+    private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation) {
         SportUnsettleDto sportUnsettleDto = new SportUnsettleDto();
         sportUnsettleDto.setTraceId(traceId);
         sportUnsettleDto.setBetId(betInformation.getId());
         sportUnsettleDto.setTransactionId(betInformation.getId());
         sportUnsettleDto.setUsername(agentPlayerUsername);
-        sportUnsettleDto.setCurrency(vendorCurrencyCode);
+        sportUnsettleDto.setCurrency(currencyCode);
         sportUnsettleDto.setExternalTransactionId(betInformation.getExternalTransactionId());
         sportUnsettleDto.setRoundId(betInformation.getRoundId());
         sportUnsettleDto.setTimestamp(betInformation.getVendorBetTime());
