@@ -65,7 +65,7 @@ public class VendorService extends BaseVendorService {
         Long timestamp = null;
         if (rawDateTime != null) {
             LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ISO_DATE_TIME);
-            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC"));
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC+8"));
             timestamp = zonedDateTime.toInstant().toEpochMilli();
         }
         return timestamp;
