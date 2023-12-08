@@ -50,7 +50,6 @@ public class SettleAction {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
-            System.out.println(settleDto.getSettleTime());
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(settleDto);

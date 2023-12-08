@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Optional;
@@ -54,6 +57,19 @@ public class VendorService extends BaseVendorService {
 
         // Format the current time
         return currentTime.format(formatter);
+    }
+
+    public static Long dateTimeConvert(String rawDateTime) {
+
+        //convert date time string to timestamp
+        Long timestamp = null;
+        if (rawDateTime != null) {
+            LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ISO_DATE_TIME);
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC"));
+            timestamp = zonedDateTime.toInstant().toEpochMilli();
+        }
+        return timestamp;
+
     }
 
     public String md5(String input) {

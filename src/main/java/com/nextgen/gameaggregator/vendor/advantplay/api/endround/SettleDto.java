@@ -78,12 +78,12 @@ public class SettleDto extends BetSettleRefundDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return VendorService.convertStringToUnixTimestamp(this.getSettleTime());
+        return VendorService.dateTimeConvert(this.getSettleTime());
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return VendorService.convertStringToUnixTimestamp(this.getSettleTime());
+        return VendorService.dateTimeConvert(this.getSettleTime());
     }
 
     @Override

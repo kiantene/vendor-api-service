@@ -71,7 +71,7 @@ public class PlaceBetDto extends BetSettleRefundDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return VendorService.convertStringToUnixTimestamp(this.getBetTime());
+        return VendorService.dateTimeConvert(this.getBetTime());
     }
 
     @Override
