@@ -5,5 +5,6 @@ public interface IGameVendor {
     String getName();
     String getCode();
     String getCategoryCode();
+    String getCurrencyCode();
 
 }

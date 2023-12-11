@@ -1,22 +1,29 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.AgentCurrency;
 import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidUrlException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.apiverification.agentinfo.AgentInfoVo;
 import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
+import com.nextgen.gameaggregator.repository.AgentCurrencyRepository;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class AgentApiCredentialService {
     @Autowired
     private AgentApiCredentialRepository agentApiCredentialRepository;
+    @Autowired
+    private AgentCurrencyRepository agentCurrencyRepository;
 
     @Cacheable(value = "AgentApiCredentials", key = "#agentId", cacheManager = "cacheManager")
     public AgentApiCredential getAgentApiCredential(Integer agentId) throws InvalidAgentApiCredentialException {
@@ -52,5 +59,16 @@ public class AgentApiCredentialService {
         agentInfoVo.setApiKey(credential.getApiKey());
         agentInfoVo.setCurrency(credential.getAgent().getCurrency().getCode());
         return agentInfoVo;
+    }
+
+    public List<AgentCurrency> getAgentSupportedCurrency(Integer agentId)  throws CurrencyNotSupportedException {
+        List<AgentCurrency> agentCurrencies = agentCurrencyRepository.findAgentCurrencyByAgentIdAndStatus(agentId, Status.ACTIVE.code );
+
+        if (agentCurrencies.isEmpty()) {
+            throw new CurrencyNotSupportedException();
+        }
+
+        return agentCurrencies;
+
     }
 }

@@ -15,18 +15,38 @@ public interface VendorRepository extends JpaRepository<Vendor, Integer> {
 
     Vendor findVendorById(Integer id);
 
-    @Query(value=" SELECT " +
-            "v.code , GROUP_CONCAT(DISTINCT gc.code SEPARATOR ',') AS categoryCode, " +
+    @Query(value = " SELECT " +
+            "v.code ," +
+            " GROUP_CONCAT(DISTINCT gc.code SEPARATOR ',') AS categoryCode, " +
+            " GROUP_CONCAT(DISTINCT c.code SEPARATOR ',') AS currencyCode, " +
             "IFNULL(vlc.name , v.name) AS name " +
             "FROM agent_vendor_lines avl " +
             "INNER JOIN game_categories gc ON avl.game_category_id = gc.id " +
             "INNER JOIN vendors v ON avl.vendor_id = v.id " +
+            "INNER JOIN currencies c ON avl.currency_id = c.id " +
             "LEFT JOIN vendor_language_codes vlc ON vlc.vendor_id = avl.vendor_id " +
-            "AND vlc.language_id = :languageId "+
+            "AND vlc.language_id = :languageId " +
+            "WHERE avl.status =:status AND avl.agent_id =:agentId " +
+            "GROUP BY avl.vendor_id ", nativeQuery = true)
+    List<IGameVendor> findByAgentSupportedVendorAndStatus(
+            @Param("agentId") int agentId,
+            @Param("languageId") Integer languageId,
+            @Param("status") int status);
+
+    @Query(value = " SELECT " +
+            "v.code , GROUP_CONCAT(DISTINCT gc.code SEPARATOR ',') AS categoryCode, " +
+            " GROUP_CONCAT(DISTINCT c.code SEPARATOR ',') AS currencyCode, " +
+            "IFNULL(vlc.name , v.name) AS name " +
+            "FROM agent_vendor_lines avl " +
+            "INNER JOIN game_categories gc ON avl.game_category_id = gc.id " +
+            "INNER JOIN vendors v ON avl.vendor_id = v.id " +
+            "INNER JOIN currencies c ON avl.currency_id = c.id " +
+            "LEFT JOIN vendor_language_codes vlc ON vlc.vendor_id = avl.vendor_id " +
+            "AND vlc.language_id = :languageId " +
             "WHERE avl.status =:status AND avl.agent_id =:agentId " +
             "AND avl.currency_id = :currencyId " +
-            "GROUP BY avl.vendor_id ", nativeQuery=true)
-    List<IGameVendor> findByAgentSupportedVendorAndStatus (
+            "GROUP BY avl.vendor_id ", nativeQuery = true)
+    List<IGameVendor> findByAgentSupportedVendorAndStatusAndCurrency(
             @Param("agentId") int agentId,
             @Param("currencyId") Integer currencyId,
             @Param("languageId") Integer languageId,
