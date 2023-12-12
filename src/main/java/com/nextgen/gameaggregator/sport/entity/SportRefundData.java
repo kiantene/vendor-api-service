@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.sport.entity;
 
-public interface SportUnsettleData {
+public interface SportRefundData {
     String getExternalTransactionId();
     String getVendorPlayerUsername();
     Long getTimestamp();
