@@ -26,7 +26,7 @@ public class UnsettleTransactionDto implements SportUnsettleData {
     }
 
     @Override
-    public Integer getVendorId() {
-        return 999;
+    public Long getTimestamp() {
+       return System.currentTimeMillis();
     }
 }

@@ -28,4 +28,9 @@ public class CancelBetDto extends GeneralDto implements SportRefundData {
     public String getVendorPlayerUsername() {
         return this.userId;
     }
+
+    @Override
+    public Long getTimestamp() {
+        return System.currentTimeMillis();
+    }
 }
