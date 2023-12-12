@@ -7,13 +7,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
+import com.nextgen.gameaggregator.sport.entity.SportRefundData;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettleData;
 
 import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleData {
+public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleData, SportRefundData {
     private String vendorPlayerUsername;
     private Integer vendorId;
 
@@ -174,12 +175,12 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleDat
     }
 
     @Override
+    public Long getTimestamp()  { return System.currentTimeMillis(); }
+
+    @Override
     public BigDecimal getNewBetAmount() {
         return stake;
     }
 
-    @Override
-    public Integer getVendorId() {
-        return vendorId;
-    }
+
 }
