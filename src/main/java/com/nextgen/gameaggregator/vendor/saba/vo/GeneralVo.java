@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.vo;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.nextgen.gameaggregator.service.HttpResponse;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -16,5 +17,10 @@ public class GeneralVo implements HttpResponse {
     @Override
     public boolean hasError() {
         return !this.status.equals("0");
+    }
+
+    public void setResponseCode(ResponseCode responseCode){
+        this.status = responseCode.status;
+        this.msg = responseCode.message;
     }
 }

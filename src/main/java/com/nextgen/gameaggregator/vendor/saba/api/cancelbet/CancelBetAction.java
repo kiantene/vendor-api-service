@@ -2,7 +2,9 @@ package com.nextgen.gameaggregator.vendor.saba.api.cancelbet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
@@ -20,6 +22,8 @@ public class CancelBetAction {
 
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private SportWalletService sportWalletService;
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public GeneralVo action(HttpServletRequest request) {
@@ -34,11 +38,19 @@ public class CancelBetAction {
             RequestDto<CancelBetDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
+            BetEvent betEvent = null;
+
+            for (CancelBetTxnsDto txn : dto.getMessage().getTxns()) {
+                dto.getMessage().setRefId(txn.getRefId());
+                betEvent = sportWalletService.refund(traceId, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
+            }
+
             vo.setStatus("0");
-            vo.setBalance(BigDecimal.valueOf(1000));
+            vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            vo.setStatus("999");
+            vo.setMsg("System Error");
 
         } finally {
             httpService.end(httpRequestLog, vo);

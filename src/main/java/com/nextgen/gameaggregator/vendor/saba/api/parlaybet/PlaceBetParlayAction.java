@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.parlaybet;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -45,10 +46,18 @@ public class PlaceBetParlayAction {
             RequestDto<PlaceBetParlayDto> dtos = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dtos.getMessage().getUserId());
+
+
             for (PlaceBetParlayTxnsDto txnsDto : dtos.getMessage().getTxns()) {
                 PlaceBetParlayTxnsVo txnsVo = new PlaceBetParlayTxnsVo();
 
+                dtos.getMessage().setRefId(txnsDto.getRefId());
+                dtos.getMessage().setBetAmount(txnsDto.getBetAmount());
+
                 String betId = UUID.randomUUID().toString();
+                sportWalletService.placeBet(betId, gameSession, dtos.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
+
                 txnsVo.setRefId(txnsDto.getRefId());
                 txnsVo.setLicenseeTxId(betId);
 

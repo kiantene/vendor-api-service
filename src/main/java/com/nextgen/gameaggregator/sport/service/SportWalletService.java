@@ -188,7 +188,7 @@ public class SportWalletService {
 
         try {
             sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
-            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+//            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -199,7 +199,7 @@ public class SportWalletService {
 
         Integer betStatus = BetStatus.SETTLED.code;
         BigDecimal winAmount = sportBetResultData.getWinAmount();
-        BigDecimal betAmount = sportBetResultData.getBetAmount();
+        BigDecimal betAmount = sportUnsettledBetCouchbase.getNewBetAmount() == null ? sportUnsettledBetCouchbase.getBetAmount() : sportUnsettledBetCouchbase.getNewBetAmount();
         int resultType = winAmount.compareTo(betAmount) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
