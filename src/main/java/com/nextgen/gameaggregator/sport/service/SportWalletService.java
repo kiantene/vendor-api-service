@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.sport.service;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.SportsUnsettleBet;
+import com.nextgen.gameaggregator.entity.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -21,11 +18,8 @@ import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.service.KafkaService;
 import com.nextgen.gameaggregator.service.LoggingService;
-import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
-import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettleData;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.sport.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -38,6 +32,8 @@ import java.util.UUID;
 @Service
 public class SportWalletService {
 
+    @Autowired
+    private BetHistoryRepository betHistoryRepository;
     @Autowired
     private KafkaService kafkaService;
     @Autowired
@@ -56,8 +52,7 @@ public class SportWalletService {
     private SportRefundAction sportRefundAction;
     @Autowired
     private SportUnsettleAction sportUnsettleAction;
-    @Autowired
-    private BetHistoryRepository betHistoryRepository;
+    private VendorPlayerService vendorPlayerService;
 
     public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
 
@@ -214,11 +209,10 @@ public class SportWalletService {
         }
     }
 
-    public BetEvent refund(String traceId, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
+    public BetEvent refund(String traceId, SportRefundData sportRefundData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
         InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), 
-                                                                sportBetResultData.getExternalTransactionId());
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
 
@@ -248,11 +242,12 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
-        InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
+    public BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
+            InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException {
         
         BetEvent betEvent = null;
-        BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorId(sportUnsettleData.getExternalTransactionId(), sportUnsettleData.getVendorId());
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(sportUnsettleData.getVendorPlayerUsername());
+        BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorId(sportUnsettleData.getExternalTransactionId(), vendorPlayer.getVendorId());
         if (betHistory == null) throw new BetNotFoundException();
 
         try {
