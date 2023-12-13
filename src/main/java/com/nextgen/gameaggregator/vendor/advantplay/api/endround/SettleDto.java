@@ -23,7 +23,7 @@ public class SettleDto extends BetSettleRefundDto implements BetResultData {
     @Digits(integer = 12, fraction = 4)
     private BigDecimal totalStake;
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Digits(integer = 12, fraction = 4)
     private BigDecimal totalWin;
     @NotBlank
