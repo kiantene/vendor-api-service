@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.settled;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,8 +32,9 @@ public class SettledService {
                     commonVo.setWagerId(action.getWagerInfo().getWagerId());
 
                     try {
+                        String traceId = UUID.randomUUID().toString();
                         action.getWagerInfo().setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
-                        sportWalletService.settle(action.getWagerInfo(), httpRequestLog);
+                        sportWalletService.settle(traceId, action.getWagerInfo(), httpRequestLog);
                         commonVo.setResponseCode(ResponseCode.SUCCESS.code);
 
                     } catch (Exception e) {

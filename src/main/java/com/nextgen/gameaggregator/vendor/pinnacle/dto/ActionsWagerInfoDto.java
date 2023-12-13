@@ -155,16 +155,6 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleDat
     }
 
     @Override
-    public BigDecimal getJackpotAmount() {
-        return null;
-    }
-
-    @Override
-    public Integer getIsFreespin() {
-        return 0;
-    }
-
-    @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
     }
