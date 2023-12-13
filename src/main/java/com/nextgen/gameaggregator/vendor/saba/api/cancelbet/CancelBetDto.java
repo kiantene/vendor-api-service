@@ -14,7 +14,7 @@ public class CancelBetDto extends GeneralDto implements SportRefundData {
     private String operationId;
     private String userId;
     private String updateTime;
-    private List<CancelBetTxnsDto> txns;
+    private List<CancelBetTransactionDto> txns;
 
     private String refId;
 

@@ -46,9 +46,11 @@ public class UnsettleAction {
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, vo);
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         }
 
