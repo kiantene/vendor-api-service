@@ -55,6 +55,7 @@ public class ResultAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
             responseVo.setBonus(BigDecimal.ZERO);
