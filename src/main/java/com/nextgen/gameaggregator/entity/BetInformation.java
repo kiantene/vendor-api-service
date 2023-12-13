@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -59,6 +60,21 @@ public abstract class BetInformation {
         if (this.effectiveTurnover == null) this.effectiveTurnover = BigDecimal.ZERO;
 
         this.vendorSettleTime = Optional.ofNullable(betResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
+    }
+
+    public BetInformation(SportBetResultData sportBetResultData) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(sportBetResultData, this);
+
+        if (this.isFreespin == null) this.isFreespin = 0;
+        if (this.betAmount == null) this.betAmount = BigDecimal.ZERO;
+        if (this.winAmount == null) this.winAmount = BigDecimal.ZERO;
+        if (this.jackpotAmount == null) this.jackpotAmount = BigDecimal.ZERO;
+        if (this.winLoss == null) this.winLoss = BigDecimal.ZERO;
+        if (this.effectiveTurnover == null) this.effectiveTurnover = BigDecimal.ZERO;
+
+        this.vendorSettleTime = Optional.ofNullable(sportBetResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
     }
 
     public BetInformation(BetHistory betHistory) {

@@ -1,21 +1,22 @@
-package com.nextgen.gameaggregator.vendor.saba.api.settle;
+package com.nextgen.gameaggregator.vendor.saba.api.resettle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettleData;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SettleBetTransactionDto implements SportBetResultData {
+public class ResettleTransactionDto implements SportUnsettleData, SportBetResultData {
     private String userId;
     private String refId;
     private Long txId;
     private String updateTime;
-    private String winlostDate;
-//    private String status;
+    private String winLostDate;
+    private String status;
     private BigDecimal payout;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
@@ -23,22 +24,22 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getRefId();
+        return this.refId;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.getTxId().toString();
+        return this.txId.toString();
     }
 
     @Override
     public String getRoundId() {
-        return this.getTxId().toString();
+        return this.refId;
     }
 
     @Override
     public String getGameId() {
-        return "saba";
+        return null;
     }
 
     @Override
@@ -48,7 +49,7 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.getPayout();
+        return this.payout;
     }
 
     @Override
@@ -89,5 +90,10 @@ public class SettleBetTransactionDto implements SportBetResultData {
     @Override
     public BigDecimal getNewBetAmount() {
         return null;
+    }
+
+    @Override
+    public Long getTimestamp() {
+        return System.currentTimeMillis();
     }
 }

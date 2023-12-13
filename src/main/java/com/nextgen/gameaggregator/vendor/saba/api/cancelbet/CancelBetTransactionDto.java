@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class CancelBetTxnsDto {
+public class CancelBetTransactionDto {
     private String refId;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;

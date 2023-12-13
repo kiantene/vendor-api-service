@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -56,16 +57,16 @@ public class SettleAction {
                     .toList();
             sportWalletService.batchSettle(sportBetResultDataList, httpRequestLog.getRequestBody());
 
-            vo.setStatus("0");
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (Exception e) {
-            vo.setStatus("999");
-//            vo.setMsg("System Error");
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, vo);
-            vo.setStatus("0");
+            vo.setResponseCode(ResponseCode.SUCCESS);
+
         }
 
         return vo;

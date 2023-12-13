@@ -22,7 +22,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class SportUnsettledBetCouchbase extends BetInformation {
     private BigDecimal newBetAmount;
-    private GameSession gameSession;
+    private String vendorPlayerUsername;
 
     public SportUnsettledBetCouchbase(GameSession gameSession, String rawData, SportBetResultData sportBetResultData, String traceId, Integer resultType) {
         super(sportBetResultData);
@@ -50,13 +50,12 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setBalance(BigDecimal.ZERO);
 
         this.setNewBetAmount(sportBetResultData.getNewBetAmount());
-        this.setGameSession(gameSession);
 
         this.setId(this.generateId());
     }
 
     public String generateId() {
-        return this.getGameSession().getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
+        return this.getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
     }
 
     public BetHistory toBetHistory(Integer betStatus, Integer resultType) {

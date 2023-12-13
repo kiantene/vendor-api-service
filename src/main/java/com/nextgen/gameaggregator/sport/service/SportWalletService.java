@@ -52,6 +52,7 @@ public class SportWalletService {
     private SportRefundAction sportRefundAction;
     @Autowired
     private SportUnsettleAction sportUnsettleAction;
+    @Autowired
     private VendorPlayerService vendorPlayerService;
 
     public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
@@ -160,19 +161,8 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public void settle2(SportSettledBet sportSettledBet) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException {
-        String traceId = UUID.randomUUID().toString();
-        SportUnsettledBetCouchbase unsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportSettledBet.getVendorPlayerUsername(), sportSettledBet.getExternalTransactionId());
-        SportUnsettledBetMariaDB unsettledBetMariaDB = new SportUnsettledBetMariaDB(unsettledBetCouchbase);
-        unsettledBetMariaDB.setId(unsettledBetCouchbase.getBetId());
-        sportWalletSettleAction.call(traceId, unsettledBetMariaDB, sportSettledBet);
-        BetHistory betHistory = sportSettledBet.toBetHistory(unsettledBetMariaDB);
-        kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
-    }
+    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException {
 
-    public void settle(SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException {
-
-        String traceId = UUID.randomUUID().toString();
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
         sportUnsettledBetCouchbase.setWinAmount(sportBetResultData.getWinAmount());
 
@@ -181,8 +171,11 @@ public class SportWalletService {
         sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
         sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() >= 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
 
+        BetEvent betEvent = null;
+
         try {
-            sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
+            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
+            betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 //            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
 
         } catch (Exception e) {
@@ -198,6 +191,8 @@ public class SportWalletService {
         int resultType = winAmount.compareTo(betAmount) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
         kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+
+        return betEvent;
     }
 
     @Async
@@ -205,7 +200,8 @@ public class SportWalletService {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
             SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
 //            kafkaService.produceSettledBet(sportSettledBet);
-            this.settle(sportBetResultData, null);
+            String traceId = UUID.randomUUID().toString();
+            this.settle(traceId, sportBetResultData, null);
         }
     }
 
@@ -278,6 +274,21 @@ public class SportWalletService {
             throw new InvalidOperatorResponseException();
         }
     
+        return betEvent;
+    }
+
+    public BetEvent resettle(String traceId, SportUnsettleData sportUnsettleData, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException {
+        BetEvent betEvent = null;
+
+        try {
+            this.unsettle(traceId, sportUnsettleData, rawData, httpRequestLog);
+            betEvent = this.settle(traceId, sportBetResultData, httpRequestLog);
+
+        } catch (Exception ex) {
+            throw new InvalidOperatorResponseException();
+
+        }
+
         return betEvent;
     }
 

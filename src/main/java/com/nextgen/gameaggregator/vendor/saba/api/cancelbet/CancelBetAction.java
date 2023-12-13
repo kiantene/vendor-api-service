@@ -40,7 +40,7 @@ public class CancelBetAction {
 
             BetEvent betEvent = null;
 
-            for (CancelBetTxnsDto txn : dto.getMessage().getTxns()) {
+            for (CancelBetTransactionDto txn : dto.getMessage().getTxns()) {
                 dto.getMessage().setRefId(txn.getRefId());
                 betEvent = sportWalletService.refund(traceId, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
             }

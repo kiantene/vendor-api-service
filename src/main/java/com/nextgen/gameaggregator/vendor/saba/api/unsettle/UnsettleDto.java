@@ -11,4 +11,6 @@ public class UnsettleDto {
     private String action;
     private String operationId;
     private List<UnsettleTransactionDto> txns;
+
+
 }
