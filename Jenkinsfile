@@ -1,5 +1,26 @@
 #!/usr/bin/env groovy
 
+def getECSConfig(String branchName) {
+    def config = []
+    switch (branchName) {
+        case 'stg':
+            config = [
+                'AWS_ECS_CLUSTER=stg',
+                'AWS_ECS_SERVICE=vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
+            ]
+            break
+        case 'pt':
+            config = [
+                'AWS_ECS_CLUSTER=pt',
+                'AWS_ECS_SERVICE=vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=pt-vendor-api-service-td'
+            ]
+            break
+    }
+    return config
+}
+
 pipeline {
     agent any
 
@@ -47,6 +68,7 @@ pipeline {
         QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
 
+        JENKINS_URL = 'http://jenkins.int:8080'
         STG_JOB_NAME = 'game_aggregator/devs/vendor_api_service/stg'
 
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
@@ -156,6 +178,7 @@ pipeline {
                                 sh("aws ecs register-task-definition --region ${AWS_ECS_REGION} --family ${AWS_ECS_TASK_DEFINITION} --execution-role-arn ${AWS_ECS_EXECUTION_ROL} --requires-compatibilities ${AWS_ECS_COMPATIBILITY} --network-mode ${AWS_ECS_NETWORK_MODE} --cpu ${AWS_ECS_CPU} --memory ${AWS_ECS_MEMORY} --container-definitions file://${taskDefinitionPath}")
                                 String taskRevision = sh(script: "aws ecs describe-task-definition --task-definition ${AWS_ECS_TASK_DEFINITION} | grep -oP '\"revision\": \\K\\d+'", returnStdout: true)
                                 sh("aws ecs update-service --cluster ${AWS_ECS_CLUSTER} --service ${AWS_ECS_SERVICE} --task-definition ${AWS_ECS_TASK_DEFINITION}:${taskRevision}")
+                                sh("aws ecs wait services-stable --cluster ${AWS_ECS_CLUSTER} --services ${AWS_ECS_SERVICE}")
                             }
                         }
                     }
@@ -189,51 +212,14 @@ pipeline {
             }
             steps {
                 script {
-                    String jobName = "${STG_JOB_NAME}"
-
-                    // 1. Acquire the Jenkins instance and validate
-                    def jenkins = Jenkins.getInstanceOrNull()
-                    if (jenkins == null) {
-                        error('Cannot retrieve Jenkins instance.')
+                    withCredentials([usernamePassword(credentialsId: 'jenkins_creds', passwordVariable: 'JENKINS_TOKEN', usernameVariable: 'JENKINS_USER')]) {
+                        build job: 'purger', parameters: [
+                            string(name: 'JENKINS_URL', value: JENKINS_URL),
+                            string(name: 'JENKINS_USER', value: JENKINS_USER),
+                            string(name: 'JENKINS_TOKEN', value: JENKINS_TOKEN),
+                            string(name: 'JOB_NAME', value: STG_JOB_NAME)
+                        ]
                     }
-
-                    // 2. Check job existence
-                    def job = jenkins.getItemByFullName(jobName)
-                    if (job == null) {
-                        error("Job with name ${jobName} does not exist.")
-                    }
-
-                    // 3. Ensure we're dealing with a Job type
-                    if (!(job instanceof Job)) {
-                        error("Item ${jobName} is not a job type.")
-                    }
-
-                    // 4. Check builds existence
-                    if (job.builds.size() == 0) {
-                        println('No builds available for the job.')
-                        return
-                    }
-
-                    // 5. Iterate safely over builds and perform deletion
-                    println('Start Delete')
-                    job.builds.each { build ->
-                        if (build.isBuilding()) {
-                            println("Skipped build: ${build.number}")
-                        } else {
-                            println("Deleting build: ${build.number}")
-                            try {
-                                build.delete()
-                                sleep(time:3, unit: 'SECONDS')
-                            } catch (Exception e) {
-                                println("Error deleting build ${build.number}: ${e.message}")
-                            }
-                        }
-                    }
-                    println('End Delete')
-
-                    // 6. Reset the build number and save
-                    job.nextBuildNumber = 1
-                    job.save()
                 }
             }
         }
@@ -256,7 +242,6 @@ pipeline {
     }
 }
 
-// A function to update the container definition JSON file with the new Docker image version
 void updateContainerDefinitionJsonWithImageVersion(String packageVersion, String taskDefinitionPath) {
     List containerDefinitionJson = readJSON file: taskDefinitionPath, returnPojo: true
     containerDefinitionJson[0]['image'] = "${AWS_ECR_URL}:${packageVersion}".inspect()
@@ -286,27 +271,6 @@ String getRepoTag(String branchName) {
     }
 
     return packageVersion
-}
-
-def getECSConfig(String branchName) {
-    def config = []
-    switch (branchName) {
-        case 'stg':
-            config = [
-                'AWS_ECS_CLUSTER=stg',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
-            ]
-            break
-        case 'pt':
-            config = [
-                'AWS_ECS_CLUSTER=pt',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=pt-vendor-api-service-td'
-            ]
-            break
-    }
-    return config
 }
 
 String getCouchbaseCertId(String branchName) {
