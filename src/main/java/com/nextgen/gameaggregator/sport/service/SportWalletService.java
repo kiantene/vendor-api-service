@@ -218,7 +218,7 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setStatus(betStatus);
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
-            betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
+            betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);

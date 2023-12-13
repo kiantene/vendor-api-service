@@ -52,9 +52,11 @@ public class CancelBetAction {
 
         } catch (BetNotFoundException e) {
             vo.setResponseCode(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, vo);
