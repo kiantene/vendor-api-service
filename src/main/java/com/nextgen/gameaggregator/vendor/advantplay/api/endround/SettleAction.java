@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
@@ -48,7 +49,7 @@ public class SettleAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-//            String apHash = request.getHeader("ap-hash");
+            String apHash = request.getHeader("ap-hash");
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
 
             vo.setSeq(settleDto.getSeq());
@@ -59,7 +60,7 @@ public class SettleAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleDto.getPlayerId(), settleDto.getGameId());
 
-            this.doVerification(settleDto, gameSession);
+            this.doVerification(settleDto, gameSession, apHash, body);
 
             ResultType resultType = vendorService.calculateResultType(settleDto.getBetStatus(), settleDto.getWinAmount(), settleDto.getJackpotAmount(), false);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
@@ -122,7 +123,7 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(SettleDto dto, GameSession gameSession)
+    private void doVerification(SettleDto dto, GameSession gameSession, String apHash, String bodyString)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -133,8 +134,8 @@ public class SettleAction {
             InvalidRequestException {
 
         // Verify vendor request ap-hash
-//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
-//        ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
+        ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
         // Verify vendor gameCode and username
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
