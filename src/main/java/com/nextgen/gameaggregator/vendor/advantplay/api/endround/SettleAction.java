@@ -5,10 +5,7 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
@@ -37,6 +34,8 @@ public class SettleAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.SETTLE)
     public ResponseVo settleAction(HttpServletRequest request) {
@@ -49,7 +48,10 @@ public class SettleAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
+//            String apHash = request.getHeader("ap-hash");
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
+
+            vo.setSeq(settleDto.getSeq());
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(settleDto);
@@ -63,15 +65,16 @@ public class SettleAction {
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, settleDto, resultType, vendorService, httpRequestLog);
 
             vo.setTimestamp(VendorService.getTimestamp());
-            vo.setSeq(settleDto.getSeq());
             vo.setBalance(balance);
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
             httpService.logError(httpRequestLog, e);
+
         } catch (GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  VendorCurrencyNotSupportException |
@@ -79,24 +82,29 @@ public class SettleAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  DisabledGameException e) {
-
             vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
             httpService.logError(httpRequestLog, e);
+
         } catch (DisabledAgentPlayerException e) {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
+
         } catch (BetNotFoundException e) {
             vo.setResponseCodes(ResponseCodes.DATA_INVALID);
             httpService.logError(httpRequestLog, e);
+
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
             httpService.logError(httpRequestLog, e);
+
         } catch (InsufficientBalanceException e) {
             vo.setResponseCodes(ResponseCodes.PLAYER_HAS_INSUFFICIENT_FUNDS);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
             httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
@@ -116,17 +124,19 @@ public class SettleAction {
 
     private void doVerification(SettleDto dto, GameSession gameSession)
             throws
-            AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
             GameNotSupportedException,
-            InvalidPlayerException {
+            InvalidPlayerException,
+            CredentialNotFoundException,
+            InvalidRequestException {
 
-        // validate vendor username, agent vendor line, player status, and game status
-//        validationService.validateEligibleBet(gameSession, dto.getPlayerId());
+        // Verify vendor request ap-hash
+//        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
+//        ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
-        // Verify vendor gameCode, username and currency
+        // Verify vendor gameCode and username
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
 
