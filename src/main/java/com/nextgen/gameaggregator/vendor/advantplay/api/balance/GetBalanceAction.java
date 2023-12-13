@@ -9,7 +9,6 @@ import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.advantplay.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.advantplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,7 +50,7 @@ public class GetBalanceAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            CommonDto getBalanceDto = HttpService.convertJsonToDto(body, CommonDto.class);
+            GetBalanceDto getBalanceDto = HttpService.convertJsonToDto(body, GetBalanceDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(getBalanceDto);

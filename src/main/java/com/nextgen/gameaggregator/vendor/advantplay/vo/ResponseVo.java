@@ -23,7 +23,7 @@ public class ResponseVo implements HttpResponse {
     private String errorDescription;
     @JsonProperty("OPTransId")
     private String opTransId;
-    private BigDecimal balance;
+    private BigDecimal balance = BigDecimal.ZERO;
 
     @JsonIgnore
     private ResponseCodes responseCodes;
@@ -42,5 +42,8 @@ public class ResponseVo implements HttpResponse {
     @Override
     public boolean hasError() {
         return !this.responseCodes.equals(ResponseCodes.SUCCESS);
+    }
+
+    public void setOpTransId(String traceId) {
     }
 }

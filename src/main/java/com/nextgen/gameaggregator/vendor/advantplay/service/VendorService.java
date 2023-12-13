@@ -65,14 +65,14 @@ public class VendorService extends BaseVendorService {
         Long timestamp = null;
         if (rawDateTime != null) {
             LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ISO_DATE_TIME);
-            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC+8"));
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.systemDefault());
             timestamp = zonedDateTime.toInstant().toEpochMilli();
         }
         return timestamp;
 
     }
 
-    public String md5(String input) {
+    private String md5(String input) {
         return DigestUtils.md5Hex(input);
     }
 

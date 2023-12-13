@@ -7,9 +7,7 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.advantplay.dto.BetSettleRefundDto;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
-import jakarta.validation.constraints.Digits;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -21,12 +19,16 @@ import java.math.BigDecimal;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class SettleDto extends BetSettleRefundDto implements BetResultData {
     @NotNull
+    @Positive
     @Digits(integer = 12, fraction = 4)
     private BigDecimal totalStake;
     @NotNull
+    @Positive
     @Digits(integer = 12, fraction = 4)
     private BigDecimal totalWin;
     @NotBlank
+    @Size(min = 1, max = 50)
+    @Pattern(regexp = "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{6}[+-]\\d{2}:\\d{2}")
     private String settleTime;
     @NotNull
     private Boolean hitJackpot;
@@ -68,7 +70,7 @@ public class SettleDto extends BetSettleRefundDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return null;
+        return this.getTotalStake();
     }
 
     @Override

@@ -1,16 +1,17 @@
-package com.nextgen.gameaggregator.vendor.advantplay.api.authenticate;
+package com.nextgen.gameaggregator.vendor.advantplay.api.kiv_endroundcp;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.advantplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.advantplay.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
+import com.nextgen.gameaggregator.vendor.advantplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,75 +24,87 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class GetPlayerInfoAction {
+public class CPSettleAction {
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
     @Autowired
+    private ValidationService validationService;
+    @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
-    @PostMapping(path = EndPoints.GET_PLAYER_INFO)
-    public GetPlayerInfoVo getPlayerInfo(HttpServletRequest request) {
+    /*
+    本 API 用于活动( Campaign，简称CP )奖金中奖后，发送款项给玩家。
+    ※活动钱包 转到 真钱包
+     */
+
+    @PostMapping(path = EndPoints.CP_SETTLE)
+    public ResponseVo cpSettleAction(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
 
-        GetPlayerInfoVo vo = new GetPlayerInfoVo();
+        ResponseVo vo = new ResponseVo();
         String traceId = httpRequestLog.getId();
 
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             String apHash = request.getHeader("ap-hash");
-            GetPlayerInfoDto getPlayerInfoDto = HttpService.convertJsonToDto(body, GetPlayerInfoDto.class);
-
-            vo.setSeq(getPlayerInfoDto.getSeq());
+            CPSettleDto cpSettleDto = HttpService.convertJsonToDto(body, CPSettleDto.class);
 
             // 1. Validate request parameters (Non-database calls)
-            this.doValidation(getPlayerInfoDto);
+            this.doValidation(cpSettleDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(getPlayerInfoDto.getOpToken());
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cpSettleDto.getPlayerId());
+            // Vendor does not return game code for Campaign
+            cpSettleDto.setGameCode(gameSession.getVendorGameCode());
 
-            this.doVerification(getPlayerInfoDto, gameSession, apHash, body);
+            this.doVerification(cpSettleDto, gameSession, apHash, body);
 
-            // 3. Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            ResultType resultType = vendorService.calculateResultType(cpSettleDto.getBetStatus(), cpSettleDto.getWinAmount(), cpSettleDto.getJackpotAmount(), false);
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, cpSettleDto, resultType, vendorService, httpRequestLog);
 
             vo.setTimestamp(VendorService.getTimestamp());
-            vo.setSeq(getPlayerInfoDto.getSeq());
-            vo.setOpToken(gameSession.getToken());
-            vo.setBrandCode(Formats.BRAND_CODE);
-            vo.setSiteCode(Formats.SITE_CODE);
-            vo.setPlayerId(gameSession.getVendorPlayerUsername());
-            vo.setPlayerName(gameSession.getVendorPlayerUsername());
-            vo.setCurrency(gameSession.getVendorCurrencyCode());
+            vo.setSeq(cpSettleDto.getSeq());
             vo.setBalance(balance);
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
             httpService.logError(httpRequestLog, e);
-
         } catch (GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 VendorCurrencyNotSupportException |
+                 DisabledVendorLineException |
+                 InvalidAgentApiCredentialException |
+                 InvalidPlayerException |
+                 DisabledGameException e) {
 
-        } catch (InvalidRequestException e) {
             vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
             httpService.logError(httpRequestLog, e);
-
         } catch (DisabledAgentPlayerException e) {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
-
+        } catch (BetNotFoundException e) {
+            vo.setResponseCodes(ResponseCodes.DATA_INVALID);
+            httpService.logError(httpRequestLog, e);
+        } catch (BetResultIdempotentViolationException e) {
+            vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
+            httpService.logError(httpRequestLog, e);
+        } catch (InsufficientBalanceException e) {
+            vo.setResponseCodes(ResponseCodes.PLAYER_HAS_INSUFFICIENT_FUNDS);
+            httpService.logError(httpRequestLog, e);
+        } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
+            vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
@@ -101,6 +114,7 @@ public class GetPlayerInfoAction {
         }
 
         return vo;
+
     }
 
     private <T> void doValidation(T dto) throws InvalidRequestException {
@@ -108,29 +122,24 @@ public class GetPlayerInfoAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto dto, GameSession gameSession, String apHash, String bodyString)
+    private void doVerification(CPSettleDto dto, GameSession gameSession, String apHash, String bodyString)
             throws
+            AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
+            InvalidPlayerException,
             CredentialNotFoundException,
-            InvalidRequestException,
-            GameNotSupportedException {
+            GameNotSupportedException,
+            InvalidRequestException {
 
         // Verify vendor request ap-hash
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
         ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
+        // Verify vendor gameCode and username
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
-
-        // 1. Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // 2. Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // 3. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
 
     }
 }

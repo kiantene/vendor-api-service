@@ -5,11 +5,9 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
@@ -35,6 +33,8 @@ public class PlaceBetAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = EndPoints.PLACE_BET)
     public ResponseVo placeBetAction(HttpServletRequest request) {
@@ -47,7 +47,11 @@ public class PlaceBetAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
+            String apHash = request.getHeader("ap-hash");
             PlaceBetDto placeBetDto = HttpService.convertJsonToDto(body, PlaceBetDto.class);
+
+            vo.setSeq(placeBetDto.getSeq());
+            vo.setOpTransId(traceId);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(placeBetDto);
@@ -55,20 +59,21 @@ public class PlaceBetAction {
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(placeBetDto.getOpToken());
 
-            this.doVerification(placeBetDto, gameSession);
+            this.doVerification(placeBetDto, gameSession, apHash, body);
 
             BetEvent betEvent = walletService.processBet(traceId, gameSession, placeBetDto, body, httpRequestLog);
 
             vo.setTimestamp(VendorService.getTimestamp());
-            vo.setSeq(placeBetDto.getSeq());
             vo.setBalance(betEvent.getLastBalance());
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
             httpService.logError(httpRequestLog, e);
+
         } catch (GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  VendorCurrencyNotSupportException |
@@ -76,21 +81,25 @@ public class PlaceBetAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  DisabledGameException e) {
-
             vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
             httpService.logError(httpRequestLog, e);
+
         } catch (DisabledAgentPlayerException e) {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
+
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
             httpService.logError(httpRequestLog, e);
+
         } catch (InsufficientBalanceException e) {
             vo.setResponseCodes(ResponseCodes.PLAYER_HAS_INSUFFICIENT_FUNDS);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
             httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
@@ -108,14 +117,20 @@ public class PlaceBetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(PlaceBetDto dto, GameSession gameSession)
+    private void doVerification(PlaceBetDto dto, GameSession gameSession, String apHash, String bodyString)
             throws
             AuthenticationException,
             DisabledVendorLineException,
             DisabledAgentPlayerException,
             DisabledGameException,
             GameNotSupportedException,
-            InvalidPlayerException {
+            InvalidPlayerException,
+            CredentialNotFoundException,
+            InvalidRequestException {
+
+        // Verify vendor request ap-hash
+        String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
+        ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
         // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getPlayerId());
