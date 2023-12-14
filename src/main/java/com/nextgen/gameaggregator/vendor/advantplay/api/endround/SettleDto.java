@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class SettleDto extends BetSettleRefundDto implements BetResultData {
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Digits(integer = 12, fraction = 4)
     private BigDecimal totalStake;
     @NotNull

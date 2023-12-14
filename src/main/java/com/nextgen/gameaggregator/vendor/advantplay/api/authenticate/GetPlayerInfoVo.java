@@ -21,7 +21,7 @@ public class GetPlayerInfoVo extends ResponseVo {
     private String siteCode = "";
     private String playerId = "";
     private String playerName = "";
-    private String playerCountry = ""; // Optional
+    private String playerCountry; // Optional
     private String currency = "";
-    private Integer testAccount = null; // Optional
+    private Integer testAccount; // Optional
 }

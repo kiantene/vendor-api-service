@@ -11,35 +11,17 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.Optional;
 
 @Service
 @Slf4j
 @Data
 public class VendorService extends BaseVendorService {
-
-    public static long convertStringToUnixTimestamp(String stringTime) {
-        Long timestamp = null;
-        try {
-            SimpleDateFormat formatter = new SimpleDateFormat(Formats.DATE_TIME_FORMAT);
-            Date date = formatter.parse(stringTime);
-            timestamp = date.getTime();
-
-        } catch (ParseException e) {
-            e.printStackTrace();
-        }
-
-        // Convert the Date object to Unix timestamp
-        return timestamp;
-    }
 
     public static String validateCredential(String value) throws InvalidVendorLineException {
         return Optional.ofNullable(value)

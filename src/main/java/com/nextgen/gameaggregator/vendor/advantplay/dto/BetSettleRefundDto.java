@@ -19,6 +19,7 @@ public class BetSettleRefundDto extends CommonDto {
     @Size(min = 1, max = 20)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gameRoundId;
+
     @NotBlank
     @Size(min = 1, max = 50)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)

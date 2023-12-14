@@ -7,7 +7,7 @@ import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.vendor.advantplay.dto.BetSettleRefundDto;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 public class RefundBetDto extends BetSettleRefundDto implements RollbackData {
     @NotNull
-    @Positive
+    @PositiveOrZero
     @Digits(integer = 12, fraction = 4)
     private BigDecimal totalStake;
 

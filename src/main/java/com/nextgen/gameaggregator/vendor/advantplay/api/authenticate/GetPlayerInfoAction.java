@@ -50,7 +50,7 @@ public class GetPlayerInfoAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            String apHash = request.getHeader("ap-hash");
+            String apHash = request.getHeader(Formats.AP_HASH);
             GetPlayerInfoDto getPlayerInfoDto = HttpService.convertJsonToDto(body, GetPlayerInfoDto.class);
 
             vo.setSeq(getPlayerInfoDto.getSeq());
@@ -67,7 +67,6 @@ public class GetPlayerInfoAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             vo.setTimestamp(VendorService.getTimestamp());
-            vo.setSeq(getPlayerInfoDto.getSeq());
             vo.setOpToken(gameSession.getToken());
             vo.setBrandCode(Formats.BRAND_CODE);
             vo.setSiteCode(Formats.SITE_CODE);
@@ -121,7 +120,7 @@ public class GetPlayerInfoAction {
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
         ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.advantplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.advantplay.vo.ResponseVo;
@@ -54,8 +55,10 @@ public class CPSettleAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            String apHash = request.getHeader("ap-hash");
+            String apHash = request.getHeader(Formats.AP_HASH);
             CPSettleDto cpSettleDto = HttpService.convertJsonToDto(body, CPSettleDto.class);
+
+            vo.setSeq(cpSettleDto.getSeq());
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(cpSettleDto);
@@ -71,15 +74,16 @@ public class CPSettleAction {
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, cpSettleDto, resultType, vendorService, httpRequestLog);
 
             vo.setTimestamp(VendorService.getTimestamp());
-            vo.setSeq(cpSettleDto.getSeq());
             vo.setBalance(balance);
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.TOKEN_INVALID);
             httpService.logError(httpRequestLog, e);
+
         } catch (GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.GAME_NOT_FOUND);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  VendorCurrencyNotSupportException |
@@ -87,24 +91,29 @@ public class CPSettleAction {
                  InvalidAgentApiCredentialException |
                  InvalidPlayerException |
                  DisabledGameException e) {
-
             vo.setResponseCodes(ResponseCodes.PARAMETER_INCORRECT);
             httpService.logError(httpRequestLog, e);
+
         } catch (DisabledAgentPlayerException e) {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
+
         } catch (BetNotFoundException e) {
             vo.setResponseCodes(ResponseCodes.DATA_INVALID);
             httpService.logError(httpRequestLog, e);
+
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.DUPLICATE_REQUEST);
             httpService.logError(httpRequestLog, e);
+
         } catch (InsufficientBalanceException e) {
             vo.setResponseCodes(ResponseCodes.PLAYER_HAS_INSUFFICIENT_FUNDS);
             httpService.logError(httpRequestLog, e);
+
         } catch (InvalidOperatorResponseException | TransactionStillProcessingException e) {
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);
             httpService.logError(httpRequestLog, e);
+            
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.UNSPECIFIED_ERROR);

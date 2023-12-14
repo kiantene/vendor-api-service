@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.advantplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.advantplay.vo.ResponseVo;
@@ -52,7 +53,7 @@ public class RefundBetAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            String apHash = request.getHeader("ap-hash");
+            String apHash = request.getHeader(Formats.AP_HASH);
             RefundBetDto refundBetDto = HttpService.convertJsonToDto(body, RefundBetDto.class);
 
             vo.setSeq(refundBetDto.getSeq());
@@ -137,18 +138,9 @@ public class RefundBetAction {
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
         ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
-        // Verify vendor gameCode, username and currency
+        // Verify vendor gameCode, username
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getPlayerId(), InvalidPlayerException::new);
-
-        // Verify vendor line is active
-        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
-
-        // Verify agent player is active
-        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-
-        // Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }

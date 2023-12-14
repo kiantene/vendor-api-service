@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.advantplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.advantplay.vo.ResponseVo;
@@ -49,7 +50,7 @@ public class SettleAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            String apHash = request.getHeader("ap-hash");
+            String apHash = request.getHeader(Formats.AP_HASH);
             SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
 
             vo.setSeq(settleDto.getSeq());

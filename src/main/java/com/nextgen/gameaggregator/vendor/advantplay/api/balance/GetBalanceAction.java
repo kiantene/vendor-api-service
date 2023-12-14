@@ -7,8 +7,8 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.advantplay.constant.Formats;
 import com.nextgen.gameaggregator.vendor.advantplay.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.advantplay.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.advantplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.advantplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,7 +50,7 @@ public class GetBalanceAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            String apHash = request.getHeader("ap-hash");
+            String apHash = request.getHeader(Formats.AP_HASH);
             GetBalanceDto getBalanceDto = HttpService.convertJsonToDto(body, GetBalanceDto.class);
 
             vo.setSeq(getBalanceDto.getSeq());
@@ -102,7 +102,7 @@ public class GetBalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CommonDto dto, GameSession gameSession, String apHash, String bodyString)
+    private void doVerification(GetBalanceDto dto, GameSession gameSession, String apHash, String bodyString)
             throws
             DisabledVendorLineException,
             DisabledAgentPlayerException,
@@ -115,7 +115,7 @@ public class GetBalanceAction {
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
         ValidationUtils.isEquals(vendorService.generateHash(secretKey, bodyString), apHash);
 
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameId()), GameNotSupportedException::new);
+//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGameCode()), GameNotSupportedException::new);
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
