@@ -48,6 +48,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setRawData(rawData);
         this.setIsFreespin(0);
         this.setBalance(BigDecimal.ZERO);
+        this.setResettleNum(0);
 
         this.setNewBetAmount(sportBetResultData.getNewBetAmount());
 
