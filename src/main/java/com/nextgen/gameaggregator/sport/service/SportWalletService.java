@@ -43,6 +43,8 @@ public class SportWalletService {
     @Autowired
     private SportSettleAction sportSettleAction;
     @Autowired
+    private SportSettledBetService sportSettledBetService;
+    @Autowired
     private SportUnsettledBetService sportUnsettledBetService;
     @Autowired
     private SportUpdateBetAction sportUpdateBetAction;
@@ -169,14 +171,23 @@ public class SportWalletService {
         BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
         sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
         sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
-        sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() >= 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
+        sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
 
         BetEvent betEvent = null;
 
         try {
             WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
-//            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+
+            Integer betStatus = BetStatus.SETTLED.code;
+            BigDecimal winAmount = sportBetResultData.getWinAmount();
+            BigDecimal betAmount = sportUnsettledBetCouchbase.getNewBetAmount() == null ? sportUnsettledBetCouchbase.getBetAmount() : sportUnsettledBetCouchbase.getNewBetAmount();
+            int resultType = winAmount.compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
+            BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
+
+            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+            sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
+            sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -185,20 +196,13 @@ public class SportWalletService {
 
         }
 
-        Integer betStatus = BetStatus.SETTLED.code;
-        BigDecimal winAmount = sportBetResultData.getWinAmount();
-        BigDecimal betAmount = sportUnsettledBetCouchbase.getNewBetAmount() == null ? sportUnsettledBetCouchbase.getBetAmount() : sportUnsettledBetCouchbase.getNewBetAmount();
-        int resultType = winAmount.compareTo(betAmount) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
-        BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
-        kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
-
         return betEvent;
     }
 
     @Async
     public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
-            SportSettledBet sportSettledBet = new SportSettledBet(sportBetResultData, rawData);
+            SportRawSettledBet sportRawSettledBet = new SportRawSettledBet(sportBetResultData, rawData);
 //            kafkaService.produceSettledBet(sportSettledBet);
             String traceId = UUID.randomUUID().toString();
             this.settle(traceId, sportBetResultData, null);
@@ -242,16 +246,12 @@ public class SportWalletService {
             InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException {
         
         BetEvent betEvent = null;
-        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(sportUnsettleData.getVendorPlayerUsername());
-        BetHistory betHistory = betHistoryRepository.findByExternalTransactionIdAndVendorId(sportUnsettleData.getExternalTransactionId(), vendorPlayer.getVendorId());
-        if (betHistory == null) throw new BetNotFoundException();
+        SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportUnsettleData.getVendorPlayerUsername(), sportUnsettleData.getExternalTransactionId());
 
         try {
-            String couchbaseId = sportUnsettleData.getVendorPlayerUsername() + '_' + sportUnsettleData.getExternalTransactionId();
-            SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(rawData, betHistory, traceId, ResultType.BET.code, couchbaseId);
+            SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportSettledBet.toSportUnsettleBetCouchbase();
 
-            SportsUnsettleBet sportsUnsettleBet = new SportsUnsettleBet(betHistory);
-            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportsUnsettleBet, httpRequestLog, betHistory);
+            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setNewBetAmount(sportUnsettledBetCouchbase.getBetAmount());
@@ -261,14 +261,17 @@ public class SportWalletService {
             // Insert new unsettled bet into maria db
             SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
-            
-            sportsUnsettleBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
-            sportsUnsettleBet.setBalance(balanceVo.getData().getBalance());
-            betEvent = new BetEvent(sportsUnsettleBet, balanceVo.getData().getBalance());
+
+            sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
+            betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
             // Generate new bet history to offset the old records
-            betHistory = this.offsetOldBetHistory(betHistory);
+            BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.UNSETTLED.code, BetResultType.ADJUSTMENT.code));
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+
+            // Delete data from couchbase settled bet
+            sportSettledBetService.delete(sportSettledBet);
     
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
@@ -284,7 +287,7 @@ public class SportWalletService {
             this.unsettle(traceId, sportUnsettleData, rawData, httpRequestLog);
             betEvent = this.settle(traceId, sportBetResultData, httpRequestLog);
 
-        } catch (Exception ex) {
+        } catch (Exception e) {
             throw new InvalidOperatorResponseException();
 
         }
@@ -296,15 +299,12 @@ public class SportWalletService {
         BigDecimal newBetAmount = Optional.ofNullable(betHistory.getBetAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
         BigDecimal newWinAmount = Optional.ofNullable(betHistory.getWinAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
         BigDecimal newWinLoss = Optional.ofNullable(betHistory.getWinLoss()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
-        BigDecimal newEffectiveTurnover = Optional.ofNullable(betHistory.getEffectiveTurnover()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);        
-        Integer newResettleNum = Optional.ofNullable(betHistory.getResettleNum()).orElse(0);
+        BigDecimal newEffectiveTurnover = Optional.ofNullable(betHistory.getEffectiveTurnover()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
 
         betHistory.setBetAmount(newBetAmount);
         betHistory.setWinAmount(newWinAmount);
         betHistory.setWinLoss(newWinLoss);
         betHistory.setEffectiveTurnover(newEffectiveTurnover);
-        betHistory.setResettleNum(newResettleNum + 1);
-        betHistory.setResultType(BetResultType.BET.code);
 
         return betHistory;
     }

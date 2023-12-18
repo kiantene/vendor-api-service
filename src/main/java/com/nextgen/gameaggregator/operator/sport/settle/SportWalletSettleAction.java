@@ -14,7 +14,7 @@ import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
+import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +45,7 @@ public class SportWalletSettleAction {
     @Autowired
     private RequestService requestService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetMariaDB unsettledBet, SportSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException {
+    public WalletBalanceVo call(String traceId, SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
 
@@ -101,7 +101,7 @@ public class SportWalletSettleAction {
         return null;
     }
 
-    private SportWalletSettleDto newSportWalletSettleDto(String traceId, SportUnsettledBetMariaDB unsettledBet, SportSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) {
+    private SportWalletSettleDto newSportWalletSettleDto(String traceId, SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) {
 
         // add conversion rate when sending all the figures to operator
         BigDecimal betAmount = (ObjectUtils.isEmpty(unsettledBet.getBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());
