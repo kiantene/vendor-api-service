@@ -1,76 +1,60 @@
 package com.nextgen.gameaggregator.sport.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.BetInformation;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
+import org.springframework.data.couchbase.core.mapping.Document;
+import org.springframework.data.couchbase.repository.Collection;
+import org.springframework.data.couchbase.repository.Scope;
 
 import java.math.BigDecimal;
 
+@Document
+@Scope("raw")
+@Collection("sport_settled_bet")
+@EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor
-public class SportSettledBet {
-    @JsonProperty("vendor_player_username")
+public class SportSettledBet extends BetInformation {
+    private BigDecimal newBetAmount;
     private String vendorPlayerUsername;
 
-    @JsonProperty("external_transaction_id")
-    private String externalTransactionId;
-
-    @JsonProperty("vendor_bet_id")
-    private String vendorBetId;
-
-    @JsonProperty("round_id")
-    private String roundId;
-
-    @JsonProperty("vendor_game_id")
-    private Integer vendorGameId;
-
-    @JsonProperty("win_amount")
-    private BigDecimal winAmount;
-
-    @JsonProperty("effective_turnover")
-    private BigDecimal effectiveTurnover;
-
-    @JsonProperty("odds")
-    private BigDecimal odds;
-
-    @JsonProperty("odd_type_id")
-    private Integer oddTypeId;
-
-    @JsonProperty("vendor_bet_time")
-    private Long vendorBetTime;
-
-    @JsonProperty("result_time")
-    private Long resultTime;
-
-    @JsonProperty("vendor_settle_time")
-    private Long vendorSettleTime;
-
-    @JsonProperty("retry_count")
-    private Integer retryCount;
-
-    @JsonProperty("next_execution_time")
-    private Long nextExecutionTime;
-
-    @JsonProperty("raw_data")
-    private String rawData;
-
-    public SportSettledBet(SportBetResultData sportBetResultData, String rawData) {
+    public SportSettledBet(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        modelMapper.map(sportBetResultData, this);
+        modelMapper.map(sportUnsettledBetCouchbase, this);
 
-        this.setRawData(rawData);
+        this.vendorPlayerUsername = sportUnsettledBetCouchbase.getVendorPlayerUsername();
+        this.newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount();
     }
 
-    public BetHistory toBetHistory(SportUnsettledBetMariaDB unsettledBet) {
+    public String generateId() {
+        return this.getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
+    }
+
+    public BetHistory toBetHistory(Integer betStatus, Integer resultType) {
         BetHistory betHistory = new BetHistory();
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(this, betHistory);
 
+        betHistory.setId(this.getBetId());
+        betHistory.setStatus(betStatus);
+        betHistory.setResultType(resultType);
+
         return betHistory;
+    }
+
+    public SportUnsettledBetCouchbase toSportUnsettleBetCouchbase() {
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase();
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(this, sportUnsettledBetCouchbase);
+
+        return sportUnsettledBetCouchbase;
     }
 }
