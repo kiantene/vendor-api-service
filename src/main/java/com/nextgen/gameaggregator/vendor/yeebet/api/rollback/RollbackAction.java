@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.yeebet.api.balance;
+package com.nextgen.gameaggregator.vendor.yeebet.api.rollback;
 
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
@@ -12,7 +12,7 @@ import com.nextgen.gameaggregator.vendor.yeebet.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,7 +22,7 @@ import java.math.RoundingMode;
 @RestController
 @RequestMapping(path= EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class RollbackAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -38,61 +38,86 @@ public class BalanceAction {
     @Autowired
     VendorService vendorService;
 
-    @GetMapping (path = EndPoints.BALANCE)
-    public ResponseVo balance(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.ROLLBACK)
+    public ResponseVo rollBack(HttpServletRequest request) {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
-
-        httpRequestLog.setRequestBody(request.getQueryString());
 
         String traceId = httpRequestLog.getId();
 
         GameSession gameSession = new GameSession();
 
+        BigDecimal balance = null;
+
         ResponseVo responseVo = new ResponseVo();
 
         try{
+            // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
-            BalanceDto balanceDto = httpService.convertQueryStringToDto(body,BalanceDto.class);
+            RollbackDto rollbackDto = httpService.convertQueryStringToDtoUrlDecode(body, RollbackDto.class);
 
             // Validate request parameters from vendor (Non-database related)
-            this.doValidation(balanceDto);
+            this.doValidation(rollbackDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(balanceDto.getUsername());
+            gameSession = gameSessionService.verifyToken(rollbackDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(rollbackDto,gameSession);
 
-            // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            // 1 - failed to process deduct function (failed to place bet), 9 = failed to process deposit function (failed to settle transaction)
+            if(rollbackDto.getType().equals("1") || rollbackDto.getType().equals("9")){
+                // Retrieve the latest wallet balance from Operator
+                balance = walletService.processRollback(traceId,rollbackDto, gameSession, vendorService, httpRequestLog);
+
+                // set vo
+                responseVo.setResult(0);
+                responseVo.setDesc("Success");
+                responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
+            }
+
+            // 7 - failed to process cancel request at deduct function (return error msg to reject the cancel request)
+            if(rollbackDto.getType().equals("7")){
+                // set vo
+                responseVo.setDesc("Refuse to cancel this transaction");
+                responseVo.setResult(-1000);
+            }
+
+        } catch(BetNotFoundException |
+                BetRefundIdempotentViolationException |
+                BetResultIdempotentViolationException e){
+
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // set vo
-            responseVo.setDesc("Success");
             responseVo.setResult(0);
+            responseVo.setDesc("Success");
             responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
-        } catch(InvalidAgentApiCredentialException |
-                InvalidPlayerException |
-                VendorCurrencyNotSupportException |
+        } catch(VendorCurrencyNotSupportException |
                 AuthenticationException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException |
+                InvalidAgentApiCredentialException |
+                InvalidPlayerException |
                 DisabledAgentPlayerException |
                 DisabledGameException |
-                InvalidRequestException |
-                InvalidOperatorResponseException |
-                DisabledVendorLineException e){
-
+                RecordNotFoundException |
+                TransactionStillProcessingException e){
             httpService.logError(httpRequestLog, e);
 
-            // set vo
             responseVo.setDesc("The system is error, please contact");
             responseVo.setResult(-1000);
-
-        }catch(Exception e){
+        } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
 
             // set vo
+            responseVo.setDesc("Parameter error,please check");
+            responseVo.setResult(-1002);
+        } catch(Exception e){
+            httpService.logError(httpRequestLog, e);
+
             responseVo.setDesc("The system is error, please contact");
             responseVo.setResult(-1000);
         }finally{
@@ -102,12 +127,12 @@ public class BalanceAction {
         return responseVo;
     }
 
-    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+    private void doValidation(RollbackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto,GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(RollbackDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -123,5 +148,19 @@ public class BalanceAction {
         //Verify received appid is same with credential
         String appid = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_app_id);
         ValidationUtils.isEquals(appid, dto.getAppid(), InvalidRequestException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+        } catch (Exception exception) {
+
+        }
+
+        return balance;
     }
 }

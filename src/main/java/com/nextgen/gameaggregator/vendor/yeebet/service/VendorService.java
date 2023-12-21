@@ -58,4 +58,8 @@ public class VendorService extends BaseVendorService {
 
         return md5Hash;
     }
+
+    public static long getTimeStamp(long ori_time){
+        return ori_time * 1000;
+    }
 }
