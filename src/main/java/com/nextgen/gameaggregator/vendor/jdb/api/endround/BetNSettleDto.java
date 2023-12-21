@@ -72,9 +72,7 @@ public class BetNSettleDto implements BetResultData {
 
     @NotNull
     private BigDecimal netWin;
-
-    @NotNull
-    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
+    
     private BigDecimal denom;
 
     @Size(max = 50)
