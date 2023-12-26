@@ -52,7 +52,7 @@ public class PlaceBetAction {
             PlaceBetDto placeBetDto = HttpService.convertJsonToDto(body, PlaceBetDto.class);
 
             vo.setSeq(placeBetDto.getSeq());
-            vo.setOpTransId(traceId);
+            vo.setOpTransId(placeBetDto.getRoundId());
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(placeBetDto);
