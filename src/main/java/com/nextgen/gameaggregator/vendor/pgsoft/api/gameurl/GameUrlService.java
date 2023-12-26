@@ -100,7 +100,7 @@ public class GameUrlService implements GameUrl {
     private MultiValueMap<String, String> newDataFormat(String gameCode, GameSession gameSession, Map<String, String> credentials) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         String path = "/" + gameCode + "/index.html";
-        String extraArgs = "btt=1&ops=" + gameSession.getToken();
+        String extraArgs = "btt=1&ops=" + gameSession.getToken() + "&l=" + gameSession.getVendorLanguageCode() + "&f=" + gameSession.getLobbyUrl();
 
         formData.add("trace_id", gameSession.getTraceId());
         formData.add("path", path);

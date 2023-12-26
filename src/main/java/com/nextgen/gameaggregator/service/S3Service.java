@@ -43,11 +43,13 @@ public class S3Service {
         try {
             // Create an S3 client
             AmazonS3 s3Client = createS3Client();
+
+            // Generate filename
             String fileName = token + ".html";
-            String key = awsFolder + "/" + fileName;
+            String key = (isNullOrEmpty(awsFolder)) ? fileName : awsFolder + "/" + fileName;
             uploadHtmlToS3(s3Client, key, rawHtml);
 
-            return gameUrl + awsFolder + "/" + fileName;
+            return gameUrl + key;
 
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -69,6 +71,10 @@ public class S3Service {
 
         // Upload the object to S3
         s3Client.putObject(putObjectRequest);
+    }
+
+    private static boolean isNullOrEmpty(String str) {
+        return str == null || str.trim().isEmpty();
     }
 
 }
