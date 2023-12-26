@@ -28,7 +28,7 @@ public class ResponseVo implements HttpResponse {
     @JsonIgnore
     private ResponseCodes responseCodes;
 
-    public ResponseVo() {
+    public ResponseVo() { 
         this.setResponseCodes(ResponseCodes.SUCCESS);
     }
 
@@ -43,7 +43,5 @@ public class ResponseVo implements HttpResponse {
     public boolean hasError() {
         return !this.responseCodes.equals(ResponseCodes.SUCCESS);
     }
-
-    public void setOpTransId(String traceId) {
-    }
+    
 }
