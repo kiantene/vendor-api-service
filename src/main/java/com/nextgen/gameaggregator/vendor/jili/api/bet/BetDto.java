@@ -11,6 +11,7 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Optional;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -115,7 +116,9 @@ public class BetDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return this.isFreeRound ? 1 : 0;
+        Boolean isFreeSpin = Optional.ofNullable(this.isFreeRound).orElse(Boolean.FALSE);
+        return isFreeSpin ? 1 : 0;
+
     }
 
     /**
