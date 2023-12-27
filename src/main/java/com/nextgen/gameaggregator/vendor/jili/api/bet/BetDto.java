@@ -120,6 +120,7 @@ public class BetDto implements BetResultData {
     public Integer getIsFreespin() {
         Boolean isFreeSpin = Optional.ofNullable(this.isFreeRound).orElse(Boolean.FALSE);
         return isFreeSpin ? 1 : 0;
+
     }
 
     /**
