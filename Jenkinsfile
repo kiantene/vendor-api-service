@@ -66,13 +66,22 @@ pipeline {
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
     }
 
+    // Define common Maven configuration as a variable
+    def mavenConfig = {
+        withMaven(globalMavenSettingsConfig: 'nextgen_maven', traceability: true) {
+            it()
+        }
+    }
+
     stages {
         stage('SonarQube') {
             when {
                 branch 'stg'
             }
             steps {
-                sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_LOGIN -DskipTests=true'
+                mavenConfig {
+                    sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_LOGIN -DskipTests=true'
+                }
             }
         }
 
@@ -81,7 +90,8 @@ pipeline {
                 script {
                     String branchName = env.BRANCH_NAME
                     String couchbase_cert_file_id = getCouchbaseCertId(branchName)
-                    withMaven(globalMavenSettingsConfig: 'nextgen_maven', jdk: 'Java18', maven: 'Maven3.8.8', traceability: true) {
+
+                    mavenConfig {
                         withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
                             String versionTag = getVersionTag(branchName)
 
