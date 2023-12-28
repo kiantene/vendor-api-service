@@ -55,7 +55,7 @@ pipeline {
         SONAR_PROJECTKEY = 'ga-vendor-api-service'
         SONAR_HOST_URL = 'http://sonarqube.int:9000'
         SONAR_PROJECTNAME = 'GA-VendorAPI'
-        SONAR_LOGIN = credentials('sonar_token')
+        SONAR_TOKEN = credentials('sonar_token')
 
         QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
