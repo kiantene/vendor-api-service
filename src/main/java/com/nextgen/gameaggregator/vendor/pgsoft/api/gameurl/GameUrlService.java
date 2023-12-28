@@ -191,7 +191,7 @@ public class GameUrlService implements GameUrl {
                     this.getClass().getPackage().getName(), profilesActive);
 
             requestService.validateVendorHttpStatusResponse(apiResponse);
-            String vendorGameUrl = s3Service.GenerateHtmlToS3(gameSession.getToken(), apiResponse.getBody());
+            String vendorGameUrl = s3Service.GenerateHtmlToS3(gameSession, apiResponse.getBody());
             responseVo.setGameUrl(vendorGameUrl);
 
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
