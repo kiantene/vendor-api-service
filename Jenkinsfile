@@ -82,15 +82,13 @@ pipeline {
                     String branchName = env.BRANCH_NAME
                     String couchbase_cert_file_id = getCouchbaseCertId(branchName)
 
-                    mavenConfig {
-                        withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
-                            String versionTag = getVersionTag(branchName)
+                    withCredentials([file(credentialsId: "${couchbase_cert_file_id}", variable: 'SECRET_FILE')]) {
+                        String versionTag = getVersionTag(branchName)
 
-                            sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
-                            sh "mvn versions:set -DnewVersion=$versionTag"
+                        sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
+                        sh "mvn versions:set -DnewVersion=$versionTag"
 
-                            executeMaven('mvn clean package spring-boot:repackage -U -DskipTests')
-                        }
+                        executeMaven('mvn clean package spring-boot:repackage -U -DskipTests')
                     }
                 }
             }
