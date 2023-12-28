@@ -4,11 +4,13 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
+import com.nextgen.gameaggregator.entity.GameSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+
 import java.io.*;
 
 @Service
@@ -38,15 +40,16 @@ public class S3Service {
         return s3Client;
     }
 
-    public String GenerateHtmlToS3(String token, String rawHtml) throws RuntimeException {
+    public String GenerateHtmlToS3(GameSession gameSession, String rawHtml) throws RuntimeException {
 
         try {
             // Create an S3 client
             AmazonS3 s3Client = createS3Client();
 
             // Generate filename
-            String fileName = token + ".html";
-            String key = (isNullOrEmpty(awsFolder)) ? fileName : awsFolder + "/" + fileName;
+            String vendorCode = this.getVendorCode(gameSession.getGameCode());
+            String fileName = gameSession.getToken() + ".html";
+            String key = vendorCode + "/" + ((isNullOrEmpty(awsFolder)) ? fileName : awsFolder + "/" + fileName);
             uploadHtmlToS3(s3Client, key, rawHtml);
 
             return gameUrl + key;
@@ -73,8 +76,24 @@ public class S3Service {
         s3Client.putObject(putObjectRequest);
     }
 
-    private static boolean isNullOrEmpty(String str) {
-        return str == null || str.trim().isEmpty();
+    private static boolean isNullOrEmpty(String folder) {
+        return folder == null || folder.trim().isEmpty();
+    }
+
+    private String getVendorCode(String gameCode) {
+
+        String vendorGameCode = gameCode;
+        String[] getGameCodeParts = gameCode.split("_");
+
+        // Check if the underscore exists in the string
+        if (getGameCodeParts.length > 1) {
+            // Extract the substring before the underscore
+            vendorGameCode = getGameCodeParts[0];
+
+        }
+
+        return vendorGameCode.toLowerCase();
+
     }
 
 }
