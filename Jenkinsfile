@@ -66,22 +66,13 @@ pipeline {
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
     }
 
-    // Define common Maven configuration as a variable
-    def mavenConfig = {
-        withMaven(globalMavenSettingsConfig: 'nextgen_maven', traceability: true) {
-            it()
-        }
-    }
-
     stages {
         stage('SonarQube') {
             when {
                 branch 'stg'
             }
             steps {
-                mavenConfig {
-                    sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_LOGIN -DskipTests=true'
-                }
+                executeMaven('mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_LOGIN -DskipTests=true')
             }
         }
 
@@ -96,7 +87,8 @@ pipeline {
 
                             sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                             sh "mvn versions:set -DnewVersion=$versionTag"
-                            sh 'mvn clean package spring-boot:repackage -U -DskipTests'
+
+                            executeMaven('mvn clean package spring-boot:repackage -U -DskipTests')
                         }
                     }
                 }
@@ -247,7 +239,6 @@ pipeline {
 void updateContainerDefinitionJsonWithImageVersion(String packageVersion, String taskDefinitionPath) {
     List containerDefinitionJson = readJSON file: taskDefinitionPath, returnPojo: true
     containerDefinitionJson[0]['image'] = "${AWS_ECR_URL}:${packageVersion}".inspect()
-    echo "task definition JSON: ${containerDefinitionJson}"
     writeJSON file: taskDefinitionPath, json: containerDefinitionJson
 }
 
@@ -310,4 +301,10 @@ String getVersionTag(String branchName) {
     }
 
     return versionTag
+}
+
+def executeMaven(String mavenCommand) {
+    withMaven(globalMavenSettingsConfig: 'nextgen_maven', traceability: true) {
+        sh mavenCommand
+    }
 }
