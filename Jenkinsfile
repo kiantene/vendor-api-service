@@ -38,7 +38,7 @@ pipeline {
 
     environment {
         // Set environment variables used in the pipeline
-        JENKINS_CREDENTIALS = 'GA-AWS'
+        JENKINS_CREDENTIALS = 'ga_aws'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
         AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
 
@@ -54,6 +54,7 @@ pipeline {
 
         SONAR_PROJECTKEY = 'ga-vendor-api-service'
         SONAR_HOST_URL = 'http://sonarqube.int:9000'
+        SONAR_PROJECTNAME = 'GA-VendorAPI'
         SONAR_LOGIN = credentials('sonar_token')
 
         QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
@@ -72,7 +73,14 @@ pipeline {
                 branch 'stg'
             }
             steps {
-                executeMaven('mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_LOGIN -DskipTests=true')
+                executeMaven('''
+                    mvn clean verify sonar:sonar \
+                        -DskipTests \
+                        -Dsonar.projectKey=$SONAR_PROJECTKEY \
+                        -Dsonar.projectName=$SONAR_PROJECTNAME \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.token=$SONAR_TOKEN;
+                ''')
             }
         }
 
@@ -188,7 +196,7 @@ pipeline {
             }
             steps {
                 script {
-                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
+                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab_root', gitToolName: 'Default')]) {
                         String branchName = env.BRANCH_NAME
                         String versionTag = getVersionTag(branchName)
                         String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
