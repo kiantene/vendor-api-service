@@ -61,7 +61,7 @@ pipeline {
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
 
         JENKINS_URL = 'http://jenkins.int:8080'
-        STG_JOB_NAME = 'ga/vendor_api_service/stg'
+        STG_JOB_NAME = 'ga/ga-vendor-api-service/stg'
         PURGER_JOB_NAME = 'devops/purger'
 
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
