@@ -1,16 +1,18 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jili.service.CustomBooleanDeserializer;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.*;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Optional;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -43,7 +45,8 @@ public class BetDto implements BetResultData {
     @Digits(integer = 12, fraction = 4)
     private BigDecimal winloseAmount;
 
-    private boolean isFreeRound;
+    @JsonDeserialize(using = CustomBooleanDeserializer.class)
+    private Boolean isFreeRound;
 
     // Optional fields, not used for any processing
     private String userId;
@@ -115,7 +118,9 @@ public class BetDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return this.isFreeRound ? 1 : 0;
+        Boolean isFreeSpin = Optional.ofNullable(this.isFreeRound).orElse(Boolean.FALSE);
+        return isFreeSpin ? 1 : 0;
+
     }
 
     /**
