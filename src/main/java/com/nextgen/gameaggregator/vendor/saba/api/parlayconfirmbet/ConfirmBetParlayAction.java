@@ -64,6 +64,7 @@ public class ConfirmBetParlayAction {
         } finally {
             vo.setStatus("999");
             vo.setMsg("System Error");
+            httpService.logError(httpRequestLog, e);
             httpService.end(httpRequestLog, vo);
 
         }
