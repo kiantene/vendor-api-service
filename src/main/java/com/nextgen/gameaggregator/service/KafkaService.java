@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.SettledBet;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;

@@ -15,7 +15,7 @@ import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
