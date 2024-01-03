@@ -33,6 +33,7 @@ public class BetService {
                     commonVo.setWagerId(action.getWagerInfo().getWagerId());
 
                     try {
+                        action.getWagerInfo().setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
                         sportWalletService.placeBet(traceId, gameSession, action.getWagerInfo(), httpRequestLog.getRequestBody(), httpRequestLog);
                         commonVo.setResponseCode(ResponseCode.SUCCESS.code);
 
