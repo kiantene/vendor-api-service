@@ -66,7 +66,7 @@ public class BetDetailService implements BetDetailUrl {
             urlVo.setRecord("");
             urlVo.setRecordType("URL");
 
-            BetDetailUrlVo betDetailUrlVo = new com.nextgen.gameaggregator.vendor.dotconnections.api.betdetail.BetDetailUrlVo();
+            BetDetailUrlVo betDetailUrlVo = new BetDetailUrlVo();
             betDetailUrlVo.setCode(1000);
             betDetailUrlVo.setMsg("Success");
             betDetailUrlVo.setData(urlVo);
