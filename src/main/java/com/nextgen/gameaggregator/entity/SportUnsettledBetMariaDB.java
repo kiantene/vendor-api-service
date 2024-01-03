@@ -1,6 +1,7 @@
-package com.nextgen.gameaggregator.sport.entity;
+package com.nextgen.gameaggregator.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -12,7 +13,7 @@ import org.modelmapper.convention.MatchingStrategies;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "unsettled_bet_history")
+@Table(name = "sports_unsettled_bet")
 @Data
 @NoArgsConstructor
 public class SportUnsettledBetMariaDB {

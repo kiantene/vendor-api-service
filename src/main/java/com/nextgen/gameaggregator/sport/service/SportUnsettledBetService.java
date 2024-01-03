@@ -2,9 +2,9 @@ package com.nextgen.gameaggregator.sport.service;
 
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.sport.repository.UnsettledBetCouchbaseRepository;
-import com.nextgen.gameaggregator.sport.repository.UnsettledBetMariaDBRepository;
+import com.nextgen.gameaggregator.repository.UnsettledBetMariaDBRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
