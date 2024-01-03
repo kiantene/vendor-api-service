@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
@@ -53,8 +51,11 @@ public class ConfirmBetParlayAction {
                 betEvent = sportWalletService.confirmBet(traceId, gameSession, txnsDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
 
-            vo.setStatus("0");
-            vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
+//            vo.setStatus("0");
+//            vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
+
+            vo.setStatus("999");
+            vo.setMsg("System Error");
 
         } catch (Exception e) {
             vo.setStatus("999");
@@ -62,8 +63,6 @@ public class ConfirmBetParlayAction {
             httpService.logError(httpRequestLog, e);
 
         } finally {
-            vo.setStatus("999");
-            vo.setMsg("System Error");
             httpService.end(httpRequestLog, vo);
 
         }
