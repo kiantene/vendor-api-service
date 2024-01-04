@@ -24,30 +24,21 @@ def getECSConfig(String branchName) {
 pipeline {
     agent any
 
-    triggers {
-        // Listen for GitLab push events on all branches
-        gitlab(
-            triggerOnPush: true,
-            branchFilterType: 'All',
-            secretToken: '7b0b680f36c40cf9fe91652dac54411f'
-        )
+    tools {
+        jdk 'Java18'
+        maven 'Maven3.8.8'
     }
 
     options {
-        // Keep up to 10 build logs
-        buildDiscarder(logRotator(numToKeepStr: '10'))
         // Disable concurrent builds to avoid race conditions and aboard previous builds
         disableConcurrentBuilds(abortPrevious: true)
-        // Set a timeout of 1 hour
-        timeout(time: 1, unit: 'HOURS')
         // Add timestamps to build output
         timestamps()
     }
 
     environment {
         // Set environment variables used in the pipeline
-        JAVA_HOME = '/opt/jdk-18' // JDK 18 for build
-        JENKINS_CREDENTIALS = 'GA-AWS'
+        JENKINS_CREDENTIALS = 'ga_aws'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
         AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
 
@@ -62,25 +53,34 @@ pipeline {
         AWS_ECS_SERVICE = ''
 
         SONAR_PROJECTKEY = 'ga-vendor-api-service'
-        SONAR_HOST_URL = 'http://192.168.88.136:9000'
-        SONAR_LOGIN = credentials('sonar_token')
+        SONAR_HOST_URL = 'http://sonarqube.int:9000'
+        SONAR_PROJECTNAME = 'GA-VendorAPI'
+        SONAR_TOKEN = credentials('sonar_token')
 
         QA_LOGIN_SERVER = 'ubuntu@35.77.164.118'
         PORTAINER_SERVICE_NAME = 'vendor-api_main-service'
 
         JENKINS_URL = 'http://jenkins.int:8080'
-        STG_JOB_NAME = 'game_aggregator/devs/vendor_api_service/stg'
+        STG_JOB_NAME = 'ga/ga-vendor-api-service/stg'
+        PURGER_JOB_NAME = 'devops/purger'
 
         DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1055669297151746049/6hhQcW2n2z5FfiDCzKNioMDV7bMm10HyaSebl4CqqDUXpbSU2L9R5-HoVuNu7sL9NIsl?thread_id=1113328150210949130'
     }
 
     stages {
-        stage('SonarCube') {
+        stage('SonarQube') {
             when {
                 branch 'stg'
             }
             steps {
-                sh 'mvn clean verify sonar:sonar -Dsonar.projectKey=$SONAR_PROJECTKEY -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_LOGIN -DskipTests=true'
+                executeMaven('''
+                    mvn clean verify sonar:sonar \
+                        -DskipTests \
+                        -Dsonar.projectKey=$SONAR_PROJECTKEY \
+                        -Dsonar.projectName=$SONAR_PROJECTNAME \
+                        -Dsonar.host.url=$SONAR_HOST_URL \
+                        -Dsonar.token=$SONAR_TOKEN;
+                ''')
             }
         }
 
@@ -95,7 +95,8 @@ pipeline {
 
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                         sh "mvn versions:set -DnewVersion=$versionTag"
-                        sh 'mvn clean package spring-boot:repackage -U -DskipTests'
+
+                        executeMaven('mvn clean package spring-boot:repackage -U -DskipTests')
                     }
                 }
             }
@@ -195,7 +196,7 @@ pipeline {
             }
             steps {
                 script {
-                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab-root', gitToolName: 'Default')]) {
+                    withCredentials([gitUsernamePassword(credentialsId: 'gitlab_root', gitToolName: 'Default')]) {
                         String branchName = env.BRANCH_NAME
                         String versionTag = getVersionTag(branchName)
                         String commitMessage = sh(returnStdout: true, script: 'git log --format=%B -n 1').trim()
@@ -213,7 +214,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'jenkins_creds', passwordVariable: 'JENKINS_TOKEN', usernameVariable: 'JENKINS_USER')]) {
-                        build job: 'purger', parameters: [
+                        build job: PURGER_JOB_NAME, parameters: [
                             string(name: 'JENKINS_URL', value: JENKINS_URL),
                             string(name: 'JENKINS_USER', value: JENKINS_USER),
                             string(name: 'JENKINS_TOKEN', value: JENKINS_TOKEN),
@@ -245,7 +246,6 @@ pipeline {
 void updateContainerDefinitionJsonWithImageVersion(String packageVersion, String taskDefinitionPath) {
     List containerDefinitionJson = readJSON file: taskDefinitionPath, returnPojo: true
     containerDefinitionJson[0]['image'] = "${AWS_ECR_URL}:${packageVersion}".inspect()
-    echo "task definition JSON: ${containerDefinitionJson}"
     writeJSON file: taskDefinitionPath, json: containerDefinitionJson
 }
 
@@ -308,4 +308,10 @@ String getVersionTag(String branchName) {
     }
 
     return versionTag
+}
+
+def executeMaven(String mavenCommand) {
+    withMaven(globalMavenSettingsConfig: 'nextgen_maven', traceability: true) {
+        sh mavenCommand
+    }
 }
