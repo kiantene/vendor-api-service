@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.iloveu.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -56,7 +58,10 @@ public class BalanceAction {
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into balanceDto
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            //BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            BalanceDto balanceDto = objectMapper.readValue(body, BalanceDto.class);
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
