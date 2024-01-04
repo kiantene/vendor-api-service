@@ -1,12 +1,16 @@
 package com.nextgen.gameaggregator.vendor.iloveu.api.bet;
 
+import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.iloveu.api.balance.BalanceDto;
 import com.nextgen.gameaggregator.vendor.iloveu.api.settle.SettleTransactionDto;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.EndPoints;
@@ -61,7 +65,10 @@ public class BetAction {
             body = "{ \"transactions\" :" + body + "}";
 
             //Convert original request body into balanceDto
-            BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            //BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            BetDto betDto = objectMapper.readValue(body, BetDto.class);
 
             List<CompletableFuture<CommonVo>> futures = new LinkedList<>();
             for (BetTransactionDto transaction : betDto.getTransactions()) {
@@ -81,12 +88,14 @@ public class BetAction {
             CommonVo commonVo = new CommonVo();
             commonVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
             responseVo.add(commonVo);
+            betVo.setTransactions(responseVo);
             httpService.logError(httpRequestLog, jsonProcessingException);
 
         } catch (Exception exception) {
             CommonVo commonVo = new CommonVo();
             commonVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             responseVo.add(commonVo);
+            betVo.setTransactions(responseVo);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
@@ -144,6 +153,10 @@ public class BetAction {
         //Generate new traceId
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
+
+        //Insert Request Body
+        Gson gson = new Gson();
+        httpRequestLog.setRequestBody(gson.toJson(betTransactionDto));
         String body = httpRequestLog.getRequestBody();
 
         try {
@@ -151,7 +164,7 @@ public class BetAction {
             this.doValidation(betTransactionDto);
 
             // 2. Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betTransactionDto.getLoginId().toLowerCase(), betTransactionDto.getGameName().toLowerCase());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betTransactionDto.getLoginId().toLowerCase(), betTransactionDto.getGameName().toLowerCase().replaceAll("\\s", ""));
 
             // 3. Verify Credential and Currency
             this.doVerification(betTransactionDto, gameSession);

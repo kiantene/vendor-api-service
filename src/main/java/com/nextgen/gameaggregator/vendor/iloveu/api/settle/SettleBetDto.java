@@ -17,15 +17,15 @@ public class SettleBetDto {
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("totalBet")
+    @JsonProperty("TotalBet")
     public BigDecimal totalBet;
 
-    @JsonProperty("betDetail")
+    @JsonProperty("BetDetail")
     public String betDetail;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("validBet")
+    @JsonProperty("ValidBet")
     public BigDecimal validBet;
 }
