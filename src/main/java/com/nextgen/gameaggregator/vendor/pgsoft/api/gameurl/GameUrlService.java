@@ -96,8 +96,7 @@ public class GameUrlService implements GameUrl {
         return formData;
 
     }
-
-    //switch game
+    
     private MultiValueMap<String, String> newDataFormat(String gameCode, GameSession gameSession, Map<String, String> credentials) {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         String path = "/" + gameCode + "/index.html";
