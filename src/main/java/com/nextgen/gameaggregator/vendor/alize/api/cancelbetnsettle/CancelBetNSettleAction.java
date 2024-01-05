@@ -44,62 +44,65 @@ public class CancelBetNSettleAction {
         CommonVo responseVo = new CommonVo();
         String traceId = httpRequestLog.getId();
 
-        try {
-            // 1. Retrieve request body in original string format and convert into dto
-            String body = httpRequestLog.getRequestBody();
-            CancelBetNSettleDto dto = HttpService.convertJsonToDto(body, CancelBetNSettleDto.class);
+        // Block cancel settled bet (GA-4217)
+        responseVo.setResponseCode(ResponseCode.REFUSED_CANCEL);
 
-            // 2. Validate request parameters (Non-database calls)
-            this.doValidation(dto);
+        // try {
+        //     // 1. Retrieve request body in original string format and convert into dto
+        //     String body = httpRequestLog.getRequestBody();
+        //     CancelBetNSettleDto dto = HttpService.convertJsonToDto(body, CancelBetNSettleDto.class);
 
-            // 3. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+        //     // 2. Validate request parameters (Non-database calls)
+        //     this.doValidation(dto);
 
-            // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
+        //     // 3. Verify session token
+        //     GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
-            // 5. Process rollback
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
+        //     // 4. Verify remaining parameters (Verify against database values)
+        //     this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 6. Set response data
-            responseVo.setResponseCode(ResponseCode.SUCCESS);
-            responseVo.setBalance(balance);
-            responseVo.setUsername(dto.getUsername());
-            responseVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseVo.setTimestamp(System.currentTimeMillis());
+        //     // 5. Process rollback
+        //     BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
-        } catch (JsonProcessingException jsonProcessingException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        //     // 6. Set response data
+        //     responseVo.setResponseCode(ResponseCode.SUCCESS);
+        //     responseVo.setBalance(balance);
+        //     responseVo.setUsername(dto.getUsername());
+        //     responseVo.setCurrency(gameSession.getVendorCurrencyCode());
+        //     responseVo.setTimestamp(System.currentTimeMillis());
 
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (JsonProcessingException jsonProcessingException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (RecordNotFoundException recordNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (AuthenticationException authenticationException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (RecordNotFoundException recordNotFoundException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+        //     httpService.logError(httpRequestLog, invalidOperatorResponseException);
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
+
+        // } catch (BetNotFoundException betNotFoundException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
         
-        } catch (CredentialNotFoundException credentialNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (CredentialNotFoundException credentialNotFoundException) {
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } catch (Exception exception) { // any other exception encountered
-            httpService.logError(httpRequestLog, exception);
-            responseVo.setResponseCode(ResponseCode.ERROR);
+        // } catch (Exception exception) { // any other exception encountered
+        //     httpService.logError(httpRequestLog, exception);
+        //     responseVo.setResponseCode(ResponseCode.ERROR);
 
-        } finally {
-            httpService.end(httpRequestLog, responseVo);
-        }
+        // } finally {
+        //     httpService.end(httpRequestLog, responseVo);
+        // }
 
         return responseVo;
 
