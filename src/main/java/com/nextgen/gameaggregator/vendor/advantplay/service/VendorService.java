@@ -11,9 +11,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
@@ -46,8 +44,7 @@ public class VendorService extends BaseVendorService {
         //convert date time string to timestamp
         Long timestamp = null;
         if (rawDateTime != null) {
-            LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT));
-            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC+8"));
+            ZonedDateTime zonedDateTime = ZonedDateTime.parse(rawDateTime, DateTimeFormatter.ofPattern(Formats.DATE_TIME_FORMAT));
             timestamp = zonedDateTime.toInstant().toEpochMilli();
         }
         return timestamp;
