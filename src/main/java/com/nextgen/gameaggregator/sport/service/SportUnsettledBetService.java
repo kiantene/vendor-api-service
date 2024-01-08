@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.sport.service;
 
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.sport.repository.UnsettledBetCouchbaseRepository;
@@ -29,18 +30,6 @@ public class SportUnsettledBetService {
         unsettledBetCouchbaseRepository.delete(sportUnsettledBetCouchbase);
     }
 
-//    public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorId, String vendorGameId, String vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
-//        String mergeId = vendorId + '_' + vendorGameId + '_' + vendorPlayerId + '_' + externalTransactionId;
-//        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
-//
-//        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
-//        if (sportUnsettledBetCouchbase == null) { // No matching bet record
-//            throw new BetNotFoundException("Cannot find couchbase Id: " + mergeId);
-//        }
-//
-//        return sportUnsettledBetCouchbase;
-//    }
-
     public SportUnsettledBetCouchbase couchbaseGetByExternalTransactionId(String vendorPlayerUsername, String externalTransactionId) throws BetNotFoundException {
         String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
@@ -51,6 +40,16 @@ public class SportUnsettledBetService {
         }
 
         return sportUnsettledBetCouchbase;
+    }
+
+    public void idempotentCheck(String vendorPlayerUsername, String externalTransactionId) throws BetResultIdempotentViolationException {
+        String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
+
+        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
+        if (sportUnsettledBetCouchbase != null) { // No matching bet record
+            throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+        }
     }
 
     public List<SportUnsettledBetMariaDB> mariaDBGetByRoundId(String vendorId, String roundId) throws BetNotFoundException {

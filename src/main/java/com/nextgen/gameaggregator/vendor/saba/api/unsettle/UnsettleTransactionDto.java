@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.saba.api.unsettle;
 
-import com.nextgen.gameaggregator.sport.entity.SportUnsettleData;
+import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import lombok.Data;
 
 import java.math.BigDecimal;

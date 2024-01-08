@@ -9,9 +9,14 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.sport.bet.SportBetAction;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundAction;
+import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
+import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleAction;
+import com.nextgen.gameaggregator.operator.sport.resettle.SportResettleData;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.operator.sport.settle.SportSettleAction;
 import com.nextgen.gameaggregator.operator.sport.settle.SportWalletSettleAction;
 import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleAction;
+import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
@@ -41,6 +46,8 @@ public class SportWalletService {
     @Autowired
     private SportBetAction sportBetAction;
     @Autowired
+    private SportResettleAction sportResettleAction;
+    @Autowired
     private SportSettleAction sportSettleAction;
     @Autowired
     private SportSettledBetService sportSettledBetService;
@@ -57,7 +64,7 @@ public class SportWalletService {
     @Autowired
     private VendorPlayerService vendorPlayerService;
 
-    public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException {
+    public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
@@ -71,6 +78,7 @@ public class SportWalletService {
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
         }
 
+        sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
         BetEvent betEvent = null;
 
@@ -280,12 +288,28 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent resettle(String traceId, SportUnsettleData sportUnsettleData, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException {
+    public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException {
         BetEvent betEvent = null;
+        SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportResettleData.getVendorPlayerUsername(), sportResettleData.getExternalTransactionId());
 
         try {
-            this.unsettle(traceId, sportUnsettleData, rawData, httpRequestLog);
-            betEvent = this.settle(traceId, sportBetResultData, httpRequestLog);
+            WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog);
+
+            sportSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            sportSettledBet.setBalance(balanceVo.getData().getBalance());
+            sportSettledBet.setWinAmount(sportResettleData.getNewWinAmount());
+            sportSettledBet.setResettleNum((sportSettledBet.getResettleNum() != null && sportSettledBet.getResettleNum() >= 0) ? sportSettledBet.getResettleNum() + 1 : 0);
+            sportSettledBetService.save(sportSettledBet);
+
+            betEvent = new BetEvent(sportSettledBet, balanceVo.getData().getBalance());
+
+            // Generate new bet history to offset the old records
+            int resultType = sportSettledBet.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
+            BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, resultType);
+            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+
+            // Delete data from couchbase settled bet
+            sportSettledBetService.delete(sportSettledBet);
 
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
@@ -294,6 +318,21 @@ public class SportWalletService {
 
         return betEvent;
     }
+
+//    public BetEvent resettle(String traceId, SportUnsettleData sportUnsettleData, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException {
+//        BetEvent betEvent = null;
+//
+//        try {
+//            this.unsettle(traceId, sportUnsettleData, rawData, httpRequestLog);
+//            betEvent = this.settle(traceId, sportBetResultData, httpRequestLog);
+//
+//        } catch (Exception e) {
+//            throw new InvalidOperatorResponseException();
+//
+//        }
+//
+//        return betEvent;
+//    }
 
     private BetHistory offsetOldBetHistory(BetHistory betHistory) {
         BigDecimal newBetAmount = Optional.ofNullable(betHistory.getBetAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);

@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.sport.entity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;

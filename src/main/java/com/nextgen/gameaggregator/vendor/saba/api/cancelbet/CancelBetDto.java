@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.cancelbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.sport.entity.SportRefundData;
+import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
 import com.nextgen.gameaggregator.vendor.saba.dto.GeneralDto;
 import lombok.Data;
 

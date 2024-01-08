@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 
 import java.math.BigDecimal;

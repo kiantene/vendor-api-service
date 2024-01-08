@@ -36,7 +36,7 @@ public class ResettleAction {
             });
 
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
-                sportWalletService.resettle(traceId, txn, txn, httpRequestLog.getRequestBody(), httpRequestLog);
+                sportWalletService.resettle(traceId, txn, httpRequestLog);
             }
 
             vo.setStatus("0");
