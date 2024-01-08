@@ -1,20 +1,19 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
-import com.nextgen.gameaggregator.sport.entity.SportRefundData;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettleData;
-
+import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
+import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import lombok.Data;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ActionsWagerInfoDto implements SportBetResultData, SportUnsettleData, SportRefundData {
+public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData, SportUnsettleData {
     private String vendorPlayerUsername;
     private Integer vendorId;
 
