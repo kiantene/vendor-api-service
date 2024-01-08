@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.sport.entity;
+package com.nextgen.gameaggregator.operator.sport.refund;
 
 public interface SportRefundData {
     String getExternalTransactionId();

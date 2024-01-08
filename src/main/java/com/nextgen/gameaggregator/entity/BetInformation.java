@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.entity;
 
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.sport.entity.SportBetResultData;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;

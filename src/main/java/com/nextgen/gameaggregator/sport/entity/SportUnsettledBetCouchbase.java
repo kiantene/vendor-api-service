@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.BetInformation;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
