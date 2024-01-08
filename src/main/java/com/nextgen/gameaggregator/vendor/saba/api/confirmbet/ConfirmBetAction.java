@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -17,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -56,6 +59,10 @@ public class ConfirmBetAction {
             vo.setStatus("502");
             vo.setMsg("Player Has Insufficient Funds");
             httpService.logError(httpRequestLog, e);
+
+        } catch (BetResultIdempotentViolationException e) {
+            vo.setStatus("0");
+            vo.setBalance(BigDecimal.ZERO);
 
         } catch (Exception e) {
             vo.setStatus("999");

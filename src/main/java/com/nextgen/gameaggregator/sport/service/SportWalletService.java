@@ -105,7 +105,7 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent confirmBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidOperatorResponseException, InsufficientBalanceException {
+    public BetEvent confirmBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws BetNotFoundException, BetResultIdempotentViolationException, InvalidOperatorResponseException, InsufficientBalanceException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
@@ -122,6 +122,7 @@ public class SportWalletService {
         loggingService.logStart();
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
+        if (sportUnsettledBetCouchbase.getNewBetAmount() != null) throw new BetResultIdempotentViolationException();
         sportUnsettledBetCouchbase.setNewBetAmount(sportBetResultData.getNewBetAmount());
         sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
         sportUnsettledBetCouchbase.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
@@ -295,6 +296,8 @@ public class SportWalletService {
         try {
             WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog);
 
+            BigDecimal diffWinAmount = sportResettleData.getNewWinAmount().subtract(sportSettledBet.getWinAmount());
+
             sportSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportSettledBet.setBalance(balanceVo.getData().getBalance());
             sportSettledBet.setWinAmount(sportResettleData.getNewWinAmount());
@@ -306,10 +309,11 @@ public class SportWalletService {
             // Generate new bet history to offset the old records
             int resultType = sportSettledBet.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, resultType);
+            betHistory.setBetAmount(BigDecimal.ZERO);
+            betHistory.setWinAmount(diffWinAmount);
+            betHistory.setWinLoss(diffWinAmount);
+            betHistory.setEffectiveTurnover(BigDecimal.ZERO);
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
-
-            // Delete data from couchbase settled bet
-            sportSettledBetService.delete(sportSettledBet);
 
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
