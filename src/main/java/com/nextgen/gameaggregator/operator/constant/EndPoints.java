@@ -28,4 +28,6 @@ public class EndPoints {
     public static final String SPORT_CANCEL_BET = "/sports/cancel-bet";
     public static final String SPORT_UNSETTLE = "/sports/unsettle";
     public static final String SPORT_REFUND = "/sports/refund";
+    public static final String SPORT_RESETTLE = "/sports/resettle";
+    public static final String SPORT_ADJUSTMENT = "/sports/adjustment";
 }
