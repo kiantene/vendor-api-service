@@ -130,7 +130,6 @@ public class SportWalletService {
         loggingService.logStart();
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
-        if (sportUnsettledBetCouchbase.getNewBetAmount() != null) throw new BetResultIdempotentViolationException();
         sportUnsettledBetCouchbase.setNewBetAmount(sportBetResultData.getNewBetAmount());
         sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
         sportUnsettledBetCouchbase.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
