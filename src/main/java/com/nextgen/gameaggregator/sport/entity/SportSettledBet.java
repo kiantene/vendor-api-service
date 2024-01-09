@@ -69,6 +69,10 @@ public class SportSettledBet extends BetInformation {
         this.setResettleNum(0);
         this.setStatus(BetStatus.SETTLED.code);
 
+        this.setVendorBetTime(sportAdjustmentData.getTimestamp());
+        this.setVendorSettleTime(sportAdjustmentData.getTimestamp());
+        this.setResultTime(sportAdjustmentData.getTimestamp());
+
         this.setId(this.generateId());
     }
 

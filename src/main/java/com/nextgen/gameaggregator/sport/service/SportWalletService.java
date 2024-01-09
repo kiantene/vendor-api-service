@@ -337,7 +337,7 @@ public class SportWalletService {
 
         // get VendorPlayer
         VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(sportAdjustmentData.getVendorUsername());
-        AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getId());
+        AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
 
         // check idempotent
         sportBetAdjustmentLogService.idempotentCheck(traceId, vendorPlayer.getId().toString(), sportAdjustmentData.getExternalTransactionId());
@@ -362,8 +362,7 @@ public class SportWalletService {
             sportBetAdjustmentLogService.create(rawBetAdjustmentLog);
 
             // Generate new bet history to offset the old records
-            int resultType = sportSettledBet.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
-            BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, resultType);
+            BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
 
         } catch (Exception e) {

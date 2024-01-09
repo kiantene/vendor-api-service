@@ -51,6 +51,6 @@ public class AdjustBalanceDto extends GeneralDto implements SportAdjustmentData 
 
     @Override
     public Long getTimestamp() {
-        return null;
+        return System.currentTimeMillis();
     }
 }

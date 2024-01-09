@@ -110,7 +110,6 @@ public class SportAdjustmentAction {
             if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
-
             }
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
