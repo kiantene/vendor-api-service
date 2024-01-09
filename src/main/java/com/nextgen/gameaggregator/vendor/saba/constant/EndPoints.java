@@ -20,4 +20,7 @@ public class EndPoints {
     // Parlay Bet
     public static final String PLACE_BET_PARLAY = "/placebetparlay";
     public static final String CONFIRM_BET_PARLAY = "/confirmbetparlay";
+
+    // Wallet
+    public static final String ADJUST_BALANCE = "/adjustbalance";
 }

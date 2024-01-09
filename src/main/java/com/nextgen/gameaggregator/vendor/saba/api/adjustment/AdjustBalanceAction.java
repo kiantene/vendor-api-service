@@ -1,15 +1,12 @@
-package com.nextgen.gameaggregator.vendor.saba.api.confirmbet;
+package com.nextgen.gameaggregator.vendor.saba.api.adjustment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,12 +16,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
-public class ConfirmBetAction {
+public class AdjustBalanceAction {
 
     @Autowired
     private GameSessionService gameSessionService;
@@ -33,9 +28,8 @@ public class ConfirmBetAction {
     @Autowired
     private SportWalletService sportWalletService;
 
-    @PostMapping(path = EndPoints.CONFIRM_BET)
+    @PostMapping(path = EndPoints.ADJUST_BALANCE)
     public GeneralVo action(HttpServletRequest request) {
-
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
@@ -44,25 +38,12 @@ public class ConfirmBetAction {
 
         try {
             // Convert original request body into dto
-            RequestDto<ConfirmBetDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
+            RequestDto<AdjustBalanceDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getMessage().getUserId());
+            sportWalletService.adjustment(traceId, dto.getMessage(), httpRequestLog);
 
-            // 4. Process unsettle data
-            BetEvent betEvent = sportWalletService.confirmBet(traceId, gameSession, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
-
-            vo.setStatus("0");
-            vo.setBalance(betEvent.getLastBalance());
-
-        } catch (InsufficientBalanceException e) {
-            vo.setStatus("502");
-            vo.setMsg("Player Has Insufficient Funds");
-            httpService.logError(httpRequestLog, e);
-
-        } catch (BetResultIdempotentViolationException e) {
-            vo.setStatus("0");
-            vo.setBalance(BigDecimal.ZERO);
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (Exception e) {
             vo.setStatus("999");
@@ -75,5 +56,6 @@ public class ConfirmBetAction {
         }
 
         return vo;
+
     }
 }
