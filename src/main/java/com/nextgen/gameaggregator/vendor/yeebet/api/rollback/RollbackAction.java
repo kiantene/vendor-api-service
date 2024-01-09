@@ -7,11 +7,14 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.yeebet.constant.RequestType;
+import com.nextgen.gameaggregator.vendor.yeebet.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yeebet.service.VendorService;
 import com.nextgen.gameaggregator.vendor.yeebet.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -64,24 +67,24 @@ public class RollbackAction {
             gameSession = gameSessionService.verifyToken(rollbackDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(rollbackDto,gameSession);
+            this.doVerification(rollbackDto,gameSession,body);
 
             // 1 - failed to process deduct function (failed to place bet), 9 = failed to process deposit function (failed to settle transaction)
-            if(rollbackDto.getType().equals("1") || rollbackDto.getType().equals("9")){
+            if(rollbackDto.getType().equals(RequestType.BET_REQUEST) || rollbackDto.getType().equals(RequestType.SETTLE_REQUEST)){
                 // Retrieve the latest wallet balance from Operator
                 balance = walletService.processRollback(traceId,rollbackDto, gameSession, vendorService, httpRequestLog);
 
                 // set vo
-                responseVo.setResult(0);
-                responseVo.setDesc("Success");
+                responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
+                responseVo.setResult(ResponseCodes.SUCCESS_CODE);
                 responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
             }
 
             // 7 - failed to process cancel request at deduct function (return error msg to reject the cancel request)
-            if(rollbackDto.getType().equals("7")){
+            if(rollbackDto.getType().equals(RequestType.CANCEL_REQUEST)){
                 // set vo
-                responseVo.setDesc("Refuse to cancel this transaction");
-                responseVo.setResult(-1000);
+                responseVo.setDesc(ResponseCodes.REJECT_CANCEL_MSG);
+                responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
             }
 
         } catch(BetNotFoundException |
@@ -91,8 +94,8 @@ public class RollbackAction {
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // set vo
-            responseVo.setResult(0);
-            responseVo.setDesc("Success");
+            responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
+            responseVo.setResult(ResponseCodes.SUCCESS_CODE);
             responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
 
         } catch(VendorCurrencyNotSupportException |
@@ -107,19 +110,19 @@ public class RollbackAction {
                 TransactionStillProcessingException e){
             httpService.logError(httpRequestLog, e);
 
-            responseVo.setDesc("The system is error, please contact");
-            responseVo.setResult(-1000);
+            responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
+            responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
         } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
 
             // set vo
-            responseVo.setDesc("Parameter error,please check");
-            responseVo.setResult(-1002);
+            responseVo.setDesc(ResponseCodes.PARAMETER_ERROR_MSG);
+            responseVo.setResult(ResponseCodes.PARAMETER_ERROR_CODE);
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
 
-            responseVo.setDesc("The system is error, please contact");
-            responseVo.setResult(-1000);
+            responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
+            responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
         }finally{
             httpService.end(httpRequestLog, responseVo);
         }
@@ -132,7 +135,7 @@ public class RollbackAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RollbackDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(RollbackDto dto, GameSession gameSession, String queryString) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -148,6 +151,23 @@ public class RollbackAction {
         //Verify received appid is same with credential
         String appid = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_app_id);
         ValidationUtils.isEquals(appid, dto.getAppid(), InvalidRequestException::new);
+
+        // Verify sign value
+        String secret_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_secret_key);
+
+        String converted_body = vendorService.urlDecode(queryString);
+
+        // Trim the string from the beginning until the first "&sign"
+        int signIndex = converted_body.indexOf("&sign");
+        String trimmedString = converted_body.substring(0, signIndex);
+
+        // Convert query string into map format with ASCII order
+        MultiValueMap<String, String> sortedMultiValueMap = vendorService.convertToSortedMultiValueMap(trimmedString);
+
+        // generate sign value
+        String verify_sign = vendorService.generateSign(sortedMultiValueMap,secret_key);
+
+        ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {

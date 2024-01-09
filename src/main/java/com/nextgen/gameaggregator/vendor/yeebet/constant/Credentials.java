@@ -8,4 +8,6 @@ public class Credentials {
     public static final String game_secret_key = "game_secret_key";
 
     public static final String api_app_id = "api_app_id";
+
+    public static final String api_secret_key = "api_secret_key";
 }

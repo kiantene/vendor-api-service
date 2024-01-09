@@ -3,9 +3,15 @@ package com.nextgen.gameaggregator.vendor.yeebet.service;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -59,7 +65,68 @@ public class VendorService extends BaseVendorService {
         return md5Hash;
     }
 
-    public static long getTimeStamp(long ori_time){
-        return ori_time * 1000;
+    public static long getTimeStamp(long ori_time){ return ori_time * 1000;}
+
+    public static MultiValueMap<String, String> convertToSortedMultiValueMap(String input) {
+
+        // Split the input string by "&" to get individual key-value pairs
+        String[] array = input.split("&");
+
+        // Convert into List
+        List<String> sortedKeys = new ArrayList<>();
+        for (String element : array) {
+            sortedKeys.add(element);
+        }
+
+        // Sort array key according to ACSII order
+        Collections.sort(sortedKeys);
+
+        MultiValueMap<String, String> multiValueMap = new LinkedMultiValueMap<>();
+
+        for (String element : sortedKeys) {
+            // Split each element by "=" to get key and value
+            String[] keyValue = element.split("=");
+
+            // Ensure that the pair has both key and value
+            if (keyValue.length == 2) {
+                String key = keyValue[0];
+                String value = keyValue[1];
+
+                // Add the key-value pair to the MultiValueMap
+                multiValueMap.add(key, value);
+            }
+        }
+
+        return multiValueMap;
+    }
+
+    // urldecode request data
+    public static String urlDecode(String queryString){
+        String converted_body = null;
+
+        try{
+            converted_body = URLDecoder.decode(queryString, StandardCharsets.UTF_8.name());
+
+        } catch (Exception exception) {
+
+        }
+
+        return converted_body;
+    }
+
+    public static String trimGameCode(String gameCode){
+
+        String trimmedGameCode = null;
+
+        // check if game code contain _stg (ignore case-sensitive)
+        if(gameCode.toLowerCase().contains("_stg")){
+            // Trim value by removing _stg (ignore case-sensitive)
+            trimmedGameCode = gameCode.replaceFirst("(?i)_stg$", "");
+        }else{
+            // let trimmedCode same as gameCode
+            trimmedGameCode = gameCode;
+        }
+
+        return trimmedGameCode;
     }
 }
