@@ -7,6 +7,8 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.operator.sport.adjustment.SportAdjustmentAction;
+import com.nextgen.gameaggregator.operator.sport.adjustment.SportAdjustmentData;
 import com.nextgen.gameaggregator.operator.sport.bet.SportBetAction;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundAction;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
@@ -21,9 +23,7 @@ import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.service.KafkaService;
-import com.nextgen.gameaggregator.service.LoggingService;
-import com.nextgen.gameaggregator.service.VendorPlayerService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
@@ -38,13 +38,19 @@ import java.util.UUID;
 public class SportWalletService {
 
     @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
     private BetHistoryRepository betHistoryRepository;
     @Autowired
     private KafkaService kafkaService;
     @Autowired
     private LoggingService loggingService;
     @Autowired
+    private SportAdjustmentAction sportAdjustmentAction;
+    @Autowired
     private SportBetAction sportBetAction;
+    @Autowired
+    private SportBetAdjustmentLogService sportBetAdjustmentLogService;
     @Autowired
     private SportResettleAction sportResettleAction;
     @Autowired
@@ -63,6 +69,8 @@ public class SportWalletService {
     private SportUnsettleAction sportUnsettleAction;
     @Autowired
     private VendorPlayerService vendorPlayerService;
+    @Autowired
+    private VendorService vendorService;
 
     public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException {
 
@@ -313,6 +321,49 @@ public class SportWalletService {
             betHistory.setWinAmount(diffWinAmount);
             betHistory.setWinLoss(diffWinAmount);
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
+            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+
+        } catch (Exception e) {
+            throw new InvalidOperatorResponseException();
+
+        }
+
+        return betEvent;
+    }
+
+    public BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException, BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException, VendorCurrencyNotSupportException {
+
+        BetEvent betEvent = null;
+
+        // get VendorPlayer
+        VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(sportAdjustmentData.getVendorUsername());
+        AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getId());
+
+        // check idempotent
+        sportBetAdjustmentLogService.idempotentCheck(traceId, vendorPlayer.getId().toString(), sportAdjustmentData.getExternalTransactionId());
+
+        try {
+            SportSettledBet sportSettledBet = new SportSettledBet(traceId, vendorPlayer, agentPlayer, sportAdjustmentData, httpRequestLog.getRequestBody());
+
+            // Adjustment Request to Operator
+            WalletBalanceVo balanceVo = sportAdjustmentAction.call(traceId, agentPlayer.getAgentId(), sportSettledBet, httpRequestLog);
+
+            // update operator status after receiving response from operator
+            sportSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            sportSettledBet.setBalance(balanceVo.getData().getBalance());
+            sportSettledBetService.save(sportSettledBet);
+
+            betEvent = new BetEvent(sportSettledBet, balanceVo.getData().getBalance());
+
+            // update operator status after receiving response from operator
+            RawBetAdjustmentLog rawBetAdjustmentLog = sportBetAdjustmentLogService.newSportBetAdjustmentLog(traceId, vendorPlayer, agentPlayer, sportAdjustmentData, balanceVo.getData().getBalance());
+            rawBetAdjustmentLog.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+            rawBetAdjustmentLog.setBalance(balanceVo.getData().getBalance());
+            sportBetAdjustmentLogService.create(rawBetAdjustmentLog);
+
+            // Generate new bet history to offset the old records
+            int resultType = sportSettledBet.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
+            BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, resultType);
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
 
         } catch (Exception e) {
