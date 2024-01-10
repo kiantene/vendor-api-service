@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
@@ -71,6 +72,9 @@ public class PlaceBetParlayAction {
 
         } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+
+        } catch (InsufficientBalanceException e) {
+            vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);

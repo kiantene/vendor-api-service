@@ -74,7 +74,7 @@ public class SportWalletService {
     @Autowired
     private VendorService vendorService;
 
-    public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetResultIdempotentViolationException {
+    public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
@@ -102,6 +102,19 @@ public class SportWalletService {
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
+
+        } catch (InvalidOperatorResponseException e) {
+
+            // record status code from operator if they return an error
+            Integer operatorStatus = e.getOperatorStatus();
+            sportUnsettledBetCouchbase.setOperatorStatus(operatorStatus);
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+
+            if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                throw new InsufficientBalanceException();
+            } else {
+                throw e;
+            }
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -305,7 +318,7 @@ public class SportWalletService {
 
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
-            
+
         }
 
         return betEvent;
@@ -345,7 +358,7 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException, BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException, VendorCurrencyNotSupportException {
+    public BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException, BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException, VendorCurrencyNotSupportException, InsufficientBalanceException {
 
         BetEvent betEvent = null;
 
@@ -378,6 +391,16 @@ public class SportWalletService {
             // Generate new bet history to offset the old records
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
             kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+
+        } catch (InvalidOperatorResponseException e) {
+
+            Integer operatorStatus = e.getOperatorStatus();
+
+            if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                throw new InsufficientBalanceException();
+            } else {
+                throw e;
+            }
 
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
