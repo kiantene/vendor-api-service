@@ -43,10 +43,13 @@ public class GameUrlService implements GameUrl {
             throws InvalidVendorLineException, InvalidFormatException {
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
 
+        // trim game code by removing "_stg" or "_STG"
+        String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
+
         formData.add("appid", credentials.get(Credentials.game_app_id));
         formData.add("clienttype", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
-        formData.add("gid", gameSession.getVendorGameCode());
+        formData.add("gid", game_code);
         formData.add("iscreate", "1");
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("returnurl", gameSession.getLobbyUrl());

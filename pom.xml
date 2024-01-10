@@ -40,6 +40,7 @@
         <io-netty.version>4.1.90.Final</io-netty.version>
         <poi.version>5.2.2</poi.version>
         <modelmapper.version>3.1.1</modelmapper.version>
+        <aws-java-sdk-s3.version>1.12.513</aws-java-sdk-s3.version>
     </properties>
 
     <dependencies>
@@ -162,6 +163,11 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>3.17.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>${aws-java-sdk-s3.version}</version>
         </dependency>
     </dependencies>
 
