@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.saba.constant;
 
 public class EndPoints {
+    public static final String VENDOR_CODE = "SABA";
+
     // Vendor Path
     public static final String PATH = "api/v1/saba";
 

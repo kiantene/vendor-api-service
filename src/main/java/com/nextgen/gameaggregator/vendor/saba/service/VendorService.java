@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.service;
 
+import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -28,5 +30,12 @@ public class VendorService {
         String iso8601WithOffset = zonedDateTime.format(formatter);
 
         return iso8601WithOffset;
+    }
+
+    public String generateBatchProcessId(String action, String operationId){
+        String idempotentId = EndPoints.VENDOR_CODE + "_" + action + "_" + operationId;
+        idempotentId = DigestUtils.md5Hex(idempotentId).toUpperCase();
+
+        return idempotentId;
     }
 }

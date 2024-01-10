@@ -424,21 +424,6 @@ public class SportWalletService {
         }
     }
 
-//    public BetEvent resettle(String traceId, SportUnsettleData sportUnsettleData, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException {
-//        BetEvent betEvent = null;
-//
-//        try {
-//            this.unsettle(traceId, sportUnsettleData, rawData, httpRequestLog);
-//            betEvent = this.settle(traceId, sportBetResultData, httpRequestLog);
-//
-//        } catch (Exception e) {
-//            throw new InvalidOperatorResponseException();
-//
-//        }
-//
-//        return betEvent;
-//    }
-
     private BetHistory offsetOldBetHistory(BetHistory betHistory) {
         BigDecimal newBetAmount = Optional.ofNullable(betHistory.getBetAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
         BigDecimal newWinAmount = Optional.ofNullable(betHistory.getWinAmount()).map(BigDecimal::negate).orElse(BigDecimal.ZERO);
