@@ -3,10 +3,12 @@ package com.nextgen.gameaggregator.vendor.saba.api.parlaybet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -65,11 +67,13 @@ public class PlaceBetParlayAction {
             }
 
             vo.setTxns(txnsVoList);
-            vo.setStatus("0");
+            vo.setResponseCode(ResponseCode.SUCCESS);
+
+        } catch (BetResultIdempotentViolationException e) {
+            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
 
         } catch (Exception e) {
-            vo.setStatus("999");
-            vo.setMsg("System Error");
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
 
         } finally {
