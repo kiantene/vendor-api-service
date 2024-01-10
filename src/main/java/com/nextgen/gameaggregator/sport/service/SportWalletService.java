@@ -25,6 +25,8 @@ import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.repository.BetHistoryRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.*;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -219,15 +221,13 @@ public class SportWalletService {
     @Async
     public void batchSettle(List<SportBetResultData> sportBetResultDataList, String rawData) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
-            SportRawSettledBet sportRawSettledBet = new SportRawSettledBet(sportBetResultData, rawData);
-//            kafkaService.produceSettledBet(sportSettledBet);
             String traceId = UUID.randomUUID().toString();
             this.settle(traceId, sportBetResultData, null);
         }
     }
 
     public BetEvent refund(String traceId, SportRefundData sportRefundData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
-        InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
+            InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
         BetEvent betEvent = null;
@@ -261,7 +261,7 @@ public class SportWalletService {
 
     public BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
             InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException {
-        
+
         BetEvent betEvent = null;
         SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportUnsettleData.getVendorPlayerUsername(), sportUnsettleData.getExternalTransactionId());
 
@@ -289,11 +289,11 @@ public class SportWalletService {
 
             // Delete data from couchbase settled bet
             sportSettledBetService.delete(sportSettledBet);
-    
+
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
         }
-    
+
         return betEvent;
     }
 
@@ -371,6 +371,20 @@ public class SportWalletService {
         }
 
         return betEvent;
+    }
+
+    public void asyncSettle(SportBetResultData sportBetResultData) {
+        try {
+            SportRawSettledBet sportRawSettledBet = new SportRawSettledBet();
+            ModelMapper modelMapper = new ModelMapper();
+            modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+            modelMapper.map(sportBetResultData, sportRawSettledBet);
+            kafkaService.produceRawSettledBet(sportRawSettledBet);
+
+        } catch (Exception e) {
+
+
+        }
     }
 
 //    public BetEvent resettle(String traceId, SportUnsettleData sportUnsettleData, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException {

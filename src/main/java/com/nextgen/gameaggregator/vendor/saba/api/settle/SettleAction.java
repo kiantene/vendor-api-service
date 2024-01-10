@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
@@ -14,13 +13,10 @@ import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -52,10 +48,14 @@ public class SettleAction {
             RequestDto<SettleDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
-            List<SportBetResultData> sportBetResultDataList = dto.getMessage().getTxns().stream()
-                    .map(a -> new ModelMapper().map(a, SportBetResultData.class))
-                    .toList();
-            sportWalletService.batchSettle(sportBetResultDataList, httpRequestLog.getRequestBody());
+//            List<SportBetResultData> sportBetResultDataList = dto.getMessage().getTxns().stream()
+//                    .map(a -> new ModelMapper().map(a, SportBetResultData.class))
+//                    .toList();
+//            sportWalletService.batchSettle(sportBetResultDataList, httpRequestLog.getRequestBody());
+
+            for (SettleBetTransactionDto txn : dto.getMessage().getTxns()) {
+                sportWalletService.asyncSettle(txn);
+            }
 
             vo.setResponseCode(ResponseCode.SUCCESS);
 

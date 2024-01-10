@@ -1,78 +1,27 @@
 package com.nextgen.gameaggregator.sport.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
 
 import java.math.BigDecimal;
 
 @Data
 @NoArgsConstructor
-public class SportRawSettledBet {
-    @JsonProperty("vendor_player_username")
-    private String vendorPlayerUsername;
-
-    @JsonProperty("external_transaction_id")
+public class SportRawSettledBet implements SportBetResultData {
     private String externalTransactionId;
-
-    @JsonProperty("vendor_bet_id")
     private String vendorBetId;
-
-    @JsonProperty("round_id")
     private String roundId;
-
-    @JsonProperty("vendor_game_id")
-    private Integer vendorGameId;
-
-    @JsonProperty("win_amount")
+    private String gameId;
+    private String vendorPlayerUsername;
+    private BigDecimal betAmount;
+    private BigDecimal newBetAmount;
     private BigDecimal winAmount;
-
-    @JsonProperty("effective_turnover")
+    private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
-
-    @JsonProperty("odds")
-    private BigDecimal odds;
-
-    @JsonProperty("odd_type_id")
-    private Integer oddTypeId;
-
-    @JsonProperty("vendor_bet_time")
     private Long vendorBetTime;
-
-    @JsonProperty("result_time")
     private Long resultTime;
-
-    @JsonProperty("vendor_settle_time")
     private Long vendorSettleTime;
-
-    @JsonProperty("retry_count")
-    private Integer retryCount;
-
-    @JsonProperty("next_execution_time")
-    private Long nextExecutionTime;
-
-    @JsonProperty("raw_data")
-    private String rawData;
-
-    public SportRawSettledBet(SportBetResultData sportBetResultData, String rawData) {
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        modelMapper.map(sportBetResultData, this);
-
-        this.setRawData(rawData);
-    }
-
-    public BetHistory toBetHistory(SportUnsettledBetMariaDB unsettledBet) {
-        BetHistory betHistory = new BetHistory();
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        modelMapper.map(this, betHistory);
-
-        return betHistory;
-    }
+    private BetStatus betStatus;
 }

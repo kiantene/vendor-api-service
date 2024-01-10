@@ -3,10 +3,15 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.ExceedThresholdCounterException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
+import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
+import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -32,6 +37,8 @@ public class KafkaConsumerService {
     private LoggingService loggingService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private SportWalletService sportWalletService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcess(String message) throws InterruptedException {
@@ -178,6 +185,19 @@ public class KafkaConsumerService {
         if (endRoundSettledBet.getProcessEndRoundCounter() >= exceedThresholdCounter) {
             //if more than 5 times, throw ExceedThresholdCounterException and logged down separately
             throw new ExceedThresholdCounterException();
+
+        }
+    }
+
+    @KafkaListener(topics = KafkaConstant.TOPIC_RAW_SETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void consumeRawSettledBet(String message) {
+        String traceId = UUID.randomUUID().toString();
+
+        try {
+            SportRawSettledBet sportRawSettledBet = new Gson().fromJson(message, SportRawSettledBet.class);
+            sportWalletService.settle(traceId, sportRawSettledBet, null);
+
+        } catch (Exception e) {
 
         }
     }

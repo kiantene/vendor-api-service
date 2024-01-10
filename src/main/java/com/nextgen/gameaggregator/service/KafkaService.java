@@ -5,8 +5,8 @@ import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.BetHistory;
 import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -58,11 +58,13 @@ public class KafkaService {
         }
     }
 
-    public void produceSettledBet(SportRawSettledBet sportRawSettledBet) {
+    public void produceRawSettledBet(SportRawSettledBet sportRawSettledBet) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_SETTLED_BET, new Gson().toJson(sportRawSettledBet));
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_RAW_SETTLED_BET, new Gson().toJson(sportRawSettledBet));
+
         } catch (Exception e) {
             log.error(e.getMessage());
+
         }
     }
 }
