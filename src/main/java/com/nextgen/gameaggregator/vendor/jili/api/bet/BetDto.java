@@ -48,9 +48,12 @@ public class BetDto implements BetResultData {
     @JsonDeserialize(using = CustomBooleanDeserializer.class)
     private Boolean isFreeRound;
 
+    // Transaction ID used when Free Spin
+    @Positive
+    private BigInteger transactionId;
+
     // Optional fields, not used for any processing
     private String userId;
-    private BigInteger transactionId;
     private String platform;
     private Integer statementType;
     private Integer gameCategory;
@@ -68,7 +71,7 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return String.valueOf(this.round);
+        return (Optional.ofNullable(this.isFreeRound).orElse(Boolean.FALSE) && (this.transactionId != null)) ? String.valueOf(this.transactionId) : String.valueOf(this.round);
     }
 
     @Override
