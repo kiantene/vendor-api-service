@@ -59,6 +59,20 @@ public class BetDetailService implements BetDetailUrl {
     @Override
     public com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode) throws InvalidVendorResponseException, InvalidVendorLineException {
 
+        String provider = formData.getFirst("provider");
+
+        if (provider.equals("relax")) {
+            UrlVo urlVo = new UrlVo();
+            urlVo.setRecord("");
+            urlVo.setRecordType("URL");
+
+            BetDetailUrlVo betDetailUrlVo = new BetDetailUrlVo();
+            betDetailUrlVo.setCode(1000);
+            betDetailUrlVo.setMsg("Success");
+            betDetailUrlVo.setData(urlVo);
+            return betDetailUrlVo;
+        }
+
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
