@@ -10,8 +10,8 @@ import java.math.BigDecimal;
 
 @Document
 @Scope("raw")
-@TypeAlias("bet_idempotent_log")
-@Collection("bet_idempotent_log")
+@TypeAlias("bet_idempotent_logs")
+@Collection("bet_idempotent_logs")
 @Data
 public class RawBetIdempotentLog {
     @Id
