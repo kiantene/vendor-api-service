@@ -69,7 +69,7 @@ public class UnsettleAction {
             httpService.logError(httpRequestLog, e);
 
         } finally {
-            vo.setResponseCode(ResponseCode.SUCCESS);
+            httpService.end(httpRequestLog, vo);
 
         }
 

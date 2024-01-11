@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetRefundIdempotentViolationException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -37,15 +39,40 @@ public class CancelBetAction {
 
         try {
             // Convert original request body into dto
-            RequestDto<CancelBetDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
+            RequestDto<CancelBetDto> dtos = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
-            BetEvent betEvent = null;
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
-            for (CancelBetTransactionDto txn : dto.getMessage().getTxns()) {
-                dto.getMessage().setRefId(txn.getRefId());
-                betEvent = sportWalletService.refund(traceId, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
+            for (CancelBetTransactionDto txn : dtos.getMessage().getTxns()) {
+                dtos.getMessage().setRefId(txn.getRefId());
+                GeneralVo response = this.singleRefund(dtos.getMessage(), httpRequestLog);
+
+                if (response.getStatus().equals(ResponseCode.DUPLICATE_TRANSACTION.status)) {
+                    vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+                }
             }
+
+        } catch (Exception e) {
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
+
+        } finally {
+            httpService.end(httpRequestLog, vo);
+
+        }
+
+        return vo;
+    }
+
+    private GeneralVo singleRefund(CancelBetDto txn, HttpRequestLog httpRequestLog) {
+        // Construct Vo
+        GeneralVo vo = new GeneralVo();
+        BetEvent betEvent = null;
+
+        try {
+            String traceId = UUID.randomUUID().toString();
+            betEvent = sportWalletService.refund(traceId, txn, httpRequestLog.getRequestBody(), httpRequestLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
             vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
@@ -54,12 +81,12 @@ public class CancelBetAction {
             vo.setResponseCode(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY);
             httpService.logError(httpRequestLog, e);
 
-        } catch (Exception e) {
-            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+        } catch (BetRefundIdempotentViolationException e) {
+            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
             httpService.logError(httpRequestLog, e);
 
-        } finally {
-            httpService.end(httpRequestLog, vo);
+        } catch (Exception e) {
+            httpService.logError(httpRequestLog, e);
 
         }
 
