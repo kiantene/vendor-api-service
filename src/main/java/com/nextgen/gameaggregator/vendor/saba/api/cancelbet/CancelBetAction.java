@@ -48,12 +48,17 @@ public class CancelBetAction {
                 dtos.getMessage().setRefId(txn.getRefId());
                 GeneralVo response = this.singleRefund(dtos.getMessage(), httpRequestLog);
 
-                if (response.getStatus().equals(ResponseCode.DUPLICATE_TRANSACTION.status)) {
+                if (vo.getStatus().equals(ResponseCode.SUCCESS.status) && response.getStatus().equals(ResponseCode.DUPLICATE_TRANSACTION.status)) {
                     vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+                } else if (vo.getStatus().equals(ResponseCode.SUCCESS.status) && response.getStatus().equals(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY.status)) {
+                    vo.setResponseCode(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY);
+                } else if (vo.getStatus().equals(ResponseCode.SUCCESS.status) && response.getStatus().equals(ResponseCode.SYSTEM_ERROR_RETRY.status)) {
+                    vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
                 }
             }
 
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
 
