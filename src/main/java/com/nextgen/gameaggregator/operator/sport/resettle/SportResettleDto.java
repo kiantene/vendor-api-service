@@ -14,14 +14,13 @@ public class SportResettleDto {
     private String betId;
     private String gameCode;
     private String currency;
-    private Long timestamp;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal winLoss;
     private BigDecimal effectiveTurnover;
     private BigDecimal newWinAmount;
-    private BigDecimal newWinLoss;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
+    private Long timestamp;
 
 }
