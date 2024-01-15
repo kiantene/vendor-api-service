@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.transactions.list;
 
 import com.nextgen.gameaggregator.exception.InvalidDateRangeException;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
 import com.nextgen.gameaggregator.util.MysqlUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

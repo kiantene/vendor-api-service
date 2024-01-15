@@ -5,16 +5,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorCurrencyRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLanguageCodeRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.entity.custom.IGameVendor;
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.*;
 
 @Service
 @Slf4j

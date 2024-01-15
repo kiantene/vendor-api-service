@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.exception;
 
-import com.nextgen.gameaggregator.entity.RawBetRefundLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetRefundLog;
 
 public class BetRefundIdempotentViolationException extends Exception {
     private RawBetRefundLog betRefundLog;

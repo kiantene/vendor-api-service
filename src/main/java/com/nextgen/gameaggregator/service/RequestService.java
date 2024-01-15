@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.ProcessEndRoundLog;
+import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.ProcessEndRoundLog;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;

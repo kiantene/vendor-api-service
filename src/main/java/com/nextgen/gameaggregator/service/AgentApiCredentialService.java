@@ -1,15 +1,14 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.AgentCurrency;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidUrlException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.apiverification.agentinfo.AgentInfoVo;
-import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
-import com.nextgen.gameaggregator.repository.AgentCurrencyRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentCurrencyRepository;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;

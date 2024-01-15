@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.VendorGameCode;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.repository.VendorGameCodeRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

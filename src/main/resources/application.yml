@@ -105,3 +105,11 @@ image:
   gameurl:
 testing:
   stub: false
+aws:
+  s3:
+    id: 'AKIAZHVJ7PY7KFDXP6WW'
+    secret: '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'
+    bucket: 'gameurl'
+    region: 'ap-northeast-1'
+    gameUrl: 'https://gameurl.s3.ap-northeast-1.amazonaws.com/'
+    folder: ''

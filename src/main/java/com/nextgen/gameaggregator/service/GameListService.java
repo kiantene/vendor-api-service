@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.AgentVendorLine;
-import com.nextgen.gameaggregator.entity.Currency;
-import com.nextgen.gameaggregator.entity.Language;
-import com.nextgen.gameaggregator.entity.Vendor;
+import com.nextgen.gameaggregator.entity.ga.AgentVendorLine;
+import com.nextgen.gameaggregator.entity.ga.Language;
+import com.nextgen.gameaggregator.entity.ga.Vendor;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.operator.game.list.GameListData;
 import com.nextgen.gameaggregator.operator.game.list.GameListDto;
-import com.nextgen.gameaggregator.repository.LanguageRepository;
-import com.nextgen.gameaggregator.repository.VendorGameRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.LanguageRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

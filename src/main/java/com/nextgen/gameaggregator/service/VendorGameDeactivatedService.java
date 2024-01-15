@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.Agent;
-import com.nextgen.gameaggregator.entity.VendorGameDeactivated;
+import com.nextgen.gameaggregator.entity.ga.Agent;
+import com.nextgen.gameaggregator.entity.ga.VendorGameDeactivated;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
-import com.nextgen.gameaggregator.repository.VendorGameDeactivatedRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameDeactivatedRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -1,10 +1,9 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.entity.Currency;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.*;
+import com.nextgen.gameaggregator.repository.ga.writer.*;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +16,9 @@ import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
