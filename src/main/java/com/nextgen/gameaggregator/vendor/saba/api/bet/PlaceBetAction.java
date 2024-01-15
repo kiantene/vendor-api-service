@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.bet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -38,6 +39,7 @@ public class PlaceBetAction {
 
         // Construct Vo
         PlaceBetVo vo = new PlaceBetVo();
+        BetEvent betEvent = null;
 
         try {
             // Convert original request body into dto
@@ -46,9 +48,10 @@ public class PlaceBetAction {
 
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getMessage().getUserId());
 
-            sportWalletService.placeBet(traceId, gameSession, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
+            betEvent = sportWalletService.placeBet(traceId, gameSession, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setRefId(betEvent.getBetInformation().getExternalTransactionId());
             vo.setLicenseeTxId(traceId);
 
         } catch (BetResultIdempotentViolationException e) {
