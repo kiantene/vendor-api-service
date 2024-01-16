@@ -34,7 +34,7 @@ public class RollbackDto extends ActionDto implements RollbackData {
     private String externalSessionId;
 
     @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long transactionId;
 
     @NotNull

@@ -37,7 +37,7 @@ public class CreditDto extends ActionDto implements BetResultData {
     private String externalSessionId;
 
     @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long transactionId;
 
     @NotBlank
