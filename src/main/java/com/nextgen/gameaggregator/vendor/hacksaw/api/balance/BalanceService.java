@@ -71,7 +71,7 @@ public class BalanceService {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
 
-        } catch (InvalidRequestException | CredentialNotFoundException e) {
+        } catch (InvalidRequestException | CredentialNotFoundException | GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 

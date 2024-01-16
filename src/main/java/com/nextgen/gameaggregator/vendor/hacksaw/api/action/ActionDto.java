@@ -25,6 +25,7 @@ public class ActionDto {
     private Integer gameId;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    @NotNull
     private Long roundId;
 
     // Getter methods set to avoid crash name in BetResultData

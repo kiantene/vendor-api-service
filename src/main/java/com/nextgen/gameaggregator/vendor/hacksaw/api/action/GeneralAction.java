@@ -76,9 +76,14 @@ public class GeneralAction {
         return vo;
     }
 
-    private ResponseVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) {
+    private ResponseVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
         ResponseVo vo = new ResponseVo();
 
+        // Validate Action is exist
+        if (!Actions.actionsList.contains(actionDto.getAction())) {
+            throw new InvalidRequestException();
+        }
+        
         switch (actionDto.getAction()) {
             case Actions.AUTHENTICATE:
                 vo = authenticationService.authenticate(httpRequestLog, traceId);

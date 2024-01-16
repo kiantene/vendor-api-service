@@ -4,10 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.api.action.ActionDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -18,9 +17,11 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String externalPlayerId;
 
     @NotNull
+    @PositiveOrZero
     private Long amount;
 
     @NotBlank
@@ -32,13 +33,16 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String externalSessionId;
 
     @NotNull
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long transactionId;
 
     @NotBlank
     @Size(min = 1, max = 4)
+    @Pattern(regexp = "^(real|free)$")
     private String type;
 
     // variable to check it is free spin or not

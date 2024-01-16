@@ -73,7 +73,8 @@ public class CreditService {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
 
-        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException e) {
+        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException |
+                 GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 
@@ -83,11 +84,6 @@ public class CreditService {
 
         } catch (CurrencyNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_CURRENCY);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (GameNotSupportedException e) {
-            vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
-            vo.setStatusMessage("Unknown Game ID");
             httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException | BetResultIdempotentViolationException e) {

@@ -33,7 +33,7 @@ public class AuthService {
     private VendorService vendorService;
 
     public ResponseVo authenticate(HttpRequestLog httpRequestLog, String traceId) {
-        
+
         AuthVo vo = new AuthVo();
 
         try {
@@ -68,7 +68,8 @@ public class AuthService {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
 
-        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException e) {
+        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException |
+                 GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 
