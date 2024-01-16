@@ -62,12 +62,12 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return String.valueOf(this.getTransactionId());
+        return String.valueOf(this.getBetTransactionId());
     }
 
     @Override
     public String getVendorBetId() {
-        return String.valueOf(this.getTransactionId());
+        return String.valueOf(this.getBetTransactionId());
     }
 
     @Override
