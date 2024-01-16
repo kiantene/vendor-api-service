@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 public class SportUnsettledBetCouchbase extends BetInformation {
     private BigDecimal newBetAmount;
     private String vendorPlayerUsername;
+    private Integer isConfirmBet;
 
     public SportUnsettledBetCouchbase(GameSession gameSession, String rawData, SportBetResultData sportBetResultData, String traceId, Integer resultType) {
         super(sportBetResultData);
@@ -50,6 +51,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setIsFreespin(0);
         this.setBalance(BigDecimal.ZERO);
         this.setResettleNum(0);
+        this.setIsConfirmBet(0);
 
         this.setNewBetAmount(sportBetResultData.getNewBetAmount());
 

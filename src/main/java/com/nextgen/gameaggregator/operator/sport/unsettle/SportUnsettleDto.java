@@ -9,6 +9,7 @@ public class SportUnsettleDto {
     private String betId;
     private String externalTransactionId;
     private String roundId;
+    private String gameCode;
     private String username;
     private String currency;
     private Long timestamp;

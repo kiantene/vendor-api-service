@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.adjustment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
@@ -44,6 +45,9 @@ public class AdjustBalanceAction {
             sportWalletService.adjustment(traceId, dto.getMessage(), httpRequestLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
+
+        } catch (InsufficientBalanceException e) {
+            vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (Exception e) {
             vo.setStatus("999");

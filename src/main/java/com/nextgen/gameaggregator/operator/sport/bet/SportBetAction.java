@@ -158,6 +158,7 @@ public class SportBetAction {
         sportBetDto.setBetAmount(betAmount);
         sportBetDto.setRoundId(betInformation.getRoundId());
         sportBetDto.setTimestamp(betInformation.getVendorBetTime());
+        // Todo get correct game code
         sportBetDto.setGameCode("sports");
 
         return sportBetDto;

@@ -2,10 +2,15 @@ package com.nextgen.gameaggregator.vendor.saba.api.resettle;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.RawBatchProcessIdempotentLog;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.RawBatchProcessIdempotentLogService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
+import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +25,11 @@ public class ResettleAction {
     @Autowired
     private HttpService httpService;
     @Autowired
+    private RawBatchProcessIdempotentLogService rawBatchProcessIdempotentLogService;
+    @Autowired
     private SportWalletService sportWalletService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = EndPoints.RESETTLE)
     public GeneralVo action(HttpServletRequest request) {
@@ -35,14 +44,26 @@ public class ResettleAction {
             RequestDto<ResettleDto> dtos = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
+            String batchProcessId = vendorService.generateBatchProcessId(dtos.getMessage().getAction(), dtos.getMessage().getOperationId());
+            if (rawBatchProcessIdempotentLogService.checkExists(batchProcessId) != null)
+                throw new BetResultIdempotentViolationException();
+
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
                 sportWalletService.resettle(traceId, txn, httpRequestLog);
             }
 
-            vo.setStatus("0");
+            RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
+            rawBatchProcessIdempotentLogService.create(rawBatchProcessIdempotentLog);
+
+            vo.setResponseCode(ResponseCode.SUCCESS);
+
+        } catch (BetResultIdempotentViolationException e) {
+            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            httpService.logError(httpRequestLog, e);
 
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            httpService.logError(httpRequestLog, e);
 
         } finally {
             httpService.end(httpRequestLog, vo);
