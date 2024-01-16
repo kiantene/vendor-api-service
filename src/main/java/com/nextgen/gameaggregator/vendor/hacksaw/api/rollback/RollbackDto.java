@@ -38,7 +38,7 @@ public class RollbackDto extends ActionDto implements RollbackData {
     private Long transactionId;
 
     @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long rolledBackTransactionId;
 
     // variable to check it is free spin or not
