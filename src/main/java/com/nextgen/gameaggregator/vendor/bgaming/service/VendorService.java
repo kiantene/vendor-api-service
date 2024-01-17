@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.vendor.bgaming.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
-import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawSettledBetRepository;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.vendor.bgaming.api.gameurl.UserDto;

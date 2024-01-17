@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.eventing.events;
 
-import com.nextgen.gameaggregator.entity.UnsettledBetResult;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBetResult;
 import com.nextgen.gameaggregator.eventing.core.Event;
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.iloveu.api.betdetail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;

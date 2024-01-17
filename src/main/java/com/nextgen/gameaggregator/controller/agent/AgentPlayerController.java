@@ -3,10 +3,12 @@ package com.nextgen.gameaggregator.controller.agent;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.controller.ControllerServices;
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
-import com.nextgen.gameaggregator.repository.RawGameSessionRepository;
-import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.service;
 
-import com.nextgen.gameaggregator.entity.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;

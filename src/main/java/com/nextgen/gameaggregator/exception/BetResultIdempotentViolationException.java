@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.exception;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.RawBetIdempotentLog;
-import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 
 import java.math.BigDecimal;
 

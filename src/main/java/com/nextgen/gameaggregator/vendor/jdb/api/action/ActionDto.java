@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.action;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import jakarta.validation.constraints.NotNull;
 
 import org.checkerframework.checker.index.qual.Positive;
