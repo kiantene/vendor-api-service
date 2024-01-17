@@ -269,8 +269,6 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setStatus(betStatus);
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
-            // Insert record into sport_settled_bet (Couchbase)
-            sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
         } catch (Exception e) {
