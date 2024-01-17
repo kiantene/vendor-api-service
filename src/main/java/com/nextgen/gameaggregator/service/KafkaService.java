@@ -33,7 +33,7 @@ public class KafkaService {
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, betHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
