@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @Slf4j
 public class TransactionService {
@@ -43,9 +45,6 @@ public class TransactionService {
             String body = httpRequestLog.getRequestBody();
 
             TransactionDto transactionDto = HttpService.convertJsonToDto(body, TransactionDto.class);
-
-            // check round id is null or not
-            transactionDto.checkRoundId();
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(transactionDto);
@@ -102,6 +101,8 @@ public class TransactionService {
     }
 
     private void doValidation(TransactionDto dto) throws InvalidRequestException {
+        // check round id is null or not
+        Optional.ofNullable(dto.getRoundId()).orElseThrow(InvalidRequestException::new);
         // General validation
         ValidationUtils.validateRequest(dto);
     }

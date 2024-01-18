@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -45,9 +46,6 @@ public class CreditService {
             String body = httpRequestLog.getRequestBody();
 
             CreditDto creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
-
-            // check round id is null or not
-            creditDto.checkRoundId();
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(creditDto);
@@ -104,11 +102,15 @@ public class CreditService {
     }
 
     private void doValidation(CreditDto dto) throws InvalidRequestException {
+        // check round id is null or not
+        Optional.ofNullable(dto.getRoundId()).orElseThrow(InvalidRequestException::new);
+        // check betTransactionId is null or not
+        Optional.ofNullable(dto.getBetTransactionId()).orElseThrow(InvalidRequestException::new);
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(CreditDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException, BetNotFoundException {
 
         //Verify received secret is same with credential
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);
@@ -122,5 +124,8 @@ public class CreditService {
 
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getExternalPlayerId(), InvalidPlayerException::new);
+
+        // Validate Debit Transaction is exist
+        vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), dto.getBetTransactionId().toString());
     }
 }

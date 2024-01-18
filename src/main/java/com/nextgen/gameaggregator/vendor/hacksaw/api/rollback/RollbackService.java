@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -45,9 +46,6 @@ public class RollbackService {
 
             RollbackDto rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
 
-            // check round id is null or not
-//            rollbackDto.checkRoundId();
-
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollbackDto);
 
@@ -73,7 +71,7 @@ public class RollbackService {
             httpService.logError(httpRequestLog, e);
 
         } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException |
-                 GameNotSupportedException e) {
+                 GameNotSupportedException | InvalidFormatException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 
@@ -100,11 +98,13 @@ public class RollbackService {
     }
 
     private void doValidation(RollbackDto dto) throws InvalidRequestException {
+        // check round id is null or not
+        Optional.ofNullable(dto.getRoundId()).orElseThrow(InvalidRequestException::new);
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RollbackDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(RollbackDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException, InvalidFormatException {
 
         //Verify received secret is same with credential
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);

@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.hacksaw.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.api.action.ActionDto;
@@ -53,12 +52,6 @@ public class CreditDto extends ActionDto implements BetResultData {
     private Boolean ended;
 
     private Long betTransactionId;
-
-    public void checkRoundId() throws InvalidRequestException {
-        if (super.getRoundId() == null) {
-            throw new InvalidRequestException();
-        }
-    }
 
     @Override
     public String getExternalTransactionId() {

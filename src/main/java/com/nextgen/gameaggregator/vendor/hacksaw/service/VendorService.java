@@ -3,9 +3,12 @@ package com.nextgen.gameaggregator.vendor.hacksaw.service;
 import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.VendorGameCode;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.SettledBetService;
+import com.nextgen.gameaggregator.service.UnsettledBetService;
 import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,10 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    UnsettledBetService unsettledBetService;
+    @Autowired
+    SettledBetService settledBetService;
     @Autowired
     private VendorGameCodeService vendorGameCodeService;
 
@@ -58,6 +65,16 @@ public class VendorService extends BaseVendorService {
         VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
         if (!vendorGameCode.getBetGameCode().equals(gameId)) {
             throw new GameNotSupportedException();
+        }
+    }
+
+    public void verifyExistDebitTransaction(Integer vendorId, Long vendorPLayerId, String externalTransactionId) throws BetNotFoundException {
+        try {
+            // If bet is already settled, continue run
+            settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPLayerId, externalTransactionId);
+        } catch (BetNotFoundException e) {
+            // not found settled bet will check unsettled bet
+            unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, externalTransactionId);
         }
     }
 }
