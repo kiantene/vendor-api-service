@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.AgentVendorLine;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
-import com.nextgen.gameaggregator.repository.VendorLineRepository;
+import com.nextgen.gameaggregator.entity.ga.AgentVendorLine;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentVendorLineRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLineRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
-import com.nextgen.gameaggregator.repository.RawGameSessionRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
