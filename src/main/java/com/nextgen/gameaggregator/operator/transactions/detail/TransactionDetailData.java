@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.operator.transactions.detail;
 
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import lombok.Data;
 
 import java.math.BigDecimal;

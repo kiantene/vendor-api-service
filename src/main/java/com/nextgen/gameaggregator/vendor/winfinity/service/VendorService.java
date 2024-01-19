@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.winfinity.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.VendorLineService;

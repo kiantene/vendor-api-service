@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
-import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialRepository;
 import com.nextgen.gameaggregator.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.Language;
+import com.nextgen.gameaggregator.entity.ga.Language;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
-import com.nextgen.gameaggregator.repository.LanguageRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.LanguageRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.operator.game.vendor;
 
-import com.nextgen.gameaggregator.entity.custom.IGameVendor;
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import lombok.Data;
 
 import java.util.List;

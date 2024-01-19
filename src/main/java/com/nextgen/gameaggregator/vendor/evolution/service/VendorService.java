@@ -2,9 +2,9 @@ package com.nextgen.gameaggregator.vendor.evolution.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.nextgen.gameaggregator.entity.BetNotFoundLog;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.BetNotFoundLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.BetNotFoundLogService;

@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.apiverification.wallet;
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.rollback.WalletRollbackDto;
 import com.nextgen.gameaggregator.service.*;
