@@ -1,8 +1,12 @@
 package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.exception.*;
@@ -28,6 +32,7 @@ import reactor.core.publisher.Mono;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
+
 @Service
 @Slf4j
 public class WalletBetResultAction {
@@ -68,6 +73,7 @@ public class WalletBetResultAction {
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
@@ -115,10 +121,23 @@ public class WalletBetResultAction {
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
-            if (httpRequestLog != null){
+            if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
 
+            }
+
+            boolean specialCaseForPP = false;
+
+            //if its PP and settledBet (endRound) and responseVo is null (not success responses from operator)
+            //then will still consider success and assign default success params with 0 balance return out
+            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
+                if (responseVo == null || !responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+
+                    responseVo = this.ppEndRoundForceSuccess(gameSession, responseVo, apiResponse, traceId);
+                    specialCaseForPP = true;
+
+                }
             }
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
@@ -128,7 +147,10 @@ public class WalletBetResultAction {
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
             // 4. validate operator response fail status
-            requestService.operatorStatusException(responseVo.getStatus());
+            // only special handling for PP, the rest will still process as normal
+            if (!specialCaseForPP) {
+                requestService.operatorStatusException(responseVo.getStatus());
+            }
 
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
@@ -140,29 +162,70 @@ public class WalletBetResultAction {
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
-
-        } catch (Exception exception) {
-            long endTime = System.currentTimeMillis();
-            Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
-
-            requestLogVo = requestService.createRequestLogVo(
-                    EndPoints.WALLET_BET_RESULT, apiUrl, dto, null, headerMap, startTime, endTime,
-                    this.getClass().getPackage().getName(), profilesActive);
-
-            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
-                defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
+                responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+            } else {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
             }
 
-            //RequestService.failResponseLog(requestLogVo, exception);
-            throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+
+            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
+                responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+            } else {
+                throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
+            }
+
+        } catch (Exception exception) {
+
+            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
+                responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+            } else {
+                long endTime = System.currentTimeMillis();
+                Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+
+                requestLogVo = requestService.createRequestLogVo(
+                        EndPoints.WALLET_BET_RESULT, apiUrl, dto, null, headerMap, startTime, endTime,
+                        this.getClass().getPackage().getName(), profilesActive);
+
+                if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
+                    defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+                }
+
+                //RequestService.failResponseLog(requestLogVo, exception);
+                throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
+            }
 
         }
+        return responseVo;
+    }
+
+    private WalletBalanceVo ppEndRoundForceSuccess(GameSession gameSession, WalletBalanceVo responseVo, ResponseEntity<String> apiResponse, String traceId) {
+
+        JsonObject originalJson = new JsonObject();
+        JsonObject additionalData = new JsonObject();
+        long operatorResponseTimeStamp = System.currentTimeMillis();
+
+        additionalData.addProperty("username", gameSession.getAgentPlayerUsername());
+        additionalData.addProperty("currency", gameSession.getCurrencyCode());
+        additionalData.addProperty("balance", 0);
+        additionalData.addProperty("timestamp", operatorResponseTimeStamp);
+
+        if (responseVo != null) {
+            originalJson = new Gson().fromJson(apiResponse.getBody(), JsonObject.class);
+
+        } else {
+            originalJson.addProperty("traceId", traceId);
+            originalJson.addProperty("status", ResponseCodes.Status.SC_OK.code);
+            originalJson.addProperty("message", ResponseCodes.Status.SC_OK.description);
+
+        }
+
+        originalJson.add("data", additionalData);
+        String updatedJsonString = new Gson().toJson(originalJson);
+        responseVo = new Gson().fromJson(updatedJsonString, WalletBalanceVo.class);
+
         return responseVo;
     }
 

@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetRefundLog;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.RawBetRefundLog;
+import com.nextgen.gameaggregator.entity.ga.BetRefundLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawBetRefundLog;
 import com.nextgen.gameaggregator.exception.BetRefundIdempotentViolationException;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
-import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
-import com.nextgen.gameaggregator.repository.RawBetRefundLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetRefundLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawBetRefundLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.RawBetAdjustmentLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawBetAdjustmentLog;
 import com.nextgen.gameaggregator.exception.BetAdjustmentIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
-import com.nextgen.gameaggregator.repository.RawBetAdjustmentLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawBetAdjustmentLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +21,8 @@ public class BetAdjustmentLogService {
 
     @Autowired
     private RawBetAdjustmentLogRepository rawBetAdjustmentLogRepository;
+    @Autowired
+    private BetIdempotentLogService betIdempotentLogService;
 
     public RawBetAdjustmentLog create(RawBetAdjustmentLog entity) {
         return rawBetAdjustmentLogRepository.save(entity);
@@ -31,13 +33,12 @@ public class BetAdjustmentLogService {
 
         if (rawBetAdjustmentLog != null) {
             Integer operatorStatus = rawBetAdjustmentLog.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(rawBetAdjustmentLog.getCreateTime());
 
-            if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code)) {
-                log.warn("idempotentCheckForBetResultLog.processing [" + traceId + "]: transactionId (" + adjustmentData.getExternalTransactionId() + ") roundId (" + rawBetAdjustmentLog.getRoundId() + ")");
+            if (operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
-                log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + adjustmentData.getExternalTransactionId() + ") roundId (" + rawBetAdjustmentLog.getRoundId() + ")");
                 throw new BetAdjustmentIdempotentViolationException(rawBetAdjustmentLog);
 
             } else {

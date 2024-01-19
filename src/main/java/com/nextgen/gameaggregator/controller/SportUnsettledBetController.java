@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import com.nextgen.gameaggregator.entity.ga.BetResultLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
 import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
-import com.nextgen.gameaggregator.repository.UnsettledBetMariaDBRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,7 +53,7 @@ public class SportUnsettledBetController {
     @Data
     static class DetailVo{
 
-        public SportUnsettledBetMariaDB sportUnsettledBetMariaDB;
+        public VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB;
         public BetResultLog betResultLog;
         //public BetRefundLog betRefundLog;
     }

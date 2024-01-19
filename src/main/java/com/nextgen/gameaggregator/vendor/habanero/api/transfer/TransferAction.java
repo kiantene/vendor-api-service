@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.transfer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -82,9 +82,14 @@ public class TransferAction {
             this.doVerification(transferDto, gameSession);
 
             //handle transfer action
-            if (gameSession.getGameCategoryId().equals(Formats.POKER)) {
+            if (transferDto.getFundTransferRequestDto().getIsRefund()) {
+                //handle refund condition
+                responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, request);
+            } else if (gameSession.getGameCategoryId().equals(Formats.POKER)) {
+                //handle Poker condition
                 responseVo = this.processPokerTransferAction(responseVo, transferDto, gameSession, request);
             } else {
+                //handle Slot condition
                 responseVo = this.processSlotTransferAction(responseVo, transferDto, gameSession, request);
             }
 
@@ -98,26 +103,22 @@ public class TransferAction {
                 InvalidRequestException |
                 NoAvailableLineException |
                 CredentialNotFoundException |
-                DisabledVendorLineException generalException
-        ) {
-            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
-
-        } catch (
+                DisabledVendorLineException |
                 InvalidAgentApiCredentialException |
-                BetNotFoundException generalException
+                BetNotFoundException |
+                InvalidOperatorResponseException generalException
         ) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
+            httpService.logError(httpRequestLog, generalException);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_ERROR);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
             responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.TRANSFER_ERROR);
@@ -195,7 +196,6 @@ public class TransferAction {
             InsufficientBalanceException,
             TransactionStillProcessingException,
             InvalidOperatorResponseException,
-            BetResultIdempotentViolationException,
             CouchbaseDataIntegrityException,
             MergedBetDataIntegrityException,
             VendorCurrencyNotSupportException,
@@ -206,26 +206,20 @@ public class TransferAction {
             DisabledGameException,
             DisabledVendorLineException {
 
-        if (transferDto.getFundTransferRequestDto().getIsRefund()) {
-            //handle refund condition
-            responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, request);
-        } else {
-            //handle not refund condition
-            //Loop bet info
-            for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
-                switch (fundInfoDto.getGameStateMode()) {
-                    case GameStateMode.STARTROUND -> {
-                        //process bet result into unsettle bet when gamestatemode = 1(game round start)
-                        responseVo = slotBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
-                    }
-                    case GameStateMode.COUTINUEATION, GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
-                        //process bet result into settle bet when gamestatemode = 2(game round end/ bonus free spin) or 0(free spin/jackpot) or 3(expire bet round end)
-                        responseVo = slotResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
-                    }
-                    // If the header does not match any of the expected values, return an error response
-                    default -> {
-                        throw new InvalidRequestException();
-                    }
+        //Loop bet info
+        for (FundInfoDto fundInfoDto : transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()) {
+            switch (fundInfoDto.getGameStateMode()) {
+                case GameStateMode.STARTROUND -> {
+                    //process bet result into unsettle bet when gamestatemode = 1(game round start)
+                    responseVo = slotBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+                }
+                case GameStateMode.COUTINUEATION, GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
+                    //process bet result into settle bet when gamestatemode = 2(game round end/ bonus free spin) or 0(free spin/jackpot) or 3(expire bet round end)
+                    responseVo = slotResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+                }
+                // If the header does not match any of the expected values, return an error response
+                default -> {
+                    throw new InvalidRequestException();
                 }
             }
         }
@@ -240,7 +234,6 @@ public class TransferAction {
             InsufficientBalanceException,
             TransactionStillProcessingException,
             InvalidOperatorResponseException,
-            BetResultIdempotentViolationException,
             CouchbaseDataIntegrityException,
             MergedBetDataIntegrityException,
             VendorCurrencyNotSupportException,
@@ -251,27 +244,20 @@ public class TransferAction {
             DisabledGameException,
             DisabledVendorLineException {
 
-        if (transferDto.getFundTransferRequestDto().getIsRefund()) {
-            //handle refund condition
-            responseVo = refundService.refund(transferDto.getFundTransferRequestDto().getFundDto().getRefundDto(), responseVo, gameSession, request);
-        } else {
-            FundInfoDto fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
-            //handle not refund condition
-            switch (fundInfoDto.getGameStateMode()) {
-                case GameStateMode.STARTROUND, GameStateMode.COUTINUEATION -> {
-                    //process bet result into unsettle bet when gamestatemode = 1(game round start) or 0(double)
-                    responseVo = pokerBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
-                }
-                case GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
-                    //process bet result into settle bet when gamestatemode = 2(game round end) or 3(expire bet round end)
-                    responseVo = pokerResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
-                }
-                // If the header does not match any of the expected values, return an error response
-                default -> {
-                    throw new InvalidRequestException();
-                }
+        FundInfoDto fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
+        switch (fundInfoDto.getGameStateMode()) {
+            case GameStateMode.STARTROUND, GameStateMode.COUTINUEATION -> {
+                //process bet result into unsettle bet when gamestatemode = 1(game round start) or 0(double)
+                responseVo = pokerBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
             }
-
+            case GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
+                //process bet result into settle bet when gamestatemode = 2(game round end) or 3(expire bet round end)
+                responseVo = pokerResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
+            }
+            // If the header does not match any of the expected values, return an error response
+            default -> {
+                throw new InvalidRequestException();
+            }
         }
 
         return responseVo;

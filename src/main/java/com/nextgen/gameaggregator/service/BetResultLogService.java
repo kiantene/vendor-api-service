@@ -1,13 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.repository.BetResultLogRepository;
-import com.nextgen.gameaggregator.repository.RawBetResultLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetResultLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawBetResultLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -25,6 +25,8 @@ public class BetResultLogService {
     private BetResultLogRepository betResultLogRepository;
     @Autowired
     private RawBetResultLogRepository rawBetResultLogRepository;
+    @Autowired
+    private BetIdempotentLogService betIdempotentLogService;
 
     @CachePut(value = "rawResultLog", key = "{#rawBetResultLog.externalTransactionId, #rawBetResultLog.roundId, #rawBetResultLog.vendorGameId, #rawBetResultLog.vendorPlayerId}", cacheManager = "cacheManager")
     public void save(RawBetResultLog rawBetResultLog) {
@@ -59,14 +61,13 @@ public class BetResultLogService {
 
         if (rawBetResultLog != null) {
             Integer operatorStatus = rawBetResultLog.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(rawBetResultLog.getCreateTime());
 
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
-                log.warn("idempotentCheckForBetResultLog.processing [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
+            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                log.warn("idempotentCheckForBetResultLog.success [" + traceId + "]: transactionId (" + externalTransactionId + ") roundId (" + roundId + ")");
                 throw new BetResultIdempotentViolationException(rawBetResultLog);
 
             } else { // when bet result found and operator status is error, set status back to processing and resend txn to operator

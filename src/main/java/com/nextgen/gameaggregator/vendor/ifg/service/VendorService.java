@@ -1,11 +1,11 @@
 package com.nextgen.gameaggregator.vendor.ifg.service;
 
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawSettledBetRepository;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.SettledBetService;
 import com.nextgen.gameaggregator.service.VendorLineService;

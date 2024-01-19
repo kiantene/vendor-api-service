@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.adjustment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;

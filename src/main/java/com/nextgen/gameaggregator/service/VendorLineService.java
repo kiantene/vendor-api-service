@@ -1,13 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
-import com.nextgen.gameaggregator.repository.VendorLineCredentialRepository;
-import com.nextgen.gameaggregator.repository.VendorLineRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentVendorLineRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLineCredentialRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -59,10 +59,10 @@ public class VendorLineService {
 
 
 
-    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, Currency currency) throws InvalidVendorLineException, DisabledVendorLineException {
+    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, List<Integer> currencyIds ) throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
-                findByAgentIdAndVendorIdAndCurrencyId(agent.getId(), vendor.getId(), currency.getId());
+                findByAgentIdAndVendorIdAndCurrencyIdIn(agent.getId(), vendor.getId(), currencyIds);
 
         //vendor line not found
         if (agentVendorLines.isEmpty()) {

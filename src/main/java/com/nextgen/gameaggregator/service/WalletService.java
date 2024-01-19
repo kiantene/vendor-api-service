@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
-import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
@@ -56,7 +55,6 @@ public class WalletService {
     private BetIdempotentLogService betIdempotentLogService;
 
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
-
     private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
 
@@ -167,16 +165,33 @@ public class WalletService {
         return betEvent;
     }
 
-    private UnsettledBet getUnsettledBetFromRound(List<UnsettledBet> betList, String roundId) throws BetNotFoundException {
+    private UnsettledBet getUnsettledBetFromRound(List<UnsettledBet> betList, String roundId, BetResultData betResultData) throws BetNotFoundException {
         if (betList.isEmpty()) throw new BetNotFoundException("Cannot find unsettled bets with round Id: " + roundId);
 
         UnsettledBet unsettledBet;
+
+        //default will be using first unsettledBet from the list
         if (betList.size() == 1) { // single bet
             unsettledBet = betList.get(0);
         } else {
             // this is to handle PP multihand blackjack
             unsettledBet = betList.get(betList.size() - 1);
         }
+
+        if (betResultData.getVendorBetId() != null) {
+            //will check across with the vendorBetId pass in
+            Optional<UnsettledBet> matchingBet = betList.stream()
+                    .filter(isUnsettledBetMatch -> betResultData.getVendorBetId().equals(isUnsettledBetMatch.getVendorBetId()))
+                    .findFirst();
+
+            //if found matched then unsettledBet reassign to the unsettledBet that is matched
+            //else then will be using the default unsettledBet
+            if (matchingBet.isPresent()) {
+                unsettledBet = matchingBet.get();
+
+            }
+        }
+
         return unsettledBet;
     }
 
@@ -217,7 +232,7 @@ public class WalletService {
             switch (resultType) {
                 case LOSE, END -> { // PP
 
-                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
+                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
 
                     // handle if settle end/lose resultType having isFreeSpin = 1.
                     unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1) ? betResultData.getIsFreespin() : unsettledBet.getIsFreespin());
@@ -244,7 +259,7 @@ public class WalletService {
                         internalTransactionId = settledBet.getInternalTransactionId();
                     }
 
-                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
+                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
                     this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
 
@@ -359,21 +374,19 @@ public class WalletService {
             loggingService.logStart();
             settledBet = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
             loggingService.logProcessTime("doCheckBetExistsInSettledBet ｜ settledBetService.getByVendorPlayerIdAndExternalTransactionId", traceId);
-
             Integer operatorStatus = settledBet.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
+
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
-                log.warn("getByVendorPlayerIdAndExternalTransactionId.processing [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
+            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
                 if (vendorService.shouldRejectCancelRequest()) {
-                    log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
                     throw new BetResultIdempotentViolationException(settledBet);
 
                 } else {
                     if (!settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                        log.warn("getByVendorPlayerIdAndExternalTransactionId.success [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
                         throw new BetResultIdempotentViolationException(settledBet);
 
                     } else {
@@ -473,7 +486,7 @@ public class WalletService {
                 List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
                 loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
-                unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId);
+                unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
 
                 // when betHistoryId is 0, it means this is a new request, so it is not a retry
                 boolean retry = !rawBetResultLog.getBetHistoryId().equals("0");
@@ -656,6 +669,7 @@ public class WalletService {
         betData.setResultTime(betResultData.getResultTime());
         betData.setVendorSettleTime(betResultData.getVendorSettleTime());
         betData.setIsFreespin(Optional.ofNullable(betResultData.getIsFreespin()).orElse(0));
+
     }
 
     /**
@@ -757,7 +771,9 @@ public class WalletService {
                 BetRefundLog betRefundLog = new BetRefundLog(rawBetRefundLog);
 
                 loggingService.logStart();
-                unsettledBetService.delete(unsettledBet);
+                if (unsettledBet != null) {
+                    unsettledBetService.delete(unsettledBet);
+                }
                 loggingService.logProcessTime("processRollback ｜ unsettledBetService.delete", traceId);
             }
 

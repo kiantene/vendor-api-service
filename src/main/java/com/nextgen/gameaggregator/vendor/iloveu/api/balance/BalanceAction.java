@@ -1,8 +1,10 @@
 package com.nextgen.gameaggregator.vendor.iloveu.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -11,7 +13,6 @@ import com.nextgen.gameaggregator.vendor.iloveu.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.iloveu.service.VendorService;
 import com.nextgen.gameaggregator.vendor.iloveu.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.iloveu.vo.DataVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,10 @@ public class BalanceAction {
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into balanceDto
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            //BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            BalanceDto balanceDto = objectMapper.readValue(body, BalanceDto.class);
 
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);

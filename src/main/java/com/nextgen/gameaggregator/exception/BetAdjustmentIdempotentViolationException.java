@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.exception;
 
-import com.nextgen.gameaggregator.entity.RawBetAdjustmentLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetAdjustmentLog;
 import lombok.Data;
 
 @Data

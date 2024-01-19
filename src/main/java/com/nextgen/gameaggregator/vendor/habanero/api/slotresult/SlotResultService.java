@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.slotresult;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundInfoDto;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.FundTransferRequestDto;
 import com.nextgen.gameaggregator.vendor.habanero.api.transfer.TransferVo;
-import com.nextgen.gameaggregator.vendor.habanero.constant.GameStateMode;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -109,19 +108,10 @@ public class SlotResultService {
     }
 
     private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession) throws
-            NoAvailableLineException,
-            InvalidPlayerException,
-            AuthenticationException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            DisabledVendorLineException {
+            NoAvailableLineException {
 
         //Verify vendor currency code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), NoAvailableLineException::new);
-
-        //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, fundTransferRequestDto.getAccountId());
-
 
     }
     

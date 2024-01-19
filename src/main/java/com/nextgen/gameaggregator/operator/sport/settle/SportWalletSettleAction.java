@@ -1,9 +1,10 @@
 package com.nextgen.gameaggregator.operator.sport.settle;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.Agent;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.Agent;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -15,7 +16,6 @@ import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.AuthenticationService;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
-import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatusCode;
@@ -45,7 +45,7 @@ public class SportWalletSettleAction {
     @Autowired
     private RequestService requestService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException {
+    public WalletBalanceVo call(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
 
@@ -101,7 +101,7 @@ public class SportWalletSettleAction {
         return null;
     }
 
-    private SportWalletSettleDto newSportWalletSettleDto(String traceId, SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) {
+    private SportWalletSettleDto newSportWalletSettleDto(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) {
 
         // add conversion rate when sending all the figures to operator
         BigDecimal betAmount = (ObjectUtils.isEmpty(unsettledBet.getBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());

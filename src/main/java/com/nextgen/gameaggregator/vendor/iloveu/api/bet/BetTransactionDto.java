@@ -22,65 +22,64 @@ public class BetTransactionDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("sn")
+    @JsonProperty("SN")
     public String sn;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("id")
+    @JsonProperty("ID")
     public String id;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("method")
+    @JsonProperty("Method")
     public String method;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("loginId")
+    @JsonProperty("LoginId")
     public String loginId;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
-    @JsonProperty("signature")
+    @JsonProperty("Signature")
     public String signature;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("totalBet")
+    @JsonProperty("TotalBet")
     public BigDecimal totalBet;
 
-    @JsonProperty("betDetail")
+    @JsonProperty("BetDetail")
     public String betDetail;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("orderCode")
+    @JsonProperty("OrderCode")
     public String orderCode;
 
     @NotBlank
     @Pattern(regexp = "^[a-zA-Z0-9:._ -]+$")
-    @JsonProperty("actionDate")
+    @JsonProperty("ActionDate")
     public String actionDate;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("gameName")
+    @JsonProperty("GameName")
     public String gameName;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("validBet")
+    @JsonProperty("ValidBet")
     public BigDecimal validBet;
 
     @NotNull
     @Range(min = 0)
-    @JsonProperty("gameStatus")
+    @JsonProperty("GameStatus")
     public Integer gameStatus;
 
-    @JsonProperty("playQueryCode")
+    @JsonProperty("PlayQueryCode")
     public String playQueryCode;
 
     @Override
@@ -105,7 +104,7 @@ public class BetTransactionDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        return this.getValidBet();
+        return this.getTotalBet();
     }
 
     @Override

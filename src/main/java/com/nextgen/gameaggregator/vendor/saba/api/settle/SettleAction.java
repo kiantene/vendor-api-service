@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawBatchProcessIdempotentLog;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
@@ -58,7 +58,7 @@ public class SettleAction {
                 sportWalletService.asyncSettle(txn);
             }
 
-            RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
+            VendorGame.RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new VendorGame.RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
             rawBatchProcessIdempotentLogService.create(rawBatchProcessIdempotentLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);

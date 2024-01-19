@@ -3,9 +3,9 @@ package com.nextgen.gameaggregator.vendor.facai.api.betdetail;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -77,7 +77,7 @@ public class BetDetailService implements BetDetailUrl {
 
         //setup form data
         formData.add("AgentCode", credentials.get(Credentials.AGENT_CODE));
-        formData.add("Currency", iBetDetailUrlInfo.getCurrencyCode());
+        formData.add("Currency", iBetDetailUrlInfo.getVendorCurrencyCode());
         formData.add("Params", encryptParam);
         formData.add("Sign", md5Param);
 

@@ -22,97 +22,96 @@ public class SettleTransactionDto implements BetResultData {
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("sn")
+    @JsonProperty("SN")
     public String sn;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("id")
+    @JsonProperty("ID")
     public String id;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("method")
+    @JsonProperty("Method")
     public String method;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("loginId")
+    @JsonProperty("LoginId")
     public String loginId;
 
     @NotBlank(message = ResponseCodes.INVALID_SIGNATURE)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.INVALID_SIGNATURE)
-    @JsonProperty("signature")
+    @JsonProperty("Signature")
     public String signature;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("totalWin")
+    @JsonProperty("TotalWin")
     public BigDecimal totalWin;
 
-    @JsonProperty("winDetail")
+    @JsonProperty("WinDetail")
     public String winDetail;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("orderCode")
+    @JsonProperty("OrderCode")
     public String orderCode;
 
     @NotBlank
     @Pattern(regexp = "^[a-zA-Z0-9:._ -]+$")
-    @JsonProperty("actionDate")
+    @JsonProperty("ActionDate")
     public String actionDate;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
-    @JsonProperty("gameName")
+    @JsonProperty("GameName")
     public String gameName;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("validCommission")
+    @JsonProperty("ValidCommission")
     public BigDecimal validCommission;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("validWin")
+    @JsonProperty("ValidWin")
     public BigDecimal validWin;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("mjpWin")
+    @JsonProperty("MJPWin")
     public BigDecimal mjpWin;
 
     @NotNull
     @Range(min = 0, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("mjpComm")
+    @JsonProperty("MJPComm")
     public BigDecimal mjpComm;
 
     @NotNull
     @Range(min = -1000000000000000L, max = 1000000000000000L)
     @Digits(integer = 18, fraction = 4)
-    @JsonProperty("profit")
+    @JsonProperty("Profit")
     public BigDecimal profit;
 
-    @JsonProperty("bet")
+    @JsonProperty("Bet")
     public SettleBetDto bet;
 
     @NotNull
     @Range(min = 3, max = 4)
-    @JsonProperty("mode")
+    @JsonProperty("Mode")
     public Integer mode;
 
     @NotNull
     @Range(min = 0)
-    @JsonProperty("gameStatus")
+    @JsonProperty("GameStatus")
     public Integer gameStatus;
 
-    @JsonProperty("playQueryCode")
+    @JsonProperty("PlayQueryCode")
     public String playQueryCode;
 
     @Override

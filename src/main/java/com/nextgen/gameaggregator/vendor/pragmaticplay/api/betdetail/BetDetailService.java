@@ -2,15 +2,16 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.GameCategories;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
+
 @Slf4j
 public class BetDetailService implements BetDetailUrl {
 
@@ -51,6 +53,13 @@ public class BetDetailService implements BetDetailUrl {
 
         formData.add("secureLogin", secureLogin);
         formData.add("playerId", iBetDetailUrlInfo.getVendorUsername());
+
+        // PP SLOT and LIVE are calling different API methods
+        if (iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.LIVE)) {
+            String[] vendorGameCode = iBetDetailUrlInfo.getGameCode().split("_");
+            formData.add("gameId", vendorGameCode[vendorGameCode.length - 1]);
+        }
+
         formData.add("roundId", iBetDetailUrlInfo.getExternalRoundId());
         String hash = VendorService.generateHash(formData, secret);
         formData.add("hash", hash);
@@ -65,15 +74,18 @@ public class BetDetailService implements BetDetailUrl {
         String apiUrl = credentials.get(Credentials.REPORT_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
+        // PP SLOT and LIVE are calling different API methods
+        String apiPath = iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase(GameCategories.LIVE) ? Endpoints.OPEN_HISTORY_EXTENDED : Endpoints.OPEN_HISTORY;
+
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
         GameSession gameSession = new GameSession();
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.OPEN_HISTORY )
+                .uri(apiPath)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()

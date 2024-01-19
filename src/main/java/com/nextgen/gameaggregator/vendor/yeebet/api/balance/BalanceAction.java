@@ -1,21 +1,25 @@
 package com.nextgen.gameaggregator.vendor.yeebet.api.balance;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.yeebet.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.yeebet.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.yeebet.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.yeebet.service.VendorService;
+import com.nextgen.gameaggregator.vendor.yeebet.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -41,56 +45,100 @@ public class BalanceAction {
 
         HttpRequestLog httpRequestLog = httpService.start(request);
 
-        // Get all headers
-        Enumeration<String> headerNames = request.getHeaderNames();
-        Enumeration<String> paramNames = request.getParameterNames();
+        httpRequestLog.setRequestBody(request.getQueryString());
 
-        ResponseVo vo = new ResponseVo();
-        vo.setHeadersMap(new HashMap<>());
-        vo.setParamsMap(new HashMap<>());
+        String traceId = httpRequestLog.getId();
 
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            vo.getHeadersMap().put(headerName, headerValue);
-        }
-        while (paramNames.hasMoreElements()) {
-            String paramName = paramNames.nextElement();
-            String paramValue = request.getParameter(paramName);
-            vo.getParamsMap().put(paramName, paramValue);
-        }
+        GameSession gameSession = new GameSession();
 
-        httpService.end(httpRequestLog, vo);
-
-        return vo;
-    }
-
-    private String mapToJson(Map<String, String> params){
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        String jsonString = null;
+        ResponseVo responseVo = new ResponseVo();
 
         try{
-            jsonString = objectMapper.writeValueAsString(params);
+            String body = httpRequestLog.getRequestBody();
+
+            BalanceDto balanceDto = httpService.convertQueryStringToDto(body,BalanceDto.class);
+
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(balanceDto);
+
+            // Verify session token
+            gameSession = gameSessionService.verifyToken(balanceDto.getUsername());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(balanceDto, gameSession, body);
+
+            // Retrieve the latest wallet balance from Operator
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+            // set vo
+            responseVo.setDesc(ResponseCodes.SUCCESS_MSG);
+            responseVo.setResult(ResponseCodes.SUCCESS_CODE);
+            responseVo.setBalance(Double.valueOf(balance.setScale(2, RoundingMode.DOWN).toString()));
+
+        } catch(InvalidAgentApiCredentialException |
+                InvalidPlayerException |
+                VendorCurrencyNotSupportException |
+                AuthenticationException |
+                DisabledAgentPlayerException |
+                DisabledGameException |
+                InvalidRequestException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException e){
+
+            httpService.logError(httpRequestLog, e);
+
+            // set vo
+            responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
+            responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
 
         }catch(Exception e){
-            jsonString = "{}";
+            httpService.logError(httpRequestLog, e);
+
+            // set vo
+            responseVo.setDesc(ResponseCodes.SYSTEM_ERROR_MSG);
+            responseVo.setResult(ResponseCodes.SYSTEM_ERROR_CODE);
+        }finally{
+            httpService.end(httpRequestLog, responseVo);
         }
 
-        return jsonString;
+        return responseVo;
     }
 
-    @Data
-    static class ResponseVo implements HttpResponse {
-
-        private Map<String, String> headersMap;
-        private Map<String, String> paramsMap;
-
-
-        @Override
-        public boolean hasError() {
-            return false;
-        }
+    private void doValidation(BalanceDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
     }
 
+    private void doVerification(BalanceDto dto,GameSession gameSession,String queryString) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
+        // Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        // Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        // Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+
+        // Verify username
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
+
+        //Verify received appid is same with credential
+        String appid = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_app_id);
+        ValidationUtils.isEquals(appid, dto.getAppid(), InvalidRequestException::new);
+
+        // Verify sign value
+        String secret_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_secret_key);
+
+        // Trim the string from the beginning until the first "&sign"
+        int signIndex = queryString.indexOf("&sign");
+        String trimmedString = queryString.substring(0, signIndex);
+
+        // Convert query string into map format with ASCII order
+        MultiValueMap<String, String> sortedMultiValueMap = vendorService.convertToSortedMultiValueMap(trimmedString);
+
+        // generate sign value
+        String verify_sign = vendorService.generateSign(sortedMultiValueMap,secret_key);
+
+        ValidationUtils.isEquals(verify_sign, dto.getSign(), InvalidRequestException::new);
+    }
 }

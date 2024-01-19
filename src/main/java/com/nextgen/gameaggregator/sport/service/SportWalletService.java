@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.sport.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -22,7 +22,7 @@ import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.*;
 import org.modelmapper.ModelMapper;
@@ -98,7 +98,7 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
-            SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
@@ -165,7 +165,7 @@ public class SportWalletService {
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
             // Update record in sport_unsettled_bet (MariaDB)
-            SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balance);
@@ -219,7 +219,7 @@ public class SportWalletService {
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 
             // Update status in sport_unsettled_bet (MariaDB)
-            SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             sportUnsettledBetMariaDB.setStatus(1);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
@@ -280,7 +280,7 @@ public class SportWalletService {
 
         if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
-        SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+        VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
         kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
         // Todo decide move unsettled_couchbase to settled_couchbase
@@ -308,7 +308,7 @@ public class SportWalletService {
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
             // Update status in  (MariaDB)
-            SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             sportUnsettledBetMariaDB.setStatus(0);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 

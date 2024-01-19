@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.sport.entity;
 
-import com.nextgen.gameaggregator.entity.AgentPlayer;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.sport.adjustment.SportAdjustmentData;

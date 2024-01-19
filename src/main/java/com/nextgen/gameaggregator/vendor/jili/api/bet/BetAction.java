@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping({EndPoints.PATH_JILI, EndPoints.PATH_TADA})
 @Slf4j
 public class BetAction {
     @Autowired

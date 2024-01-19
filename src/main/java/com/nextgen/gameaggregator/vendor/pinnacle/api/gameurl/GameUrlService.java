@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.json.JsonParser;
@@ -17,11 +18,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Credentials;
@@ -116,7 +116,7 @@ public class GameUrlService implements GameUrl {
 
     private String getUserCode(GameSession gameSession, String token, Map<String, String> credentials) {
         String userCode = "";
-        Optional<PinnacleVendorPlayer> pinnacleVendorPlayer = pinnacleVendorUsernameRepository.findByUsername(gameSession.getVendorPlayerUsername());
+        Optional<VendorGame.PinnacleVendorPlayer> pinnacleVendorPlayer = pinnacleVendorUsernameRepository.findByUsername(gameSession.getVendorPlayerUsername());
 
         if (pinnacleVendorPlayer.isPresent()) {
             userCode = pinnacleVendorPlayer.get().getVendorPlayerUsername();
@@ -151,7 +151,7 @@ public class GameUrlService implements GameUrl {
         }
 
         // Temporary store vendor player username into couchbase
-        PinnacleVendorPlayer entity = new PinnacleVendorPlayer();
+        VendorGame.PinnacleVendorPlayer entity = new VendorGame.PinnacleVendorPlayer();
         entity.setId(gameSession.getVendorPlayerUsername() + "_" + userCode);
         entity.setUsername(gameSession.getVendorPlayerUsername());
         entity.setVendorPlayerUsername(userCode);
@@ -167,7 +167,7 @@ public class GameUrlService implements GameUrl {
         return headerMap;
     }
 
-    public PinnacleVendorPlayer create(PinnacleVendorPlayer entity) {
+    public VendorGame.PinnacleVendorPlayer create(VendorGame.PinnacleVendorPlayer entity) {
         return pinnacleVendorUsernameRepository.save(entity);
     }
 }

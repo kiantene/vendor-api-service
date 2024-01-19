@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
-import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.entity.SportUnsettledBetMariaDB;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -32,7 +32,7 @@ public class KafkaService {
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY, betHistory);
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, betHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
@@ -50,7 +50,7 @@ public class KafkaService {
         }
     }
 
-    public void produceUnsettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
+    public void produceUnsettledBet(VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
         try {
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, sportUnsettledBetMariaDB);
         } catch (Exception e) {

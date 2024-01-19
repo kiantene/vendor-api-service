@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.createmember;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;

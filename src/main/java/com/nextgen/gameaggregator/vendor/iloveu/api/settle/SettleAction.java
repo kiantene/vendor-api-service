@@ -1,8 +1,11 @@
 package com.nextgen.gameaggregator.vendor.iloveu.api.settle;
 
+import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -12,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.iloveu.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.iloveu.service.VendorService;
 import com.nextgen.gameaggregator.vendor.iloveu.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.iloveu.vo.DataVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +63,10 @@ public class SettleAction {
             body = "{ \"transactions\" :" + body + "}";
 
             //Convert original request body into balanceDto
-            SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
+            //SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+            SettleDto settleDto = objectMapper.readValue(body, SettleDto.class);
 
             //Loop bet/settle record and process in asynchronous
             List<CompletableFuture<CommonVo>> futures = new LinkedList<>();
@@ -83,12 +88,14 @@ public class SettleAction {
             CommonVo commonVo = new CommonVo();
             commonVo.setResponseCode(ResponseCodes.INVALID_PARAMETER);
             responseVo.add(commonVo);
+            settleVo.setTransactions(responseVo);
             httpService.logError(httpRequestLog, jsonProcessingException);
 
         } catch (Exception exception) {
             CommonVo commonVo = new CommonVo();
             commonVo.setResponseCode(ResponseCodes.SYSTEM_ERROR);
             responseVo.add(commonVo);
+            settleVo.setTransactions(responseVo);
             httpService.logError(httpRequestLog, exception);
 
         } finally {
@@ -153,13 +160,17 @@ public class SettleAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
 
+        //Insert Request Body
+        Gson gson = new Gson();
+        httpRequestLog.setRequestBody(gson.toJson(settleTransactionDto));
+
         try {
 
             // 1. Validate each user data
             this.doValidation(settleTransactionDto);
 
             // 2. Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleTransactionDto.getLoginId().toLowerCase(), settleTransactionDto.getGameName().toLowerCase());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(settleTransactionDto.getLoginId().toLowerCase(), settleTransactionDto.getGameName().toLowerCase().replaceAll("\\s", ""));
 
             // 3. Verify Credential and Currency
             this.doVerification(settleTransactionDto, gameSession);

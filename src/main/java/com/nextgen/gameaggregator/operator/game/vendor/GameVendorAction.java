@@ -1,16 +1,18 @@
 package com.nextgen.gameaggregator.operator.game.vendor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.Language;
-import com.nextgen.gameaggregator.entity.custom.IGameVendor;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.Currency;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.Language;
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.LanguageService;
@@ -18,12 +20,14 @@ import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 
 @RestController
@@ -39,11 +43,13 @@ public class GameVendorAction {
     private LanguageService languageService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private GameUrlService gameUrlService;
 
     @PostMapping(path = "vendors")
-    public OperatorResponseVo< List<IGameVendor>> list(HttpServletRequest request) {
+    public OperatorResponseVo<List<IGameVendor>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo< List<IGameVendor> > responseVo = new OperatorResponseVo<>();
+        OperatorResponseVo<List<IGameVendor>> responseVo = new OperatorResponseVo<>();
         try {
 
             // Retrieve request body in original string format and convert into dto
@@ -67,7 +73,15 @@ public class GameVendorAction {
             // 5. check if platform supported
             Language language = languageService.checkLanguageCode(dto.getDisplayLanguage());
 
-            List<IGameVendor> vendorList = vendorService.findAgentSupportedVendors(language, apiCredential.getAgent());
+            //6. get Agent support vendor
+            List<IGameVendor> vendorList = null;
+            if (dto.getCurrency() == null) {
+                vendorList = vendorService.findAgentSupportedVendors(language, apiCredential.getAgent());
+            } else {
+                //7. check currency code
+                Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
+                vendorList = vendorService.findAgentSupportedVendors(language, apiCredential.getAgent(), currency);
+            }
 
             responseVo.setData(vendorList);
 
@@ -92,18 +106,18 @@ public class GameVendorAction {
         } catch (InvalidLanguageException invalidLanguageException) {
             responseVo.setStatus(ResponseCodes.Status.SC_INVALID_LANGUAGE);
 
-        }
-        catch (Exception exception) {
+        } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
 
-        }
-        finally {
+        } finally {
             responseVo.setMessage(responseVo.getStatus().description);
         }
-
-        httpService.end(httpRequestLog, responseVo);
+        OperatorResponseVo<JSONArray> customResponseVo = new OperatorResponseVo<>();
+        JSONArray jsonArray = new JSONArray(responseVo.getData());
+        customResponseVo.setData(jsonArray);
+        httpService.end(httpRequestLog, customResponseVo);
         return responseVo;
     }
 }

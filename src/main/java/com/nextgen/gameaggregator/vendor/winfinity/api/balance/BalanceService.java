@@ -5,8 +5,8 @@ import java.math.BigDecimal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.winfinity.constant.ErrorCodes;
@@ -33,8 +33,8 @@ public class BalanceService {
         ResponseVo vo = new ResponseVo();
 
         try {
-            // Get GameSession by vendor player username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUid());
+            // Get GameSession with token
+            GameSession gameSession = gameSessionService.verifyToken(dto.getMsid());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -49,7 +49,7 @@ public class BalanceService {
         } catch (InvalidOperatorResponseException | InvalidAgentApiCredentialException unknownErrorException) {
             httpService.logError(httpRequestLog, unknownErrorException);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
-            
+
         } catch (Exception exception) { // Any other exception encountered
             httpService.logError(httpRequestLog, exception);
             vo.setErrorVo(ErrorCodes.UNKNOWN_ERROR);
@@ -58,7 +58,10 @@ public class BalanceService {
         return vo;
     }
 
-    private void doVerification(CommonDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+    private void doVerification(CommonDto dto, GameSession gameSession)
+            throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, AuthenticationException {
+        
+        if (gameSession.getStatus() == 0) throw new AuthenticationException();
 
         // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());

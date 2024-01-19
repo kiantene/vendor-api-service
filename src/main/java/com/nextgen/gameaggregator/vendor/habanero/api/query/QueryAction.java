@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.query;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -75,10 +75,12 @@ public class QueryAction {
                 CredentialNotFoundException generalException
         ) {
             responseVo.setResponseCode(ResponseCodes.QUERY_FALSE);
+            httpService.logError(httpRequestLog, generalException);
 
         } catch (TransactionStillProcessingException TransactionStillProcessingException) {
             //return invalid respond to trigger vendor resend when record still in processing
             responseVo.setResponseCode(ResponseCodes.RETRY_ERROR);
+            httpService.logError(httpRequestLog, TransactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             // bet found return true respond

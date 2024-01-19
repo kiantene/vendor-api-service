@@ -1,27 +1,28 @@
 package com.nextgen.gameaggregator.service;
 
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.enums.Status;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.repository.ga.reader.VendorReaderRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorCurrencyRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLanguageCodeRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.entity.custom.IGameVendor;
-import com.nextgen.gameaggregator.enums.Status;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.*;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
 
     @Autowired
-    private VendorRepository vendorRepository;
+    private VendorReaderRepository vendorReaderRepository;
 
     @Autowired
     private VendorLanguageCodeRepository vendorLanguageCodeRepository;
@@ -29,13 +30,9 @@ public class VendorService extends BaseVendorService {
     @Autowired
     private VendorCurrencyRepository vendorCurrencyRepository;
 
-    @Autowired
-    private VendorGameService vendorGameService;
-
-
     public Vendor verifyVendorByCodeAndWalletType(String code, Integer walletType) throws InvalidVendorException, DisabledVendorException {
 
-        Vendor vendor = vendorRepository.findByCode(code);
+        Vendor vendor = vendorReaderRepository.findByCode(code);
         Optional.ofNullable(vendor).orElseThrow(InvalidVendorException::new);
 
         final Integer INACTIVE = Status.INACTIVE.code;
@@ -53,7 +50,7 @@ public class VendorService extends BaseVendorService {
     }
 
     public Vendor findVendorByCode(String vendorCode) throws InvalidVendorException {
-        Vendor vendor = vendorRepository.findByCode(vendorCode);
+        Vendor vendor = vendorReaderRepository.findByCode(vendorCode);
         Optional.ofNullable(vendor).orElseThrow(InvalidVendorException::new);
         return vendor;
     }
@@ -82,14 +79,20 @@ public class VendorService extends BaseVendorService {
         return vendorCurrencies;
     }
 
-    @Cacheable(value = "Vendors", key = "{#agent.id, #language.id}" , cacheManager = "cacheManager")
-    public List<IGameVendor> findAgentSupportedVendors(Language language, Agent agent){
-
-        return vendorRepository.findByAgentSupportedVendorAndStatus(
-                agent.getId(), agent.getCurrency().getId(), language.getId(), Status.ACTIVE.code);
+    @Cacheable(value = "Vendors", key = "{#agent.id, #language.id}", cacheManager = "cacheManager")
+    public List<IGameVendor> findAgentSupportedVendors(Language language, Agent agent) {
+        return vendorReaderRepository.findByAgentSupportedVendorAndStatus(
+                agent.getId(), language.getId(), Status.ACTIVE.code);
     }
 
-    @Cacheable(value = "VendorLanguages", key = "{#language.id, #vendor.id}" , cacheManager = "cacheManager")
+    @Cacheable(value = "Vendors", key = "{#agent.id, #language.id, #currency.id}", cacheManager = "cacheManager")
+    public List<IGameVendor> findAgentSupportedVendors(Language language, Agent agent, Currency currency) {
+
+        return vendorReaderRepository.findByAgentSupportedVendorAndStatusAndCurrency(
+                agent.getId(), currency.getId(), language.getId(), Status.ACTIVE.code);
+    }
+
+    @Cacheable(value = "VendorLanguages", key = "{#language.id, #vendor.id}", cacheManager = "cacheManager")
     public VendorLanguageCode findVendorLanguageCode(Vendor vendor, Language language) throws VendorLanguageNotSupportedException {
 
         VendorLanguageCode vendorLanguageCode =
@@ -99,13 +102,6 @@ public class VendorService extends BaseVendorService {
         if (vendorLanguageCode.getStatus() == 0) {
             throw new VendorLanguageNotSupportedException();
         }
-
-        return vendorLanguageCode;
-    }
-
-    public VendorLanguageCode getFirstVendorLanguageCode(Vendor vendor) throws VendorLanguageNotSupportedException {
-        VendorLanguageCode vendorLanguageCode = vendorLanguageCodeRepository.findTop1ByVendorIdAndStatus(vendor.getId(), Status.ACTIVE.code);
-        Optional.ofNullable(vendorLanguageCode).orElseThrow(VendorLanguageNotSupportedException::new);
 
         return vendorLanguageCode;
     }
@@ -122,20 +118,6 @@ public class VendorService extends BaseVendorService {
 
         return vendorCurrency;
     }
-
-//    public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {
-//
-//        //if vendorGameCode is not matched with gameSession vendorGameCode, then regenerate the new vendorGameCode details
-//        if (vendorGameCode != gameSession.getVendorGameCode()) {
-//            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, gameSession.getVendorId());
-//            gameSession.setGameCode(vendorGame.getCode());
-//            gameSession.setVendorGameId(vendorGame.getId());
-//            gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
-//            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
-//
-//        }
-//        return gameSession;
-//    }
 
     public VendorCurrency getCurrencyConversionRate(GameSession gameSession, String traceId) throws VendorCurrencyNotSupportException {
         BigDecimal defaultConversionRateAsOne = BigDecimal.ONE;

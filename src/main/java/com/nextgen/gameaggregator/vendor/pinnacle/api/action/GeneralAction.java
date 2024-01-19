@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,10 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.PinnacleVendorPlayer;
-import com.nextgen.gameaggregator.repository.PinnacleVendorUsernameRepository;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.repository.ga.writer.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -75,7 +75,7 @@ public class GeneralAction {
 
             // Get GA username from couchbase
             String userCode = dto.getActions().get(0).getPlayerInfo().getUserCode();
-            Optional<PinnacleVendorPlayer> player = pinnacleVendorUsernameRepository.findByVendorPlayerUsername(userCode);
+            Optional<VendorGame.PinnacleVendorPlayer> player = pinnacleVendorUsernameRepository.findByVendorPlayerUsername(userCode);
 
             // Get game session with username
             String username = player.get().getUsername();

@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jili.api.authenticate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping({EndPoints.PATH_JILI, EndPoints.PATH_TADA})
 @Slf4j
 public class AuthAction {
     @Autowired

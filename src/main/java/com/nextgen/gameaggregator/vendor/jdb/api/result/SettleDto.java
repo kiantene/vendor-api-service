@@ -92,13 +92,8 @@ public class SettleDto implements BetResultData {
     @NotNull
     private BigDecimal netWin;
 
-    @NotNull
-    @PositiveOrZero(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
-    private BigDecimal tax;
 
-    @NotBlank
-    @Size(max = 50)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
+    private BigDecimal tax;
     private String sessionNo;
 
     @Override

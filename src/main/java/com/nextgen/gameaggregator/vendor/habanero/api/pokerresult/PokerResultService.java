@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.pokerresult;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -108,18 +108,10 @@ public class PokerResultService {
     }
 
     private void doVerification(FundInfoDto dto, FundTransferRequestDto fundTransferRequestDto, GameSession gameSession) throws
-            NoAvailableLineException,
-            InvalidPlayerException,
-            AuthenticationException,
-            DisabledAgentPlayerException,
-            DisabledGameException,
-            DisabledVendorLineException {
+            NoAvailableLineException {
 
         //Verify vendor currency code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrencyCode(), NoAvailableLineException::new);
-
-        //Validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, fundTransferRequestDto.getAccountId());
 
     }
 

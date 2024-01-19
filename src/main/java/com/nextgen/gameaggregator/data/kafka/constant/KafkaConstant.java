@@ -4,9 +4,9 @@ public class KafkaConstant {
     /* Consumer Group ID */
     public static final String GROUP_ID = "ga_vendor_api_service";
 
-
     /* Bet Processing Topic */
     public static final String TOPIC_BET_HISTORY = "topic_bet_history";
+    public static final String TOPIC_BET_HISTORY_V2 = "topic_bet_history_v2";
     public static final String TOPIC_END_ROUND_PROCESS = "topic_end_round_process";
     public static final String TOPIC_UNSETTLED_BET = "sports_unsettled_bet";
     public static final String TOPIC_SETTLED_BET = "sports_settled_bet";

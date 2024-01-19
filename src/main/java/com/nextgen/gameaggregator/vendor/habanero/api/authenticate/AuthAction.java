@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.authenticate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -78,12 +78,10 @@ public class AuthAction {
                  CredentialNotFoundException |
                  DisabledVendorLineException |
                  DisabledAgentPlayerException |
-                 DisabledGameException generalException) {
+                 DisabledGameException |
+                InvalidOperatorResponseException generalException) {
             responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
-
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+            httpService.logError(httpRequestLog, generalException);
 
         } catch (Exception exception) {
             responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);

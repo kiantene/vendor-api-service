@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.ezugi.api.debit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.ezugi.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +30,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -56,6 +58,8 @@ public class DebitAction {
     private VendorService vendorService;
     @Autowired
     private VendorGameCodeService vendorGameCodeService;
+    @Autowired
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.DEBIT)
     public CommonVo debit(HttpServletRequest request) {
@@ -65,6 +69,8 @@ public class DebitAction {
         DebitVo debitVo = new DebitVo();
         DebitDto debitDto = new DebitDto();
         GameSession gameSession = null;
+        RLock userLock = null;
+
         try {
             String body = httpRequestLog.getRequestBody();
             debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
@@ -86,6 +92,8 @@ public class DebitAction {
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     break;
                 default:
+                    userLock = redissonService.getRedissonClient().getLock("RedissonLock:EZUGI:" + debitDto.getUid());
+                    userLock.lock(1L, TimeUnit.SECONDS);
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
                     balance = betEvent.getLastBalance();
                     break;
@@ -176,6 +184,9 @@ public class DebitAction {
             }
             debitVo.setCurrency(debitDto.getCurrency());
             debitVo.setTimestamp(System.currentTimeMillis());
+            if (userLock != null) {
+                userLock.forceUnlock();
+            }
             httpService.end(httpRequestLog, debitVo);
         }
         return debitVo;
@@ -197,7 +208,7 @@ public class DebitAction {
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
-        
+
         // Verify Operator Id from vendor given
         String operatorId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.OPERATOR_ID);
         ValidationUtils.isEquals(operatorId, String.valueOf(debitDto.getOperatorId()), InvalidRequestException::new);

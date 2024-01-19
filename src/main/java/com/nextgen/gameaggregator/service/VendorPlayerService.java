@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.InvalidPlayerException;
-import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
