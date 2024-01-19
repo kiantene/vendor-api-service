@@ -76,10 +76,11 @@ public class TransactionListService {
             put("winLoss", 10);
             put("effectiveTurnover", 11);
             put("jackpotAmount", 12);
-            put("status", 13);
-            put("vendorBetTime", 14);
-            put("vendorSettleTime", 15);
-            put("isFreeSpin", 16);
+            put("refundAmount", 13);
+            put("status", 14);
+            put("vendorBetTime", 15);
+            put("vendorSettleTime", 16);
+            put("isFreeSpin", 17);
         }});
 
         return sortByValue(hm);
@@ -108,8 +109,8 @@ public class TransactionListService {
         return temp;
     }
 
-    @Transactional(isolation = Isolation.READ_UNCOMMITTED) //allow dirty read to prevent table locking
-    private TransactionsListData findByAgentIdAndCreateTimeBetween(Integer agentId, TransactionsListDto dto) {
+    @Transactional(transactionManager = "transactionManagerGaServiceReaderDb", isolation = Isolation.READ_UNCOMMITTED) //allow dirty read to prevent table locking
+    public TransactionsListData findByAgentIdAndCreateTimeBetween(Integer agentId, TransactionsListDto dto) {
         //form partitions
         long fromTime = dto.getFromTime();
         long toTime = dto.getToTime();

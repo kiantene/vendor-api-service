@@ -6,8 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.Vendor;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.operator.game.list.GameListData;
 import com.nextgen.gameaggregator.operator.game.list.GameListDto;
-import com.nextgen.gameaggregator.repository.ga.writer.LanguageRepository;
-import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
+import com.nextgen.gameaggregator.repository.ga.reader.VendorGameReaderRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,9 +23,7 @@ import java.util.*;
 public class GameListService {
 
     @Autowired
-    private VendorGameRepository vendorGameRepository;
-    @Autowired
-    private LanguageRepository languageRepository;
+    private VendorGameReaderRepository vendorGameReaderRepository;
 
     @Value("${image.gameurl}")
     private String imageUrl;
@@ -44,7 +41,7 @@ public class GameListService {
         List<Sort.Order> orders = this.generateOrder();
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
-        Page<Object> gameList = vendorGameRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
+        Page<Object> gameList = vendorGameReaderRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
                 (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl, pagingSort);
 
         gameListData.setHeaders(this.getHeaders());
