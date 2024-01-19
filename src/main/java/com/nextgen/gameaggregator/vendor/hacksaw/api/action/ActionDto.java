@@ -36,8 +36,8 @@ public class ActionDto {
 
         String roundId = null;
 
-        // only bet or win data contain round id
-        if ((action.equals("Bet") || action.equals("Win")) && this.roundId != null) {
+        // only bet or win or rollback data contain round id
+        if ((action.equals("Bet") || action.equals("Win") || action.equals("Rollback")) && this.roundId != null) {
             roundId = this.roundId.toString();
         }
 
