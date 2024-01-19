@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 @Scope("raw")
-@Collection("game_session")
+@Collection("game_sessions")
 public interface RawGameSessionRepository extends CouchbaseRepository<GameSession, String> {
     GameSession findByAgentIdAndTraceId(Integer agentId, String traceId);
 

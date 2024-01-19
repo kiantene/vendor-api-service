@@ -73,6 +73,9 @@ public class BetHistory {
     @JsonProperty("result_type")
     private Integer resultType;
 
+    @JsonProperty("bet_type")
+    private Integer betType;
+
     @JsonProperty("is_freespin")
     private Integer isFreespin;
 
@@ -120,6 +123,9 @@ public class BetHistory {
         this.vendorBetTime = settledBet.getVendorBetTime();
         this.vendorSettleTime = settledBet.getVendorSettleTime();
         this.resultTime = settledBet.getResultTime();
+
+        //temporary hardcode for all type of game category.
+        this.betType = 1;
 
         if (settledBet.getResettleNum() == null) {
             settledBet.setResettleNum(0);
