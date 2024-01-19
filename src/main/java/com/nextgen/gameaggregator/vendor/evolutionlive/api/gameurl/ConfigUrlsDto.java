@@ -5,8 +5,9 @@ import lombok.Data;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ConfigDto {
-    private ConfigGameDto game;
-    private ConfigChannelDto channel;
-    private ConfigUrlsDto urls;
+public class ConfigUrlsDto {
+    private String cashier;
+    private String responsibleGaming;
+    private String lobby;
+    private String sessionTimeout;
 }
