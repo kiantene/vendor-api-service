@@ -53,6 +53,12 @@ public class VendorService extends BaseVendorService {
         return configChannelDto;
     }
 
+    public ConfigUrlsDto setConfigUrlsDto(GameSession gameSession) {
+        ConfigUrlsDto configUrlsDto = new ConfigUrlsDto();
+        configUrlsDto.setLobby(gameSession.getLobbyUrl());
+        return configUrlsDto;
+    }
+
     public GameTableDto setGameTableDto(GameSession gameSession) {
         GameTableDto gameTableDto = new GameTableDto();
         gameTableDto.setId(gameSession.getVendorGameCode());
@@ -65,10 +71,11 @@ public class VendorService extends BaseVendorService {
         return configGameDto;
     }
 
-    public ConfigDto setConfigDto(ConfigGameDto configGameDto, ConfigChannelDto configChannelDto) {
+    public ConfigDto setConfigDto(ConfigGameDto configGameDto, ConfigChannelDto configChannelDto, ConfigUrlsDto configUrlsDto) {
         ConfigDto configDto = new ConfigDto();
         configDto.setGame(configGameDto);
         configDto.setChannel(configChannelDto);
+        configDto.setUrls(configUrlsDto);
         return configDto;
     }
 
