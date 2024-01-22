@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.saba.constant;
 
 public class EndPoints {
+    public static final Integer TIMEOUT = 10000;
+    public static final Integer RETRY = 3;
     public static final String VENDOR_CODE = "SABA";
 
     // Vendor Path
@@ -25,4 +27,7 @@ public class EndPoints {
 
     // Wallet
     public static final String ADJUST_BALANCE = "/adjustbalance";
+
+    // Bet Details
+    public static final String BET_DETAIL = "/GetBetDetailByTransID";
 }

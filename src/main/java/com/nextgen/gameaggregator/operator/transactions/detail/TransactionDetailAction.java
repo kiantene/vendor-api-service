@@ -78,7 +78,11 @@ public class TransactionDetailAction {
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);
 
-            transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            if (iBetDetailUrlInfo.getGameCategoryCode().equals("SPORT")) {
+                transactionDetailData = betHistoryService.getSportBetDetail(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            } else {
+                transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            }
 
             responseVo.setData(transactionDetailData);
 

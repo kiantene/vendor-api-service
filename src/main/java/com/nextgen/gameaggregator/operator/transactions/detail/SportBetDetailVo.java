@@ -1,0 +1,27 @@
+package com.nextgen.gameaggregator.operator.transactions.detail;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+public interface SportBetDetailVo {
+
+    String getBetNumber();
+
+    String getVendorUsername();
+
+    String getReferenceNumber();
+
+    Long getTransactionTime();
+
+    String getChoice();
+
+    String getOdds();
+
+    BigDecimal getStake();
+
+    BigDecimal getWinLoss();
+
+    String getStatus();
+
+    List<SportParlayDetailData> getParlayDetail();
+}
