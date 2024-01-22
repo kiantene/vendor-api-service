@@ -1,7 +1,21 @@
 package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
-import java.math.BigDecimal;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
+import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
+import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -10,20 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
-import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
-import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
-
-import jakarta.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -38,7 +39,7 @@ public class UpdateBalanceAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
-    
+
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
         // Start the HTTP request logging
@@ -52,6 +53,7 @@ public class UpdateBalanceAction {
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 
+        GameSession gameSession = null;
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -60,7 +62,7 @@ public class UpdateBalanceAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Get GameSession by vendor player username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
@@ -82,9 +84,11 @@ public class UpdateBalanceAction {
             }
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
             updateBalanceVo.setBalance(betResultIdempotentViolationException.getBalance());
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+        } catch (
+                InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
 
@@ -107,7 +111,7 @@ public class UpdateBalanceAction {
         } catch (BetNotFoundException betNotFoundException) {
             httpService.logError(httpRequestLog, betNotFoundException);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
-        
+
         } catch (InvalidPlayerException invalidPlayerException) {
             httpService.logError(httpRequestLog, invalidPlayerException);
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -156,6 +160,7 @@ public class UpdateBalanceAction {
     }
 
     private ResultType determineResultType(UpdateBalanceDto dto) {
-        return dto.getCompleted() ? ResultType.END : (dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE);
+        // Completed True also will happen in Win Situation
+        return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
     }
 }
