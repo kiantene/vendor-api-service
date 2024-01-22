@@ -4,15 +4,30 @@ import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 @Service
 public class VendorService {
 
-    public String convertDateTimeFormat(Long UnixTimestamp){
+    public static Long convertToUnixTimestamp(String dateTimeString) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS");
+
+        try {
+            Date date = sdf.parse(dateTimeString);
+
+            return date.getTime();
+
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String convertDateTimeFormat(Long UnixTimestamp) {
 
         // Convert milliseconds to Instant
         Instant instant = Instant.ofEpochMilli(UnixTimestamp);
@@ -32,7 +47,7 @@ public class VendorService {
         return iso8601WithOffset;
     }
 
-    public String generateBatchProcessId(String action, String operationId){
+    public String generateBatchProcessId(String action, String operationId) {
         String idempotentId = EndPoints.VENDOR_CODE + "_" + action + "_" + operationId;
         idempotentId = DigestUtils.md5Hex(idempotentId).toUpperCase();
 
