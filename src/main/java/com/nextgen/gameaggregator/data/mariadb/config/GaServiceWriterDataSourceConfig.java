@@ -90,7 +90,7 @@ public class GaServiceWriterDataSourceConfig {
                 .packages("com.nextgen.gameaggregator.entity.ga")
                 // Spring会将EntityManagerFactory注入到Repository之中.有了 EntityManagerFactory之后,
                 // Repository就能用它来创建 EntityManager 了,然后 EntityManager 就可以针对数据库执行操作
-                .persistenceUnit("mysqlPersistenceUnit")
+                .persistenceUnit("mysqlPersistenceUnitGaWriter")
                 .build();
     }
 

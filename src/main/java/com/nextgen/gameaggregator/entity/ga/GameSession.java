@@ -9,7 +9,7 @@ import org.springframework.data.couchbase.repository.Scope;
 
 @Document
 @Scope("raw")
-@Collection("game_session")
+@Collection("game_sessions")
 @Data
 @NoArgsConstructor
 public class GameSession {

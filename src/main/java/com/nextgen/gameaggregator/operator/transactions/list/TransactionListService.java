@@ -27,7 +27,8 @@ public class TransactionListService {
     @Autowired
     private MysqlUtils mysqlUtils;
 
-    @PersistenceContext
+    //@PersistenceContext
+    @PersistenceContext(unitName = "mysqlPersistenceUnitGaReader")
     private EntityManager entityManager;
 
     public TransactionsListData getTransactionsList(TransactionsListDto dto, Integer agentId){
