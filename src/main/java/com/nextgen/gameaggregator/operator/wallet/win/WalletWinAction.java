@@ -52,6 +52,7 @@ public class WalletWinAction {
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
+                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
                 // TODO: to catch more error codes

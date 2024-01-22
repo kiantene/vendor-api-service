@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -81,12 +82,20 @@ public class UnsettledBetService {
      */
     @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public void delete(UnsettledBet entity) {
-        rawUnsettledBetRepository.delete(entity);
+        try {
+            rawUnsettledBetRepository.delete(entity);
+        } catch (DataRetrievalFailureException e) {
+            // if cannot find document id will cause this exception
+        }
     }
 
     @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public void deleteWithoutClearingCache(UnsettledBet entity) {
-        rawUnsettledBetRepository.delete(entity);
+        try {
+            rawUnsettledBetRepository.delete(entity);
+        } catch (DataRetrievalFailureException e) {
+            // if cannot find document id will cause this exception
+        }
     }
 
     public UnsettledBet findBetsForRollback(Long vendorPlayerId, String externalTransactionId)
