@@ -11,7 +11,7 @@ public class SportBetDetailData {
     private String vendorUsername;
     private String referenceNumber;
     private Long transactionTime;
-    private String choice;
+    private MatchDetailData matchDetail;
     private String odds;
     private BigDecimal stake;
     private BigDecimal winLoss;
@@ -23,7 +23,7 @@ public class SportBetDetailData {
         this.setVendorUsername(sportBetDetailVo.getVendorUsername());
         this.setReferenceNumber(sportBetDetailVo.getReferenceNumber());
         this.setTransactionTime(sportBetDetailVo.getTransactionTime());
-        this.setChoice(sportBetDetailVo.getChoice());
+        this.setMatchDetail(sportBetDetailVo.getMatchDetail());
         this.setOdds(sportBetDetailVo.getOdds());
         this.setStake(sportBetDetailVo.getStake());
         this.setWinLoss(sportBetDetailVo.getWinLoss());

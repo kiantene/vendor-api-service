@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.saba.service;
 
+import com.nextgen.gameaggregator.vendor.saba.api.betdetail.LangNameDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.stereotype.Service;
@@ -9,22 +10,27 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
+import java.util.List;
 
 @Service
 public class VendorService {
 
-    public static Long convertToUnixTimestamp(String dateTimeString) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SS");
-
+    public static Long convertToUnixTimestamp(String dateTimeString, String datePattern) {
+        SimpleDateFormat sdf = new SimpleDateFormat(datePattern);
         try {
-            Date date = sdf.parse(dateTimeString);
-
-            return date.getTime();
-
+            return sdf.parse(dateTimeString).getTime();
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static String getNameByLang(String lang, List<LangNameDto> list) {
+        for (LangNameDto langNameDto : list) {
+            if (langNameDto.getLang().equals(lang)) {
+                return langNameDto.getName();
+            }
+        }
+        return null; // or throw an exception, or return a default value
     }
 
     public String convertDateTimeFormat(Long UnixTimestamp) {

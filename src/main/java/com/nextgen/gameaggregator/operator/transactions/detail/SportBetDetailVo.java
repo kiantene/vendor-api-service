@@ -13,7 +13,7 @@ public interface SportBetDetailVo {
 
     Long getTransactionTime();
 
-    String getChoice();
+    MatchDetailData getMatchDetail();
 
     String getOdds();
 
