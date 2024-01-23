@@ -65,6 +65,7 @@ public class BetAction {
 
 //            String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
                 headerMap.put(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE));
+                headerMap.put(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
                 responseResultVo.setRequestHeaders(headerMap);
 
                 responseResultVo.setApiUrl(apiUrl + EndPoints.WALLET_BET);
@@ -74,6 +75,7 @@ public class BetAction {
                         .post()
                         .uri(EndPoints.WALLET_BET)
                         .header(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE))
+                        .header(EndPoints.HEADER_API_KEY, request.getHeader(EndPoints.HEADER_API_KEY))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(dto))
