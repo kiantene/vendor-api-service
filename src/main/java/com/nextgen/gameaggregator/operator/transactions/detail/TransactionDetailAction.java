@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.operator.transactions.detail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -78,7 +78,7 @@ public class TransactionDetailAction {
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);
 
-            if (iBetDetailUrlInfo.getGameCategoryCode().equals("SPORT")) {
+            if (iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase("SPORT")) {
                 transactionDetailData = betHistoryService.getSportBetDetail(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
             } else {
                 transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);

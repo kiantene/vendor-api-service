@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.saba.service;
 
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.vendor.saba.api.betdetail.LangNameDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -11,6 +12,8 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class VendorService {
@@ -24,13 +27,12 @@ public class VendorService {
         }
     }
 
-    public static String getNameByLang(String lang, List<LangNameDto> list) {
-        for (LangNameDto langNameDto : list) {
-            if (langNameDto.getLang().equals(lang)) {
-                return langNameDto.getName();
-            }
-        }
-        return null; // or throw an exception, or return a default value
+    public static String getNameByLang(VendorLanguageCode vendorLanguageCode, List<LangNameDto> list) {
+
+        Map<String, String> languageMap = list.stream()
+                .collect(Collectors.toMap(LangNameDto::getLang, LangNameDto::getName));
+        return languageMap.getOrDefault(vendorLanguageCode.getLanguageCode(), list.get(0).getLang());
+
     }
 
     public String convertDateTimeFormat(Long UnixTimestamp) {
