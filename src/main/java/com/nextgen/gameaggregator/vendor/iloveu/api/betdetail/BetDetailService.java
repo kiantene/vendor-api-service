@@ -40,13 +40,6 @@ public class BetDetailService implements BetDetailUrl {
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-
-        VendorService vendorService = new VendorService();
-
-        //setup form data
-        formData.add("PlayerId", iBetDetailUrlInfo.getVendorUsername());
-        formData.add("OrderId", iBetDetailUrlInfo.getExternalRoundId());
-
         return formData;
     }
 
@@ -54,39 +47,7 @@ public class BetDetailService implements BetDetailUrl {
     public BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials,
                                IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorResponseException, InvalidVendorLineException {
-        BetDetailUrlVo responseVo = new BetDetailUrlVo();
 
-        String detailUrl = credentials.get(Credentials.BET_DETAIL_URL);
-        Optional.ofNullable(detailUrl).orElseThrow(InvalidVendorLineException::new);
-
-        //convert from data into mapper data
-        Map<String, String> convertFormMap = new HashMap<String, String>();
-        convertFormMap.put("PlayerId", formData.getFirst("PlayerId"));
-        convertFormMap.put("OrderId", formData.getFirst("OrderId"));
-
-        //convert mapper data into json string
-        String jsonFormString = "";
-        String betDetail = "";
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            jsonFormString = objectMapper.writeValueAsString(convertFormMap);
-
-            betDetail = vendorService.base64(jsonFormString);
-        } catch (Exception exception) { // any other exception encountered
-            throw new InvalidVendorLineException("Json Convert Failed");
-        }
-
-        //Construct the Game URL
-        String betDetailUrl = UriComponentsBuilder.fromUriString(detailUrl)
-                .path(EndPoints.BET_DETAIL_URL)
-                .query(betDetail)
-                .build()
-                .encode()
-                .toUri()
-                .toString();
-
-        responseVo.setUrl(betDetailUrl);
-
-        return responseVo;
+        return new com.nextgen.gameaggregator.vendor.iloveu.api.betdetail.BetDetailUrlVo();
     }
 }
