@@ -11,5 +11,6 @@ public class MatchDetailData {
     private String awayTeamName;
     private String homeTeamScore;
     private String awayTeamScore;
+    private String betTypeName;
 
 }
