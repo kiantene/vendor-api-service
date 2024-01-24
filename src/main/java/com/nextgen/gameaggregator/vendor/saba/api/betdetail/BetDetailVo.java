@@ -66,6 +66,7 @@ public class BetDetailVo implements SportBetDetailVo {
         matchDetailData.setAwayTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getAwayteamname()));
         matchDetailData.setHomeTeamScore(betDetailsDto.getHomeScore());
         matchDetailData.setAwayTeamScore(betDetailsDto.getAwayScore());
+        matchDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getBetTypeName()));
         return matchDetailData;
     }
 
