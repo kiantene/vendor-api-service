@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultDto;
 import lombok.extern.slf4j.Slf4j;

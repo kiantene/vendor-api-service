@@ -2,8 +2,8 @@ package com.nextgen.gameaggregator.vendor.playngo.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;

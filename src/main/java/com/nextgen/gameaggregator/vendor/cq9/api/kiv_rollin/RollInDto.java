@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.kiv_rollin;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetResultLog;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.BetResultLog;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.win.WinData;
 import com.nextgen.gameaggregator.util.ValidationUtils;

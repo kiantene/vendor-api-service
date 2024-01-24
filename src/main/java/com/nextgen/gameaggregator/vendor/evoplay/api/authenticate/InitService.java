@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.evoplay.api.authenticate;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
 import com.nextgen.gameaggregator.service.VendorGameService;
@@ -12,7 +12,6 @@ import com.nextgen.gameaggregator.vendor.evoplay.api.balanceIncrease.BalanceServ
 import com.nextgen.gameaggregator.vendor.evoplay.dto.CallbackDto;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.evoplay.vo.ResponseVo;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

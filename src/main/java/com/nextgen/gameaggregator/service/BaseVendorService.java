@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.entity.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import org.springframework.beans.factory.annotation.Autowired;

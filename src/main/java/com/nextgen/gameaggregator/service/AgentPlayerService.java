@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
-import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;

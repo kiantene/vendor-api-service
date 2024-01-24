@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.win;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -52,6 +52,7 @@ public class WalletWinAction {
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
+                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                 .body(BodyInserters.fromValue(dto))
                 .retrieve()
                 // TODO: to catch more error codes

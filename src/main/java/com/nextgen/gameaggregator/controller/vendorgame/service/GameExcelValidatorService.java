@@ -2,12 +2,12 @@ package com.nextgen.gameaggregator.controller.vendorgame.service;
 
 import com.nextgen.gameaggregator.controller.vendorgame.vo.GameDataEntity;
 import com.nextgen.gameaggregator.controller.vendorgame.enums.HeaderName;
-import com.nextgen.gameaggregator.entity.Currency;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
-import com.nextgen.gameaggregator.repository.CurrencyRepository;
-import com.nextgen.gameaggregator.repository.LanguageRepository;
-import com.nextgen.gameaggregator.repository.PlatformRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.CurrencyRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.LanguageRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.PlatformRepository;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.util.CellAddress;
@@ -341,8 +341,8 @@ public class GameExcelValidatorService {
     }
 
     public GameDataEntity verifySquareImage(GameDataEntity gameDataEntity, HashMap<String, Language> vendorLanguages,
-                                             HashMap<Integer, HashMap<String, String>> columnTypes,
-                                             Integer columnNum, Integer rowNum, String squareImage,
+                                            HashMap<Integer, HashMap<String, String>> columnTypes,
+                                            Integer columnNum, Integer rowNum, String squareImage,
                                             Vendor vendor, GameCategory gameCategory) throws InvalidFormatException {
         if (columnTypes.get(columnNum).get("id").equals("ALL")) {
 

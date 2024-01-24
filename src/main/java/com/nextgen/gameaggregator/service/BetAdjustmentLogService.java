@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.RawBetAdjustmentLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawBetAdjustmentLog;
 import com.nextgen.gameaggregator.exception.BetAdjustmentIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.adjustment.AdjustmentData;
-import com.nextgen.gameaggregator.repository.RawBetAdjustmentLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawBetAdjustmentLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

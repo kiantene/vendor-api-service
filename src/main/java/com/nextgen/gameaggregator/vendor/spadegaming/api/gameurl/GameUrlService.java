@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.spadegaming.api.gameurl;
 import java.net.URI;
 import java.util.Map;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;

@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetResultType;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;

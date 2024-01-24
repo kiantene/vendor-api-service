@@ -1,11 +1,11 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.data.mariadb.config.MariaDefaultDataSourceConfig;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.data.mariadb.config.GaServiceWriterDataSourceConfig;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -13,8 +13,8 @@ import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
 import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,6 @@ import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -44,7 +43,7 @@ public class BetHistoryService {
     private RawUnsettledBetRepository rawUnsettledBetRepository;
 
     @Autowired
-    private MariaDefaultDataSourceConfig mariaDefaultDataSourceConfig;
+    private GaServiceWriterDataSourceConfig gaServiceWriterDataSourceConfig;
 
     @Autowired
     private VendorLineService vendorLineService;
@@ -102,7 +101,7 @@ public class BetHistoryService {
     @Transactional
     public BetHistory jdbcCreate(BetHistory entity) {
 
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(mariaDefaultDataSourceConfig.mariaDataSource());
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(gaServiceWriterDataSourceConfig.mariaDataSource());
 
         // Set default values
         entity.setWinAmount(BigDecimal.ZERO);

@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.yesbingo.api.gameurl;
 import com.couchbase.client.core.deps.com.google.gson.JsonObject;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;

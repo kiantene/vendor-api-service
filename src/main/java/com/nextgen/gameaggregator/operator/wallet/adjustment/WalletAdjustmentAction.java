@@ -2,10 +2,10 @@ package com.nextgen.gameaggregator.operator.wallet.adjustment;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -61,6 +61,7 @@ public class WalletAdjustmentAction {
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
         httpRequestLog.setOperatorStart(startTime);
@@ -71,6 +72,7 @@ public class WalletAdjustmentAction {
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_ADJUSTMENT)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
+                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))

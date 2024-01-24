@@ -2,12 +2,11 @@ package com.nextgen.gameaggregator.vendor.jdb.api.balance;
 
 import java.math.BigDecimal;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;

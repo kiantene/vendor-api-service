@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.operator.wallet.bet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -70,6 +70,7 @@ public class WalletBetAction {
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
@@ -84,6 +85,7 @@ public class WalletBetAction {
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
+                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))

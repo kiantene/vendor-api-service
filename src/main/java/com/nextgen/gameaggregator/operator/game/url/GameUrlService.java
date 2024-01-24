@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.entity.Currency;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.*;
+import com.nextgen.gameaggregator.repository.ga.writer.*;
 import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;

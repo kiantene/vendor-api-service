@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.iloveu.constant.GameType;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.iloveu.service.VendorService;
 import jakarta.validation.constraints.Digits;
@@ -138,7 +139,7 @@ public class SettleTransactionDto implements BetResultData {
     public BigDecimal getBetAmount() {
 
         BigDecimal betAmount = null;
-        if (this.getMode().equals(4)) {
+        if (this.getMode().equals(GameType.BETNSETTLE.code)) {
             betAmount = this.getBet().getValidBet();
         }
         return betAmount;
@@ -167,7 +168,7 @@ public class SettleTransactionDto implements BetResultData {
     @Override
     public Long getVendorBetTime() {
         Long vendorBetTime = null;
-        if (this.getMode().equals(4)) {
+        if (this.getMode().equals(GameType.BETNSETTLE.code)) {
             vendorBetTime = VendorService.dateTimeConvert(this.getActionDate());
         }
         return vendorBetTime;

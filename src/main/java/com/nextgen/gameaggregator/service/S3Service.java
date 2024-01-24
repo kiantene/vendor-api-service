@@ -4,7 +4,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.*;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -49,7 +49,7 @@ public class S3Service {
             // Generate filename
             String vendorCode = this.getVendorCode(gameSession.getGameCode());
             String fileName = gameSession.getToken() + ".html";
-            String key = vendorCode + "/" + ((isNullOrEmpty(awsFolder)) ? fileName : awsFolder + "/" + fileName);
+            String key = awsFolder + "/" + vendorCode + "/" + fileName;
             uploadHtmlToS3(s3Client, key, rawHtml);
 
             return gameUrl + key;

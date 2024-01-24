@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.GameSessionService;

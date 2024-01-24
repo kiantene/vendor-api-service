@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.jdb.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.JsonParseException;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.InvalidDateException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;

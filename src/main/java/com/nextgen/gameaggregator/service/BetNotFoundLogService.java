@@ -1,9 +1,8 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetNotFoundLog;
+import com.nextgen.gameaggregator.entity.ga.BetNotFoundLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.repository.RawBetNotFoundLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawBetNotFoundLogRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;

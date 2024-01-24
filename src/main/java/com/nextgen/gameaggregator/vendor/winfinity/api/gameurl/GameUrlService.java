@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
