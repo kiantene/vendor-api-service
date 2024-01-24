@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.saba.api.betdetail;
 
 import com.google.gson.annotations.SerializedName;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
 import com.nextgen.gameaggregator.operator.constant.SportBetStatus;
 import com.nextgen.gameaggregator.operator.transactions.detail.MatchDetailData;
 import com.nextgen.gameaggregator.operator.transactions.detail.SportBetDetailVo;
@@ -24,6 +25,8 @@ public class BetDetailVo implements SportBetDetailVo {
     @SerializedName("Data")
     private DataDto data;
 
+    private VendorLanguageCode vendorLanguageCode;
+
     @Override
     public String getBetNumber() {
         return this.getData().getBetDetails().get(0).getTransId();
@@ -36,13 +39,9 @@ public class BetDetailVo implements SportBetDetailVo {
 
     @Override
     public String getReferenceNumber() {
-        String referenceNumber;
-        if (Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData()).isPresent()) {
-            referenceNumber = this.getData().getBetDetails().get(0).getParlayRefNo();
-        } else {
-            referenceNumber = this.getData().getBetDetails().get(0).getTransId();
-        }
-        return referenceNumber;
+        return Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData())
+                .map(parlayData -> this.getData().getBetDetails().get(0).getParlayRefNo())
+                .orElse(this.getData().getBetDetails().get(0).getTransId());
     }
 
     @Override
@@ -53,18 +52,21 @@ public class BetDetailVo implements SportBetDetailVo {
     @Override
     public MatchDetailData getMatchDetail() {
 
-        if (Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData()).isPresent()) {
+        Optional<List<ParlayDataDto>> parlayDataDtoList = Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData());
+        BetDetailsDto betDetailsDto = this.getData().getBetDetails().get(0);
+
+        if (parlayDataDtoList.isPresent()) {
             return null;
-        } else {
-            MatchDetailData matchDetailData = new MatchDetailData();
-            matchDetailData.setMatchName(this.getData().getBetDetails().get(0).getLeaguename().get(0).getName());
-            matchDetailData.setMatchDate(VendorService.convertToUnixTimestamp(this.getData().getBetDetails().get(0).getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
-            matchDetailData.setHomeTeamName(this.getData().getBetDetails().get(0).getHometeamname().get(0).getName());
-            matchDetailData.setAwayTeamName(this.getData().getBetDetails().get(0).getAwayteamname().get(0).getName());
-            matchDetailData.setHomeTeamScore(this.getData().getBetDetails().get(0).getHomeScore());
-            matchDetailData.setAwayTeamScore(this.getData().getBetDetails().get(0).getAwayScore());
-            return matchDetailData;
         }
+
+        MatchDetailData matchDetailData = new MatchDetailData();
+        matchDetailData.setMatchName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getLeaguename()));
+        matchDetailData.setMatchDate(VendorService.convertToUnixTimestamp(betDetailsDto.getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
+        matchDetailData.setHomeTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getHometeamname()));
+        matchDetailData.setAwayTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getAwayteamname()));
+        matchDetailData.setHomeTeamScore(betDetailsDto.getHomeScore());
+        matchDetailData.setAwayTeamScore(betDetailsDto.getAwayScore());
+        return matchDetailData;
     }
 
     @Override
@@ -90,30 +92,32 @@ public class BetDetailVo implements SportBetDetailVo {
     @Override
     public List<SportParlayDetailData> getParlayDetail() {
 
-        if (Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData()).isEmpty()) {
+        Optional<List<ParlayDataDto>> parlayDataDtoList = Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData());
+
+        if (parlayDataDtoList.isEmpty()) {
             return null;
-        } else {
-            List<SportParlayDetailData> parlayDetailDataList = new LinkedList<>();
-
-            for (ParlayDataDto parlayDataDto : this.getData().getBetDetails().get(0).getParlayData()) {
-
-                SportParlayDetailData sportParlayDetailData = new SportParlayDetailData();
-
-                sportParlayDetailData.setMatchName(parlayDataDto.getLeaguename().get(0).getName());
-                sportParlayDetailData.setMatchDate(VendorService.convertToUnixTimestamp(parlayDataDto.getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
-                sportParlayDetailData.setHomeTeamName(parlayDataDto.getHometeamname().get(0).getName());
-                sportParlayDetailData.setAwayTeamName(parlayDataDto.getAwayteamname().get(0).getName());
-                sportParlayDetailData.setHomeTeamScore(parlayDataDto.getHomeScore());
-                sportParlayDetailData.setAwayTeamScore(parlayDataDto.getAwayScore());
-                sportParlayDetailData.setBetTypeName(parlayDataDto.getBettypename().get(0).getName());
-                sportParlayDetailData.setOdds(parlayDataDto.getOdds());
-                sportParlayDetailData.setBetStatus(this.getBetStatus(parlayDataDto.getTicketStatus()));
-                sportParlayDetailData.setSettleDate(VendorService.convertToUnixTimestamp(parlayDataDto.getWinlostDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
-
-                parlayDetailDataList.add(sportParlayDetailData);
-            }
-            return parlayDetailDataList;
         }
+
+        List<SportParlayDetailData> parlayDetailDataList = new LinkedList<>();
+
+        for (ParlayDataDto parlayDataDto : parlayDataDtoList.get()) {
+
+            SportParlayDetailData sportParlayDetailData = new SportParlayDetailData();
+
+            sportParlayDetailData.setMatchName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getLeaguename()));
+            sportParlayDetailData.setMatchDate(VendorService.convertToUnixTimestamp(parlayDataDto.getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
+            sportParlayDetailData.setHomeTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getHometeamname()));
+            sportParlayDetailData.setAwayTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getAwayteamname()));
+            sportParlayDetailData.setHomeTeamScore(parlayDataDto.getHomeScore());
+            sportParlayDetailData.setAwayTeamScore(parlayDataDto.getAwayScore());
+            sportParlayDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getBettypename()));
+            sportParlayDetailData.setOdds(parlayDataDto.getOdds());
+            sportParlayDetailData.setBetStatus(this.getBetStatus(parlayDataDto.getTicketStatus()));
+            sportParlayDetailData.setSettleDate(VendorService.convertToUnixTimestamp(parlayDataDto.getWinlostDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
+
+            parlayDetailDataList.add(sportParlayDetailData);
+        }
+        return parlayDetailDataList;
     }
 
     private String getBetStatus(String value) {

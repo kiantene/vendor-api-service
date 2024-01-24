@@ -87,7 +87,7 @@ public class BetDetailService implements SportBetDetail {
             Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).serializeNulls().create();
 
             responseVo = gson.fromJson((String) apiResponse.getBody(), BetDetailVo.class);
-            String sampleJson = gson.toJson(responseVo);
+            responseVo.setVendorLanguageCode(vendorLanguageCode);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
