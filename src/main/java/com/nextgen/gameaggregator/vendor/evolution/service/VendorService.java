@@ -2,9 +2,9 @@ package com.nextgen.gameaggregator.vendor.evolution.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
-import com.nextgen.gameaggregator.entity.BetNotFoundLog;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.BetNotFoundLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.BetNotFoundLogService;
@@ -53,6 +53,12 @@ public class VendorService extends BaseVendorService {
         return configChannelDto;
     }
 
+    public ConfigUrlsDto setConfigUrlsDto(GameSession gameSession) {
+        ConfigUrlsDto configUrlsDto = new ConfigUrlsDto();
+        configUrlsDto.setLobby(gameSession.getLobbyUrl());
+        return configUrlsDto;
+    }
+
     public GameTableDto setGameTableDto(GameSession gameSession) {
         GameTableDto gameTableDto = new GameTableDto();
         gameTableDto.setId(gameSession.getVendorGameCode());
@@ -65,10 +71,11 @@ public class VendorService extends BaseVendorService {
         return configGameDto;
     }
 
-    public ConfigDto setConfigDto(ConfigGameDto configGameDto, ConfigChannelDto configChannelDto) {
+    public ConfigDto setConfigDto(ConfigGameDto configGameDto, ConfigChannelDto configChannelDto, ConfigUrlsDto configUrlsDto) {
         ConfigDto configDto = new ConfigDto();
         configDto.setGame(configGameDto);
         configDto.setChannel(configChannelDto);
+        configDto.setUrls(configUrlsDto);
         return configDto;
     }
 

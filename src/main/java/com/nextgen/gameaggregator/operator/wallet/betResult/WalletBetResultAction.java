@@ -3,7 +3,10 @@ package com.nextgen.gameaggregator.operator.wallet.betResult;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.exception.*;
@@ -70,6 +73,7 @@ public class WalletBetResultAction {
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
@@ -87,6 +91,7 @@ public class WalletBetResultAction {
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
                     .body(BodyInserters.fromValue(dto))

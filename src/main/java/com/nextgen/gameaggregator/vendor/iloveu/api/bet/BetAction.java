@@ -4,20 +4,17 @@ import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.iloveu.api.balance.BalanceDto;
-import com.nextgen.gameaggregator.vendor.iloveu.api.settle.SettleTransactionDto;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.iloveu.service.VendorService;
 import com.nextgen.gameaggregator.vendor.iloveu.vo.CommonVo;
-import com.nextgen.gameaggregator.vendor.iloveu.vo.DataVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,22 +62,16 @@ public class BetAction {
             body = "{ \"transactions\" :" + body + "}";
 
             //Convert original request body into balanceDto
-            //BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-            BetDto betDto = objectMapper.readValue(body, BetDto.class);
+            BetDto betDto = vendorService.convertJsonToDto(body, BetDto.class);
 
-            List<CompletableFuture<CommonVo>> futures = new LinkedList<>();
+            //Loop bet/settle record and process in asynchronous
+            List<CompletableFuture<CommonVo>> bets = new LinkedList<>();
             for (BetTransactionDto transaction : betDto.getTransactions()) {
-
-                CompletableFuture<CommonVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, request));
-                futures.add(future);
+                CompletableFuture<CommonVo> bet = CompletableFuture.supplyAsync(() -> processData(transaction, request));
+                bets.add(bet);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<CommonVo> transactionsList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
+            //Process loop response
+            List<CommonVo> transactionsList = vendorService.processMultipleDataResponds(bets);
             betVo.setTransactions(transactionsList);
             responseVo.addAll(transactionsList);
 

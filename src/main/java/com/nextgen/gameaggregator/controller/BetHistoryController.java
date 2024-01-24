@@ -2,13 +2,13 @@ package com.nextgen.gameaggregator.controller;
 
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetResultLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
-import com.nextgen.gameaggregator.repository.BetResultLogRepository;
-import com.nextgen.gameaggregator.repository.VendorPlayerRepository;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.BetResultLog;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
+import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetRefundLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetResultLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorPlayerRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;

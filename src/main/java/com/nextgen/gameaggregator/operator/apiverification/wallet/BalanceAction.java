@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.operator.apiverification.wallet;
 
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.service.*;
@@ -66,6 +66,7 @@ public class BalanceAction {
 
 //            String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
                 headerMap.put(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE));
+                headerMap.put(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
                 responseResultVo.setRequestHeaders(headerMap);
 
                 responseResultVo.setApiUrl(apiUrl + EndPoints.WALLET_BALANCE);
@@ -75,6 +76,7 @@ public class BalanceAction {
                         .post()
                         .uri(EndPoints.WALLET_BALANCE)
                         .header(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE))
+                        .header(EndPoints.HEADER_API_KEY, request.getHeader(EndPoints.HEADER_API_KEY))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(dto))

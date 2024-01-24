@@ -4,7 +4,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -14,8 +14,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -24,7 +24,6 @@ import com.nextgen.gameaggregator.vendor.mg.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.service.VendorTokenService;
 
-import org.telegram.telegrambots.meta.api.objects.games.Game;
 import reactor.core.publisher.Mono;
 
 public class BetDetailService implements BetDetailUrl {

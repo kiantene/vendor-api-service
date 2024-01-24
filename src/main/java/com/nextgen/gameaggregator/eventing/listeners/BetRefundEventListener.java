@@ -1,18 +1,16 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.nextgen.gameaggregator.entity.BetHistory;
-import com.nextgen.gameaggregator.entity.BetRefundLog;
+import com.nextgen.gameaggregator.entity.ga.BetHistory;
+import com.nextgen.gameaggregator.entity.ga.BetRefundLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.BetRollbackEvent;
-import com.nextgen.gameaggregator.repository.BetHistoryRepository;
-import com.nextgen.gameaggregator.repository.BetRefundLogRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.BetRefundLogRepository;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
 
 @Component
 @Slf4j

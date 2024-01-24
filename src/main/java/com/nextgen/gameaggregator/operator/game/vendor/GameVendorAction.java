@@ -1,12 +1,11 @@
 package com.nextgen.gameaggregator.operator.game.vendor;
 
-import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.Currency;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.Language;
-import com.nextgen.gameaggregator.entity.custom.IGameVendor;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.Currency;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.Language;
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidLanguageException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;

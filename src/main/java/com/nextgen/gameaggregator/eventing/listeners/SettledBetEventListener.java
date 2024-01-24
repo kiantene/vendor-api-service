@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.eventing.listeners;
 
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.eventing.core.EventListener;
 import com.nextgen.gameaggregator.eventing.events.SettledBetEvent;
-import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawSettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.CachingService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

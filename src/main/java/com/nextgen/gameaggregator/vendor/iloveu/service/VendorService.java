@@ -1,7 +1,13 @@
 package com.nextgen.gameaggregator.vendor.iloveu.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.vendor.iloveu.api.settle.SettleTransactionDto;
+import com.nextgen.gameaggregator.vendor.iloveu.constant.Formats;
+import com.nextgen.gameaggregator.vendor.iloveu.vo.CommonVo;
 import jakarta.xml.bind.DatatypeConverter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -14,7 +20,11 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -45,13 +55,12 @@ public class VendorService extends BaseVendorService {
     }
 
     public static boolean isValidDateTime(String dateTimeString) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        dateFormat.setLenient(false); // Disallow lenient parsing
+        DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern(Formats.DATE_FORMAT);
 
         try {
-            dateFormat.parse(dateTimeString);
+            LocalDateTime.parse(dateTimeString, dateFormat);
             return true; // Parsing succeeded, so the format is valid
-        } catch (ParseException e) {
+        } catch (Exception e) {
             return false; // Parsing failed, so the format is invalid
         }
     }
@@ -61,13 +70,25 @@ public class VendorService extends BaseVendorService {
         //convert date time string to timestamp
         Long timestamp = null;
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-        LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, formatter);
-        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC+8"));
-        timestamp = zonedDateTime.toInstant().toEpochMilli();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Formats.DATE_FORMAT);
+        return ZonedDateTime.of(LocalDateTime.parse(rawDateTime, formatter), ZoneId.of(Formats.TIME_ZONE)).toInstant().toEpochMilli();
 
-        return timestamp;
+    }
 
+    public static <T> T convertJsonToDto(String json, Class<T> objectClass) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        return mapper.readValue(json, objectClass);
+    }
+
+    public static List<CommonVo> processMultipleDataResponds(List<CompletableFuture<CommonVo>> bets) {
+
+        CompletableFuture<Void> allBets = CompletableFuture.allOf(bets.toArray(new CompletableFuture[bets.size()]));
+        allBets.join();
+        List<CommonVo> transactionsList = bets.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+        return transactionsList;
     }
 
 }

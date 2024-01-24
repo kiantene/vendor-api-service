@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.game.url;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;

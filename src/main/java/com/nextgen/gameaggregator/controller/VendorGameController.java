@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.repository.*;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.repository.ga.writer.*;
 import com.nextgen.gameaggregator.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.controller.vendorgame.vo;
 
-import com.nextgen.gameaggregator.entity.Platform;
-import com.nextgen.gameaggregator.entity.VendorGame;
-import com.nextgen.gameaggregator.entity.VendorGameCode;
-import com.nextgen.gameaggregator.entity.VendorGameCurrency;
+import com.nextgen.gameaggregator.entity.ga.Platform;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCurrency;
 import lombok.Data;
 
 import java.util.HashMap;

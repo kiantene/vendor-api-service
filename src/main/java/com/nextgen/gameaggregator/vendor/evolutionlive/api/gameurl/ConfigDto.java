@@ -8,4 +8,5 @@ import lombok.Data;
 public class ConfigDto {
     private ConfigGameDto game;
     private ConfigChannelDto channel;
+    private ConfigUrlsDto urls;
 }

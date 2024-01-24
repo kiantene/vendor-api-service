@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.apiverification.wallet;
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.adjustment.WalletAdjustmentDto;
 import com.nextgen.gameaggregator.service.*;
@@ -64,6 +64,7 @@ public class AdjustmentAction {
                 Map<String, String> headerMap = new HashMap<String, String>();
 
                 headerMap.put(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE));
+                headerMap.put(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
                 responseResultVo.setRequestHeaders(headerMap);
 
                 responseResultVo.setApiUrl(apiUrl + EndPoints.WALLET_ADJUSTMENT);
@@ -73,6 +74,7 @@ public class AdjustmentAction {
                         .post()
                         .uri(EndPoints.WALLET_ADJUSTMENT)
                         .header(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE))
+                        .header(EndPoints.HEADER_API_KEY, request.getHeader(EndPoints.HEADER_API_KEY))
                         .contentType(MediaType.APPLICATION_JSON)
                         .accept(MediaType.APPLICATION_JSON)
                         .body(BodyInserters.fromValue(dto))

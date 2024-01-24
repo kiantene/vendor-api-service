@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.operator.apiverification.agentinfo;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;

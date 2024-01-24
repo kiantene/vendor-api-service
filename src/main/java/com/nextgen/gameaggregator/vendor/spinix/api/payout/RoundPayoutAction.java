@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spinix.api.payout;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
