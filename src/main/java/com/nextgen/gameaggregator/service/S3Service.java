@@ -49,6 +49,7 @@ public class S3Service {
             // Generate filename
             String vendorCode = this.getVendorCode(gameSession.getGameCode());
             String fileName = gameSession.getToken() + ".html";
+
             String key = awsFolder + "/" + vendorCode + "/" + fileName;
             uploadHtmlToS3(s3Client, key, rawHtml);
 

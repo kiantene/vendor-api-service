@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.iloveu.api.bet.BetDto;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.GameType;
