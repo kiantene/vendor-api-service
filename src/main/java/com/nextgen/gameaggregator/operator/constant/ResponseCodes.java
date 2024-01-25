@@ -42,6 +42,9 @@ public class ResponseCodes {
         SC_OPERATOR_TIMEOUT(32, "Operator timed out"),
         SC_INVALID_FROM_TIME(33, "Data only available last 60 days"),
         SC_INVALID_DATE_RANGE(34, "Date range should be within one day."),
+
+
+        SC_REFERENCE_ID_DUPLICATED(8, "Duplicate reference Id was sent."),
         ;
 
         public final Integer code;

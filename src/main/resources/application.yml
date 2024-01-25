@@ -17,7 +17,7 @@ sas:
   enabled: false
 spring:
   profiles:
-    active: stg
+    active: dev
   liquibase:
     enabled: false
   application:

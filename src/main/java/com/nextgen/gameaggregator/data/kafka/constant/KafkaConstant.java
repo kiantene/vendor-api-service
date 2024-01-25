@@ -8,4 +8,7 @@ public class KafkaConstant {
     public static final String TOPIC_BET_HISTORY = "topic_bet_history";
     public static final String TOPIC_BET_HISTORY_V2 = "topic_bet_history_v2";
     public static final String TOPIC_END_ROUND_PROCESS = "topic_end_round_process";
+
+
+    public static final String TOPIC_TRANSFER_HISTORY = "topic_transfer_history";
 }

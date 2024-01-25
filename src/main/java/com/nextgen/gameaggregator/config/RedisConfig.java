@@ -156,6 +156,14 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("EvoPlayBalance", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
 
+        //region transfer wallet
+        cacheNamesConfigurationMap.put("TraceIds", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+
+        cacheNamesConfigurationMap.put("RawTransferHistories", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        //endregion
+
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),
                 RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)),
                 cacheNamesConfigurationMap);

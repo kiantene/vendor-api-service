@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 
 import com.nextgen.gameaggregator.entity.ga.BetHistory;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,18 @@ public class KafkaService {
         } catch (Exception e) {
             //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
             log.error(e.getMessage());
+        }
+    }
+
+
+    public void produceTransferHistory(RawTransferHistory rawTransferHistory) {
+        try {
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_TRANSFER_HISTORY, rawTransferHistory);
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> referenceId = " + rawTransferHistory.getId() + " data : " + new Gson().toJson(rawTransferHistory));
+            e.printStackTrace();
         }
     }
 }

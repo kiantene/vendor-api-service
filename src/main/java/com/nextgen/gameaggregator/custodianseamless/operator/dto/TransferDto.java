@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.transfer.deposit;
+package com.nextgen.gameaggregator.custodianseamless.operator.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DepositDto {
+public class TransferDto {
 
     @NotBlank(message = "UUID format only")
     @Size(min = 36, max = 36, message = "UUID format only")
