@@ -11,12 +11,11 @@ public class SportBetDetailData {
     private String vendorUsername;
     private String referenceNumber;
     private Long transactionTime;
-    private MatchDetailData matchDetail;
+    private List<MatchDetailData> matchDetail;
     private String odds;
     private BigDecimal stake;
     private BigDecimal winLoss;
     private String status;
-    private List<SportParlayDetailData> parlayDetail;
 
     public SportBetDetailData(SportBetDetailVo sportBetDetailVo) {
         this.setBetNumber(sportBetDetailVo.getBetNumber());
@@ -28,6 +27,5 @@ public class SportBetDetailData {
         this.setStake(sportBetDetailVo.getStake());
         this.setWinLoss(sportBetDetailVo.getWinLoss());
         this.setStatus(sportBetDetailVo.getStatus());
-        this.setParlayDetail(sportBetDetailVo.getParlayDetail());
     }
 }

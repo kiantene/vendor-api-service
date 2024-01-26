@@ -12,5 +12,10 @@ public class MatchDetailData {
     private String homeTeamScore;
     private String awayTeamScore;
     private String betTypeName;
+    private String betTeam;
+    private String handicap;
+    private String odds;
+    private String betStatus;
+    private Long settleDate;
 
 }
