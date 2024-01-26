@@ -14,10 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
 import java.util.Optional;
 
 @Service
@@ -31,16 +31,13 @@ public class VendorService extends BaseVendorService {
     private VendorGameCodeService vendorGameCodeService;
 
     public static String generateGameUrl(String apiUrl, MultiValueMap<String, String> parameters) {
-        // form query string
-        String queryString = "";
-        List<String> values = new ArrayList<>();
-        for (String key : parameters.keySet()) {
-            values.add(key + "=" + parameters.getFirst(key));
-        }
+        URI uri = UriComponentsBuilder.fromUriString(apiUrl)
+                .queryParams(parameters)
+                .build()
+                .encode()
+                .toUri();
 
-        String loginUrl = apiUrl + "?" + String.join("&", values);
-
-        return loginUrl;
+        return uri.toString();
     }
 
     public ResultType calculateResultType(BigDecimal betAmount, BigDecimal winAmount, BigDecimal jackpotAmount, boolean isBet, BetStatus betStatus) {
