@@ -10,10 +10,10 @@ import jakarta.validation.constraints.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class BetDetailUrlVo implements com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo {
 
-    @JsonProperty("Url")
-    @NotBlank(message = "url can not be blank")
-    private String url;
+    private String url = "";
 
     @Override
-    public String getBetDetailUrl() { return this.getUrl(); }
+    public String getBetDetailUrl() {
+        return url;
+    }
 }

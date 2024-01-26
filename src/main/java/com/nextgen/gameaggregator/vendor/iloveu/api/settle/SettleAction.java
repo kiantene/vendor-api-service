@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.iloveu.constant.GameType;
 import com.nextgen.gameaggregator.vendor.iloveu.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.iloveu.service.VendorService;
 import com.nextgen.gameaggregator.vendor.iloveu.vo.CommonVo;
@@ -63,23 +64,16 @@ public class SettleAction {
             body = "{ \"transactions\" :" + body + "}";
 
             //Convert original request body into balanceDto
-            //SettleDto settleDto = HttpService.convertJsonToDto(body, SettleDto.class);
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-            SettleDto settleDto = objectMapper.readValue(body, SettleDto.class);
+            SettleDto settleDto = vendorService.convertJsonToDto(body, SettleDto.class);
 
             //Loop bet/settle record and process in asynchronous
-            List<CompletableFuture<CommonVo>> futures = new LinkedList<>();
+            List<CompletableFuture<CommonVo>> settles = new LinkedList<>();
             for (SettleTransactionDto transaction : settleDto.getTransactions()) {
-
-                CompletableFuture<CommonVo> future = CompletableFuture.supplyAsync(() -> processData(transaction, request));
-                futures.add(future);
+                CompletableFuture<CommonVo> settle = CompletableFuture.supplyAsync(() -> processData(transaction, request));
+                settles.add(settle);
             }
-            CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]));
-            allFutures.join();
-            List<CommonVo> transactionsList = futures.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList());
+            //Process loop response
+            List<CommonVo> transactionsList = vendorService.processMultipleDataResponds(settles);
             settleVo.setTransactions(transactionsList);
             responseVo.addAll(transactionsList);
 
@@ -111,7 +105,7 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
         ValidationUtils.isEquals("Settle", dto.getMethod(), InvalidRequestException::new);
 
-        if (dto.getMode().equals(4)) {
+        if (dto.getMode().equals(GameType.BETNSETTLE.code)) {
             ValidationUtils.validateRequest(dto.getBet());
         }
 
@@ -145,7 +139,7 @@ public class SettleAction {
         }
 
         //Validate vendor username, agent vendor line, player status, and game status
-        if (dto.getMode().equals(4)) {
+        if (dto.getMode().equals(GameType.BETNSETTLE.code)) {
             //bet settle type record
             validationService.validateEligibleBet(gameSession, dto.getLoginId());
         }
@@ -177,7 +171,7 @@ public class SettleAction {
 
             // 4. Process Result
             Boolean isBet = true;
-            if (settleTransactionDto.getMode().equals(3)) {
+            if (settleTransactionDto.getMode().equals(GameType.SETTLE.code)) {
                 isBet = false;
             }
             ResultType resultType = vendorService.calculateResultType(settleTransactionDto.getBetAmount(), settleTransactionDto.getWinAmount(), settleTransactionDto.getJackpotAmount(), isBet);

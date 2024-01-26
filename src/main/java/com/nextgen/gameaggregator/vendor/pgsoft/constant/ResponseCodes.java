@@ -43,6 +43,7 @@ public class ResponseCodes {
     public static final Integer NOT_ENOUGH_BALANCE_TO_CONVERT = 3036;
     public static final Integer TRANSACTION_DOES_NOT_EXIST = 3040;
     public static final Integer NOT_ENOUGH_CASH_BALANCE_TO_BET = 3202;
+    public static final Integer BET_FAILED_3073 = 3073;
 
     public static final Map<Integer, String> RESPONSE_DESCRIPTION = new HashMap<>() {{
         put(INVALID_REQUEST, "Invalid request");
@@ -82,6 +83,7 @@ public class ResponseCodes {
         put(NOT_ENOUGH_BALANCE_TO_CONVERT, "Not enough balance to convert");
         put(TRANSACTION_DOES_NOT_EXIST, "Transaction does not exist");
         put(NOT_ENOUGH_CASH_BALANCE_TO_BET, "Not enough cash balance to bet");
+        put(BET_FAILED_3073, "Bet failed");
     }};
 
 //    public Integer getResponseCodeByOperatorStatus(InvalidOperatorResponseException exception) {

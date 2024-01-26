@@ -177,6 +177,11 @@ public class CashTransferInOutAction {
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
             httpService.logError(httpRequestLog, disabledVendorLineException);
 
+        } catch (BetFailedException betFailedException) {
+            parentResponseVo.setErrorCode(ResponseCodes.BET_FAILED_3073);
+            parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.BET_FAILED_3073));
+            httpService.logError(httpRequestLog, betFailedException);
+
         } catch (Exception exception) {
             parentResponseVo.setErrorCode(ResponseCodes.OPERATION_FAILED);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.OPERATION_FAILED));
@@ -189,11 +194,16 @@ public class CashTransferInOutAction {
         return parentResponseVo;
     }
 
-    private void doValidation(CashTransferInOutDto dto) throws InvalidRequestException, InvalidPlayerException {
+    private void doValidation(CashTransferInOutDto dto) throws InvalidRequestException, InvalidPlayerException, BetFailedException {
         // General validation
         ValidationUtils.validateRequest(dto);
         // Validation with custom exception
         ValidationUtils.validateLength(dto.getPlayerName(), 3, 20, InvalidPlayerException::new);
+
+        // Vendor Acceptance Test for AMB PGS
+        if (dto.getWinAmount().subtract(dto.getBetAmount()).compareTo(dto.getTransferAmount()) != 0) {
+            throw new BetFailedException();
+        }
     }
 
     private void doVerification(HttpRequestLog request, CashTransferInOutDto dto, GameSession gameSession) throws

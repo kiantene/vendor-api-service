@@ -27,6 +27,6 @@ public class CommonVo implements HttpResponse {
 
     @Override
     public boolean hasError() {
-        return false;
+        return !this.code.equals(ResponseCodes.SUCCESS);
     }
 }
