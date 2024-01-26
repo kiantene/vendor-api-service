@@ -45,7 +45,6 @@ public class BalanceService {
             this.doValidation(dto);
 
             // 2. Verify session token
-//            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(dto.getExternalPlayerId(), dto.getGameId());
             GameSession gameSession = gameSessionService.verifyToken(dto.getExternalSessionId());
 
             // Verify remaining parameters (Verify against database values)
@@ -54,17 +53,12 @@ public class BalanceService {
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // Regenerate token for session token (launch token only can be use once time)
-//            String newToken = UUID.randomUUID().toString();
-//            GameSession newGameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
-
             // Set response data
             vo.setAccountCurrency(gameSession.getVendorCurrencyCode());
             vo.setAccountBalance(balance.longValue());
 
         } catch (AuthenticationException | InvalidPlayerException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_USER_OR_TOKEN_EXPIRED);
-//            httpRequestLog.setGameToken(gameToken);
             httpService.logError(httpRequestLog, e);
 
         } catch (DisabledAgentPlayerException e) {

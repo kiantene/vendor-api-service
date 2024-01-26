@@ -5,7 +5,10 @@ import com.nextgen.gameaggregator.entity.GameSession;
 import com.nextgen.gameaggregator.entity.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksaw.constant.ResponseCodes;
@@ -30,13 +33,7 @@ public class CreditService {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
 
     public ResponseVo credit(HttpRequestLog httpRequestLog, String traceId) {
         ResponseVo vo = new ResponseVo();

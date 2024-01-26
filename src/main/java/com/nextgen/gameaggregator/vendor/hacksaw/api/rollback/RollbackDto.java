@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.api.action.ActionDto;
-import com.nextgen.gameaggregator.vendor.hacksaw.api.bet.FreeRoundDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -34,14 +33,12 @@ public class RollbackDto extends ActionDto implements RollbackData {
     private String externalSessionId;
 
     @NotNull
-//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long transactionId;
 
     @NotNull
-//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long rolledBackTransactionId;
 
-    // variable to check it is free spin or not
+    // variable to check it is free spin or not (ONLY if set thru BO)
     private FreeRoundDto freeRoundData;
 
     @Override

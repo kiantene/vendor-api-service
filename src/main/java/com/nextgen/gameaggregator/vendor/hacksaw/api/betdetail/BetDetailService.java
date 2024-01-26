@@ -56,7 +56,7 @@ public class BetDetailService implements BetDetailUrl {
 
         String partnerId = credentials.get(Credentials.PARTNER_ID);
         Optional.ofNullable(partnerId).orElseThrow(InvalidVendorLineException::new);
-        String apiUrl = credentials.get(Credentials.PARTNER_API_URL) + partnerId;
+        String apiUrl = credentials.get(Credentials.PARTNER_API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
         Map<String, String> map = formData.toSingleValueMap();
@@ -69,7 +69,7 @@ public class BetDetailService implements BetDetailUrl {
         GameSession gameSession = new GameSession();
 
         long startTime = System.currentTimeMillis();
-        ResponseEntity apiResponse = WebClient.create(apiUrl)
+        ResponseEntity apiResponse = WebClient.create(apiUrl + partnerId)
                 .post()
                 .uri(EndPoints.BET_DETAIL_URL)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -83,7 +83,7 @@ public class BetDetailService implements BetDetailUrl {
                 .block();
 
         long endTime = System.currentTimeMillis();
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(EndPoints.BET_DETAIL_URL, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(EndPoints.BET_DETAIL_URL, apiUrl + partnerId, formData, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {

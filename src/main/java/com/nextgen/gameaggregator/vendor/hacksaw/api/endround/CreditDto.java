@@ -36,7 +36,6 @@ public class CreditDto extends ActionDto implements BetResultData {
     private String externalSessionId;
 
     @NotNull
-//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long transactionId;
 
     @NotBlank
@@ -44,8 +43,8 @@ public class CreditDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "^(real|free)$")
     private String type;
 
-    // variable to check it is free spin or not
-    private FreeRoundWinDto freeRoundData;
+    // variable to check it is free spin or not (ONLY if set thru BO)
+    private FreeRoundDto freeRoundData;
 
     private Long jackpotAmount;
 

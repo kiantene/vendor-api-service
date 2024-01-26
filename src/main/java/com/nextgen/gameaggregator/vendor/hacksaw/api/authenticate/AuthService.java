@@ -61,7 +61,6 @@ public class AuthService {
 
         } catch (AuthenticationException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_USER_OR_TOKEN_EXPIRED);
-//            httpRequestLog.setGameToken(gameToken);
             httpService.logError(httpRequestLog, e);
 
         } catch (DisabledAgentPlayerException e) {

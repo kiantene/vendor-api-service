@@ -36,10 +36,9 @@ public class TransactionDto extends ActionDto implements BetResultData {
     private String externalSessionId;
 
     @NotNull
-//    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private Long transactionId;
 
-    // variable to check it is free spin or not
+    // variable to check it is free spin or not (ONLY if set thru BO)
     private FreeRoundDto freeRoundData;
 
     @Size(min = 1, max = 64)

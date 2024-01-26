@@ -79,11 +79,6 @@ public class GeneralAction {
     private ResponseVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog) throws InvalidRequestException {
         ResponseVo vo = new ResponseVo();
 
-        // Validate Action is exist
-        if (!Actions.actionsList.contains(actionDto.getAction())) {
-            throw new InvalidRequestException();
-        }
-        
         switch (actionDto.getAction()) {
             case Actions.AUTHENTICATE:
                 vo = authenticationService.authenticate(httpRequestLog, traceId);
@@ -100,6 +95,8 @@ public class GeneralAction {
             case Actions.ROLLBACK:
                 vo = rollbackService.rollback(httpRequestLog, traceId);
                 break;
+            default:
+                throw new InvalidRequestException();
         }
         return vo;
     }
