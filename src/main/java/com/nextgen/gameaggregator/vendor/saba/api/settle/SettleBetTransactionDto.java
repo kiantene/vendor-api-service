@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 
@@ -79,6 +80,11 @@ public class SettleBetTransactionDto implements SportBetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
+    }
+
+    @Override
+    public Integer getBetType() {
+        return null;
     }
 
     @Override

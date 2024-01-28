@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
@@ -171,5 +172,9 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData,
         return stake;
     }
 
+    @Override
+    public Integer getBetType() {
+        return BetType.NORMAL_BET.code;
+    }
 
 }

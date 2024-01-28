@@ -46,6 +46,7 @@ public abstract class BetInformation {
     private Long resultTime;
     private Integer processingStatus;
     private BigDecimal balance;
+    private Integer betType;
 
     public BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();

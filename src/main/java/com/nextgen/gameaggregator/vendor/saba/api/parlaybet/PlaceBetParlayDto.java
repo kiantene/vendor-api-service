@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.parlaybet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import com.nextgen.gameaggregator.vendor.saba.dto.GeneralDto;
 import lombok.Data;
@@ -90,6 +91,11 @@ public class PlaceBetParlayDto extends GeneralDto implements SportBetResultData 
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
+    }
+
+    @Override
+    public Integer getBetType() {
+        return BetType.PARLEY_BET.code;
     }
 
     @Override

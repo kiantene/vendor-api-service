@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.operator.sport.settle;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 
 import java.math.BigDecimal;
 
@@ -19,4 +20,5 @@ public interface SportBetResultData {
     Long getResultTime();
     Long getVendorSettleTime();
     BetStatus getBetStatus();
+    Integer getBetType();
 }

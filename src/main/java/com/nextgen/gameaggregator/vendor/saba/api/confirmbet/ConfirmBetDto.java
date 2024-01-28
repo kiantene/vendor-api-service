@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.confirmbet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 
@@ -76,6 +77,11 @@ public class ConfirmBetDto implements SportBetResultData {
     @Override
     public BetStatus getBetStatus() {
         return BetStatus.UNSETTLED;
+    }
+
+    @Override
+    public Integer getBetType() {
+        return BetType.NORMAL_BET.code;
     }
 
     @Override

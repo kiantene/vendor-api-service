@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.sport.entity;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,4 +25,6 @@ public class SportRawSettledBet implements SportBetResultData {
     private Long resultTime;
     private Long vendorSettleTime;
     private BetStatus betStatus;
+    private Integer betType;
+
 }
