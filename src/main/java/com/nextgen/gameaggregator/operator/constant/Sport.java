@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.operator.constant;
 
 import lombok.AllArgsConstructor;
 
-public class SportBetStatus {
+public class Sport {
     @AllArgsConstructor
     public enum BetStatus {
         HALF_WIN("HALF_WIN"),
@@ -20,6 +20,14 @@ public class SportBetStatus {
         ;
         public final String value;
 
+    }
+
+    @AllArgsConstructor
+    public enum BetTeam {
+        TEAM_AWAY("TEAM_AWAY"),
+        TEAM_HOME("TEAM_HOME"),
+        NO_TEAM(null);
+        public final String value;
     }
 }
 

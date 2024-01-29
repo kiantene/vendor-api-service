@@ -13,7 +13,7 @@ public interface SportBetDetailVo {
 
     Long getTransactionTime();
 
-    MatchDetailData getMatchDetail();
+    List<MatchDetailData> getMatchDetail();
 
     String getOdds();
 
@@ -23,5 +23,6 @@ public interface SportBetDetailVo {
 
     String getStatus();
 
-    List<SportParlayDetailData> getParlayDetail();
+    Boolean getIsCashout();
+
 }

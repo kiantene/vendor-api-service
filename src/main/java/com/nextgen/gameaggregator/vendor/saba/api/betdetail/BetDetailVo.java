@@ -2,14 +2,14 @@ package com.nextgen.gameaggregator.vendor.saba.api.betdetail;
 
 import com.google.gson.annotations.SerializedName;
 import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
-import com.nextgen.gameaggregator.operator.constant.SportBetStatus;
+import com.nextgen.gameaggregator.operator.constant.Sport;
 import com.nextgen.gameaggregator.operator.transactions.detail.MatchDetailData;
 import com.nextgen.gameaggregator.operator.transactions.detail.SportBetDetailVo;
-import com.nextgen.gameaggregator.operator.transactions.detail.SportParlayDetailData;
 import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -50,24 +50,10 @@ public class BetDetailVo implements SportBetDetailVo {
     }
 
     @Override
-    public MatchDetailData getMatchDetail() {
-
-        Optional<List<ParlayDataDto>> parlayDataDtoList = Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData());
-        BetDetailsDto betDetailsDto = this.getData().getBetDetails().get(0);
-
-        if (parlayDataDtoList.isPresent()) {
-            return null;
-        }
-
-        MatchDetailData matchDetailData = new MatchDetailData();
-        matchDetailData.setMatchName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getLeaguename()));
-        matchDetailData.setMatchDate(VendorService.convertToUnixTimestamp(betDetailsDto.getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
-        matchDetailData.setHomeTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getHometeamname()));
-        matchDetailData.setAwayTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getAwayteamname()));
-        matchDetailData.setHomeTeamScore(betDetailsDto.getHomeScore());
-        matchDetailData.setAwayTeamScore(betDetailsDto.getAwayScore());
-        matchDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getBetTypeName()));
-        return matchDetailData;
+    public List<MatchDetailData> getMatchDetail() {
+        return Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData())
+                .map(this::getParlayDetail)
+                .orElseGet(() -> this.getNormalMatchDetail(this.getData().getBetDetails().get(0)));
     }
 
     @Override
@@ -91,19 +77,34 @@ public class BetDetailVo implements SportBetDetailVo {
     }
 
     @Override
-    public List<SportParlayDetailData> getParlayDetail() {
+    public Boolean getIsCashout() {
+        return Optional.ofNullable(this.getData().getBetDetails().get(0).getTicketExtraStatus()).map(value -> value.equalsIgnoreCase("cashout")).orElse(Boolean.FALSE);
+    }
 
-        Optional<List<ParlayDataDto>> parlayDataDtoList = Optional.ofNullable(this.getData().getBetDetails().get(0).getParlayData());
+    public List<MatchDetailData> getNormalMatchDetail(BetDetailsDto betDetailsDto) {
+        MatchDetailData matchDetailData = new MatchDetailData();
+        matchDetailData.setMatchName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getLeaguename()));
+        matchDetailData.setMatchDate(VendorService.convertToUnixTimestamp(betDetailsDto.getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
+        matchDetailData.setHomeTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getHometeamname()));
+        matchDetailData.setAwayTeamName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getAwayteamname()));
+        matchDetailData.setHomeTeamScore(betDetailsDto.getHomeScore());
+        matchDetailData.setAwayTeamScore(betDetailsDto.getAwayScore());
+        matchDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getBetTypeName()));
+        matchDetailData.setBetTeam(this.getTeam(betDetailsDto.getBetTeam()));
+        matchDetailData.setHandicap(betDetailsDto.getHdp());
+        matchDetailData.setOdds(betDetailsDto.getOdds());
+        matchDetailData.setBetStatus(this.getBetStatus(betDetailsDto.getTicketStatus()));
+        matchDetailData.setSettleDate(VendorService.convertToUnixTimestamp(betDetailsDto.getWinlostDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
+        return Collections.singletonList(matchDetailData);
+    }
 
-        if (parlayDataDtoList.isEmpty()) {
-            return null;
-        }
+    public List<MatchDetailData> getParlayDetail(List<ParlayDataDto> parlayDataDtoList) {
 
-        List<SportParlayDetailData> parlayDetailDataList = new LinkedList<>();
+        List<MatchDetailData> parlayDetailDataList = new LinkedList<>();
 
-        for (ParlayDataDto parlayDataDto : parlayDataDtoList.get()) {
+        for (ParlayDataDto parlayDataDto : parlayDataDtoList) {
 
-            SportParlayDetailData sportParlayDetailData = new SportParlayDetailData();
+            MatchDetailData sportParlayDetailData = new MatchDetailData();
 
             sportParlayDetailData.setMatchName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getLeaguename()));
             sportParlayDetailData.setMatchDate(VendorService.convertToUnixTimestamp(parlayDataDto.getMatchDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
@@ -112,6 +113,8 @@ public class BetDetailVo implements SportBetDetailVo {
             sportParlayDetailData.setHomeTeamScore(parlayDataDto.getHomeScore());
             sportParlayDetailData.setAwayTeamScore(parlayDataDto.getAwayScore());
             sportParlayDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getBettypename()));
+            sportParlayDetailData.setBetTeam(this.getTeam(parlayDataDto.getBetTeam()));
+            sportParlayDetailData.setHandicap(parlayDataDto.getHdp());
             sportParlayDetailData.setOdds(parlayDataDto.getOdds());
             sportParlayDetailData.setBetStatus(this.getBetStatus(parlayDataDto.getTicketStatus()));
             sportParlayDetailData.setSettleDate(VendorService.convertToUnixTimestamp(parlayDataDto.getWinlostDatetime(), "yyyy-MM-dd'T'HH:mm:ss"));
@@ -123,16 +126,31 @@ public class BetDetailVo implements SportBetDetailVo {
 
     private String getBetStatus(String value) {
         return switch (value.toUpperCase()) {
-            case "HALF WON" -> SportBetStatus.BetStatus.HALF_WIN.value;
-            case "HALF LOSE" -> SportBetStatus.BetStatus.HALF_LOSE.value;
-            case "WON" -> SportBetStatus.BetStatus.WIN.value;
-            case "LOSE" -> SportBetStatus.BetStatus.LOSE.value;
-            case "DRAW" -> SportBetStatus.BetStatus.DRAW.value;
-            case "VOID" -> SportBetStatus.BetStatus.CANCELLED.value;
-            case "RUNNING" -> SportBetStatus.BetStatus.RUNNING.value;
-            case "REJECT" -> SportBetStatus.BetStatus.REJECTED.value;
-            case "REFUND" -> SportBetStatus.BetStatus.REFUNDED.value;
-            default -> SportBetStatus.BetStatus.PENDING.value;
+            case "HALF WON" -> Sport.BetStatus.HALF_WIN.value;
+            case "HALF LOSE" -> Sport.BetStatus.HALF_LOSE.value;
+            case "WON" -> Sport.BetStatus.WIN.value;
+            case "LOSE" -> Sport.BetStatus.LOSE.value;
+            case "DRAW" -> Sport.BetStatus.DRAW.value;
+            case "VOID" -> Sport.BetStatus.CANCELLED.value;
+            case "RUNNING" -> Sport.BetStatus.RUNNING.value;
+            case "REJECT" -> Sport.BetStatus.REJECTED.value;
+            case "REFUND" -> Sport.BetStatus.REFUNDED.value;
+            default -> Sport.BetStatus.PENDING.value;
         };
     }
+
+    private String getTeam(String value) {
+        return switch (value.toUpperCase()) {
+            case "A" -> Sport.BetTeam.TEAM_AWAY.value;
+            case "H" -> Sport.BetTeam.TEAM_HOME.value;
+            default -> Sport.BetTeam.NO_TEAM.value;
+        };
+    }
+
+//    private String getValue(String value) {
+//        return Optional.ofNullable(value)
+////                .filter(val -> !val.isEmpty())
+//                .filter(val -> !val.isBlank())
+//                .orElse(null);
+//    }
 }
