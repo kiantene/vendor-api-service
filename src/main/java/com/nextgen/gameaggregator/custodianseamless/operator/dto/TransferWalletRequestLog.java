@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.custodianseamless.operator.dto;
 
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.persistence.Id;
 import lombok.Data;
+import org.springframework.util.MultiValueMap;
 
 @Data
 public class TransferWalletRequestLog {
@@ -19,17 +21,22 @@ public class TransferWalletRequestLog {
     private String signature;
     private String requestBody;
     private String responseBody;
+    private ResponseCodes.Status responseStatus;
     private Integer agentId;
     private String operatorUsername;
+    private String currencyCode;
 
     private Long walletServiceStart;
     private Long walletServiceEnd;
     private Long walletServiceTimeTaken;
     private String walletServiceEndPoints;
-    private String walletServiceData;
+    private MultiValueMap<String, String> walletServiceHeader;
+    private Object walletServiceData;
     private String walletServiceResponse;
+    private ResponseCodes.Status walletServiceResponseStatus;
     private Integer walletServiceHttpStatusCode;
 
+    private String errorMessage;
     private Integer status;
 
     private Long startTime;

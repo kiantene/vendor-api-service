@@ -162,6 +162,9 @@ public class RedisConfig extends CachingConfigurerSupport {
 
         cacheNamesConfigurationMap.put("RawTransferHistories", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+
+        cacheNamesConfigurationMap.put("AccessKeys", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         //endregion
 
         return new RedisCacheManager(RedisCacheWriter.nonLockingRedisCacheWriter(factory),

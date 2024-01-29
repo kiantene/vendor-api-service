@@ -74,11 +74,42 @@ public class TransferHttpService {
         if (transferWalletRequestLog != null && responseVo != null) {
             transferWalletRequestLog.setEndTime(System.currentTimeMillis());
             THREAD_POOL.submit(() -> {
+                try {
+                    String jsonResponseVo = new Gson().toJson(responseVo);
+                    transferWalletRequestLog.setResponseBody(jsonResponseVo);
+                    transferWalletRequestLog
+                            .setTimeTaken(transferWalletRequestLog.getEndTime() - transferWalletRequestLog.getStartTime());
 
+                    transferWalletRequestLog.setStatus(!responseVo.hasError() ?
+                            TransactionStatus.SUCCESS.status : TransactionStatus.FAIL.status);
+
+                    if (transferWalletRequestLog.getWalletServiceEnd() != null) {
+                        transferWalletRequestLog
+                                .setWalletServiceTimeTaken
+                                        (transferWalletRequestLog.getWalletServiceEnd() - transferWalletRequestLog.getWalletServiceStart());
+                    }
+
+                    Gson gson = new Gson();
+                    log.info(gson.toJson(transferWalletRequestLog));
+
+                } catch (Exception exception) {
+                    log.error(exception.getMessage());
+                    exception.printStackTrace();
+                }
             });
 
         }else {
             log.warn("HttpService.end: requestLog or responseVo is null");
+        }
+    }
+
+    public void logError(TransferWalletRequestLog transferWalletRequestLog, Exception exception) {
+        if (transferWalletRequestLog != null) {
+            transferWalletRequestLog.setStatus(TransactionStatus.FAIL.status);
+            transferWalletRequestLog.setErrorMessage(exception.toString());
+        } else {
+            log.warn("HttpService.logError: requestLog is null");
+            exception.printStackTrace();
         }
     }
 }

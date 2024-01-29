@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.custodianseamless.operator.dto;
+package com.nextgen.gameaggregator.custodianseamless.operator.deposit;
 
 import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import lombok.Data;

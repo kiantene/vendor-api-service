@@ -1,18 +1,19 @@
-package com.nextgen.gameaggregator.custodianseamless.walletservice.deposit;
+package com.nextgen.gameaggregator.custodianseamless.walletservice.balance;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.custodianseamless.constant.TransactionStatus;
 import com.nextgen.gameaggregator.custodianseamless.constant.WalletServiceEndpoints;
 import com.nextgen.gameaggregator.custodianseamless.exception.InvalidWalletServiceResponseException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAccessKeyNotFoundException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceTimeoutException;
+import com.nextgen.gameaggregator.custodianseamless.operator.balance.BalanceData;
 import com.nextgen.gameaggregator.custodianseamless.operator.dto.TransferWalletRequestLog;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.custodianseamless.service.WalletRequestValidationService;
-import com.nextgen.gameaggregator.custodianseamless.walletservice.dto.WalletServiceTransferDto;
-import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceBeforeAfterVo;
-import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
+import com.nextgen.gameaggregator.custodianseamless.walletservice.dto.WalletServiceBalanceDto;
+import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceVo;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.wallet.AccessKey;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
@@ -38,7 +39,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class DepositRequest {
+public class BalanceRequest {
 
     @Value("${walletservice.host}")
     private String walletServiceUrl;
@@ -55,20 +56,18 @@ public class DepositRequest {
     @Autowired
     TransferService transferService;
 
-    public RawTransferHistory call(String traceId, RawTransferHistory rawTransferHistory, TransferWalletRequestLog transferWalletRequestLog) throws
+    public BalanceData call(String traceId, AgentPlayer agentPlayer, Currency currency, TransferWalletRequestLog transferWalletRequestLog) throws
             WalletServiceAccessKeyNotFoundException,
             InvalidWalletServiceResponseException, WalletServiceTimeoutException {
 
+        BalanceVo responseVo;
 
-        //Default set transaction status = fail
-        rawTransferHistory.setTransactionStatus(TransactionStatus.FAIL.status);
-
-        BalanceBeforeAfterVo responseVo;
+        BalanceData balanceData = new BalanceData(agentPlayer, currency);
 
         AccessKey accessKey = transferService.getWalletServiceAccessKey();
         String apiUrl = walletServiceUrl;
 
-        WalletServiceTransferDto dto = new WalletServiceTransferDto(traceId, rawTransferHistory);
+        WalletServiceBalanceDto dto = new WalletServiceBalanceDto(traceId, agentPlayer, currency);
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, accessKey.getApiSecret());
@@ -79,7 +78,7 @@ public class DepositRequest {
         transferWalletRequestLog.setWalletServiceHeader(headerMap);
         transferWalletRequestLog.setWalletServiceData(dto);
         try {
-            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_DEPOSIT)
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_BALANCE)
                     .header(WalletServiceEndpoints.HEADER_SIGNATURE, signature)
                     .header(WalletServiceEndpoints.HEADER_API_KEY, accessKey.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
@@ -90,9 +89,9 @@ public class DepositRequest {
                     .toEntity(String.class)
                     .onErrorResume(WebClientRequestException.class, e -> {
                         log.error("TraceId {} Failed wallet service call to {}: {}, ",
-                                traceId, apiUrl + WalletServiceEndpoints.WALLET_DEPOSIT, e.getMessage());
+                                traceId, apiUrl + WalletServiceEndpoints.WALLET_BALANCE, e.getMessage());
                         return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body("Error wallet service call to " + apiUrl + WalletServiceEndpoints.WALLET_DEPOSIT
+                                .body("Error wallet service call to " + apiUrl + WalletServiceEndpoints.WALLET_BALANCE
                                         + ", Exception " + e.getMessage()));
                     })
                     .retry(1)
@@ -101,17 +100,17 @@ public class DepositRequest {
 
             transferWalletRequestLog.setWalletServiceEnd(System.currentTimeMillis());
 
+
             if (apiResponse != null) {
                 transferWalletRequestLog.setWalletServiceHttpStatusCode(apiResponse.getStatusCode().value());
                 transferWalletRequestLog.setWalletServiceResponse(apiResponse.getBody());
             }
 
-
             // 1. validate HTTP Response Code
             WalletRequestValidationService.validateVendorHttpStatusResponse(apiResponse);
 
-            //2. validate wallet service response
-            responseVo = new Gson().fromJson(apiResponse.getBody(), BalanceBeforeAfterVo.class);
+            //2. validate operator response
+            responseVo = new Gson().fromJson(apiResponse.getBody(), BalanceVo.class);
 
             // 4. wallet service response object validation
             Optional.ofNullable(responseVo).orElseThrow(InvalidWalletServiceResponseException::new);
@@ -119,20 +118,15 @@ public class DepositRequest {
 
             if (responseVo.getStatus() != null) {
                 transferWalletRequestLog.setWalletServiceResponseStatus(responseVo.getStatus());
-                rawTransferHistory.setErrorCode(responseVo.getStatus().code);
             }
 
             // 4. validate wallet response fail status
             if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-                rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
-                rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
-                rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
-                rawTransferHistory.setTransactionId(responseVo.getData().getTransactionId());
-                rawTransferHistory.setTransactionStatus(TransactionStatus.SUCCESS.status);
-            }else{
-                throw new InvalidResponseException("Invalid Response Code :"+responseVo.getStatus());
+                balanceData.setAmount(responseVo.getBalance());
+                balanceData.setTimestamp(transferWalletRequestLog.getWalletServiceEnd());
+            } else {
+                throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
             }
-
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException | InvalidResponseException
@@ -147,30 +141,8 @@ public class DepositRequest {
                 exception.printStackTrace();
                 throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             }
-
-
         }
 
-
-        return rawTransferHistory;
-
-        /**
-         *
-         * {
-         *     "traceId": "{{traceId}}",
-         *     "referenceId": "{{referenceId}}",
-         *     "username": "haihung",  // actual username
-         *     "playerId": 102,
-         *     "entityId": 3,
-         *     "walletType": 1, // 1 - Main, 2 - Promo
-         *     "transactionType": 4, // 1=DEPOSIT, 2=WITHDRAWAL, 3=WITHDRAWAL REFUND, 4=WITHDRAWAL CLAWBACK, 5=BET, 6=BET WIN, 7=BET REFUND, 8=BET ADJUSTMENT, 9=MANUAL ADJUSTMENT, 10=REBATE, 11=LOYALTY, 12=AFFILIATECLAWBACK
-         *     "tokenId": 2,
-         *     "amount": 10000000,
-         *     "timestamp": 99999,
-         * }
-         **
-         */
+        return balanceData;
     }
-
-
 }

@@ -1,14 +1,9 @@
 package com.nextgen.gameaggregator.repository.wallet.reader;
 
-import com.nextgen.gameaggregator.entity.wallet.AccessKey;
+import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface AccessKeyReaderRepository  extends JpaRepository<AccessKey, Integer> {
-
-
-
-    AccessKey findFirstByOrderById();
-
+public interface TransferHistoryReaderRepository extends JpaRepository<TransferHistory, String> {
 }
