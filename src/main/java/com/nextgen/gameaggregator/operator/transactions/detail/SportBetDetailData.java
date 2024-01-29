@@ -16,6 +16,7 @@ public class SportBetDetailData {
     private BigDecimal stake;
     private BigDecimal winLoss;
     private String status;
+    private Boolean isCashout;
 
     public SportBetDetailData(SportBetDetailVo sportBetDetailVo) {
         this.setBetNumber(sportBetDetailVo.getBetNumber());
@@ -27,5 +28,6 @@ public class SportBetDetailData {
         this.setStake(sportBetDetailVo.getStake());
         this.setWinLoss(sportBetDetailVo.getWinLoss());
         this.setStatus(sportBetDetailVo.getStatus());
+        this.setIsCashout(sportBetDetailVo.getIsCashout());
     }
 }

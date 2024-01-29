@@ -23,4 +23,6 @@ public interface SportBetDetailVo {
 
     String getStatus();
 
+    Boolean getIsCashout();
+
 }

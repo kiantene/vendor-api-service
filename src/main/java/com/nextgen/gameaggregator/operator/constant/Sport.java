@@ -25,7 +25,8 @@ public class Sport {
     @AllArgsConstructor
     public enum BetTeam {
         TEAM_AWAY("TEAM_AWAY"),
-        TEAM_HOME("TEAM_HOME");
+        TEAM_HOME("TEAM_HOME"),
+        NO_TEAM(null);
         public final String value;
     }
 }

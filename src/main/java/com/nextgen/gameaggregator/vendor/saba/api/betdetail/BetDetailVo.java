@@ -76,6 +76,11 @@ public class BetDetailVo implements SportBetDetailVo {
         return this.getBetStatus(this.getData().getBetDetails().get(0).getTicketStatus());
     }
 
+    @Override
+    public Boolean getIsCashout() {
+        return Optional.ofNullable(this.getData().getBetDetails().get(0).getTicketExtraStatus()).map(value -> value.equalsIgnoreCase("cashout")).orElse(Boolean.FALSE);
+    }
+
     public List<MatchDetailData> getNormalMatchDetail(BetDetailsDto betDetailsDto) {
         MatchDetailData matchDetailData = new MatchDetailData();
         matchDetailData.setMatchName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getLeaguename()));
@@ -85,7 +90,7 @@ public class BetDetailVo implements SportBetDetailVo {
         matchDetailData.setHomeTeamScore(betDetailsDto.getHomeScore());
         matchDetailData.setAwayTeamScore(betDetailsDto.getAwayScore());
         matchDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), betDetailsDto.getBetTypeName()));
-        matchDetailData.setBetTeam(betDetailsDto.getBetTeam().equalsIgnoreCase("A") ? Sport.BetTeam.TEAM_AWAY.value : Sport.BetTeam.TEAM_HOME.value);
+        matchDetailData.setBetTeam(this.getTeam(betDetailsDto.getBetTeam()));
         matchDetailData.setHandicap(betDetailsDto.getHdp());
         matchDetailData.setOdds(betDetailsDto.getOdds());
         matchDetailData.setBetStatus(this.getBetStatus(betDetailsDto.getTicketStatus()));
@@ -108,7 +113,7 @@ public class BetDetailVo implements SportBetDetailVo {
             sportParlayDetailData.setHomeTeamScore(parlayDataDto.getHomeScore());
             sportParlayDetailData.setAwayTeamScore(parlayDataDto.getAwayScore());
             sportParlayDetailData.setBetTypeName(VendorService.getNameByLang(this.getVendorLanguageCode(), parlayDataDto.getBettypename()));
-            sportParlayDetailData.setBetTeam(parlayDataDto.getBetTeam().equalsIgnoreCase("A") ? Sport.BetTeam.TEAM_AWAY.value : Sport.BetTeam.TEAM_HOME.value);
+            sportParlayDetailData.setBetTeam(this.getTeam(parlayDataDto.getBetTeam()));
             sportParlayDetailData.setHandicap(parlayDataDto.getHdp());
             sportParlayDetailData.setOdds(parlayDataDto.getOdds());
             sportParlayDetailData.setBetStatus(this.getBetStatus(parlayDataDto.getTicketStatus()));
@@ -133,4 +138,19 @@ public class BetDetailVo implements SportBetDetailVo {
             default -> Sport.BetStatus.PENDING.value;
         };
     }
+
+    private String getTeam(String value) {
+        return switch (value.toUpperCase()) {
+            case "A" -> Sport.BetTeam.TEAM_AWAY.value;
+            case "H" -> Sport.BetTeam.TEAM_HOME.value;
+            default -> Sport.BetTeam.NO_TEAM.value;
+        };
+    }
+
+//    private String getValue(String value) {
+//        return Optional.ofNullable(value)
+////                .filter(val -> !val.isEmpty())
+//                .filter(val -> !val.isBlank())
+//                .orElse(null);
+//    }
 }
