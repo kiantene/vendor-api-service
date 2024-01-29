@@ -296,6 +296,7 @@ public class SportWalletService {
 
         BetEvent betEvent = null;
         SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportUnsettleData.getVendorPlayerUsername(), sportUnsettleData.getExternalTransactionId());
+        sportSettledBet.setBetId(traceId);
 
         try {
             SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportSettledBet.toSportUnsettleBetCouchbase();
@@ -334,6 +335,7 @@ public class SportWalletService {
     public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException {
         BetEvent betEvent = null;
         SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportResettleData.getVendorPlayerUsername(), sportResettleData.getExternalTransactionId());
+        sportSettledBet.setBetId(traceId);
 
         try {
             WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog);

@@ -95,6 +95,9 @@ public class VendorGame extends BaseEntity{
         @JsonProperty("agent_id")
         private Integer agentId;
 
+        @JsonProperty("bet_type")
+        private Integer betType = 1;
+
         @JsonProperty("operator_status")
         private Integer operatorStatus;
 
