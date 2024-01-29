@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 
@@ -44,6 +45,8 @@ public class SportSettleAction {
     private VendorService vendorService;
     @Autowired
     private AgentPlayerRepository agentPlayerRepository;
+    @Autowired
+    private VendorGameRepository vendorGameRepository;
 
     public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
@@ -58,8 +61,10 @@ public class SportSettleAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
+        String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
+
         AgentPlayer agentPlayer = agentPlayerRepository.findById(sportUnsettledBetCouchbase.getAgentPlayerId()).orElse(null);
-        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
         dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -145,7 +150,7 @@ public class SportSettleAction {
         return responseVo;
     }
 
-    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation) {
+    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation, String gameCode) {
         BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal winAmount = new BigDecimal(betInformation.getWinAmount().stripTrailingZeros().toPlainString());
         BigDecimal winLoss = new BigDecimal(betInformation.getWinLoss().stripTrailingZeros().toPlainString());
@@ -160,7 +165,7 @@ public class SportSettleAction {
         sportSettleDto.setBetAmount(betAmount);
         sportSettleDto.setRoundId(betInformation.getRoundId());
         sportSettleDto.setTimestamp(betInformation.getVendorBetTime());
-        sportSettleDto.setGameCode("sports");
+        sportSettleDto.setGameCode(gameCode);
         sportSettleDto.setWinAmount(winAmount);
         sportSettleDto.setWinLoss(winLoss);
         sportSettleDto.setEffectiveTurnover(betAmount);

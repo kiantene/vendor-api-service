@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,8 @@ public class SportUpdateBetAction {
     private RequestService requestService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorGameRepository vendorGameRepository;
 
     public WalletBalanceVo call(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
@@ -57,7 +60,9 @@ public class SportUpdateBetAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        SportUpdateBetDto dto = this.newSportUpdateBetDto(traceId, gameSession, betInformation);
+        String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
+
+        SportUpdateBetDto dto = this.newSportUpdateBetDto(traceId, gameSession, betInformation, gameCode);
         dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -146,7 +151,7 @@ public class SportUpdateBetAction {
         return responseVo;
     }
 
-    private SportUpdateBetDto newSportUpdateBetDto(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation) {
+    private SportUpdateBetDto newSportUpdateBetDto(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, String gameCode) {
         BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal newBetAmount = new BigDecimal(betInformation.getNewBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal creditAmount = betAmount.subtract(newBetAmount);
@@ -161,7 +166,7 @@ public class SportUpdateBetAction {
         sportUpdateBetDto.setBetAmount(betAmount);
         sportUpdateBetDto.setRoundId(betInformation.getRoundId());
         sportUpdateBetDto.setTimestamp(betInformation.getVendorBetTime());
-        sportUpdateBetDto.setGameCode("sports");
+        sportUpdateBetDto.setGameCode(gameCode);
 
         sportUpdateBetDto.setNewBetAmount(newBetAmount);
         sportUpdateBetDto.setCreditAmount(creditAmount);
