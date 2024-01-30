@@ -39,6 +39,7 @@ public class AgentApiCredentialController {
         if (requestService.isTestEnvironment(profilesActive)) {
             AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
             controllerServices.clearAgentApiCredentials();
+            controllerServices.clearAgentApiCredentialsByApiKey();
 
             if (agentApiCredential != null) {
                 agentApiCredential.setStatus(Integer.parseInt(json.get("status").toString()));
@@ -69,6 +70,7 @@ public class AgentApiCredentialController {
         if (requestService.isTestEnvironment(profilesActive)) {
             AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
             controllerServices.clearAgentApiCredentials();
+            controllerServices.clearAgentApiCredentialsByApiKey();
 
             if (agentApiCredential != null) {
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
