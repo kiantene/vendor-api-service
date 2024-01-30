@@ -37,20 +37,22 @@ public class GameSessionService {
         return session;
     }
 
-    @Caching( put = {
-            @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
     })
-    public GameSession updateSession(GameSession gameSession){
+    public GameSession updateSession(GameSession gameSession) {
         rawGameSessionRepository.save(gameSession);
         return gameSession;
 
     }
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
-    @Caching( put = {
-            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}" , cacheManager = "cacheManager"),
-            @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
     })
@@ -95,12 +97,12 @@ public class GameSessionService {
         return session;
     }
 
-    public void clearGameSession(GameSession gameSession, String username, String vendorGameCode){
-        cacheManager.getCache("GameSessions").evict(gameSession.getAgentId()+","+username+","+gameSession.getVendorLineId()+","+gameSession.getCurrencyId());
+    public void clearGameSession(GameSession gameSession, String username, String vendorGameCode) {
+        cacheManager.getCache("GameSessions").evict(gameSession.getAgentId() + "," + username + "," + gameSession.getVendorLineId() + "," + gameSession.getCurrencyId());
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername());
         cacheManager.getCache("GameSessions").evict(username);
-        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername()+","+gameSession.getVendorGameCode());
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername() + "," + gameSession.getVendorGameCode());
         gameSession.setStatus(0);
         gameSession.setTerminateTime(System.currentTimeMillis());
         rawGameSessionRepository.save(gameSession);
@@ -109,7 +111,7 @@ public class GameSessionService {
 
 
     public void terminateSessionByUserName(String userName) throws AuthenticationException {
-         List<GameSession> gameSessionList = rawGameSessionRepository.findByAgentPlayerUsernameAndStatus(userName, Status.ACTIVE.code);
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByAgentPlayerUsernameAndStatus(userName, Status.ACTIVE.code);
         for (GameSession gameSession : gameSessionList) {
             this.clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());
         }
