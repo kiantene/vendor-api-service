@@ -76,19 +76,22 @@ public class WithdrawAction {
             String signature = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            // 4.1 Check if Currency exist
+            // 4. Check Agent Status
+            validationService.validateAgentStatus(apiCredential.getAgent());
+
+            // 5.1 Check if Currency exist
             currency = gameUrlService.checkCurrency(dto.getCurrency());
-            // 4.2 Check if Agent Currency supported
+            // 5.2 Check if Agent Currency supported
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
 
-            //5. validate duplicate traceId request
+            //6. validate duplicate traceId request
             transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
 
-            //6. validate duplicate referenceId request
+            //7. validate duplicate referenceId request
             transferService.checkReferenceIdExists(dto.getReferenceId(), apiCredential.getAgent().getId());
 
-            //7. Check if agent player account exists and is disabled
+            //8. Check if agent player account exists and is disabled
             AgentPlayer agentPlayer = transferService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
 
             rawTransferHistory =
@@ -96,6 +99,7 @@ public class WithdrawAction {
                             TransactionType.WITHDRAWAL.status, dto.getTransferAmount());
 
             rawTransferHistory = withdrawRequest.call(dto.getTraceId(), rawTransferHistory, transferWalletRequestLog);
+
         } catch (IllegalArgumentException illegalArgumentException) {
             responseVo.setStatus(ResponseCodes.Status.SC_MISMATCHED_DATA_TYPE);
 

@@ -19,6 +19,8 @@ public class Agent {
 
     private Integer walletType;
 
+    private Integer status;
+
     @ManyToOne
     private Currency currency;
 }
