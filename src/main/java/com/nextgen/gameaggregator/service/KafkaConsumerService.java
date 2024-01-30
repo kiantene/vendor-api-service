@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
@@ -63,8 +65,7 @@ public class KafkaConsumerService {
             if (endRoundSettledBet.getEndRoundProcessTime() > currentTime) {
                 this.doSendBackToProcessEndRoundKafka(endRoundSettledBet, newTraceId);
             } else {
-                //1. check end round process counter and get internal transaction id
-                this.doCheckExceedThresholdCounter(endRoundSettledBet, newTraceId);
+                //1. update operator status to processing
                 endRoundSettledBet.setOperatorStatus(operatorStatusProcessing);
 
                 //2. get agentPlayerUsername, currencyCode and gameCode into gameSession for walletBetResultAction.call
@@ -75,10 +76,12 @@ public class KafkaConsumerService {
 
                 VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
 
-                //4. send the bet data with resultType end to operator
-                processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
-                processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
+                //4. check if not retry >= 10 times, then send the bet data with resultType end to operator
+                if (!this.doCheckExceedThresholdCounter(endRoundSettledBet, newTraceId)) {
+                    processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
+                    walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
+                    processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
+                }
 
                 //5. set the resultType as endRoundSettledBet.getGaResultType() which calculated in processBetResult
                 settledBet.setResultType(endRoundSettledBet.getGaResultType());
@@ -104,11 +107,6 @@ public class KafkaConsumerService {
             exception = invalidOperatorResponseException;
             updatedOperatorStatus = invalidOperatorResponseException.getOperatorStatus();
             isOperatorFailed = true;
-
-        } catch (ExceedThresholdCounterException exceedThresholdCounterException) {
-            //will no longer send back to process end round kafka, will log down for now
-            exception = exceedThresholdCounterException;
-            updatedOperatorStatus = operatorStatusExceededNumOfRetries;
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             //do nothing and save the processEndRoundLog only, because the data has been successfully processed
@@ -168,17 +166,15 @@ public class KafkaConsumerService {
         }
     }
 
-    public void doCheckExceedThresholdCounter(EndRoundSettledBet endRoundSettledBet, String newTraceId) throws ExceedThresholdCounterException {
-
+    public Boolean doCheckExceedThresholdCounter(EndRoundSettledBet endRoundSettledBet, String newTraceId) {
         //5 = 2.5 minutes
         //10 = 9.17 minutes
         //15 = 20 minutes
-        Integer exceedThresholdCounter = 15;
-
+        Integer exceedThresholdCounter = 10;
         if (endRoundSettledBet.getProcessEndRoundCounter() >= exceedThresholdCounter) {
-            //if more than 5 times, throw ExceedThresholdCounterException and logged down separately
-            throw new ExceedThresholdCounterException();
-
+            //if retry more than 10 times, return true and not send to operator
+            return true;
         }
+        return false;
     }
 }
