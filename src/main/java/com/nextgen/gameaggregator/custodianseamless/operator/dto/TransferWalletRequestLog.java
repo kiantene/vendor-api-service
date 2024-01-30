@@ -36,7 +36,8 @@ public class TransferWalletRequestLog {
     private ResponseCodes.Status walletServiceResponseStatus;
     private Integer walletServiceHttpStatusCode;
 
-    private String errorMessage;
+    private String errorException;
+    private String errorExceptionMessage;
     private Integer status;
 
     private Long startTime;

@@ -120,13 +120,13 @@ public class BalanceRequest {
                 transferWalletRequestLog.setWalletServiceResponseStatus(responseVo.getStatus());
             }
 
-            // 4. validate wallet response fail status
+            // 5. validate wallet response fail status
             if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
                 if ((responseVo.getData().getBalance() == null) ||
                         (!responseVo.getData().getUsername().equals(dto.getUsername())) ||
                         (!responseVo.getData().getTokenId().equals(dto.getTokenId()))) {
 
-                    throw new InvalidResponseException();
+                    throw new InvalidResponseException("Invalid Wallet Service Response Value compare with request param ");
 
                 } else {
                     balanceData.setAmount(responseVo.getData().getBalance());
@@ -137,6 +137,8 @@ public class BalanceRequest {
             } else {
                 throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
             }
+
+
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException | InvalidResponseException

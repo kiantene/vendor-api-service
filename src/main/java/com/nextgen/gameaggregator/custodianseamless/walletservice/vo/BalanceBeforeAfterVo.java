@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.custodianseamless.walletservice.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.nextgen.gameaggregator.operator.vo.ResponseVo;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;

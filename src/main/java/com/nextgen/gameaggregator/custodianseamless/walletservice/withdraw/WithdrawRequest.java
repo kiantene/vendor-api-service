@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.custodianseamless.walletservice.withdraw;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.custodianseamless.constant.TransactionStatus;
+import com.nextgen.gameaggregator.custodianseamless.constant.TransactionType;
 import com.nextgen.gameaggregator.custodianseamless.constant.WalletServiceEndpoints;
 import com.nextgen.gameaggregator.custodianseamless.exception.InvalidWalletServiceResponseException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAccessKeyNotFoundException;
@@ -120,36 +121,14 @@ public class WithdrawRequest {
                 rawTransferHistory.setErrorCode(responseVo.getStatus().code);
             }
 
-            // 4. validate wallet response fail status
+            // 5. validate wallet response fail status
+            rawTransferHistory = transferService.mapWalletServiceResponse(rawTransferHistory, responseVo, TransactionType.WITHDRAWAL.status);
 
-
-
-            if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK) || responseVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS)) {
-
-                if(     (responseVo.getData().getTransactionId().isEmpty()) ||
-                        (responseVo.getData().getCompletedAt() == null) ||
-                        (responseVo.getData().getBalanceAfter() == null) ||
-                        (responseVo.getData().getBalanceBefore() == null)
-                ){
-                    throw new InvalidResponseException();
-                }else{
-                    rawTransferHistory.setWalletTransactionId(responseVo.getData().getTransactionId().get(0));
-                    rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
-                    rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
-                    rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
-                    rawTransferHistory.setTransactionStatus(
-                            (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ?
-                            TransactionStatus.SUCCESS.status : TransactionStatus.FAIL.status);
-                }
-
-            } else {
-                throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
-            }
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException | InvalidResponseException
                 invalidResponseException) {
-            throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            throw new InvalidWalletServiceResponseException(invalidResponseException.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -158,7 +137,7 @@ public class WithdrawRequest {
                 throw new WalletServiceTimeoutException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
             } else {
                 exception.printStackTrace();
-                throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+                throw new InvalidWalletServiceResponseException(exception.getMessage(), ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             }
         }
 

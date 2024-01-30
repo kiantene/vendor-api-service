@@ -106,7 +106,9 @@ public class TransferHttpService {
     public void logError(TransferWalletRequestLog transferWalletRequestLog, Exception exception) {
         if (transferWalletRequestLog != null) {
             transferWalletRequestLog.setStatus(TransactionStatus.FAIL.status);
-            transferWalletRequestLog.setErrorMessage(exception.toString());
+            transferWalletRequestLog.setErrorException(exception.toString());
+            System.err.println("TEST TEST" +exception.getMessage());
+            transferWalletRequestLog.setErrorExceptionMessage(exception.getMessage());
         } else {
             log.warn("HttpService.logError: requestLog is null");
             exception.printStackTrace();

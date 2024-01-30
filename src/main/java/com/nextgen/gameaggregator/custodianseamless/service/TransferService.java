@@ -1,10 +1,13 @@
 package com.nextgen.gameaggregator.custodianseamless.service;
 
+import com.nextgen.gameaggregator.custodianseamless.constant.TransactionStatus;
+import com.nextgen.gameaggregator.custodianseamless.constant.TransactionType;
 import com.nextgen.gameaggregator.custodianseamless.exception.DuplicateReferenceIdException;
 import com.nextgen.gameaggregator.custodianseamless.exception.TransferHistoryNotFoundException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAccessKeyNotFoundException;
 import com.nextgen.gameaggregator.custodianseamless.operator.deposit.TransferData;
 import com.nextgen.gameaggregator.custodianseamless.operator.dto.TraceIdRequest;
+import com.nextgen.gameaggregator.custodianseamless.walletservice.vo.BalanceBeforeAfterVo;
 import com.nextgen.gameaggregator.entity.ga.Agent;
 import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
 import com.nextgen.gameaggregator.entity.ga.Currency;
@@ -13,6 +16,7 @@ import com.nextgen.gameaggregator.entity.wallet.AccessKey;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
+import com.nextgen.gameaggregator.exception.InvalidResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
@@ -68,8 +72,8 @@ public class TransferService {
         }
     }
 
-    public RawTransferHistory getTransferHistoryByReferenceId(String referenceId, Integer agentId, Currency currency, String username )
-            throws  TransferHistoryNotFoundException {
+    public RawTransferHistory getTransferHistoryByReferenceId(String referenceId, Integer agentId, Currency currency, String username)
+            throws TransferHistoryNotFoundException {
         RawTransferHistory rawTransferHistory = transferHistoryService.getTransactionHistoryById(referenceId, agentId);
         Optional.ofNullable(rawTransferHistory).orElseThrow(TransferHistoryNotFoundException::new);
 
@@ -117,6 +121,61 @@ public class TransferService {
         kafkaService.produceTransferHistory(rawTransferHistory);
 
         return new TransferData(rawTransferHistory, currency.getCode());
+    }
+
+
+    public RawTransferHistory mapWalletServiceResponse(RawTransferHistory rawTransferHistory,
+                                                       BalanceBeforeAfterVo balanceBeforeAfterVo,
+                                                       Integer transactionType) throws InvalidResponseException {
+
+
+            //validate wallet service should only response SC_OK and SC_INSUFFICIENT_FUNDS status
+        if ((!balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_OK)) &&
+                (!balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS))) {
+            System.err.println("GG " + balanceBeforeAfterVo.getStatus());
+            throw new InvalidResponseException("Invalid Wallet Service Response Code :" + balanceBeforeAfterVo.getStatus());
+
+
+            //validate SC_OK response body
+        } else if ((balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_OK)) &&
+                ((balanceBeforeAfterVo.getData().getTransactionId().isEmpty()) ||
+                        (balanceBeforeAfterVo.getData().getCompletedAt() == null) ||
+                        (balanceBeforeAfterVo.getData().getBalanceAfter() == null) ||
+                        (balanceBeforeAfterVo.getData().getBalanceBefore() == null))) {
+
+            throw new InvalidResponseException("Invalid Wallet Service Response Value for " +
+                    TransactionType.getTransactionTypeByStatus(transactionType));
+
+            //only check when is withdrawal and response status is insufficient fund
+        } else if ((transactionType.equals(TransactionType.WITHDRAWAL.status)) &&
+                (balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS)) &&
+                ((!balanceBeforeAfterVo.getData().getTransactionId().isEmpty()) ||
+                        (balanceBeforeAfterVo.getData().getCompletedAt() == null) ||
+                        (balanceBeforeAfterVo.getData().getBalanceAfter() == null) ||
+                        (balanceBeforeAfterVo.getData().getBalanceBefore() == null)
+                )) {
+            throw new InvalidResponseException("Invalid Wallet Service Response Value for withdrawal insufficient funds ");
+
+            //validate response username and currency is match with request
+        } else if ((!balanceBeforeAfterVo.getData().getUsername().equals(rawTransferHistory.getAgentPlayerUsername())) ||
+                (!balanceBeforeAfterVo.getData().getTokenId().equals(rawTransferHistory.getCurrencyId()))
+        ) {
+            throw new InvalidResponseException("Invalid Wallet Service Response Value compare with request param ");
+        }
+
+
+        if (balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+            rawTransferHistory.setWalletTransactionId(balanceBeforeAfterVo.getData().getTransactionId().get(0));
+        }
+
+        rawTransferHistory.setResultTime(balanceBeforeAfterVo.getData().getCompletedAt());
+        rawTransferHistory.setBalanceAfter(balanceBeforeAfterVo.getData().getBalanceAfter());
+        rawTransferHistory.setBalanceBefore(balanceBeforeAfterVo.getData().getBalanceBefore());
+        rawTransferHistory.setTransactionStatus(
+                (balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ?
+                        TransactionStatus.SUCCESS.status : TransactionStatus.FAIL.status);
+
+        return rawTransferHistory;
 
     }
 

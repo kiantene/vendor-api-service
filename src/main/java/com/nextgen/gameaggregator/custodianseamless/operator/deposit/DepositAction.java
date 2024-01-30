@@ -148,7 +148,7 @@ public class DepositAction {
         } catch (InvalidWalletServiceResponseException exception) {
             rawTransferHistory.setErrorCode(exception.getWalletStatus());
             transferHttpService.logError(transferWalletRequestLog, exception);
-            responseVo.setResponseCode(ResponseCodes.Status.SC_UNKNOWN_ERROR);
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INTERNAL_ERROR);
             exception.printStackTrace();
 
         } catch (Exception exception) {
