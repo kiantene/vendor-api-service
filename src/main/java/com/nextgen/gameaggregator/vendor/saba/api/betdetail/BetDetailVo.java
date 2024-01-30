@@ -68,7 +68,7 @@ public class BetDetailVo implements SportBetDetailVo {
 
     @Override
     public BigDecimal getWinLoss() {
-        return new BigDecimal(this.getData().getBetDetails().get(0).getWinlostAmount());
+        return this.getData().getBetDetails().get(0).getWinlostAmount();
     }
 
     @Override
@@ -79,6 +79,11 @@ public class BetDetailVo implements SportBetDetailVo {
     @Override
     public Boolean getIsCashout() {
         return Optional.ofNullable(this.getData().getBetDetails().get(0).getTicketExtraStatus()).map(value -> value.equalsIgnoreCase("cashout")).orElse(Boolean.FALSE);
+    }
+
+    @Override
+    public BigDecimal getCashoutAmount() {
+        return Optional.ofNullable(this.getData().getBetDetails().get(0).getBuybackAmount()).orElse(BigDecimal.ZERO);
     }
 
     public List<MatchDetailData> getNormalMatchDetail(BetDetailsDto betDetailsDto) {

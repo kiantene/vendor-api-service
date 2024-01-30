@@ -25,4 +25,6 @@ public interface SportBetDetailVo {
 
     Boolean getIsCashout();
 
+    BigDecimal getCashoutAmount();
+
 }
