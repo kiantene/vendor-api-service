@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.betdetail;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -29,9 +30,9 @@ public class BetDetailsDto {
     private String stake;
     private String transactionTime;
     private String ticketStatus;
-    private String buybackAmount;
-    private String winlostAmount;
-    private String afterAmount;
+    private BigDecimal buybackAmount;
+    private BigDecimal winlostAmount;
+    private BigDecimal afterAmount;
     private String currency;
     private String winlostDatetime;
     private String oddsType;
