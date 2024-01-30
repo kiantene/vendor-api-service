@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +43,8 @@ public class SportUnsettleAction {
     private AgentPlayerRepository agentPlayerRepository;
     @Autowired
     private CurrencyConversionService currencyConversionService;
+    @Autowired
+    private VendorGameRepository vendorGameRepository;
 
     public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
         InvalidAgentApiCredentialException, InvalidOperatorResponseException {
@@ -56,8 +59,10 @@ public class SportUnsettleAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
+        String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
+
         AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
-        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+        SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -143,7 +148,7 @@ public class SportUnsettleAction {
         return responseVo;
     }
 
-    private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation) {
+    private SportUnsettleDto generateSportUnsettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation, String gameCode) {
         SportUnsettleDto sportUnsettleDto = new SportUnsettleDto();
         sportUnsettleDto.setTraceId(traceId);
         sportUnsettleDto.setBetId(betInformation.getBetId());
@@ -153,6 +158,7 @@ public class SportUnsettleAction {
         sportUnsettleDto.setExternalTransactionId(betInformation.getExternalTransactionId());
         sportUnsettleDto.setRoundId(betInformation.getRoundId());
         sportUnsettleDto.setTimestamp(betInformation.getVendorBetTime());
+        sportUnsettleDto.setGameCode(gameCode);
 
         return sportUnsettleDto;
     }
