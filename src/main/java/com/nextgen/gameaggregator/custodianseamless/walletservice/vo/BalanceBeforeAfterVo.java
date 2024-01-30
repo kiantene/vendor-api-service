@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -18,9 +19,8 @@ public class BalanceBeforeAfterVo extends ResponseVo {
     @JsonIgnoreProperties(ignoreUnknown = true)
     @Data
     public static class ResponseData {
-        private String transactionId;
+        private List<String> transactionId;
         private String referenceId;
-
         private String username;
         private Integer tokenId;
         private BigDecimal balanceBefore;

@@ -33,7 +33,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.Optional;
 
@@ -122,29 +121,27 @@ public class WithdrawRequest {
             }
 
             // 4. validate wallet response fail status
-            if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-                rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
-                rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
-                rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
-                rawTransferHistory.setTransactionId(responseVo.getData().getTransactionId());
-                rawTransferHistory.setTransactionStatus(TransactionStatus.SUCCESS.status);
 
-            } else if (responseVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS)) {
-                //TODO : need wallet service done the changes
-//                rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
-//                rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
-//                rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
-                rawTransferHistory.setTransactionStatus(TransactionStatus.FAIL.status);
 
-            } else if (responseVo.getStatus().equals(ResponseCodes.Status.SC_USER_NOT_EXISTS)) {
-                //TODO : need wallet service done the changes
-//                rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
-                rawTransferHistory.setBalanceAfter(BigDecimal.ZERO);
-                rawTransferHistory.setBalanceBefore(BigDecimal.ZERO);
-//                rawTransferHistory.setTransactionId(responseVo.getData().getTransactionId());
-                rawTransferHistory.setTransactionStatus(TransactionStatus.FAIL.status);
 
-                rawTransferHistory.setResultTime(System.currentTimeMillis());
+            if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK) || responseVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS)) {
+
+                if(     (responseVo.getData().getTransactionId().isEmpty()) ||
+                        (responseVo.getData().getCompletedAt() == null) ||
+                        (responseVo.getData().getBalanceAfter() == null) ||
+                        (responseVo.getData().getBalanceBefore() == null)
+                ){
+                    throw new InvalidResponseException();
+                }else{
+                    rawTransferHistory.setWalletTransactionId(responseVo.getData().getTransactionId().get(0));
+                    rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
+                    rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
+                    rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
+                    rawTransferHistory.setTransactionStatus(
+                            (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) ?
+                            TransactionStatus.SUCCESS.status : TransactionStatus.FAIL.status);
+                }
+
             } else {
                 throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
             }

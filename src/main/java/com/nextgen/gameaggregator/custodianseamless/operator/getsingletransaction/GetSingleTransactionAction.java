@@ -65,13 +65,16 @@ public class GetSingleTransactionAction {
             // 4. Check Agent Status
             validationService.validateAgentStatus(apiCredential.getAgent());
 
-            // 5.1 Check if Currency exist
+            // 5. check Agent Wallet type and seamless type
+            validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
+
+            // 6.1 Check if Currency exist
             Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
-            // 5.2 Check if Agent Currency supported
+            // 6.2 Check if Agent Currency supported
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
 
-            //6. validate duplicate traceId request
+            // 7. validate duplicate traceId request
             transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
 
             RawTransferHistory transferHistory =
@@ -106,6 +109,9 @@ public class GetSingleTransactionAction {
 
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_CURRENCY_NOT_SUPPORTED);
+
+        } catch (InvalidWalletTypeException invalidWalletTypeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_WALLET_NOT_SUPPORTED);
 
         } catch (TransferHistoryNotFoundException transferHistoryNotFoundException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_TRANSACTION_DOES_NOT_EXIST);

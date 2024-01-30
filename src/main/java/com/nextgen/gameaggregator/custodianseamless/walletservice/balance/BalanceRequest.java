@@ -122,8 +122,18 @@ public class BalanceRequest {
 
             // 4. validate wallet response fail status
             if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-                balanceData.setAmount(responseVo.getBalance());
-                balanceData.setTimestamp(transferWalletRequestLog.getWalletServiceEnd());
+                if ((responseVo.getData().getBalance() == null) ||
+                        (!responseVo.getData().getUsername().equals(dto.getUsername())) ||
+                        (!responseVo.getData().getTokenId().equals(dto.getTokenId()))) {
+
+                    throw new InvalidResponseException();
+
+                } else {
+                    balanceData.setAmount(responseVo.getData().getBalance());
+                    balanceData.setTimestamp(transferWalletRequestLog.getWalletServiceEnd());
+                }
+
+
             } else {
                 throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
             }

@@ -21,14 +21,14 @@ public class TransferHistoryService {
 
     @Cacheable(value = "RawTransferHistories", key = "{#referenceId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
     public RawTransferHistory getTransactionHistoryById(String referenceId, Integer  agentId) {
-        return rawTransferHistoryRepository.findById(referenceId).orElse(null);
+        return rawTransferHistoryRepository.findByReferenceIdAndAgentId(referenceId, agentId);
     }
 
     @CachePut(value = "RawTransferHistories", key = "{#referenceId, #agentPlayer.agentId}", cacheManager = "cacheManager")
     public RawTransferHistory preGenerateRawTransferHistory(String referenceId, AgentPlayer agentPlayer, Currency currency, Integer transactionType, BigDecimal transferAmount){
         return new RawTransferHistory(referenceId, agentPlayer, currency, transactionType, transferAmount);
     }
-    @CachePut(value = "RawTransferHistories", key = "{#rawTransferHistory.id, #rawTransferHistory.agentId}", cacheManager = "cacheManager")
+    @CachePut(value = "RawTransferHistories", key = "{#rawTransferHistory.referenceId, #rawTransferHistory.agentId}", cacheManager = "cacheManager")
     public RawTransferHistory updateRawTransferHistory(RawTransferHistory rawTransferHistory){
         return rawTransferHistory;
     }

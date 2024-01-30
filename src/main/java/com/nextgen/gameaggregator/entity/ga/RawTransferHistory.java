@@ -11,6 +11,7 @@ import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 
 @Document
@@ -22,8 +23,10 @@ public class RawTransferHistory {
     @Id
     @JsonProperty("id")
     private String id;
-    @JsonProperty("transaction_id")
-    private String transactionId;
+    @JsonProperty("reference_id")
+    private String referenceId;
+    @JsonProperty("wallet_transaction_id")
+    private String walletTransactionId;
     @JsonProperty("agent_id")
     private Integer agentId;
     @JsonProperty("agent_player_id")
@@ -56,8 +59,9 @@ public class RawTransferHistory {
     //create transaction history before call to wallet service
     public RawTransferHistory
     (String referenceId, AgentPlayer agentPlayer, Currency currency, Integer transactionType, BigDecimal transferAmount) {
-        this.id = referenceId;
-        this.transactionId = null;
+        this.id = String.valueOf(UUID.randomUUID());
+        this.referenceId = referenceId;
+        this.walletTransactionId = null;
         this.agentId = agentPlayer.getAgentId();
         this.agentPlayerId = agentPlayer.getId();
         this.agentPlayerUsername = agentPlayer.getUsername();

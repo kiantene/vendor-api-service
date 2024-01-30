@@ -21,6 +21,8 @@ public class Agent {
 
     private Integer status;
 
+    private Integer  seamlessType;
+
     @ManyToOne
     private Currency currency;
 }

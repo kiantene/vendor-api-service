@@ -47,6 +47,8 @@ public class ResponseCodes {
         SC_TRANSACTION_DOES_NOT_EXIST(36, "Corresponding reference Id cannot be found."),
         SC_INTERNAL_ERROR(37, "Internal error. please checked in relevant support channel"),
 
+        SC_WALLET_NOT_SUPPORTED(38, "Wallet Type is not supported."),
+
         ;
 
         public final Integer code;

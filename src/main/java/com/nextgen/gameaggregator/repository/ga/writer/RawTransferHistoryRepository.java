@@ -13,4 +13,6 @@ import org.springframework.stereotype.Repository;
 @TypeAlias("transfer_histories")
 @Collection("transfer_histories")
 public interface RawTransferHistoryRepository extends CouchbaseRepository<RawTransferHistory, String> {
+
+    RawTransferHistory findByReferenceIdAndAgentId(String referenceId, Integer agentId);
 }

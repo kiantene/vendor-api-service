@@ -23,8 +23,8 @@ public class GetSingleTransactionData {
     private Long timestamp;
 
     public GetSingleTransactionData(RawTransferHistory rawTransferHistory, Currency currency){
-        this.referenceId = rawTransferHistory.getId();
-        this.transactionId = rawTransferHistory.getTransactionId();
+        this.referenceId = rawTransferHistory.getReferenceId();
+        this.transactionId = rawTransferHistory.getId();
         this.transactionStatus =
                 TransactionStatus.getDescriptionByStatus(rawTransferHistory.getTransactionStatus());
         this.transactionType = TransactionType.getTransactionTypeByStatus(rawTransferHistory.getTransactionType());

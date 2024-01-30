@@ -26,7 +26,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -111,10 +110,6 @@ public class TransferService {
     }
 
     public TransferData saveTransactionHistory(RawTransferHistory rawTransferHistory, Currency currency) {
-
-        if (rawTransferHistory.getTransactionId() == null) {
-            rawTransferHistory.setTransactionId(UUID.randomUUID().toString());
-        }
 
         transferHistoryService.updateRawTransferHistory(rawTransferHistory);
         transferHistoryService.saveRawTransferHistory(rawTransferHistory);

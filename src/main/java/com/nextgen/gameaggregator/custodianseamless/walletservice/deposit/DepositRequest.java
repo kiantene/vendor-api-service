@@ -124,13 +124,23 @@ public class DepositRequest {
 
             // 4. validate wallet response fail status
             if (responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-                rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
-                rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
-                rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
-                rawTransferHistory.setTransactionId(responseVo.getData().getTransactionId());
-                rawTransferHistory.setTransactionStatus(TransactionStatus.SUCCESS.status);
-            }else{
-                throw new InvalidResponseException("Invalid Response Code :"+responseVo.getStatus());
+
+                if ((responseVo.getData().getTransactionId().isEmpty()) ||
+                        (responseVo.getData().getCompletedAt() == null) ||
+                        (responseVo.getData().getBalanceAfter() == null) ||
+                        (responseVo.getData().getBalanceBefore() == null)
+                ) {
+                    throw new InvalidResponseException();
+                } else {
+                    rawTransferHistory.setWalletTransactionId(responseVo.getData().getTransactionId().get(0));
+                    rawTransferHistory.setResultTime(responseVo.getData().getCompletedAt());
+                    rawTransferHistory.setBalanceAfter(responseVo.getData().getBalanceAfter());
+                    rawTransferHistory.setBalanceBefore(responseVo.getData().getBalanceBefore());
+                    rawTransferHistory.setTransactionStatus(TransactionStatus.SUCCESS.status);
+                }
+
+            } else {
+                throw new InvalidResponseException("Invalid Response Code :" + responseVo.getStatus());
             }
 
 
@@ -147,7 +157,6 @@ public class DepositRequest {
                 exception.printStackTrace();
                 throw new InvalidWalletServiceResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             }
-
 
         }
 

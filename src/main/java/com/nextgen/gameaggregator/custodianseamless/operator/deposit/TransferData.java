@@ -17,8 +17,8 @@ public class TransferData {
     private Long timestamp;
 
     public TransferData(RawTransferHistory rawTransferHistory, String currencyCode){
-        this.referenceId = rawTransferHistory.getId();
-        this.transactionId = rawTransferHistory.getTransactionId();
+        this.referenceId = rawTransferHistory.getReferenceId();
+        this.transactionId = rawTransferHistory.getId();
         this.username = rawTransferHistory.getAgentPlayerUsername();
         this.currencyCode = currencyCode;
         this.beforeBalance = rawTransferHistory.getBalanceBefore();

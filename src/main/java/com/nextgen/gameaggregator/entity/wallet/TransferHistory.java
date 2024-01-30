@@ -23,9 +23,9 @@ public class TransferHistory {
     @JsonProperty("reference_id")
     private String referenceId;
 
-    @Column(name = "transaction_id", length = 36, nullable = false)
-    @JsonProperty("transaction_id")
-    private String transactionId;
+    @Column(name = "wallet_transaction_id", length = 36)
+    @JsonProperty("wallet_transaction_id")
+    private String walletTransactionId;
 
     @Column(name = "agent_id", nullable = false)
     @JsonProperty("agent_id")

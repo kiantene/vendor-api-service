@@ -47,9 +47,16 @@ public class ValidationService {
     }
 
     public void validateAgentStatus(Agent agent) throws AuthenticationException {
-        System.err.println("Agent Status :"+agent.getStatus());
         if (!agent.getStatus().equals(Status.ACTIVE.code)) {
             throw new AuthenticationException();
+        }
+    }
+
+    public void validateIsCustodianSeamlessAgentWalletType(Agent agent) throws InvalidWalletTypeException{
+        if(!agent.getWalletType().equals(1)){
+            throw new InvalidWalletTypeException();
+        }else if(!agent.getSeamlessType().equals(2)){
+            throw new InvalidWalletTypeException();
         }
     }
 

@@ -74,19 +74,22 @@ public class DepositAction {
             // 4. Check Agent Status
             validationService.validateAgentStatus(apiCredential.getAgent());
 
-            // 5.1 Check if Currency exist
+            // 5. check Agent Wallet type and seamless type
+            validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
+
+            // 6.1 Check if Currency exist
             currency = gameUrlService.checkCurrency(dto.getCurrency());
-            // 5.2 Check if Agent Currency supported
+            // 6.2 Check if Agent Currency supported
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
 
-            //6. validate duplicate traceId request
+            // 7. validate duplicate traceId request
             transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
 
-            //7. validate duplicate referenceId request
+            // 8. validate duplicate referenceId request
             transferService.checkReferenceIdExists(dto.getReferenceId(), apiCredential.getAgent().getId());
 
-            //8. Check if agent player account exists and is disabled
+            // 9. Check if agent player account exists and is disabled
             AgentPlayer agentPlayer = transferService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
 
             rawTransferHistory =
@@ -126,6 +129,9 @@ public class DepositAction {
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_USER_DISABLED);
+
+        } catch (InvalidWalletTypeException invalidWalletTypeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_WALLET_NOT_SUPPORTED);
 
         } catch (WalletServiceAccessKeyNotFoundException exception) {
             rawTransferHistory.setErrorCode(exception.getWalletStatus());
