@@ -1,34 +1,33 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.gameurl;
 
-import java.time.Duration;
-import java.util.Map;
-import java.util.Optional;
-
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.json.JsonParser;
-import org.springframework.boot.json.JsonParserFactory;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.client.WebClient;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.repository.ga.writer.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.VendorPlayerService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -38,40 +37,48 @@ public class GameUrlService implements GameUrl {
     @Autowired
     private VendorService vendorService;
     @Autowired
-    private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
+    private VendorPlayerService vendorPlayerService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
-    private String token = "";
 
     @Override
-    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials) 
-        throws InvalidVendorLineException, InvalidFormatException {
-        token = getToken(gameSession, credentials);
-        String userCode = getUserCode(gameSession, token, credentials);
+    public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
+            throws InvalidVendorLineException, InvalidFormatException {
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
-        formData.add("userCode", userCode);
-        formData.add("locale", "zh-cn");
-        formData.add("oddsFormat", "HK");
+        formData.add("userCode", gameSession.getVendorPlayerUsername());
+        formData.add("locale", gameSession.getVendorLanguageCode());
+//        formData.add("oddsFormat", "HK");
 
         return formData;
     }
 
     @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
-        throws InvalidVendorLineException, InvalidVendorResponseException {
+            throws InvalidVendorLineException, InvalidVendorResponseException {
 
-        String apiUrl = credentials.get(Credentials.LOGIN_URL);
+        String apiUrl = Optional.ofNullable(credentials.get(Credentials.LOGIN_URL)).orElseThrow(InvalidVendorLineException::new);
+        String agentCode = Optional.ofNullable(credentials.get(Credentials.AGENT_CODE)).orElseThrow(InvalidVendorLineException::new);
+        String agentKey = Optional.ofNullable(credentials.get(Credentials.AGENT_KEY)).orElseThrow(InvalidVendorLineException::new);
+        String secretKey = Optional.ofNullable(credentials.get(Credentials.SECRET_KEY)).orElseThrow(InvalidVendorLineException::new);
+
+        if (!VendorService.isCorrectVendorPlayerUsername(Objects.requireNonNull(formData.getFirst("userCode")), agentCode)) {
+            createUserCode(gameSession, credentials);
+            formData.put("userCode", List.of(gameSession.getVendorPlayerUsername()));
+        }
+
         GameUrlVo responseVo = null;
-        HttpHeaders headerMap = createHeaders(credentials.get(Credentials.AGENT_CODE), token);
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        headerMap.add("userCode", agentCode);
+        headerMap.add("token", vendorService.generateToken(agentCode, agentKey, secretKey));
 
         long startTime = System.currentTimeMillis();
 
         ResponseEntity<String> apiResponse = WebClient.create()
                 .post()
                 .uri(apiUrl)
-                .headers(httpHeaders -> httpHeaders.addAll(headerMap))
+                .headers(header -> header.addAll(headerMap))
                 .bodyValue(formData)
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus.isError(), response -> Mono.empty())
@@ -103,39 +110,23 @@ public class GameUrlService implements GameUrl {
         return responseVo;
     }
 
-    private String getToken(GameSession gameSession, Map<String, String> credentials) {
-        try {
-            token = vendorService.generateToken(credentials.get(Credentials.AGENT_CODE), credentials.get(Credentials.AGENT_KEY), credentials.get(Credentials.SECRET_KEY));
-            return token;
+    private void createUserCode(GameSession gameSession, Map<String, String> credentials) throws InvalidVendorResponseException, InvalidVendorLineException {
 
-        } catch (Exception exception) {
-            log.error("Error generating token", exception);
-            return null;
-        }
-    }
+        String apiCreateUrl = Optional.ofNullable(credentials.get(Credentials.CREATE_URL)).orElseThrow(InvalidVendorLineException::new);
+        String agentCode = Optional.ofNullable(credentials.get(Credentials.AGENT_CODE)).orElseThrow(InvalidVendorLineException::new);
+        String agentKey = Optional.ofNullable(credentials.get(Credentials.AGENT_KEY)).orElseThrow(InvalidVendorLineException::new);
+        String secretKey = Optional.ofNullable(credentials.get(Credentials.SECRET_KEY)).orElseThrow(InvalidVendorLineException::new);
 
-    private String getUserCode(GameSession gameSession, String token, Map<String, String> credentials) {
-        String userCode = "";
-        Optional<VendorGame.PinnacleVendorPlayer> pinnacleVendorPlayer = pinnacleVendorUsernameRepository.findByUsername(gameSession.getVendorPlayerUsername());
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+        headerMap.add("userCode", agentCode);
+        headerMap.add("token", vendorService.generateToken(agentCode, agentKey, secretKey));
 
-        if (pinnacleVendorPlayer.isPresent()) {
-            userCode = pinnacleVendorPlayer.get().getVendorPlayerUsername();
-        } else {
-            userCode = createUserCode(gameSession, token, credentials);
-        }
-
-        return userCode;
-    }
-
-    private String createUserCode(GameSession gameSession, String token, Map<String, String> credentials) {
-        String userCode = "";
-        String apiCreateUrl = credentials.get(Credentials.CREATE_URL);
-        HttpHeaders headerMap = createHeaders(credentials.get(Credentials.AGENT_CODE), token);
+        long startTime = System.currentTimeMillis();
 
         ResponseEntity<String> apiCreateResponse = WebClient.create()
                 .post()
                 .uri(apiCreateUrl)
-                .headers(httpHeaders -> httpHeaders.addAll(headerMap))
+                .headers(headers -> headers.addAll(headerMap))
                 .retrieve()
                 .onStatus(httpStatus -> httpStatus.isError(), response -> Mono.empty())
                 .toEntity(String.class)
@@ -143,31 +134,26 @@ public class GameUrlService implements GameUrl {
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
+        long endTime = System.currentTimeMillis();
+        RequestLogVo requestLogVo = requestService.createRequestLogVo(
+                "", apiCreateUrl, new LinkedMultiValueMap<>(), apiCreateResponse, headerMap, startTime, endTime,
+                this.getClass().getPackage().getName(), profilesActive);
+
         try {
+            // 1. validate HTTP Response Code
+            requestService.validateVendorHttpStatusResponse(apiCreateResponse);
+
             JsonParser jsonParser = JsonParserFactory.getJsonParser();
-            userCode = jsonParser.parseMap(apiCreateResponse.getBody()).get("userCode").toString();
+            String userCode = jsonParser.parseMap(apiCreateResponse.getBody()).get("userCode").toString();
+
+            vendorPlayerService.updateNewVendorPlayerUsername(gameSession, userCode);
+
+            RequestService.successResponseLog(requestLogVo);
         } catch (Exception ex) {
-            log.error(apiCreateUrl, ex);
+            RequestService.failResponseLog(requestLogVo, ex, gameSession);
+            String exceptionMsg = apiCreateResponse != null ? apiCreateResponse.toString() : "";
+
+            throw new InvalidVendorResponseException(exceptionMsg);
         }
-
-        // Temporary store vendor player username into couchbase
-        VendorGame.PinnacleVendorPlayer entity = new VendorGame.PinnacleVendorPlayer();
-        entity.setId(gameSession.getVendorPlayerUsername() + "_" + userCode);
-        entity.setUsername(gameSession.getVendorPlayerUsername());
-        entity.setVendorPlayerUsername(userCode);
-        create(entity);
-
-        return userCode;
-    }
-
-    private HttpHeaders createHeaders(String userCode, String token) {
-        HttpHeaders headerMap = new HttpHeaders();
-        headerMap.add("userCode", userCode);
-        headerMap.add("token", token);
-        return headerMap;
-    }
-
-    public VendorGame.PinnacleVendorPlayer create(VendorGame.PinnacleVendorPlayer entity) {
-        return pinnacleVendorUsernameRepository.save(entity);
     }
 }
