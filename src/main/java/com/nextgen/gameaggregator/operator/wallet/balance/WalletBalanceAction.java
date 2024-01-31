@@ -58,7 +58,7 @@ public class WalletBalanceAction {
 
         Integer agentId = gameSession.getAgentId();
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();

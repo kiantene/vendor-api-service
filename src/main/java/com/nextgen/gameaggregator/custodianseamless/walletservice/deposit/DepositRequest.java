@@ -79,6 +79,8 @@ public class DepositRequest {
         transferWalletRequestLog.setWalletServiceStart(System.currentTimeMillis());
         transferWalletRequestLog.setWalletServiceHeader(headerMap);
         transferWalletRequestLog.setWalletServiceData(dto);
+        transferWalletRequestLog.setWalletServiceEndPoints(apiUrl+WalletServiceEndpoints.WALLET_DEPOSIT);
+
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_DEPOSIT)
                     .header(WalletServiceEndpoints.HEADER_SIGNATURE, signature)

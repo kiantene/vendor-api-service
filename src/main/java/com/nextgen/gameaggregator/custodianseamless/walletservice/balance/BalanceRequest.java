@@ -77,6 +77,7 @@ public class BalanceRequest {
         transferWalletRequestLog.setWalletServiceStart(System.currentTimeMillis());
         transferWalletRequestLog.setWalletServiceHeader(headerMap);
         transferWalletRequestLog.setWalletServiceData(dto);
+        transferWalletRequestLog.setWalletServiceEndPoints(apiUrl+WalletServiceEndpoints.WALLET_BALANCE);
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(WalletServiceEndpoints.WALLET_BALANCE)
                     .header(WalletServiceEndpoints.HEADER_SIGNATURE, signature)
