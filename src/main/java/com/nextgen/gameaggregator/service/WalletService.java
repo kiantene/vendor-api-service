@@ -25,6 +25,9 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class WalletService {
+    private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
+    private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
+    private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
     @Autowired
     private BetResultLogService betResultLogService;
     @Autowired
@@ -54,10 +57,6 @@ public class WalletService {
     @Autowired
     private BetIdempotentLogService betIdempotentLogService;
 
-    private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
-    private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
-    private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
-
     public BigDecimal getBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(WalletBalanceAction.class.getSimpleName());
@@ -78,7 +77,7 @@ public class WalletService {
             // TODO: implement error handling
             if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
-        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException){
+        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
             if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
             throw new VendorCurrencyNotSupportException();
         }
@@ -152,7 +151,7 @@ public class WalletService {
 
             }
 
-        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException){
+        } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
             unsettledBet.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             unsettledBetService.save(unsettledBet);
             log.warn("walletBetAction.call.vendorCurrencyNotSupportException traceId [" + traceId + "]: externalTransactionId (" + unsettledBet.getExternalTransactionId() + ") vendorPlayerId (" + unsettledBet.getVendorPlayerId() + ")");
@@ -225,7 +224,7 @@ public class WalletService {
 
         SettledBet updateCachingSettledBet = settledBet;
         loggingService.logStart();
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(roundId, vendorGameId, vendorPlayerId);
         loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
         if (!retry) {
@@ -438,7 +437,7 @@ public class WalletService {
                 traceId = UUID.randomUUID().toString();
 
                 //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
-                if(betRecord.getVendorSettleTime() == null){
+                if (betRecord.getVendorSettleTime() == null) {
                     betRecord.setVendorSettleTime(settledBet.getVendorSettleTime());
                 }
 
@@ -455,7 +454,7 @@ public class WalletService {
                 loggingService.logStart();
                 unsettledBetService.delete(betRecord);
                 loggingService.logProcessTime("donNotifyEndRoundAsync ｜ unsettledBetService.delete", traceId);
-                
+
             }
         }
     }
@@ -637,7 +636,7 @@ public class WalletService {
         return balance;
     }
 
-    private void mergeResultIntoBetDataForEndCondition(BetInformation betData, BetResultData betResultData){
+    private void mergeResultIntoBetDataForEndCondition(BetInformation betData, BetResultData betResultData) {
 
         if (betResultData.getResultTime() != null) {
             betData.setResultTime(betResultData.getResultTime());
