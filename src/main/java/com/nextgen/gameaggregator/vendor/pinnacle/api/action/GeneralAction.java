@@ -1,25 +1,8 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.action;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.repository.ga.writer.PinnacleVendorUsernameRepository;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
@@ -35,9 +18,21 @@ import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.ResultVo;
-
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -59,8 +54,6 @@ public class GeneralAction {
     private RefundService refundService;
     @Autowired
     private UnsettleService unsettleService;
-    @Autowired
-    private PinnacleVendorUsernameRepository pinnacleVendorUsernameRepository;
 
     @PostMapping(path = "/{agentcode}/wagering/usercode/{usercode}/request/{requestid}")
     public ResponseVo handleApiCall(@PathVariable String agentcode, @PathVariable String usercode, @PathVariable String requestid, HttpServletRequest request) {
@@ -73,13 +66,8 @@ public class GeneralAction {
             ObjectMapper objectMapper = new ObjectMapper();
             ActionsDto dto = objectMapper.readValue(body, ActionsDto.class);
 
-            // Get GA username from couchbase
-            String userCode = dto.getActions().get(0).getPlayerInfo().getUserCode();
-            Optional<VendorGame.PinnacleVendorPlayer> player = pinnacleVendorUsernameRepository.findByVendorPlayerUsername(userCode);
-
             // Get game session with username
-            String username = player.get().getUsername();
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(username);
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getActions().get(0).getPlayerInfo().getUserCode());
 
             // Create a set to store action name
             Set<String> uniqueActionNames = new HashSet<>();
@@ -113,13 +101,14 @@ public class GeneralAction {
 
     private List<CommonVo> actionsSwitching(String actionName, ActionsDto dto, GameSession gameSession, HttpRequestLog httpRequestLog) {
         List<CommonVo> commonVos = new ArrayList<>();
-    
+
         try {
             switch (actionName) {
                 case "BETTED" -> commonVos.addAll(betService.bet(dto, gameSession, httpRequestLog));
                 case "ACCEPTED" -> commonVos.addAll(acceptService.accept(dto, gameSession, httpRequestLog));
                 case "SETTLED" -> commonVos.addAll(settledService.settled(dto, gameSession, httpRequestLog));
-                case "REJECTED", "ROLLBACKED", "CANCELLED" -> commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
+                case "REJECTED", "ROLLBACKED", "CANCELLED" ->
+                        commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
                 case "UNSETTLED" -> commonVos.addAll(unsettleService.unsettle(dto, gameSession, httpRequestLog));
                 default -> {
                     CommonVo commonVo = new CommonVo();
@@ -132,9 +121,9 @@ public class GeneralAction {
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
             commonVos.add(commonVo);
         }
-    
+
         return commonVos;
-    }    
+    }
 
     private ResponseVo mergeResponses(List<CommonVo> commonVos, Action action, GameSession gameSession, HttpRequestLog httpRequestLog) {
         ResponseVo responseVo = new ResponseVo();
@@ -144,18 +133,18 @@ public class GeneralAction {
         try {
             // Check if any CommonVo has error
             boolean hasUnknownError = commonVos.stream().anyMatch(commonVo -> commonVo.getResponseCode() != 0);
-    
+
             // Get latest balance after all actions are done
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             result.setUserCode(action.getPlayerInfo().getUserCode());
             result.setAvailableBalance(balance);
             result.setActions(commonVos);
-            
+
             // Set errorCode based on the condition
             responseVo.setErrorCode(hasUnknownError ? ResponseCode.UNKNOWN_ERROR.code : ResponseCode.SUCCESS.code);
-            
+
             responseVo.setResult(result);
-    
+
         } catch (Exception e) {
             log.error("Exception: " + e.getMessage());
         }
