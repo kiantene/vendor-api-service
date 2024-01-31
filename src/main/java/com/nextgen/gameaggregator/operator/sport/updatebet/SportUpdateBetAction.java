@@ -81,6 +81,7 @@ public class SportUpdateBetAction {
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_UPDATE_BET)
                 .header(EndPoints.HEADER_SIGNATURE, signature)
+                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(dto))
