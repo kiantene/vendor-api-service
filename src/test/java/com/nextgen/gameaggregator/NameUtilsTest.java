@@ -11,9 +11,9 @@ public class NameUtilsTest {
         Long vendorLineId = 1L;
         Integer currencyId = 1;
 
-        String username = NameUtils.generateUsername(vendorLineId, agentPlayerId) + NameUtils.convertToColumnLabel(currencyId);
+        String username = NameUtils.generateUsername(vendorLineId, agentPlayerId) + NameUtils.excelColumnNameFormula(currencyId);
         System.out.println("===== 1 Vendor Line + 1 Player + 1 Currency  =====");
-        System.out.println(username + NameUtils.convertToColumnLabel(currencyId) + " (" + username.length() + ")");
+        System.out.println(username+ " (" + username.length() + ")");
     }
 
     @Test
