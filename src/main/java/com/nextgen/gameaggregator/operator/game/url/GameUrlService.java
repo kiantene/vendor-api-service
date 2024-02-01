@@ -193,7 +193,8 @@ public class GameUrlService {
     }
 
     public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId, Integer currencyId) {
-        String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId);
+        String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), Long.valueOf(currencyId), agentPlayerId )
+                + NameUtils.excelColumnNameFormula(currencyId);
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
         entity.setVendorLineId(vendorLineId);
@@ -223,5 +224,7 @@ public class GameUrlService {
 
         return entity;
     }
+
+
 
 }
