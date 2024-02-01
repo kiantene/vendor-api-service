@@ -32,6 +32,7 @@ public class BetNSettleDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gameCode;
 
+    // Optional field
     private Integer gameId;
 
     @NotBlank
