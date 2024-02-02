@@ -165,7 +165,9 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData,
     }
 
     @Override
-    public Long getTimestamp()  { return System.currentTimeMillis(); }
+    public Long getTimestamp() {
+        return System.currentTimeMillis();
+    }
 
     @Override
     public BigDecimal getNewBetAmount() {
@@ -174,7 +176,7 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData,
 
     @Override
     public Integer getBetType() {
-        return BetType.NORMAL_BET.code;
+        return this.getType().equalsIgnoreCase("PARLAY") ? BetType.PARLAY_BET.code : BetType.NORMAL_BET.code;
     }
 
 }
