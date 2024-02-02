@@ -46,10 +46,12 @@ public class GameUrlService implements GameUrl {
     public MultiValueMap<String, String> formDataBuilder(String gameCode, GameSession gameSession, Map<String, String> credentials)
             throws InvalidVendorLineException, InvalidFormatException {
 
+        String oddsFormat = Optional.ofNullable(credentials.get(Credentials.ODDS_FORMAT)).orElseThrow(InvalidVendorLineException::new);
+
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("userCode", gameSession.getVendorPlayerUsername());
         formData.add("locale", gameSession.getVendorLanguageCode());
-//        formData.add("oddsFormat", "HK");
+        formData.add("oddsFormat", oddsFormat);
 
         return formData;
     }

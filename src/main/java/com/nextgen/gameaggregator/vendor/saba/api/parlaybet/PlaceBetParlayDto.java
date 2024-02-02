@@ -95,7 +95,7 @@ public class PlaceBetParlayDto extends GeneralDto implements SportBetResultData 
 
     @Override
     public Integer getBetType() {
-        return BetType.PARLEY_BET.code;
+        return BetType.PARLAY_BET.code;
     }
 
     @Override
