@@ -9,9 +9,7 @@ import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
-import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo;
-import com.nextgen.gameaggregator.operator.transactions.detail.TransactionDetailData;
+import com.nextgen.gameaggregator.operator.transactions.detail.*;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
@@ -112,11 +110,11 @@ public class BetHistoryService {
         entity.setStatus(BetStatus.UNSETTLED.code);
 
         jdbcTemplate.update("INSERT INTO bet_history (id, external_transaction_id, round_id, vendor_game_id, " +
-                "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
-                "game_session_token, master_agent_id, house_id, game_category_id, currency_id, bet_amount, " +
-                "win_amount, win_loss, vendor_win_loss, effective_turnover, result_type, raw_data, status, " +
-                "vendor_bet_time, vendor_settle_time, create_time, result_time) VALUES (?, ?, ?, ?, ?, ?, ?, " +
-                "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
+                        "vendor_player_id, vendor_id, vendor_line_id, agent_player_id, agent_id, operator_status, " +
+                        "game_session_token, master_agent_id, house_id, game_category_id, currency_id, bet_amount, " +
+                        "win_amount, win_loss, vendor_win_loss, effective_turnover, result_type, raw_data, status, " +
+                        "vendor_bet_time, vendor_settle_time, create_time, result_time) VALUES (?, ?, ?, ?, ?, ?, ?, " +
+                        "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", entity.getId(), entity.getExternalTransactionId(),
                 entity.getRoundId(), entity.getVendorGameId(), entity.getVendorPlayerId(), entity.getVendorId(),
                 entity.getVendorLineId(), entity.getAgentPlayerId(), entity.getAgentId(), entity.getOperatorStatus(),
                 entity.getGameSessionToken(), entity.getGameCategoryId(),
@@ -179,7 +177,36 @@ public class BetHistoryService {
                  InvalidFormatException | RecordNotFoundException
                 gameClassException) {
             gameClassException.printStackTrace();
-            log.error("GAME CLASS ERROR :"+gameClassException.getStackTrace().toString());
+            log.error("GAME CLASS ERROR :" + gameClassException.getStackTrace().toString());
+            throw new InvalidVendorResponseException();
+        }
+    }
+
+    public TransactionDetailData getSportBetDetail(IBetDetailUrlInfo iBetDetailUrlInfo, TransactionDetailData transactionDetailData,
+                                                   VendorLine vendorLine, VendorLanguageCode vendorLanguageCode) throws
+            InvalidVendorResponseException, DisabledVendorLineException, InvalidVendorLineException {
+
+        //2. get vendor line credential
+        Map<String, String> credentials = vendorLineService.toCredentialMap(vendorLine);
+
+
+        try {
+            String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
+            SportBetDetail sportBetDetail = (SportBetDetail) Class.forName(className).getConstructor().newInstance();
+            autowireCapableBeanFactory.autowireBean(sportBetDetail);
+            MultiValueMap<String, String> formData = sportBetDetail.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
+
+            SportBetDetailVo sportBetDetailVo = sportBetDetail.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
+            transactionDetailData.setDetailUrl("");
+            transactionDetailData.setSportBetDetail(new SportBetDetailData(sportBetDetailVo));
+
+            return transactionDetailData;
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
+                 IllegalAccessException | InvalidVendorLineException |
+                 InvalidFormatException | RecordNotFoundException
+                gameClassException) {
+            gameClassException.printStackTrace();
+            log.error("GAME CLASS ERROR :" + gameClassException.getStackTrace().toString());
             throw new InvalidVendorResponseException();
         }
     }

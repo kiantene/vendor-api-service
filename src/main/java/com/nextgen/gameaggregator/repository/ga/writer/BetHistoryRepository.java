@@ -20,7 +20,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
     BetHistory findByExternalTransactionIdAndRoundIdAndVendorLineId(String externalTransactionId, String roundId, Integer VendorLineId);
 
 
-    @Query(value="SELECT " +
+    @Query(value = "SELECT " +
             "bh.id AS betId, " +
             "bh.round_id AS roundId, " +
             "bh.vendor_bet_id AS externalTransactionId, " +
@@ -37,7 +37,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "bh.status AS status, " +
             "bh.vendor_bet_time AS vendorBetTime, " +
             "bh.vendor_settle_time AS vendorSettleTime, " +
-            "IF(bh.is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin "+
+            "IF(bh.is_freespin =0 ,'FALSE','TRUE') AS isFreeSpin " +
             "FROM bet_history AS bh " +
             "INNER JOIN agent_players AS ap ON ap.id = bh.agent_player_id " +
             "INNER JOIN vendor_players AS vp ON vp.id = bh.vendor_player_id " +
@@ -48,15 +48,16 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             " WHERE bh.agent_id =:agentId AND bh.vendor_bet_time BETWEEN :fromTime AND :toTime ORDER BY bh.vendor_bet_time DESC ",
             countQuery =
                     "SELECT count(*) FROM bet_history WHERE agent_id =:agentId AND vendor_bet_time BETWEEN :fromTime AND :toTime",
-            nativeQuery=true)
+            nativeQuery = true)
     Page<Object> findByAgentIdAndCreateTimeBetween(
             @Param("agentId") Integer agentId, @Param("fromTime") Long fromTime, @Param("toTime") Long toTime, Pageable pageable);
 
-    @Query(value=" SELECT " +
+    @Query(value = " SELECT " +
             "bh.id AS betId, " +
             "bh.external_transaction_id AS transactionId, " +
             "bh.round_id AS externalRoundId, " +
             "bh.vendor_bet_id AS externalTransactionId, " +
+            "bh.game_session_token AS gameSessionToken, " +
             "ap.username AS username, " +
             "bh.currency_id AS currencyId, " +
             "vc.vendor_currency_code AS vendorCurrencyCode, " +
@@ -74,7 +75,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "bh.vendor_bet_time AS vendorBetTime, " +
             "bh.vendor_settle_time AS vendorSettleTime, " +
             "bh.vendor_line_id AS vendorLineId, " +
-            "IF(bh.is_freespin =0 ,'TRUE','FALSE') AS isFreeSpin, "+
+            "IF(bh.is_freespin = 1 ,'TRUE','FALSE') AS isFreeSpin, " +
             "vp.username AS vendorUsername " +
             "FROM bet_history AS bh " +
             "INNER JOIN agent_players AS ap ON ap.id = bh.agent_player_id " +
@@ -84,8 +85,8 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
             "INNER JOIN vendors AS v ON v.id = bh.vendor_id " +
             "INNER JOIN game_categories AS gc ON gc.id = vg.game_category_id " +
             "INNER JOIN vendor_currencies AS vc ON vc.vendor_id = bh.vendor_id AND vc.currency_id = bh.currency_id " +
-            "WHERE bh.id = :betId AND bh.agent_id = :agentId", nativeQuery=true)
-    IBetDetailUrlInfo findByIdAndAgentId (
+            "WHERE bh.id = :betId AND bh.agent_id = :agentId LIMIT 1", nativeQuery = true)
+    IBetDetailUrlInfo findByIdAndAgentId(
             @Param("agentId") int agentId,
             @Param("betId") String betId);
 }

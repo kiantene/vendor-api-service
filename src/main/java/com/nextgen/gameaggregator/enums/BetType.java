@@ -4,9 +4,8 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public enum BetType {
-    NORMAL_BET (1, "normal bet"),
-    PARLEY_BET (2, "parley bet")
-    ;
+    NORMAL_BET(1, "normal bet"),
+    PARLAY_BET(2, "parlay bet");
 
     public final Integer code;
     public final String description;

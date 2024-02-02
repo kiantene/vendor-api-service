@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.GZIPInputStream;
 
 @Service
 @Slf4j
@@ -81,31 +84,31 @@ public class HttpService {
 
         if (requestLog != null && responseVo != null) {
             requestLog.setEndTime(System.currentTimeMillis());
-                THREAD_POOL.submit(() -> {
-                    try {
-                        String jsonResponseVo = new Gson().toJson(responseVo);
-                        requestLog.setResponseBody(jsonResponseVo);
-                        requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                        requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
+            THREAD_POOL.submit(() -> {
+                try {
+                    String jsonResponseVo = new Gson().toJson(responseVo);
+                    requestLog.setResponseBody(jsonResponseVo);
+                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
+                    requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
 
-                        if (requestLog.getOperatorEnd() != null) {
-                            requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
-                        }
-
-                        if (requestLog.getBetEnd() != null) {
-                            Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
-                            requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
-                        }
-
-                        Gson gson = new Gson();
-                        //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
-                        log.info(gson.toJson(requestLog));
-
-                    } catch (Exception exception) {
-                        log.error(exception.getMessage());
-                        exception.printStackTrace();
+                    if (requestLog.getOperatorEnd() != null) {
+                        requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
                     }
-                });
+
+                    if (requestLog.getBetEnd() != null) {
+                        Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
+                        requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
+                    }
+
+                    Gson gson = new Gson();
+                    //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
+                    log.info(gson.toJson(requestLog));
+
+                } catch (Exception exception) {
+                    log.error(exception.getMessage());
+                    exception.printStackTrace();
+                }
+            });
         } else {
             log.warn("HttpService.end: requestLog or responseVo is null");
         }
@@ -125,7 +128,7 @@ public class HttpService {
         final String NEWLINE = "\r\n";
         log.error(exception.toString());
         StringBuilder stackTrace = new StringBuilder();
-        stackTrace.append("Exception: ").append(exception).append(NEWLINE+NEWLINE);
+        stackTrace.append("Exception: ").append(exception).append(NEWLINE + NEWLINE);
         StackTraceElement[] stackTraceElements = exception.getStackTrace();
         for (StackTraceElement stackTraceElement : stackTraceElements) {
             stackTrace.append(stackTraceElement).append(NEWLINE);
@@ -193,7 +196,7 @@ public class HttpService {
                 if (currentValue == null) {
                     queryParameterMap.put(kv[0], kv[1]);
                 } else if (currentValue instanceof String) {
-                    String[] values = { (String) currentValue, kv[1] };
+                    String[] values = {(String) currentValue, kv[1]};
                     queryParameterMap.put(kv[0], values);
                 } else if (currentValue instanceof String[]) {
                     String[] values = (String[]) currentValue;
@@ -241,13 +244,29 @@ public class HttpService {
     }
 
     private String getRawRequestBody(HttpServletRequest request) throws IOException {
-        BufferedReader reader = request.getReader();
-        StringBuilder requestBody = new StringBuilder();
-        int value;
-        while((value = reader.read()) != -1) {
-            requestBody.append((char) value);
+        String contentEncoding = request.getHeader("Content-Encoding");
+        String result;
+
+        if (contentEncoding != null && contentEncoding.equals("gzip")) {
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
+            try (GZIPInputStream gzipInputStream = new GZIPInputStream(request.getInputStream())) {
+                gzipInputStream.transferTo(byteArrayOutputStream);
+            }
+
+            result = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+
+        } else {
+            BufferedReader reader = request.getReader();
+            StringBuilder requestBody = new StringBuilder();
+            int value;
+            while ((value = reader.read()) != -1) {
+                requestBody.append((char) value);
+            }
+
+            result = requestBody.toString();
         }
 
-        return requestBody.toString();
+        return result;
     }
 }
