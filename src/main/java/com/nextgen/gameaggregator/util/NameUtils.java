@@ -23,4 +23,22 @@ public class NameUtils {
         // return as base36 encoded
         return Long.toString(longVal, base36);
     }
+
+
+    public static String excelColumnNameFormula(int columnNumber) {
+        //example output String
+        // 1= A, 2 = B, 3 = c, 27 = AA, 28 = AB, 29 = AC
+
+        StringBuilder columnLabel = new StringBuilder();
+
+        while (columnNumber > 0) {
+            int remainder = (columnNumber - 1) % 26;
+            char columnChar = (char) (remainder + 'A');
+            columnLabel.insert(0, columnChar);
+            columnNumber = (columnNumber - 1) / 26;
+        }
+
+        return columnLabel.toString();
+    }
+
 }
