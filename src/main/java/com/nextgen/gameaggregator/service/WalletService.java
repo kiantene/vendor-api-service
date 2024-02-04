@@ -224,7 +224,7 @@ public class WalletService {
 
         SettledBet updateCachingSettledBet = settledBet;
         loggingService.logStart();
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(roundId, vendorGameId, vendorPlayerId);
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
         loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
         if (!retry) {
@@ -482,7 +482,7 @@ public class WalletService {
                 loggingService.logProcessTime("doUnsettledBetResult ｜ betResultLogService.idempotentCheck", traceId);
 
                 loggingService.logStart();
-                List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(roundId, vendorGameId, vendorPlayerId);
+                List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
                 loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
                 unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
