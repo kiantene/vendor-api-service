@@ -73,7 +73,7 @@ public class UpdateBalanceAction {
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
                     if (unsettledBetService.getByRoundIdRetry(winDataDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId()).isEmpty()) {
-                        throw new BetNotFoundException("(MG Class File Exception) Cannot find unsettled bets with round Id: " + winDataDto.getRoundId());
+                        throw new BetNotFoundException("MG Class File Exception Cannot find unsettled bets with round Id: " + winDataDto.getRoundId());
                     }
                     ResultType resultType = determineResultType(dto);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
