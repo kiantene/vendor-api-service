@@ -132,7 +132,6 @@ public class TransferService {
             //validate wallet service should only response SC_OK and SC_INSUFFICIENT_FUNDS status
         if ((!balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_OK)) &&
                 (!balanceBeforeAfterVo.getStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS))) {
-            System.err.println("GG " + balanceBeforeAfterVo.getStatus());
             throw new InvalidResponseException("Invalid Wallet Service Response Code :" + balanceBeforeAfterVo.getStatus());
 
 
