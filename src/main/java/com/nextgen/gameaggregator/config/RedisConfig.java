@@ -163,10 +163,10 @@ public class RedisConfig extends CachingConfigurerSupport {
 
         //region transfer wallet
         cacheNamesConfigurationMap.put("TraceIds", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
 
         cacheNamesConfigurationMap.put("RawTransferHistories", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
 
         cacheNamesConfigurationMap.put("AccessKeys", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
