@@ -87,6 +87,9 @@ public class TransferHttpService {
                         transferWalletRequestLog
                                 .setWalletServiceTimeTaken
                                         (transferWalletRequestLog.getWalletServiceEnd() - transferWalletRequestLog.getWalletServiceStart());
+
+                        Long gaTimeTaken = transferWalletRequestLog.getTimeTaken() - transferWalletRequestLog.getWalletServiceTimeTaken();
+                        transferWalletRequestLog.setGaTimeTaken(gaTimeTaken);
                     }
 
                     Gson gson = new Gson();

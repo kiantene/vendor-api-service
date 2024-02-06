@@ -42,5 +42,6 @@ public class TransferWalletRequestLog {
 
     private Long startTime;
     private Long endTime;
+    private Long gaTimeTaken;
     private Long timeTaken;
 }
