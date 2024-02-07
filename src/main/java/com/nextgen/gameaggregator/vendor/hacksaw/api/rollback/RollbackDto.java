@@ -43,7 +43,7 @@ public class RollbackDto extends ActionDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return String.valueOf(this.getTransactionId());
+        return String.valueOf(this.getRolledBackTransactionId());
     }
 
     @Override

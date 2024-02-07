@@ -38,6 +38,9 @@ public class CreditService {
     public ResponseVo credit(HttpRequestLog httpRequestLog, String traceId) {
         ResponseVo vo = new ResponseVo();
 
+        BigDecimal balance = null;
+        GameSession gameSession = new GameSession();
+
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -48,13 +51,13 @@ public class CreditService {
             this.doValidation(creditDto);
 
             // Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(creditDto.getExternalSessionId());
+            gameSession = gameSessionService.verifyToken(creditDto.getExternalSessionId());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession);
 
             ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false, creditDto.getBetStatus());
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+            balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
             // set vo
             vo.setAccountBalance(balance.longValue());
@@ -82,6 +85,8 @@ public class CreditService {
             httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+            vo.setAccountBalance(balance.longValue());
             vo.setResponseCodes(ResponseCodes.SUCCESS);
             httpService.logError(httpRequestLog, e);
 
@@ -124,5 +129,19 @@ public class CreditService {
 
         // Validate Debit Transaction is exist
         vendorService.verifyExistDebitTransaction(gameSession.getVendorId(), gameSession.getVendorPlayerId(), dto.getBetTransactionId().toString());
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+        } catch (Exception exception) {
+
+        }
+
+        return balance;
     }
 }
