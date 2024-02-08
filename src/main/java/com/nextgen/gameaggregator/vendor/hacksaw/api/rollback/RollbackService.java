@@ -76,9 +76,13 @@ public class RollbackService {
             vo.setResponseCodes(ResponseCodes.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, e);
 
-        } catch (BetNotFoundException | BetResultIdempotentViolationException |
+        } catch (BetResultIdempotentViolationException |
                  BetRefundIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.SUCCESS);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (BetNotFoundException e) {
+            vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
 
         } catch (DisabledVendorLineException | DisabledGameException | InvalidOperatorResponseException |

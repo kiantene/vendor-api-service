@@ -84,17 +84,23 @@ public class CreditService {
             vo.setResponseCodes(ResponseCodes.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, e);
 
-        } catch (BetNotFoundException | BetResultIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
             vo.setAccountBalance(balance.longValue());
             vo.setResponseCodes(ResponseCodes.SUCCESS);
             httpService.logError(httpRequestLog, e);
 
-        } catch (DisabledVendorLineException | DisabledGameException | InvalidOperatorResponseException |
-                 InvalidAgentApiCredentialException | TransactionStillProcessingException e) {
+        } catch (BetNotFoundException | DisabledVendorLineException | DisabledGameException |
+                 InvalidOperatorResponseException | InvalidAgentApiCredentialException |
+                 TransactionStillProcessingException e) {
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
 
+            if (e instanceof BetNotFoundException) {
+                balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+                vo.setAccountBalance(balance.longValue());
+            }
+            
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
             vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
