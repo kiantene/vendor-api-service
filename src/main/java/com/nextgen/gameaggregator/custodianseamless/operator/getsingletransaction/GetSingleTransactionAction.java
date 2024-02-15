@@ -58,24 +58,24 @@ public class GetSingleTransactionAction {
             String apiKey = request.getHeader(WalletServiceEndpoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
-            // 3. Validate the signature
+            // 3. validate duplicate traceId request
+            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
+
+            // 4. Validate the signature
             String signature = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            // 4. Check Agent Status
+            // 5. Check Agent Status
             validationService.validateAgentStatus(apiCredential.getAgent());
 
-            // 5. check Agent Wallet type and seamless type
+            // 6. check Agent Wallet type and seamless type
             validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
 
-            // 6.1 Check if Currency exist
+            // 7.1 Check if Currency exist
             Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
-            // 6.2 Check if Agent Currency supported
+            // 7.2 Check if Agent Currency supported
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
-
-            // 7. validate duplicate traceId request
-            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
 
             RawTransferHistory transferHistory =
                     transferService.getTransferHistoryByReferenceId(dto.getReferenceId(), apiCredential.getAgent().getId(),

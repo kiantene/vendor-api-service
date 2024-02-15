@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.custodianseamless.exception.InvalidWalletServi
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceAccessKeyNotFoundException;
 import com.nextgen.gameaggregator.custodianseamless.exception.WalletServiceTimeoutException;
 import com.nextgen.gameaggregator.custodianseamless.operator.dto.TransferWalletRequestLog;
+import com.nextgen.gameaggregator.custodianseamless.service.RequestTrackerService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferHistoryService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferHttpService;
 import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
@@ -45,6 +46,9 @@ public class DepositAction {
     @Autowired
     private DepositRequest depositRequest;
 
+    @Autowired
+    private RequestTrackerService requestTrackerService;
+
     @PostMapping(path = WalletServiceEndpoints.OPERATOR_DEPOSIT)
     public OperatorResponseVo<TransferData> balance(HttpServletRequest request) {
 
@@ -56,40 +60,44 @@ public class DepositAction {
         try {
             // Retrieve request body in original string format and convert into dto
             String body = transferWalletRequestLog.getRequestBody();
+
+            //1. check is duplicate request within the time window
+            requestTrackerService.isNewRequest(body, 300L);
+
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
             String traceId = dto.getTraceId();
             responseVo.setTraceId(traceId);
 
-            // 1. Validate all fields in the request object
+            // 2. Validate all fields in the request object
             ValidationUtils.validateRequest(dto);
 
-            // 2. Check if api key is valid
+            // 3. Check if api key is valid
             String apiKey = request.getHeader(WalletServiceEndpoints.HEADER_API_KEY);
             AgentApiCredential apiCredential = validationService.validateApiKey(apiKey);
 
-            // 3. Validate the signature
+            // 4. validate duplicate traceId request
+            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
+
+            // 5. validate duplicate referenceId request
+            transferService.checkReferenceIdExists(dto.getReferenceId(), apiCredential.getAgent().getId());
+
+            // 6. Validate the signature
             String signature = request.getHeader(WalletServiceEndpoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            // 4. Check Agent Status
+            // 7. Check Agent Status
             validationService.validateAgentStatus(apiCredential.getAgent());
 
-            // 5. check Agent Wallet type and seamless type
+            // 8. check Agent Wallet type and seamless type
             validationService.validateIsCustodianSeamlessAgentWalletType(apiCredential.getAgent());
 
-            // 6.1 Check if Currency exist
+            // 9.1 Check if Currency exist
             currency = gameUrlService.checkCurrency(dto.getCurrency());
-            // 6.2 Check if Agent Currency supported
+            // 9.2 Check if Agent Currency supported
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
 
-            // 7. validate duplicate traceId request
-            transferService.checkTraceIdExists(dto.getTraceId(), apiCredential.getAgent().getId());
-
-            // 8. validate duplicate referenceId request
-            transferService.checkReferenceIdExists(dto.getReferenceId(), apiCredential.getAgent().getId());
-
-            // 9. Check if agent player account exists and is disabled
+            // 10. Check if agent player account exists and is disabled
             AgentPlayer agentPlayer = transferService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
 
             rawTransferHistory =
