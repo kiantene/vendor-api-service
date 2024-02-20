@@ -78,7 +78,7 @@ public class AgentApiCredentialService {
 
     public String getAgentCallbackUrlBySeamlessType(AgentApiCredential agentApiCredential){
         if(agentApiCredential.getAgent().getSeamlessType().equals(2)){
-            return walletServiceUrl;
+            return walletServiceUrl+"/seamless";
         }else{
             return agentApiCredential.getCallbackUrl();
         }
