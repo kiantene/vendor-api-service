@@ -2,12 +2,10 @@ package com.nextgen.gameaggregator.vendor.hacksaw.api.endround;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.api.action.ActionDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -18,9 +16,11 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String externalPlayerId;
 
     @NotNull
+    @PositiveOrZero
     private Long amount;
 
     @NotBlank
@@ -32,6 +32,7 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 64)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String externalSessionId;
 
     @NotNull
@@ -39,10 +40,11 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     @NotBlank
     @Size(min = 1, max = 4)
+    @Pattern(regexp = "^(real|free)$")
     private String type;
 
-    // variable to check it is free spin or not
-    private FreeRoundWinDto freeRoundData;
+    // variable to check it is free spin or not (ONLY if set thru BO)
+    private FreeRoundDto freeRoundData;
 
     private Long jackpotAmount;
 
@@ -50,20 +52,14 @@ public class CreditDto extends ActionDto implements BetResultData {
 
     private Long betTransactionId;
 
-    public void checkRoundId() throws InvalidRequestException {
-        if (super.getRoundId() == null) {
-            throw new InvalidRequestException();
-        }
-    }
-
     @Override
     public String getExternalTransactionId() {
-        return String.valueOf(this.getTransactionId());
+        return String.valueOf(this.getBetTransactionId());
     }
 
     @Override
     public String getVendorBetId() {
-        return String.valueOf(this.getTransactionId());
+        return String.valueOf(this.getBetTransactionId());
     }
 
     @Override

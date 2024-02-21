@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.hacksaw.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.hacksaw.constant.ResponseCodes;
@@ -15,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -28,13 +32,7 @@ public class RollbackService {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
 
     public ResponseVo rollback(HttpRequestLog httpRequestLog, String traceId) {
         ResponseVo vo = new ResponseVo();
@@ -44,9 +42,6 @@ public class RollbackService {
             String body = httpRequestLog.getRequestBody();
 
             RollbackDto rollbackDto = HttpService.convertJsonToDto(body, RollbackDto.class);
-
-            // check round id is null or not
-//            rollbackDto.checkRoundId();
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollbackDto);
@@ -72,7 +67,8 @@ public class RollbackService {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
 
-        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException e) {
+        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException |
+                 GameNotSupportedException | InvalidFormatException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 
@@ -80,14 +76,13 @@ public class RollbackService {
             vo.setResponseCodes(ResponseCodes.INVALID_CURRENCY);
             httpService.logError(httpRequestLog, e);
 
-        } catch (GameNotSupportedException e) {
-            vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
-            vo.setStatusMessage("Unknown Game ID");
-            httpService.logError(httpRequestLog, e);
-
-        } catch (BetNotFoundException | BetResultIdempotentViolationException |
+        } catch (BetResultIdempotentViolationException |
                  BetRefundIdempotentViolationException e) {
             vo.setResponseCodes(ResponseCodes.SUCCESS);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (BetNotFoundException e) {
+            vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
             httpService.logError(httpRequestLog, e);
 
         } catch (DisabledVendorLineException | DisabledGameException | InvalidOperatorResponseException |
@@ -104,11 +99,13 @@ public class RollbackService {
     }
 
     private void doValidation(RollbackDto dto) throws InvalidRequestException {
+        // check round id is null or not
+        Optional.ofNullable(dto.getRoundId()).orElseThrow(InvalidRequestException::new);
         // General validation
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RollbackDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(RollbackDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, AuthenticationException, CredentialNotFoundException, CurrencyNotSupportedException, GameNotSupportedException, InvalidFormatException {
 
         //Verify received secret is same with credential
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET);

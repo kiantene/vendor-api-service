@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.hacksaw.api.bet;
+package com.nextgen.gameaggregator.vendor.hacksaw.api.rollback;
 
 import lombok.Data;
 
