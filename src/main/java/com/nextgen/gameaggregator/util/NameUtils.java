@@ -38,7 +38,7 @@ public class NameUtils {
             columnNumber = (columnNumber - 1) / 26;
         }
 
-        return columnLabel.toString();
+        return columnLabel.toString().toLowerCase();
     }
 
 }
