@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.apiverification.wallet;
+package com.nextgen.gameaggregator.operator.apiverification.wallet.slot;
 
 import com.nextgen.gameaggregator.service.HttpResponse;
 import lombok.Data;
