@@ -1,9 +1,10 @@
-package com.nextgen.gameaggregator.operator.apiverification.wallet;
+package com.nextgen.gameaggregator.operator.apiverification.wallet.sport;
 
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.operator.apiverification.wallet.slot.ResponseResultVo;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
-import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
+import com.nextgen.gameaggregator.operator.sport.bet.SportBetDto;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +28,8 @@ import java.util.Map;
 @RestController
 @RequestMapping(path = EndPoints.API_VERIFY_PATH)
 @Slf4j
-public class BetAction {
+public class SportBetAction {
+
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -42,15 +44,14 @@ public class BetAction {
     @Autowired
     AuthenticationService authenticationService;
 
-    @PostMapping(path = EndPoints.WALLET_BET)
-    public ResponseResultVo<Object> walletBet(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.SPORT_BET)
+    public ResponseResultVo<Object> walletSportBet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         ResponseResultVo<Object> responseResultVo = new ResponseResultVo<>();
         if (requestService.isTestEnvironment(profilesActive)) {
             try {
-
                 // Retrieve request body in original string format and convert into dto
-                WalletBetDto dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), WalletBetDto.class);
+                SportBetDto dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), SportBetDto.class);
                 responseResultVo.setRequestBody(dto);
 
                 // 1. Validate all fields in the request object
@@ -63,17 +64,16 @@ public class BetAction {
                 String apiUrl = agentApiCredential.getCallbackUrl();
                 Map<String, String> headerMap = new HashMap<String, String>();
 
-//            String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
                 headerMap.put(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE));
                 headerMap.put(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
                 responseResultVo.setRequestHeaders(headerMap);
 
-                responseResultVo.setApiUrl(apiUrl + EndPoints.WALLET_BET);
+                responseResultVo.setApiUrl(apiUrl + EndPoints.SPORT_BET);
 
                 responseResultVo.setRequestStartTime(System.currentTimeMillis());
                 ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                         .post()
-                        .uri(EndPoints.WALLET_BET)
+                        .uri(EndPoints.SPORT_BET)
                         .header(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE))
                         .header(EndPoints.HEADER_API_KEY, request.getHeader(EndPoints.HEADER_API_KEY))
                         .contentType(MediaType.APPLICATION_JSON)
@@ -86,15 +86,18 @@ public class BetAction {
                         .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                         .block();
                 responseResultVo.setRequestEndTime(System.currentTimeMillis());
+
+                httpRequestLog.setId(dto.getTraceId());
                 responseResultVo.setHttpStatusCode(apiResponse.getStatusCode().value());
                 responseResultVo.setResponseBody(apiResponse.getBody().toString());
+
 
             } catch (Exception exception) {
                 responseResultVo.setError(exception.getClass().getName() + ", message :" + exception.getMessage());
                 exception.printStackTrace();
                 //throw new RuntimeException(e);
             }
-        }else{
+        } else {
             responseResultVo.setError("Invalid environment, only support staging and qa");
         }
 
