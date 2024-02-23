@@ -1,10 +1,12 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.debit;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DebitDto {
     @NotBlank
     private String transaction_uuid;
