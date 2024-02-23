@@ -42,12 +42,14 @@ public class BalanceAction {
 
             BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
+            responseVo.setStatus("testing");
+
         } catch(Exception e){
 
         } finally{
             httpService.end(httpRequestLog, responseVo);
         }
 
-        return null;
+        return responseVo;
     }
 }
