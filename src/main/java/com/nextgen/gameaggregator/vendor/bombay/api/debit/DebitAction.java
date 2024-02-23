@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.bombay.api.balance;
+package com.nextgen.gameaggregator.vendor.bombay.api.debit;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path= EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class DebitAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -30,9 +30,13 @@ public class BalanceAction {
     private WalletService walletService;
     @Autowired
     VendorService vendorService;
+    @Autowired
+    private WalletAdjustmentService walletAdjustmentService;
+    @Autowired
+    private ValidationService validationService;
 
-    @PostMapping (EndPoints.BALANCE)
-    public ResponseVo balance(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.DEBIT)
+    public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -42,7 +46,7 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             responseVo.setStatus("testing");
 

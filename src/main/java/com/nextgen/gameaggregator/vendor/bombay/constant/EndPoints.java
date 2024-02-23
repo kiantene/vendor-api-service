@@ -12,4 +12,12 @@ public class EndPoints {
 
     public static final String BALANCE = "/user/balance";
 
+    public static final String DEBIT = "/transaction/bet";
+
+    public static final String CREDIT = "/transaction/win";
+
+    public static final String END_ROUND = "/transaction/end-round";
+
+    public static final String ROLLBACK = "/transaction/rollback";
+
 }

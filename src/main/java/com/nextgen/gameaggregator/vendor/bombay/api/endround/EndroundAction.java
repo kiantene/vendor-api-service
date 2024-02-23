@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.vendor.bombay.api.balance;
+package com.nextgen.gameaggregator.vendor.bombay.api.endround;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(path= EndPoints.PATH)
 @Slf4j
-public class BalanceAction {
+public class EndroundAction {
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -31,8 +31,9 @@ public class BalanceAction {
     @Autowired
     VendorService vendorService;
 
-    @PostMapping (EndPoints.BALANCE)
-    public ResponseVo balance(HttpServletRequest request) {
+    @PostMapping(path = EndPoints.END_ROUND)
+    public ResponseVo credit(HttpServletRequest request) {
+
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -42,7 +43,7 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            BalanceDto balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
+            EndroundDto endroundDto = HttpService.convertJsonToDto(body, EndroundDto.class);
 
             responseVo.setStatus("testing");
 
