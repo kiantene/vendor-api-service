@@ -28,7 +28,7 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public static String generateSignature(String string_to_sign,String base64PrivateKey) throws InvalidSignatureException {
+    public static String generateSignature(String string_to_sign,String base64PrivateKey) throws Exception {
 
         byte[] data = null;
         byte[] signatureBytes = null;
@@ -52,7 +52,7 @@ public class VendorService extends BaseVendorService {
         return generatedSign;
     }
 
-    public static Boolean validateSignature(String signature, String string_to_validate,String base64PublicKey) throws InvalidSignatureException {
+    public static Boolean validateSignature(String signature, String string_to_validate,String base64PublicKey) throws Exception {
         byte[] string_to_validate_bytes = null;
         byte[] signature64 = null;
 
