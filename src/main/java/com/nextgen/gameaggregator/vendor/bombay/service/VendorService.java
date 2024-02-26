@@ -169,4 +169,31 @@ public class VendorService extends BaseVendorService {
 
         return resultType;
     }
+
+    // convert and decode unicode header into hashmap
+    public static Map<String, String> convertStringToHashMap(String input) {
+        // Remove surrounding braces {}
+        input = input.substring(1, input.length() - 1);
+
+        // Split string by comma ,
+        String[] keyValuePairs = input.split(", ");
+
+        // Create HashMap to store key-value pairs
+        Map<String, String> hashMap = new HashMap<>();
+
+        // Process each key-value pair
+        for (String pair : keyValuePairs) {
+            // Split pair by =
+            String[] entry = pair.split("=", 2);
+
+            // Extract key and value, trimming any leading or trailing spaces
+            String key = entry[0].trim();
+            String value = entry[1].trim();
+
+            // Add key-value pair to HashMap
+            hashMap.put(key, value);
+        }
+
+        return hashMap;
+    }
 }
