@@ -111,7 +111,8 @@ public class DebitAction {
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), GameNotSupportedException::new);
+        String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
+        ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
