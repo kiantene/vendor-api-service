@@ -1,15 +1,14 @@
 package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
-import java.math.BigDecimal;
-
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.mg.constant.DeviceType;
 import com.nextgen.gameaggregator.vendor.mg.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.mg.constant.TxnType;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class UpdateBalanceDto implements BetResultData {
@@ -17,13 +16,14 @@ public class UpdateBalanceDto implements BetResultData {
     private TxnType txnType;
 
     @NotBlank
-    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$") //checks whether the input matches one of the given types(case-insensitive)
+    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$")
+    //checks whether the input matches one of the given types(case-insensitive)
     private String txnEventType;
 
     @NotBlank
     @Size(max = 50)
     private String playerId;
-    
+
     @NotNull
     @PositiveOrZero
     private BigDecimal amount;
@@ -77,7 +77,8 @@ public class UpdateBalanceDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return betId;
+        long dateChangeVendorBetId = 1709251200000L; // March 01 2024 GMT + 0
+        return (this.getCreationTimeMs() < dateChangeVendorBetId) ? betId : txnId;
     }
 
     @Override
