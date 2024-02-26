@@ -58,7 +58,7 @@ public class BalanceAction {
 
             Gson gson = new Gson();
 
-            log.info("balance request log:" + gson.toJson(httpRequestLog));
+            log.info("balance request log:" + gson.toJson(httpRequestLog.getHeader()));
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
