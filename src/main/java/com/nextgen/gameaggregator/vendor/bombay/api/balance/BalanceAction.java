@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,8 +57,6 @@ public class BalanceAction {
 
             Map<String,String> headerMap = vendorService.headersToHashMap(request);
 
-            log.info("balance x-signature header : " + headerMap.get("x-signature"));
-
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -67,7 +66,7 @@ public class BalanceAction {
             gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(balanceDto, gameSession, headerMap.get("x-signature"));
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -104,7 +103,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String signature) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -119,5 +118,13 @@ public class BalanceAction {
 
         // Verify vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
+
+        //Verify received x-signature
+        String public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.public_key);
+        Boolean validateSignature = vendorService.validateSignature(signature, dto.toString(), public_key);
+
+        if(!validateSignature){
+            throw new InvalidSignatureException();
+        }
     }
 }
