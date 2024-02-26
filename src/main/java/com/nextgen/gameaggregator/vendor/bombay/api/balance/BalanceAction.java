@@ -60,6 +60,9 @@ public class BalanceAction {
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
+            log.info("balance header: " + headerMap.get("x-signature"));
+            log.info("balance body: " + balanceDto.toString());
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
