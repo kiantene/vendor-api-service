@@ -34,9 +34,6 @@ public class CreditDto implements BetResultData {
     @NotBlank
     private String currency;
 
-    @NotBlank
-    private String offer_id;
-
     @NotNull
     private Integer amount;
 
