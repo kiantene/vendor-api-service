@@ -56,7 +56,7 @@ public class BalanceAction {
 
             Map<String, String> hashMap = vendorService.convertStringToHashMap(httpRequestLog.getHeader().toString());
 
-            log.info("lala : " + hashMap.toString());
+            log.info("lala : " + hashMap);
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
