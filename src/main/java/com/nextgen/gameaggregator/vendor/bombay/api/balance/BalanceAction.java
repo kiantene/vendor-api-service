@@ -53,7 +53,7 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            log.info("lala : " + httpRequestLog.getHeader().toString());
+            log.info("lala : " + vendorService.headersToHashMap(request).toString());
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
