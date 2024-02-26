@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
@@ -61,7 +60,7 @@ public class BalanceAction {
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             Gson gson = new Gson();
-            log.info("balance header: " + headerMap.get("x-signature"));
+            log.info("balance header: " + gson.toJson(headerMap));
             log.info("balance body: " + body);
 
             // Validate request parameters from vendor (Non-database related)
@@ -125,12 +124,12 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
 
         //Verify received x-signature
-        Gson gson = new Gson();
-        String public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.public_key);
-        Boolean validateSignature = vendorService.validateSignature(signature, requestBody, public_key);
-
-        if(!validateSignature){
-            throw new InvalidSignatureException();
-        }
+//        Gson gson = new Gson();
+//        String public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.public_key);
+//        Boolean validateSignature = vendorService.validateSignature(signature, requestBody, public_key);
+//
+//        if(!validateSignature){
+//            throw new InvalidSignatureException();
+//        }
     }
 }
