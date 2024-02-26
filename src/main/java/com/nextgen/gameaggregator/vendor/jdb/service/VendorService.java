@@ -71,20 +71,20 @@ public class VendorService extends BaseVendorService {
         // Get the JSON request body from the HttpRequestLog
         String requestBody = rawData;
 
-        try{
+        try {
 
             SettleDto dto = HttpService.convertJsonToDto(requestBody, SettleDto.class);
 
             // check the settled transaction is JDB Spribe or not
-            if(dto.getGType().equals(Formats.SPRIBE)){
+            if (dto.getGType().equals(Formats.SPRIBE)) {
 
                 // Remap vendorBetId & vendorRoundId
                 settledBet.setVendorBetId(dto.getGameRoundSeqNo().toString());
-                settledBet.setRoundId(dto.getGameSeqNo().toString());
+                settledBet.setRoundId(dto.getHistoryId().toString());
             }
 
-        }catch (JsonParseException |
-                JsonProcessingException e) {
+        } catch (JsonParseException |
+                 JsonProcessingException e) {
             log.error("Error parsing JSON: " + e.getMessage());
         }
 
