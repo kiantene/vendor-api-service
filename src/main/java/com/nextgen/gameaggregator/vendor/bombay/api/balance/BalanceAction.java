@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,17 +69,25 @@ public class BalanceAction {
 
             String lala = balance.setScale(2, RoundingMode.DOWN).toString();
 
-            responseVo.setStatus("RS_OK");
-            responseVo.setRequest_uuid(balanceDto.getRequest_uuid());
+            responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
             responseVo.setBalance(balance.intValue());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
+        } catch(GameNotSupportedException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_GAME);
+        } catch(AuthenticationException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
+        } catch(CurrencyNotSupportedException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
-            responseVo.setStatus("RS_ERROR_UNKNOWN");
-            responseVo.setRequest_uuid(balanceDto.getRequest_uuid());
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
+            responseVo.setRequest_uuid(balanceDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
         }
 
