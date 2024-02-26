@@ -53,6 +53,8 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
+            log.info("header: " + httpRequestLog.getHeader().toString());
+
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -113,6 +115,6 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor gameCode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(dto.getGame_id()), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
     }
 }
