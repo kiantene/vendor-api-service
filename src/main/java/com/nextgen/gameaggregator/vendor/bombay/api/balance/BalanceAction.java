@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -53,7 +54,9 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            log.info("lala : " + vendorService.headersToHashMap(request).toString());
+            Map<String, String> headerMap = vendorService.headersToHashMap(request);
+
+            log.info("lala : " + headerMap.get("x-signature").toString());
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
