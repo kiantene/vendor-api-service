@@ -95,7 +95,7 @@ public class DebitDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return null;
+        return 0;
     }
 
     @Override

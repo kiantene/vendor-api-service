@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bombay.service;
 
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -128,5 +129,17 @@ public class VendorService extends BaseVendorService {
         }
 
         return hashMap;
+    }
+
+    public static ResultType checkResult(Integer winAmount){
+        ResultType resultType = null;
+
+        if(winAmount > 0){
+            resultType = ResultType.WIN;
+        }else{
+            resultType = ResultType.LOSE;
+        }
+
+        return resultType;
     }
 }
