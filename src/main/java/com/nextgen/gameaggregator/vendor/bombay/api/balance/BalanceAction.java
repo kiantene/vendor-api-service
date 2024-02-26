@@ -1,15 +1,16 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.balance;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,8 +121,9 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
 
         //Verify received x-signature
+        Gson gson = new Gson();
         String public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.public_key);
-        Boolean validateSignature = vendorService.validateSignature(signature, dto.toString(), public_key);
+        Boolean validateSignature = vendorService.validateSignature(signature, gson.toJson(dto), public_key);
 
         if(!validateSignature){
             throw new InvalidSignatureException();
