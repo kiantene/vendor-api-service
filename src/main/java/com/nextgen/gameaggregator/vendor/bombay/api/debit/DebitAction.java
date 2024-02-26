@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bombay.api.debit;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,16 +44,20 @@ public class DebitAction {
 
         ResponseVo responseVo = new ResponseVo();
 
+        DebitDto debitDto = null;
+
         try{
             String body = httpRequestLog.getRequestBody();
 
-            DebitDto debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
+            debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
             responseVo.setStatus("testing");
 
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
+            responseVo.setRequest_uuid(debitDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
         }
 
