@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.balance;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -53,7 +57,12 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            log.info("lala : " + httpRequestLog.getHeader().toString());
+            // Use Gson to parse the JSON string into a Map
+            Gson gson = new Gson();
+            Type type = new TypeToken<Map<String, String>>(){}.getType();
+            Map<String, String> hashMap = gson.fromJson(httpRequestLog.getHeader().toString(), type);
+
+            log.info("header : " + hashMap.toString());
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 

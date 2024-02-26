@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bombay.service;
 
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import lombok.extern.slf4j.Slf4j;
@@ -30,23 +31,49 @@ public class VendorService extends BaseVendorService {
     }
 
     public static String generateSignature(String string_to_sign,String base64PrivateKey) throws Exception {
-        byte[] data = string_to_sign.getBytes(StandardCharsets.UTF_8);
 
-        sig.initSign(loadPrivateKeyFromString(base64PrivateKey));
-        sig.update(data);
+        byte[] data = null;
+        byte[] signatureBytes = null;
 
-        byte[] signatureBytes = sig.sign();
-        return Base64.getEncoder().encodeToString(signatureBytes);
+        String generatedSign = null;
+
+        try{
+            data = string_to_sign.getBytes(StandardCharsets.UTF_8);
+
+            sig.initSign(loadPrivateKeyFromString(base64PrivateKey));
+            sig.update(data);
+
+            signatureBytes = sig.sign();
+
+            generatedSign = Base64.getEncoder().encodeToString(signatureBytes);
+        } catch(Exception e){
+            throw new InvalidSignatureException();
+        }
+
+
+        return generatedSign;
     }
 
     public static Boolean validateSignature(String signature, String string_to_validate,String base64PublicKey) throws Exception {
-        byte[] string_to_validate_bytes = string_to_validate.getBytes(StandardCharsets.UTF_8);
-        byte[] signature64 = Base64.getDecoder().decode(signature);
+        byte[] string_to_validate_bytes = null;
+        byte[] signature64 = null;
 
-        sig.initVerify(loadPublicKeyFromString(base64PublicKey));
-        sig.update(string_to_validate_bytes);
+        Boolean status = null;
 
-        return sig.verify(signature64);
+        try{
+            string_to_validate_bytes = string_to_validate.getBytes(StandardCharsets.UTF_8);
+
+            signature64 = Base64.getDecoder().decode(signature);
+
+            sig.initVerify(loadPublicKeyFromString(base64PublicKey));
+            sig.update(string_to_validate_bytes);
+
+            status = sig.verify(signature64);
+        } catch(Exception e){
+            throw new InvalidSignatureException();
+        }
+
+        return status;
     }
 
     /**
