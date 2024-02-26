@@ -11,8 +11,8 @@ public enum Platforms {
     String name;
     String value;
 
-    public static String checkPlatformCode(String plstfromCode){
-        Platforms platforms = Platforms.valueOf(plstfromCode);
+    public static String checkPlatformCode(String plstformCode){
+        Platforms platforms = Platforms.valueOf(plstformCode);
         return platforms.value;
     }
 }

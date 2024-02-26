@@ -68,8 +68,6 @@ public class BalanceAction {
 
             String lala = balance.setScale(2, RoundingMode.DOWN).toString();
 
-            System.out.println(lala);
-
             responseVo.setStatus("RS_OK");
             responseVo.setRequest_uuid(balanceDto.getRequest_uuid());
             responseVo.setUser(gameSession.getVendorPlayerUsername());
