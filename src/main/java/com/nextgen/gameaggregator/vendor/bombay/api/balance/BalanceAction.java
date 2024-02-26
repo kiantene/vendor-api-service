@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -55,13 +54,9 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            Map<String,String> headerMap = vendorService.headersToHashMap(request);
-
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             Gson gson = new Gson();
-            log.info("balance header: " + gson.toJson(headerMap));
-            log.info("balance body: " + body);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -70,7 +65,7 @@ public class BalanceAction {
             gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession, headerMap.get("x-signature"), body);
+            this.doVerification(balanceDto, gameSession);
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -107,7 +102,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String signature, String requestBody) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(BalanceDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -122,14 +117,5 @@ public class BalanceAction {
 
         // Verify vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
-
-        //Verify received x-signature
-//        Gson gson = new Gson();
-//        String public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.public_key);
-//        Boolean validateSignature = vendorService.validateSignature(signature, requestBody, public_key);
-//
-//        if(!validateSignature){
-//            throw new InvalidSignatureException();
-//        }
     }
 }
