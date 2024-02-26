@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.bombay.service;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -13,7 +12,10 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -166,23 +168,5 @@ public class VendorService extends BaseVendorService {
         }
 
         return resultType;
-    }
-
-    // convert header into hashmap
-    public static Map<String, String> headersToHashMap(HttpServletRequest request) {
-        // Create a HashMap to store the headers
-        Map<String, String> headersMap = new HashMap<>();
-
-        // Get all header names
-        Enumeration<String> headerNames = request.getHeaderNames();
-
-        // Iterate through the header names and put them into the HashMap
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            headersMap.put(headerName, headerValue);
-        }
-
-        return headersMap;
     }
 }
