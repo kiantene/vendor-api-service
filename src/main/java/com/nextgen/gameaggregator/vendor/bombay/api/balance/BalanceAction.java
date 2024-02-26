@@ -62,7 +62,6 @@ public class BalanceAction {
 
             Gson gson = new Gson();
             log.info("balance header: " + headerMap.get("x-signature"));
-//            log.info("balance body: " + gson.toJson(balanceDto).toString());
             log.info("balance body: " + body);
 
             // Validate request parameters from vendor (Non-database related)
@@ -72,7 +71,7 @@ public class BalanceAction {
             gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession, headerMap.get("x-signature"));
+            this.doVerification(balanceDto, gameSession, headerMap.get("x-signature"), body);
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -109,7 +108,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String signature) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String signature, String requestBody) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -128,7 +127,7 @@ public class BalanceAction {
         //Verify received x-signature
         Gson gson = new Gson();
         String public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.public_key);
-        Boolean validateSignature = vendorService.validateSignature(signature, gson.toJson(dto), public_key);
+        Boolean validateSignature = vendorService.validateSignature(signature, requestBody, public_key);
 
         if(!validateSignature){
             throw new InvalidSignatureException();
