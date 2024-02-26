@@ -60,8 +60,9 @@ public class BalanceAction {
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
+            Gson gson = new Gson();
             log.info("balance header: " + headerMap.get("x-signature"));
-            log.info("balance body: " + balanceDto.toString());
+            log.info("balance body: " + gson.toJson(balanceDto).toString());
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
