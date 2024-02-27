@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.balance;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -58,7 +59,9 @@ public class BalanceAction {
 
             Map<String, String> headerMap = vendorService.headersToHashMap(request);
 
-            log.info("balance request log:" + headerMap);
+            Gson gson = new Gson();
+
+            log.info("balance request log:" + gson.toJson(headerMap));
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
