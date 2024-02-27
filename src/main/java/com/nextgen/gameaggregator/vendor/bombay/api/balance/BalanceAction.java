@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -57,6 +56,9 @@ public class BalanceAction {
 
             String header = httpRequestLog.getHeader();
 
+            log.info("BB request body: " + body);
+            log.info("BB request header: " + header);
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
@@ -68,8 +70,6 @@ public class BalanceAction {
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-            String lala = balance.setScale(2, RoundingMode.DOWN).toString();
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
