@@ -54,7 +54,7 @@ public class BalanceAction {
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
-            String header = httpRequestLog.getHeader();
+            String header = vendorService.decodeUnicode(httpRequestLog.getHeader());
 
             log.info("BB request body: " + body);
             log.info("BB request header: " + header);

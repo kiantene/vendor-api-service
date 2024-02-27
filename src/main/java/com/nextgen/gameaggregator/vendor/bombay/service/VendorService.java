@@ -142,4 +142,8 @@ public class VendorService extends BaseVendorService {
 
         return resultType;
     }
+
+    public static String decodeUnicode(String encodedString) {
+        return new String(encodedString.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
+    }
 }
