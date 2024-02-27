@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.bombay.service;
 
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
@@ -12,7 +11,10 @@ import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -141,20 +143,25 @@ public class VendorService extends BaseVendorService {
         return resultType;
     }
 
-    public static Map<String, String> headersToHashMap(HttpServletRequest request) {
-        // Create a HashMap to store the headers
-        Map<String, String> headersMap = new HashMap<>();
+    public static Map<String, String> headerStringToHashMap(String headerString) {
+        Map<String, String> headerMap = new HashMap<>();
 
-        // Get all header names
-        Enumeration<String> headerNames = request.getHeaderNames();
+        // Split the header string into individual header entries
+        String[] headers = headerString.split(", ");
 
-        // Iterate through the header names and put them into the HashMap
-        while (headerNames.hasMoreElements()) {
-            String headerName = headerNames.nextElement();
-            String headerValue = request.getHeader(headerName);
-            headersMap.put(headerName, headerValue);
+        // Iterate over each header entry
+        for (String header : headers) {
+            // Split the header entry into key-value pair
+            String[] keyValue = header.split(": ", 2); // Split into 2 parts to handle ':' in values
+
+            // Extract key and value
+            String key = keyValue[0];
+            String value = keyValue.length > 1 ? keyValue[1] : ""; // Handle case where value is empty
+
+            // Put key-value pair into map
+            headerMap.put(key, value);
         }
 
-        return headersMap;
+        return headerMap;
     }
 }

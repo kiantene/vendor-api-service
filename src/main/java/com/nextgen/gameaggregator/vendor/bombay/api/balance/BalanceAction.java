@@ -57,7 +57,9 @@ public class BalanceAction {
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
-            Map<String, String> headerMap = vendorService.headersToHashMap(request);
+            String header = httpRequestLog.getHeader();
+
+            Map<String, String> headerMap = vendorService.headerStringToHashMap(header);
 
             Gson gson = new Gson();
 
