@@ -1,21 +1,23 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.result;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
-
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SettleDto implements BetResultData {
-    
+
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX) // Only alphanumeric/underscore/dash allowed
     private String session_token;
@@ -47,7 +49,6 @@ public class SettleDto implements BetResultData {
     private String provider_tx_id;
 
     @NotBlank
-    @Size(max = 3)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String currency;
 
@@ -125,5 +126,5 @@ public class SettleDto implements BetResultData {
     public BetStatus getBetStatus() {
         return BetStatus.SETTLED;
     }
-    
+
 }

@@ -75,7 +75,7 @@ pipeline {
             steps {
                 executeMaven('''
                     mvn clean verify sonar:sonar \
-                        -DskipTests \
+                        -Dmaven.test.skip=true \
                         -Dsonar.projectKey=$SONAR_PROJECTKEY \
                         -Dsonar.projectName=$SONAR_PROJECTNAME \
                         -Dsonar.host.url=$SONAR_HOST_URL \
@@ -96,7 +96,7 @@ pipeline {
                         sh 'cp -rf $SECRET_FILE ./game_aggregator-root-certificate.pem'
                         sh "mvn versions:set -DnewVersion=$versionTag"
 
-                        executeMaven('mvn clean package spring-boot:repackage -U -DskipTests')
+                        executeMaven('mvn clean package spring-boot:repackage -U -Dmaven.test.skip=true')
                     }
                 }
             }
