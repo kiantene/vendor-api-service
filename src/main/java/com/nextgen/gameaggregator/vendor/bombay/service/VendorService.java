@@ -6,6 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -144,6 +146,13 @@ public class VendorService extends BaseVendorService {
     }
 
     public static String decodeUnicode(String encodedString) {
-        return new String(encodedString.getBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        ByteBuffer buffer = ByteBuffer.allocate(encodedString.length() / 6); // Allocate buffer size
+        for (int i = 0; i < encodedString.length(); i += 6) {
+            String codePoint = encodedString.substring(i + 2, i + 6); // Extract code point
+            buffer.put((byte) Integer.parseInt(codePoint, 16)); // Convert code point to byte and put into buffer
+        }
+        buffer.flip(); // Flip buffer for reading
+        CharBuffer charBuffer = StandardCharsets.UTF_8.decode(buffer); // Decode buffer using UTF-8 charset
+        return charBuffer.toString();
     }
 }
