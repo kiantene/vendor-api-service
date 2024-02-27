@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
-
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.entity.ga.BetHistory;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -47,6 +47,24 @@ public class KafkaService {
         } catch (Exception e) {
             //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
             log.error(e.getMessage());
+        }
+    }
+
+    public void produceUnsettledBet(VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, sportUnsettledBetMariaDB);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    public void produceRawSettledBet(SportRawSettledBet sportRawSettledBet) {
+        try {
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_RAW_SETTLED_BET, new Gson().toJson(sportRawSettledBet));
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+
         }
     }
 }

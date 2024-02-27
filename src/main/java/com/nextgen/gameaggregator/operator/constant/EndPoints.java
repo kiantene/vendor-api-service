@@ -20,4 +20,14 @@ public class EndPoints {
     public static final String UPDATE_VERIFY_TEST_CASE = "/update_verify_test_case";
 
     public static final String WALLET_ADJUSTMENT = "/wallet/adjustment";
+
+    // SportBook
+    public static final String SPORT_BET = "/sports/bet";
+    public static final String SPORT_UPDATE_BET = "/sports/update-bet";
+    public static final String SPORT_SETTLE = "/sports/settled";
+    public static final String SPORT_CANCEL_BET = "/sports/cancel-bet";
+    public static final String SPORT_UNSETTLE = "/sports/unsettle";
+    public static final String SPORT_REFUND = "/sports/refund";
+    public static final String SPORT_RESETTLE = "/sports/resettle";
+    public static final String SPORT_ADJUSTMENT = "/sports/adjustment";
 }

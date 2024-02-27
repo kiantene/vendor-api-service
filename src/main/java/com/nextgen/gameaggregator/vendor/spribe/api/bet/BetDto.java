@@ -1,14 +1,16 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.bet;
 
-import java.math.BigDecimal;
-
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
-
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class BetDto implements BetResultData {
@@ -21,7 +23,6 @@ public class BetDto implements BetResultData {
     private String session_token;
 
     @NotBlank
-    @Size(max = 3)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String currency;
 
