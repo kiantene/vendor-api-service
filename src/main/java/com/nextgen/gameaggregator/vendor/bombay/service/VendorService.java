@@ -142,26 +142,4 @@ public class VendorService extends BaseVendorService {
 
         return resultType;
     }
-
-    public static Map<String, String> headerStringToHashMap(String headerString) {
-        Map<String, String> headerMap = new HashMap<>();
-
-        // Split the header string into individual header entries
-        String[] headers = headerString.split(", ");
-
-        // Iterate over each header entry
-        for (String header : headers) {
-            // Split the header entry into key-value pair
-            String[] keyValue = header.split(": ", 2); // Split into 2 parts to handle ':' in values
-
-            // Extract key and value
-            String key = keyValue[0];
-            String value = keyValue.length > 1 ? keyValue[1] : ""; // Handle case where value is empty
-
-            // Put key-value pair into map
-            headerMap.put(key, value);
-        }
-
-        return headerMap;
-    }
 }

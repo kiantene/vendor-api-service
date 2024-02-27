@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.balance;
 
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -58,12 +56,6 @@ public class BalanceAction {
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
             String header = httpRequestLog.getHeader();
-
-            Map<String, String> headerMap = vendorService.headerStringToHashMap(header);
-
-            Gson gson = new Gson();
-
-            log.info("balance request log:" + gson.toJson(headerMap));
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
