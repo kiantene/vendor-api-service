@@ -84,12 +84,12 @@ public class CreditDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis(); //unix timestamp with millisecond
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        return System.currentTimeMillis(); //unix timestamp with millisecond
     }
 
     @Override
@@ -104,6 +104,6 @@ public class CreditDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
+        return BetStatus.SETTLED;
     }
 }

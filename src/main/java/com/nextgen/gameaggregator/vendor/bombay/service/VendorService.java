@@ -135,7 +135,7 @@ public class VendorService extends BaseVendorService {
         if(winAmount > 0){
             resultType = ResultType.WIN;
         }else{
-            resultType = ResultType.LOSE;
+            resultType = ResultType.END;
         }
 
         return resultType;
