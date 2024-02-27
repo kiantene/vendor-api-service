@@ -71,7 +71,7 @@ public class RollbackAction {
                 responseResultVo.setApiUrl(apiUrl + EndPoints.WALLET_ROLLBACK);
 
                 responseResultVo.setRequestStartTime(System.currentTimeMillis());
-                ResponseEntity<String> apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
+                ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                         .post()
                         .uri(EndPoints.WALLET_ROLLBACK)
                         .header(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE))
