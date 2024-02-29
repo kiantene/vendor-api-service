@@ -2,6 +2,9 @@ package com.nextgen.gameaggregator.vendor.bombay.api.credit;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -64,7 +67,8 @@ public class CreditAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto,gameSession);
 
-            ResultType resultType = vendorService.checkResult(creditDto.getAmount());
+            // this end-point just handle transaction with win status, so set it as result win
+            ResultType resultType = ResultType.WIN;
 
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
@@ -72,6 +76,15 @@ public class CreditAction {
             responseVo.setUser(gameSession.getVendorPlayerUsername());
             responseVo.setBalance(balance.intValue());
             responseVo.setCurrency(gameSession.getCurrencyCode());
+        } catch(BetNotFoundException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
+        } catch(GameNotSupportedException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_GAME);
+        } catch(CurrencyNotSupportedException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
@@ -88,7 +101,12 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession){
+    private void doVerification(CreditDto dto, GameSession gameSession) throws GameNotSupportedException, CurrencyNotSupportedException {
+        // Verify vendor gameCode
+        String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
+        ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);
 
+        // Verify vendor currency
+        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
     }
 }

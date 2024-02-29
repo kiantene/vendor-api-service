@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.bombay.service;
 
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -127,18 +126,6 @@ public class VendorService extends BaseVendorService {
         }
 
         return hashMap;
-    }
-
-    public static ResultType checkResult(Integer winAmount){
-        ResultType resultType = null;
-
-        if(winAmount > 0){
-            resultType = ResultType.WIN;
-        }else{
-            resultType = ResultType.END;
-        }
-
-        return resultType;
     }
 
     public static Map<String, String> headersToHashMap(HttpServletRequest request) {
