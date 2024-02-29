@@ -1,7 +1,5 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -9,9 +7,10 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,9 +30,12 @@ public class BetNSettleDto implements BetResultData {
     @Pattern(regexp = "^[0-9]+$")
     private String transferId;
 
-    @NotBlank
     @Pattern(regexp = "^[0-9]+$")
     private String gameSeqNo;
+
+    @NotBlank
+    @Pattern(regexp = "^[0-9]+$")
+    private String historyId;
 
     @NotBlank
     @Size(min = 1, max = 30)
@@ -72,7 +74,7 @@ public class BetNSettleDto implements BetResultData {
 
     @NotNull
     private BigDecimal netWin;
-    
+
     private BigDecimal denom;
 
     @Size(max = 50)
@@ -122,7 +124,8 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return gameSeqNo;
+        long dateChangeVendorBetId = 1711929600000L; // April 01 2024 GMT + 0
+        return (this.ts < dateChangeVendorBetId) ? gameSeqNo : historyId;
     }
 
     @Override
