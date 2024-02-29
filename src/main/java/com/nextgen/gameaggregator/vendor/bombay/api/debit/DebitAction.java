@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.bombay.api.debit;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -77,20 +76,24 @@ public class DebitAction {
             this.doVerification(debitDto,gameSession);
 
             // Process Bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
+//            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
+//
+//            responseVo.setStatus(ResponseCodes.RS_OK);
+//            responseVo.setUser(gameSession.getVendorPlayerUsername());
+//            responseVo.setBalance(betEvent.getLastBalance().intValue());
+//            responseVo.setCurrency(gameSession.getCurrencyCode());
 
-            responseVo.setStatus(ResponseCodes.RS_OK);
-            responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(betEvent.getLastBalance().intValue());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
 
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
-        } catch(InsufficientBalanceException e){
-            httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_ERROR_NOT_ENOUGH_MONEY);
-        } catch(Exception e){
+        }
+//        catch(InsufficientBalanceException e){
+//            httpService.logError(httpRequestLog, e);
+//            responseVo.setStatus(ResponseCodes.RS_ERROR_NOT_ENOUGH_MONEY);
+//        }
+        catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
