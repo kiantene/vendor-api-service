@@ -52,7 +52,12 @@ public class BetDetailService implements BetDetailUrl {
         dto.setUid(iBetDetailUrlInfo.getVendorUsername());
         dto.setLang(vendorLanguageCode.getLanguageCode());
         dto.setGType(gType);
-        dto.setHistoryId(iBetDetailUrlInfo.getExternalRoundId());
+        long dateChangeVendorBetId = 1711929600000L; // April 01 2024 GMT + 0
+        if (iBetDetailUrlInfo.getVendorSettleTime() < dateChangeVendorBetId) {
+            dto.setSeqNo(iBetDetailUrlInfo.getExternalRoundId());
+        } else {
+            dto.setHistoryId(iBetDetailUrlInfo.getExternalRoundId());
+        }
         dto.setShowUid(1); // Whether show player id (1 is default)
 
         Gson gson = new GsonBuilder().create();

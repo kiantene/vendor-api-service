@@ -10,6 +10,7 @@ public class BetDetailDto {
     private String uid;
     private String lang;
     private int gType;
+    private String seqNo;
     private String historyId;
     private int showUid;
 }
