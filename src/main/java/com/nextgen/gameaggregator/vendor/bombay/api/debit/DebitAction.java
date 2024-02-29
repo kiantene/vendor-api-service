@@ -40,8 +40,7 @@ public class DebitAction {
     @Autowired
     private ValidationService validationService;
 
-//    @PostMapping(path = EndPoints.DEBIT)
-    @PostMapping(path = "lala")
+    @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 

@@ -66,7 +66,7 @@ public class RollbakcAction {
             this.doVerification(rollbackDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            BigDecimal balance = walletService.processRollback(traceId,rollbackDto, gameSession, vendorService, httpRequestLog);
+            BigDecimal balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());

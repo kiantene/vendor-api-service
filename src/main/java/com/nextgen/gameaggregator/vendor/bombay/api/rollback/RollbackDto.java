@@ -35,7 +35,7 @@ public class RollbackDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return this.reference_transaction_uuid;
+        return this.round;
     }
 
     @Override
