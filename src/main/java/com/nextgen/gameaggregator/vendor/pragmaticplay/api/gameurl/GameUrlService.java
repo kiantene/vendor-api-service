@@ -52,6 +52,7 @@ public class GameUrlService implements GameUrl {
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("technology", "H5");
         formData.add("token", gameSession.getToken());
+        formData.add("externalPlayerId", gameSession.getVendorPlayerUsername());
         formData.add("platform", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
         formData.add("lobbyUrl", gameSession.getLobbyUrl());
@@ -73,7 +74,7 @@ public class GameUrlService implements GameUrl {
         Long startTime = System.currentTimeMillis();
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.GAME_URL )
+                .uri(Endpoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
