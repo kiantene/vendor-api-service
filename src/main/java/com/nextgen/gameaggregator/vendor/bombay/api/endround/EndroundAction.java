@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
@@ -17,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -56,23 +59,24 @@ public class EndroundAction {
             endroundDto = HttpService.convertJsonToDto(body, EndroundDto.class);
 
             // Validate request parameters from vendor (Non-database related)
-//            this.doValidation(endroundDto);
-//
+            this.doValidation(endroundDto);
+
             // Verify session token
-//            gameSession = gameSessionService.verifyToken(endroundDto.getToken());
-//
+            gameSession = gameSessionService.verifyToken(endroundDto.getToken());
+
             // Verify remaining parameters (Verify against database values)
-//            this.doVerification(endroundDto, gameSession);
-//
+            this.doVerification(endroundDto, gameSession);
+
             // this end-point just handle transaction with end status, so set it as result end
-//            ResultType resultType = ResultType.END;
-//
-//            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
+            ResultType resultType = ResultType.END;
+
+            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setStatus(ResponseCodes.RS_OK);
 
         }  catch(Exception e){
             httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
             responseVo.setRequest_uuid(endroundDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
