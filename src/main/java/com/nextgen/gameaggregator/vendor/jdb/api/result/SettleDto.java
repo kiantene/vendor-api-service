@@ -51,6 +51,9 @@ public class SettleDto implements BetResultData {
     @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private Long gameRoundSeqNo;
 
+    @Pattern(regexp = "^[0-9]+$")
+    private String gameSeqNo;
+
     @NotBlank
     @Pattern(regexp = "^[0-9]+$")
     private String historyId;

@@ -80,7 +80,12 @@ public class VendorService extends BaseVendorService {
 
                 // Remap vendorBetId & vendorRoundId
                 settledBet.setVendorBetId(dto.getGameRoundSeqNo().toString());
-                settledBet.setRoundId(dto.getHistoryId().toString());
+                long dateChangeVendorBetId = 1711929600000L; // April 01 2024 GMT + 0
+                if (dto.getTs() < dateChangeVendorBetId) {
+                    settledBet.setRoundId(dto.getGameSeqNo().toString());
+                } else {
+                    settledBet.setRoundId(dto.getHistoryId().toString());
+                }
             }
 
         } catch (JsonParseException |

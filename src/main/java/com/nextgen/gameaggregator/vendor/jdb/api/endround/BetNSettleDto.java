@@ -30,6 +30,9 @@ public class BetNSettleDto implements BetResultData {
     @Pattern(regexp = "^[0-9]+$")
     private String transferId;
 
+    @Pattern(regexp = "^[0-9]+$")
+    private String gameSeqNo;
+
     @NotBlank
     @Pattern(regexp = "^[0-9]+$")
     private String historyId;
@@ -121,7 +124,8 @@ public class BetNSettleDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return historyId;
+        long dateChangeVendorBetId = 1711929600000L; // April 01 2024 GMT + 0
+        return (this.ts < dateChangeVendorBetId) ? gameSeqNo : historyId;
     }
 
     @Override
