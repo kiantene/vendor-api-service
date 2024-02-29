@@ -25,19 +25,16 @@ public class EndroundDto implements BetResultData {
     private String token;
 
     @NotBlank
-    private String reference_transaction_uuid;
-
-    @NotBlank
     private String currency;
 
     @Override
     public String getExternalTransactionId() {
-        return this.reference_transaction_uuid;
+        return this.round;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.reference_transaction_uuid;
+        return this.round;
     }
 
     @Override
