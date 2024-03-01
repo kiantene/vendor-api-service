@@ -20,4 +20,6 @@ public class ResponseCodes {
     public static final String RS_ERROR_DUPLICATE_REQUEST = "RS_ERROR_DUPLICATE_REQUEST";
 
     public static final String RS_ERROR_DUPLICATE_TRANSACTION = "RS_ERROR_DUPLICATE_TRANSACTION";
+
+    public static final String RS_ERROR_WRONG_SYNTAX = "RS_ERROR_WRONG_SYNTAX";
 }
