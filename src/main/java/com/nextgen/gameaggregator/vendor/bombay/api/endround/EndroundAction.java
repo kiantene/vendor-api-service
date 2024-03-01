@@ -90,8 +90,11 @@ public class EndroundAction {
                 InvalidAgentApiCredentialException |
                 DisabledAgentPlayerException |
                 MergedBetDataIntegrityException |
+                TransactionStillProcessingException |
+                BetResultIdempotentViolationException |
                 DisabledGameException e){
             httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
