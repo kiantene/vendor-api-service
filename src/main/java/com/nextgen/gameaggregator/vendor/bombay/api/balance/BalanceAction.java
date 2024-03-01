@@ -89,6 +89,17 @@ public class BalanceAction {
         } catch(CurrencyNotSupportedException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
+        } catch(InvalidRequestException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
+        } catch(InvalidAgentApiCredentialException |
+                VendorCurrencyNotSupportException |
+                DisabledAgentPlayerException |
+                DisabledGameException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
