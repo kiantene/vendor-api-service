@@ -92,8 +92,21 @@ public class DebitAction {
         } catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_NOT_ENOUGH_MONEY);
-        }
-        catch(Exception e){
+        } catch(InvalidPlayerException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
+        } catch(InvalidAgentApiCredentialException |
+                VendorCurrencyNotSupportException |
+                DisabledAgentPlayerException |
+                DisabledGameException |
+                // bet request will only send in one time and will trigger rollback once it failed to process
+                TransactionStillProcessingException |
+                BetResultIdempotentViolationException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+        } catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{

@@ -2,9 +2,7 @@ package com.nextgen.gameaggregator.vendor.bombay.api.endround;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -39,6 +37,8 @@ public class EndroundAction {
     private WalletService walletService;
     @Autowired
     VendorService vendorService;
+    @Autowired
+    ValidationService validationService;
 
     @PostMapping(path = EndPoints.END_ROUND)
     public ResponseVo credit(HttpServletRequest request) {
@@ -74,7 +74,25 @@ public class EndroundAction {
 
             responseVo.setStatus(ResponseCodes.RS_OK);
 
-        }  catch(Exception e){
+        } catch(InvalidRequestException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
+        } catch(AuthenticationException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
+        } catch(InvalidPlayerException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
+        } catch(VendorCurrencyNotSupportException |
+                InsufficientBalanceException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException |
+                InvalidAgentApiCredentialException |
+                DisabledAgentPlayerException |
+                MergedBetDataIntegrityException |
+                DisabledGameException e){
+            httpService.logError(httpRequestLog, e);
+        } catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
@@ -90,7 +108,10 @@ public class EndroundAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(EndroundDto dto, GameSession gameSession) throws GameNotSupportedException, CurrencyNotSupportedException {
+    private void doVerification(EndroundDto dto, GameSession gameSession) throws GameNotSupportedException, CurrencyNotSupportedException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
         // Verify vendor gameCode
         String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
         ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);

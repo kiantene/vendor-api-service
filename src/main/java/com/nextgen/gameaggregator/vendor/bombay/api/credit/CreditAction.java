@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.vendor.bombay.api.credit;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -40,6 +37,8 @@ public class CreditAction {
     private WalletService walletService;
     @Autowired
     VendorService vendorService;
+    @Autowired
+    ValidationService validationService;
 
     @PostMapping(path = EndPoints.CREDIT)
     public ResponseVo credit(HttpServletRequest request) {
@@ -52,6 +51,8 @@ public class CreditAction {
         CreditDto creditDto = null;
 
         GameSession gameSession = new GameSession();
+
+        BigDecimal balance = null;
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -70,7 +71,7 @@ public class CreditAction {
             // this end-point just handle transaction with win status, so set it as result win
             ResultType resultType = ResultType.WIN;
 
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+            balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setStatus(ResponseCodes.RS_OK);
             responseVo.setUser(gameSession.getVendorPlayerUsername());
@@ -79,12 +80,39 @@ public class CreditAction {
         } catch(BetNotFoundException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
+        } catch(TransactionStillProcessingException |
+                BetResultIdempotentViolationException e){
+            httpService.logError(httpRequestLog, e);
+
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+
+            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setUser(gameSession.getVendorPlayerUsername());
+            responseVo.setBalance(balance.intValue());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
         } catch(GameNotSupportedException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_GAME);
+        } catch(InvalidRequestException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
         } catch(CurrencyNotSupportedException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
+        } catch(InvalidPlayerException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
+        } catch(VendorCurrencyNotSupportException |
+                AuthenticationException |
+                InsufficientBalanceException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException |
+                InvalidAgentApiCredentialException |
+                DisabledAgentPlayerException |
+                MergedBetDataIntegrityException |
+                DisabledGameException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
@@ -101,12 +129,29 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession) throws GameNotSupportedException, CurrencyNotSupportedException {
+    private void doVerification(CreditDto dto, GameSession gameSession) throws DisabledGameException, DisabledAgentPlayerException, InvalidPlayerException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, AuthenticationException {
+        //validate vendor username, agent vendor line, player status, and game status
+        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+
         // Verify vendor gameCode
         String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
         ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+        } catch (Exception exception) {
+
+        }
+
+        return balance;
     }
 }
