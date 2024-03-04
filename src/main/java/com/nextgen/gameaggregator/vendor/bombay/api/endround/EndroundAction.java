@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.vendor.bombay.api.endround;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
@@ -16,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -85,19 +82,21 @@ public class EndroundAction {
         } catch(InvalidPlayerException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
-        } catch(VendorCurrencyNotSupportException |
-                InsufficientBalanceException |
-                InvalidOperatorResponseException |
-                DisabledVendorLineException |
-                InvalidAgentApiCredentialException |
-                DisabledAgentPlayerException |
-                MergedBetDataIntegrityException |
-                TransactionStillProcessingException |
-                BetResultIdempotentViolationException |
-                DisabledGameException e){
-            httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        } catch(Exception e){
+        }
+//        catch(VendorCurrencyNotSupportException |
+//                InsufficientBalanceException |
+//                InvalidOperatorResponseException |
+//                DisabledVendorLineException |
+//                InvalidAgentApiCredentialException |
+//                DisabledAgentPlayerException |
+//                MergedBetDataIntegrityException |
+//                TransactionStillProcessingException |
+//                BetResultIdempotentViolationException |
+//                DisabledGameException e){
+//            httpService.logError(httpRequestLog, e);
+//            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+//        }
+        catch(Exception e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
