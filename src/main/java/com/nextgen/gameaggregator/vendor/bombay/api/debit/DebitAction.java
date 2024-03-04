@@ -79,10 +79,12 @@ public class DebitAction {
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            responseVo.setStatus(ResponseCodes.RS_OK);
-            responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(betEvent.getLastBalance().intValue());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+
+//            responseVo.setStatus(ResponseCodes.RS_OK);
+//            responseVo.setUser(gameSession.getVendorPlayerUsername());
+//            responseVo.setBalance(betEvent.getLastBalance().intValue());
+//            responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);

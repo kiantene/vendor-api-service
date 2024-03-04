@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bombay.api.credit;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
@@ -68,65 +69,54 @@ public class CreditAction {
             this.doVerification(creditDto,gameSession);
 
             // this end-point just handle transaction with win status, so set it as result win
-//            ResultType resultType = ResultType.WIN;
-//
-//            balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
+            ResultType resultType = ResultType.WIN;
 
-//            responseVo.setStatus(ResponseCodes.RS_OK);
-//            responseVo.setUser(gameSession.getVendorPlayerUsername());
-//            responseVo.setBalance(balance.intValue());
-//            responseVo.setCurrency(gameSession.getCurrencyCode());
+            balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
-            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        }
-//        catch(BetNotFoundException e){
-//            httpService.logError(httpRequestLog, e);
-//            responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
-//        }
-//        catch(TransactionStillProcessingException |
-//                BetResultIdempotentViolationException e){
-//            httpService.logError(httpRequestLog, e);
-//
-//            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
-//
-//            responseVo.setStatus(ResponseCodes.RS_OK);
-//            responseVo.setUser(gameSession.getVendorPlayerUsername());
-//            responseVo.setBalance(balance.intValue());
-//            responseVo.setCurrency(gameSession.getCurrencyCode());
-//        }
-        catch(GameNotSupportedException e){
+            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setUser(gameSession.getVendorPlayerUsername());
+            responseVo.setBalance(balance.intValue());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
+        } catch(BetNotFoundException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
+        } catch(TransactionStillProcessingException |
+                BetResultIdempotentViolationException e){
+            httpService.logError(httpRequestLog, e);
+
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+
+            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setUser(gameSession.getVendorPlayerUsername());
+            responseVo.setBalance(balance.intValue());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
+        } catch(GameNotSupportedException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_GAME);
-        }
-        catch(InvalidRequestException e){
+        } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
-        }
-        catch(CurrencyNotSupportedException e){
+        } catch(CurrencyNotSupportedException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
-        }
-        catch(InvalidPlayerException e){
+        } catch(InvalidPlayerException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
-        }
-//        catch(VendorCurrencyNotSupportException |
-//                AuthenticationException |
-//                InsufficientBalanceException |
-//                InvalidOperatorResponseException |
-//                DisabledVendorLineException |
-//                InvalidAgentApiCredentialException |
-//                DisabledAgentPlayerException |
-//                MergedBetDataIntegrityException |
-//                DisabledGameException e){
-//            httpService.logError(httpRequestLog, e);
-//            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-//        }
-        catch(Exception e){
+        } catch(VendorCurrencyNotSupportException |
+                AuthenticationException |
+                InsufficientBalanceException |
+                InvalidOperatorResponseException |
+                DisabledVendorLineException |
+                InvalidAgentApiCredentialException |
+                DisabledAgentPlayerException |
+                MergedBetDataIntegrityException |
+                DisabledGameException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-        }
-        finally{
+        } catch(Exception e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+        } finally{
             responseVo.setRequest_uuid(creditDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
         }
