@@ -84,8 +84,6 @@ public class DebitAction {
             responseVo.setBalance(betEvent.getLastBalance().intValue());
             responseVo.setCurrency(gameSession.getCurrencyCode());
 
-            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
