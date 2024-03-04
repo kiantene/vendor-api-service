@@ -11,7 +11,6 @@ import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -79,6 +78,10 @@ public class SportSettleAction {
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
             httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_SETTLE);
+
+//            System.out.println("dto = " + dto);
+//            System.out.println("jsonApiResponse = " + jsonApiResponse);
+//            System.out.println("httpRequestLog = " + httpRequestLog);
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_SETTLE)
@@ -137,7 +140,8 @@ public class SportSettleAction {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException | ResponseNotMatchRequestException invalidResponseException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 ResponseNotMatchRequestException invalidResponseException) {
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
