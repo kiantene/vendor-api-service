@@ -68,11 +68,13 @@ public class EndroundAction {
             this.doVerification(endroundDto, gameSession);
 
             // this end-point just handle transaction with end status, so set it as result end
-            ResultType resultType = ResultType.END;
+//            ResultType resultType = ResultType.END;
+//
+//            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
+//
+//            responseVo.setStatus(ResponseCodes.RS_OK);
 
-            BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
-
-            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
 
         } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
