@@ -25,7 +25,7 @@ public class SportSettledBetService {
 
         sportSettledBet = settledBetCouchbaseRepository.findById(mergeId).orElse(null);
         if (sportSettledBet == null) { // No matching bet record
-            throw new BetNotFoundException("Cannot find couchbase Id: " + mergeId);
+            throw new BetNotFoundException("Cannot find sportSettledBet couchbase Id: " + mergeId);
         }
 
         return sportSettledBet;

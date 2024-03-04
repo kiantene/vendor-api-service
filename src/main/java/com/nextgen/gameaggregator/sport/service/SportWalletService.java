@@ -24,7 +24,9 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.sport.entity.*;
+import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
+import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -200,19 +202,49 @@ public class SportWalletService {
         return betEvent;
     }
 
-    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException {
+    public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
-        sportUnsettledBetCouchbase.setWinAmount(sportBetResultData.getWinAmount());
-
-        // Todo Check settled exists
-
-        BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
-        sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
-        sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
-        sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
-
+        sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
+        Integer isResettlementBet = 0;
         BetEvent betEvent = null;
+
+        try {
+            SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
+
+            if (sportBetResultData.getNewBetAmount() == sportSettledBet.getNewBetAmount() && sportBetResultData.getWinAmount() == sportSettledBet.getWinAmount()) {
+                //check is idempotent for sportSettledBet
+                throw new BetResultIdempotentViolationException("Cannot find sportSettledBet couchbase Id: " + sportBetResultData.getVendorPlayerUsername() + '_' + sportBetResultData.getExternalTransactionId());
+
+            } else {
+                //if record is found but newBetAmount and winAmount is not same with sportBetResultData, then it is a resettleBet then set a new betId for it.
+                isResettlementBet = 1;
+
+            }
+
+        } catch (BetNotFoundException e) {
+            //betNotFound would be one of the correct Behavior
+            //If the bet is not found in sportSettledBet, then the bet should continue and settle as usual.
+
+        }
+
+        if (sportUnsettledBetCouchbase.getOperatorStatus() == ResponseCodes.Status.SC_OK.code) {
+            //operatorStatus is ok means this unsettled is newly and going to settle, and proceed with default calculation
+            sportUnsettledBetCouchbase.setWinAmount(sportBetResultData.getWinAmount());
+            BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
+            sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
+            sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
+            sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
+
+            if (isResettlementBet == 1 || sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
+                //if its resettled or the bet is unsettled from settle bet (betResultType = Adjustment), then should generate as a new betId
+                sportUnsettledBetCouchbase.setBetId(traceId);
+
+            }
+
+        } else {
+            //If operatorStatus is not OK, which mean is a resend request, the data should not be updated again and send with same betId but different traceId
+        }
 
         try {
             WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
@@ -247,7 +279,7 @@ public class SportWalletService {
     }
 
     @Async
-    public void batchSettle(List<SportBetResultData> sportBetResultDataList) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException {
+    public void batchSettle(List<SportBetResultData> sportBetResultDataList) throws InvalidAgentApiCredentialException, RecordNotFoundException, BetNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
         for (SportBetResultData sportBetResultData : sportBetResultDataList) {
             String traceId = UUID.randomUUID().toString();
             this.settle(traceId, sportBetResultData, null);
@@ -258,7 +290,8 @@ public class SportWalletService {
             InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, BetRefundIdempotentViolationException {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
-        if (sportUnsettledBetCouchbase.getStatus().compareTo(BetStatus.REFUNDED.code) == 0) throw new BetRefundIdempotentViolationException();
+        if (sportUnsettledBetCouchbase.getStatus().compareTo(BetStatus.REFUNDED.code) == 0)
+            throw new BetRefundIdempotentViolationException();
 
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
@@ -305,17 +338,13 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setNewBetAmount(sportUnsettledBetCouchbase.getBetAmount());
+            sportUnsettledBetCouchbase.setResultType(BetResultType.ADJUSTMENT.code);
             sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() >= 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
-            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
-            // Update status in  (MariaDB)
+            // Update status in (MariaDB)
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-            sportUnsettledBetMariaDB.setStatus(0);
+            sportUnsettledBetMariaDB.setStatus(BetStatus.UNSETTLED.code);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
-
-            sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
-            sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
-            betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.UNSETTLED.code, BetResultType.ADJUSTMENT.code));
@@ -323,6 +352,14 @@ public class SportWalletService {
 
             // Delete data from couchbase settled bet
             sportSettledBetService.delete(sportSettledBet);
+
+            // update unsettledBet with winAmount, winLoss and effectiveTurnover = 0
+            sportUnsettledBetCouchbase.setWinAmount(BigDecimal.ZERO);
+            sportUnsettledBetCouchbase.setWinLoss(BigDecimal.ZERO);
+            sportUnsettledBetCouchbase.setEffectiveTurnover(BigDecimal.ZERO);
+            sportUnsettledBetService.save(sportUnsettledBetCouchbase);
+
+            betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
