@@ -53,6 +53,9 @@ public class DebitAction {
 
         GameSession gameSession = new GameSession();
 
+        test++;
+        log.info("receive: " + test);
+
         try{
             String body = httpRequestLog.getRequestBody();
 
@@ -80,10 +83,7 @@ public class DebitAction {
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            test++;
-            log.info("receive: " + test);
-
-            if(test > 1){
+            if(test == 2){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
