@@ -60,8 +60,7 @@ public class BalanceAction {
 
             Gson gson = new Gson();
 
-            log.info("BB request body: " + body);
-            log.info("BB request header: " + gson.toJson(header));
+            log.info("x-signature: " + header.get("x-signature"));
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
