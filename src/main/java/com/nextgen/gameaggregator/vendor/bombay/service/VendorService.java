@@ -144,4 +144,10 @@ public class VendorService extends BaseVendorService {
 
         return headersMap;
     }
+
+    // if one of the multi bet failed, will happen rollback request for that transaction id
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
+    }
 }
