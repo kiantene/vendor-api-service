@@ -44,7 +44,7 @@ public class CreditDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.transaction_uuid;
+        return this.reference_transaction_uuid;
     }
 
     @Override
