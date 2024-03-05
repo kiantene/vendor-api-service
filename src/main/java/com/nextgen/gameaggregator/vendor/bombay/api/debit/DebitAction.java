@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.debit;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -56,6 +58,12 @@ public class DebitAction {
 
         try{
             String body = httpRequestLog.getRequestBody();
+
+            // get x-signature value for validation
+            Map<String,String> header = vendorService.headersToHashMap(request);
+            Gson gson = new Gson();
+
+            log.info("bet x-signature: " + gson.toJson(header));
 
             debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
 
