@@ -29,7 +29,7 @@ public class EndroundDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.round;
+        return this.request_uuid;
     }
 
     @Override
