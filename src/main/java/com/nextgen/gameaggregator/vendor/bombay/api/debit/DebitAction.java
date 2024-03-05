@@ -40,7 +40,7 @@ public class DebitAction {
     @Autowired
     private ValidationService validationService;
 
-    private static int test = 0;
+    private static int test1 = 0;
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -53,8 +53,8 @@ public class DebitAction {
 
         GameSession gameSession = new GameSession();
 
-        test++;
-        log.info("receive: " + test);
+        test1++;
+        log.info("receive test1: " + test1);
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -83,8 +83,9 @@ public class DebitAction {
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            if(test == 2){
+            if(test1 > 1){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+                test1 = 0;
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
                 responseVo.setUser(gameSession.getVendorPlayerUsername());
