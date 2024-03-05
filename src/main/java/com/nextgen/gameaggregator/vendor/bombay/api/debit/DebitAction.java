@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
+
 @RestController
 @RequestMapping(path= EndPoints.PATH)
 @Slf4j
@@ -93,13 +95,22 @@ public class DebitAction {
         } catch(InvalidPlayerException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
+        } catch(TransactionStillProcessingException |
+                BetResultIdempotentViolationException e){
+            // bet request will only send in one time and will trigger rollback once it failed to process
+            httpService.logError(httpRequestLog, e);
+
+            BigDecimal balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+
+            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setUser(gameSession.getVendorPlayerUsername());
+            responseVo.setBalance(balance.intValue());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
+
         } catch(InvalidAgentApiCredentialException |
                 VendorCurrencyNotSupportException |
                 DisabledAgentPlayerException |
                 DisabledGameException |
-                // bet request will only send in one time and will trigger rollback once it failed to process
-                TransactionStillProcessingException |
-                BetResultIdempotentViolationException |
                 InvalidOperatorResponseException |
                 DisabledVendorLineException e){
             httpService.logError(httpRequestLog, e);
@@ -130,5 +141,19 @@ public class DebitAction {
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+        } catch (Exception exception) {
+
+        }
+
+        return balance;
     }
 }
