@@ -35,7 +35,7 @@ public class DebitDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.round;
+        return this.transaction_uuid;
     }
 
     @Override
