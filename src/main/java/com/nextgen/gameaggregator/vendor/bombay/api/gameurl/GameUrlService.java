@@ -108,8 +108,6 @@ public class GameUrlService implements GameUrl {
         // Assign value for header
         headerMap.add("X-Signature", signature);
 
-        log.info("BB generate gameurl: " + signature);
-
         long startTime = System.currentTimeMillis();
 
         //Construct the API to register player from vendor site
