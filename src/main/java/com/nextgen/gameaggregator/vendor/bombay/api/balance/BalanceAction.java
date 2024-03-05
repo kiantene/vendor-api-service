@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.bombay.api.balance;
 
-import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -10,6 +9,7 @@ import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,11 +56,8 @@ public class BalanceAction {
 
             balanceDto = HttpService.convertJsonToDto(body, BalanceDto.class);
 
+            // get x-signature value for validation
             Map<String,String> header = vendorService.headersToHashMap(request);
-
-            Gson gson = new Gson();
-
-            log.info("x-signature: " + header.get("x-signature"));
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -69,7 +66,7 @@ public class BalanceAction {
             gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(balanceDto, gameSession, header.get("x-signature"), body);
 
             // Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -91,6 +88,9 @@ public class BalanceAction {
         } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
+        } catch(InvalidSignatureException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
         } catch(InvalidAgentApiCredentialException |
                 VendorCurrencyNotSupportException |
                 DisabledAgentPlayerException |
@@ -115,7 +115,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String x_signature, String request_body) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CurrencyNotSupportedException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -130,5 +130,14 @@ public class BalanceAction {
 
         // Verify vendor gameCode
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
+
+        // Verify vendor's x-signature
+        String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
+        Boolean validateSignature = vendorService.validateSignature(x_signature, request_body, vendor_public_key);
+
+        // validateSignature not equal to true mean credential problem or this data is not from vendor
+        if(!validateSignature){
+            throw new InvalidSignatureException();
+        }
     }
 }

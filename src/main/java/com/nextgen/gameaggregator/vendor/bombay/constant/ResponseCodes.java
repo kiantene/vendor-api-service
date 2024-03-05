@@ -22,4 +22,6 @@ public class ResponseCodes {
     public static final String RS_ERROR_DUPLICATE_TRANSACTION = "RS_ERROR_DUPLICATE_TRANSACTION";
 
     public static final String RS_ERROR_WRONG_SYNTAX = "RS_ERROR_WRONG_SYNTAX";
+
+    public static final String RS_ERROR_INVALID_SIGNATURE = "RS_ERROR_INVALID_SIGNATURE";
 }

@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bombay.service;
 
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -36,14 +37,25 @@ public class VendorService extends BaseVendorService {
         return Base64.getEncoder().encodeToString(signatureBytes);
     }
 
-    public static Boolean validateSignature(String signature, String string_to_validate,String base64PublicKey) throws Exception {
-        byte[] string_to_validate_bytes = string_to_validate.getBytes(StandardCharsets.UTF_8);
-        byte[] signature64 = Base64.getDecoder().decode(signature);
+    public static Boolean validateSignature(String signature, String string_to_validate,String base64PublicKey) throws InvalidSignatureException {
+        byte[] string_to_validate_bytes = null;
+        byte[] signature64 = null;
 
-        sig.initVerify(loadPublicKeyFromString(base64PublicKey));
-        sig.update(string_to_validate_bytes);
+        Boolean status = null;
 
-        return sig.verify(signature64);
+        try{
+            string_to_validate_bytes = string_to_validate.getBytes(StandardCharsets.UTF_8);
+            signature64 = Base64.getDecoder().decode(signature);
+
+            sig.initVerify(loadPublicKeyFromString(base64PublicKey));
+            sig.update(string_to_validate_bytes);
+
+            status = sig.verify(signature64);
+        }catch(Exception e){
+            throw new InvalidSignatureException();
+        }
+
+        return status;
     }
 
     /**
