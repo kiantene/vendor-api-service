@@ -70,9 +70,6 @@ public class DebitAction {
             // Verify session token and generate update game session while playing others game
             gameSession = gameSessionService.verifyToken(debitDto.getToken());
 
-            // Verify remaining parameters (Verify against database values)
-            this.doVerification(debitDto,gameSession, header.get("x-signature"), body);
-
             // check db game code is stg or not
             if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
                 debitDto.setGame_id(debitDto.getGame_id() + "_stg");
@@ -81,7 +78,7 @@ public class DebitAction {
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGame_id(),gameSession);
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(debitDto,gameSession);
+            this.doVerification(debitDto, gameSession, header.get("x-signature"), body);
 
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
