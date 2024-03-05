@@ -34,7 +34,7 @@ public class EndroundDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.round;
+        return this.request_uuid;
     }
 
     @Override

@@ -40,7 +40,7 @@ public class DebitDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.round;
+        return this.transaction_uuid;
     }
 
     @Override
