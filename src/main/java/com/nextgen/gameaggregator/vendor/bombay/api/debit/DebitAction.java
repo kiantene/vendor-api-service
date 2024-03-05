@@ -83,10 +83,19 @@ public class DebitAction {
             test++;
             log.info("receive: " + test);
 
-            responseVo.setStatus(ResponseCodes.RS_OK);
-            responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(betEvent.getLastBalance().intValue());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            if(test > 1){
+                responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+            }else{
+                responseVo.setStatus(ResponseCodes.RS_OK);
+                responseVo.setUser(gameSession.getVendorPlayerUsername());
+                responseVo.setBalance(betEvent.getLastBalance().intValue());
+                responseVo.setCurrency(gameSession.getCurrencyCode());
+            }
+
+//            responseVo.setStatus(ResponseCodes.RS_OK);
+//            responseVo.setUser(gameSession.getVendorPlayerUsername());
+//            responseVo.setBalance(betEvent.getLastBalance().intValue());
+//            responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);
