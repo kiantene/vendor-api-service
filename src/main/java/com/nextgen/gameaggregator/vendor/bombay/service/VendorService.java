@@ -144,10 +144,4 @@ public class VendorService extends BaseVendorService {
 
         return headersMap;
     }
-
-
-    public Integer validateData(Integer test){
-
-        return test++;
-    }
 }
