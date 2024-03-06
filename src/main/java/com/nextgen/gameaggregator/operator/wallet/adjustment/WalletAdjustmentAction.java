@@ -104,9 +104,10 @@ public class WalletAdjustmentAction {
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
 
-            if (httpRequestLog != null){
+            if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+                httpRequestLog.setOperatorTimestamp(responseVo.getData().getTimestamp());
 
             }
 
