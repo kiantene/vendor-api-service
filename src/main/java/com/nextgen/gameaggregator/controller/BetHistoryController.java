@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping(path = "betHistory/")
@@ -53,7 +54,11 @@ public class BetHistoryController {
                     .max(Comparator.comparingInt(BetHistory::getResettleNum))
                     .orElse(null);
 
-            detailvo.setBetHistory(betHistory);
+            List<BetHistory> sortedBetHistoryList = betHistoryList.stream()
+                    .sorted(Comparator.comparingInt(BetHistory::getResettleNum))
+                    .collect(Collectors.toList());
+
+            detailvo.setBetHistoryList(sortedBetHistoryList);
 
             return new ResponseEntity<>(
                     detailvo,
@@ -69,7 +74,7 @@ public class BetHistoryController {
     @Data
     static class Detailvo {
 
-        public BetHistory betHistory;
+        public List<BetHistory> betHistoryList;
         public BetResultLog betResultLog;
         //public BetRefundLog betRefundLog;
     }
