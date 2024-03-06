@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -57,6 +59,11 @@ public class CreditAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
+            // get x-signature value for validation
+            Map<String,String> header = vendorService.headersToHashMap(request);
+
+            log.info("credit header: " +header.get("x-signature"));
+
             creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -66,7 +73,7 @@ public class CreditAction {
             gameSession = gameSessionService.verifyToken(creditDto.getToken());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(creditDto,gameSession);
+            this.doVerification(creditDto, gameSession, header.get("x-signature"), body);
 
             // this end-point just handle transaction with win status, so set it as result win
             ResultType resultType = ResultType.WIN;
@@ -102,6 +109,9 @@ public class CreditAction {
         } catch(InvalidPlayerException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
+        } catch(InvalidSignatureException e){
+            httpService.logError(httpRequestLog, e);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_TOKEN);
@@ -131,7 +141,7 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession) throws DisabledGameException, DisabledAgentPlayerException, InvalidPlayerException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, AuthenticationException {
+    private void doVerification(CreditDto dto, GameSession gameSession, String x_signature, String request_body) throws DisabledGameException, DisabledAgentPlayerException, InvalidPlayerException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
@@ -141,6 +151,15 @@ public class CreditAction {
 
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
+
+        // Verify vendor's x-signature
+        String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
+        Boolean validateSignature = vendorService.validateSignature(x_signature, request_body, vendor_public_key);
+
+        // validateSignature not equal to true mean credential problem or this data is not from vendor
+        if(!validateSignature){
+            throw new InvalidSignatureException();
+        }
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
