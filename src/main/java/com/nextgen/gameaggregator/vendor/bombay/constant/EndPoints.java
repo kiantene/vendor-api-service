@@ -20,6 +20,6 @@ public class EndPoints {
 
     public static final String ROLLBACK = "/transaction/rollback";
 
-    public static final String BET_DETAIL = "operator/generic/v3/history/round";
+    public static final String BET_DETAIL = "operator/generic/v2/history/round";
 
 }
