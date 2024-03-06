@@ -26,5 +26,6 @@ public class BalanceDto {
     private String transaction_uuid;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String game_id;
 }
