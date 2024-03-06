@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 @Collection("sport_settled_bet")
 public interface SettledBetCouchbaseRepository extends CouchbaseRepository<SportSettledBet, String> {
+
 }

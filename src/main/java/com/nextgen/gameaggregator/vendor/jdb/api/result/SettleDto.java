@@ -33,7 +33,7 @@ public class SettleDto implements BetResultData {
     @Size(min = 1, max = 30)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String uid;
-    
+
     @NotBlank
     @Size(max = 3)
     private String currency;
@@ -51,9 +51,12 @@ public class SettleDto implements BetResultData {
     @Positive(message = ResponseCode.PARAMETER_CANNOT_BE_NEGATIVE)
     private Long gameRoundSeqNo;
 
-    @NotBlank
     @Pattern(regexp = "^[0-9]+$")
     private String gameSeqNo;
+
+    @NotBlank
+    @Pattern(regexp = "^[0-9]+$")
+    private String historyId;
 
     @NotBlank
     @JsonProperty("gType")
@@ -112,9 +115,9 @@ public class SettleDto implements BetResultData {
     @Override
     public String getRoundId() {
         // check provider's category to decide round id value
-        if(this.getGType().equals(Formats.SPRIBE)){
+        if (this.getGType().equals(Formats.SPRIBE)) {
             return String.valueOf(refTransferIds.get(0));
-        }else{
+        } else {
             return this.gameRoundSeqNo.toString();
         }
     }

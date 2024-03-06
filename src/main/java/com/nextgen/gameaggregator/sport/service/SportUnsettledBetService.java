@@ -3,9 +3,9 @@ package com.nextgen.gameaggregator.sport.service;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.repository.UnsettledBetCouchbaseRepository;
-import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class SportUnsettledBetService {
 
         sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
         if (sportUnsettledBetCouchbase == null) { // No matching bet record
-            throw new BetNotFoundException("Cannot find couchbase Id: " + mergeId);
+            throw new BetNotFoundException("Cannot find unsettledBet couchbase Id: " + mergeId);
         }
 
         return sportUnsettledBetCouchbase;
