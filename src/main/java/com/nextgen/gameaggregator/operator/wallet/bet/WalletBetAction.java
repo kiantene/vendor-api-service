@@ -30,10 +30,6 @@ import java.util.Optional;
 @Slf4j
 public class WalletBetAction {
 
-    @Value("${testing.stub:false}")
-    private Boolean useStub;
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
     @Autowired
     RequestService requestService;
     @Autowired
@@ -42,6 +38,10 @@ public class WalletBetAction {
     AuthenticationService authenticationService;
     @Autowired
     VendorService vendorService;
+    @Value("${testing.stub:false}")
+    private Boolean useStub;
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
     @Autowired
     private CurrencyConversionService currencyConversionService;
 
@@ -118,9 +118,10 @@ public class WalletBetAction {
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
 
-            if (httpRequestLog != null){
+            if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+                httpRequestLog.setOperatorTimestamp(responseVo.getData().getTimestamp());
 
             }
 
