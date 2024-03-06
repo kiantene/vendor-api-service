@@ -5,7 +5,10 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.ezugi.constant.EndPoints;
@@ -17,7 +20,6 @@ import com.nextgen.gameaggregator.vendor.ezugi.vo.CommonVo;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +33,6 @@ import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -46,17 +47,7 @@ public class CreditAction extends CommonDto {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
     private VendorService vendorService;
-    @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.CREDIT)
     public CommonVo credit(HttpServletRequest request) {
@@ -66,7 +57,6 @@ public class CreditAction extends CommonDto {
         CreditVo creditVo = new CreditVo();
         CreditDto creditDto = new CreditDto();
         GameSession gameSession = null;
-        RLock userLock = null;
 
         try {
             String body = httpRequestLog.getRequestBody();
@@ -92,8 +82,6 @@ public class CreditAction extends CommonDto {
                     balance = walletService.processRollback(traceId, creditDto, gameSession, vendorService, httpRequestLog);
                     break;
                 default:
-                    userLock = redissonService.getRedissonClient().getLock("RedissonLock:EZUGI:" + creditDto.getUid());
-                    userLock.lock(1L, TimeUnit.SECONDS);
                     ResultType resultType = getResultType(creditDto);
                     balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
                     break;
@@ -188,10 +176,7 @@ public class CreditAction extends CommonDto {
                 creditVo.setBalance(vendorService.getCurrentBalance(traceId, creditDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
             }
             creditVo.setCurrency(creditDto.getCurrency());
-            creditVo.setTimestamp(System.currentTimeMillis());
-            if (userLock != null) {
-                userLock.forceUnlock();
-            }
+            creditVo.setTimestamp(VendorService.getOperatorTimestamp(httpRequestLog));
             httpService.end(httpRequestLog, creditVo);
         }
         return creditVo;

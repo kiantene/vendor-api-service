@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.entity.ga;
 
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import jakarta.persistence.Id;
 import lombok.Data;
-import jakarta.persistence.*;
 import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
@@ -50,4 +50,5 @@ public class HttpRequestLog {
     private Long betStart;
     private Long betEnd;
     private Long betTimeTaken;
+    private Long operatorTimestamp;
 }

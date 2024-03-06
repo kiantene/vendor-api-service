@@ -113,7 +113,7 @@ public class AuthenticationAction {
             if (!authenticationVo.getErrorCode().equals(ResponseCodes.TOKEN_NOT_FOUND)) {
                 authenticationVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             }
-            authenticationVo.setTimestamp(System.currentTimeMillis());
+            authenticationVo.setTimestamp(VendorService.getOperatorTimestamp(httpRequestLog));
             httpService.end(httpRequestLog, authenticationVo);
         }
         return authenticationVo;

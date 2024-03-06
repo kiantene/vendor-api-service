@@ -16,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -57,6 +58,12 @@ public class VendorService extends BaseVendorService {
         if (betType == null) {
             throw new InvalidFormatException();
         }
+    }
+
+    public static Long getOperatorTimestamp(HttpRequestLog httpRequestLog) {
+        return Optional.ofNullable(httpRequestLog.getOperatorTimestamp())
+                .orElseGet(() -> Optional.ofNullable(httpRequestLog.getOperatorEnd())
+                        .orElse(System.currentTimeMillis()));
     }
 
     public void verifyRollbackAmount(RollbackDto rollbackDto, GameSession gameSession) throws InvalidFormatException, BetNotFoundException, TransactionStillProcessingException {

@@ -32,13 +32,12 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class WalletRollbackAction {
+    @Autowired
+    RequestService requestService;
     @Value("${testing.stub:false}")
     private Boolean useStub;
     @Value("${spring.profiles.active}")
     private String profilesActive;
-
-    @Autowired
-    RequestService requestService;
     @Autowired
     private AuthenticationService authenticationService;
     @Autowired
@@ -119,9 +118,10 @@ public class WalletRollbackAction {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
-            if (httpRequestLog != null){
+            if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+                httpRequestLog.setOperatorTimestamp(responseVo.getData().getTimestamp());
 
             }
 
