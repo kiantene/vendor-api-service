@@ -16,7 +16,6 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData, SportUnsettleData {
     private String vendorPlayerUsername;
-    private Integer vendorId;
 
     @JsonProperty("WagerId")
     private Long wagerId;
