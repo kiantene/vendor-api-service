@@ -62,8 +62,6 @@ public class CreditAction {
             // get x-signature value for validation
             Map<String,String> header = vendorService.headersToHashMap(request);
 
-            log.info("credit header: " +header.get("x-signature"));
-
             creditDto = HttpService.convertJsonToDto(body, CreditDto.class);
 
             // Validate request parameters from vendor (Non-database related)
