@@ -27,6 +27,9 @@ public class EndroundDto implements BetResultData {
     @NotBlank
     private String currency;
 
+    @NotBlank
+    private String user;
+
     @Override
     public String getExternalTransactionId() {
         return this.request_uuid;

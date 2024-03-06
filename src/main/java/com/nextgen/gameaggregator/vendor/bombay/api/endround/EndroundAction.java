@@ -123,7 +123,7 @@ public class EndroundAction {
 
     private void doVerification(EndroundDto dto, GameSession gameSession, String x_signature, String request_body) throws GameNotSupportedException, CurrencyNotSupportedException, InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidSignatureException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
+        validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
         String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
