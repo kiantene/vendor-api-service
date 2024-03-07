@@ -20,12 +20,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping(path = "betHistory/")
 public class BetHistoryController {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
-
     @Autowired
     RequestService requestService;
     @Autowired
@@ -36,22 +37,33 @@ public class BetHistoryController {
     BetRefundLogRepository betRefundLogRepository;
     @Autowired
     VendorPlayerRepository vendorPlayerRepository;
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     //for QA use to test get bet history detail
-    @PostMapping(path = "/detail")
-    public ResponseEntity<Detailvo> detail(@RequestBody ObjectNode json){
+    @PostMapping(path = "/details")
+    public ResponseEntity<Detailvo> detail(@RequestBody ObjectNode json) {
         Detailvo detailvo = new Detailvo();
         if (requestService.isTestEnvironment(profilesActive)) {
             VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
 
-            detailvo.setBetHistory(
-                    betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
-                            json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId()));
+            List<BetHistory> betHistoryList = betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+                    json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId());
+
+            BetHistory betHistory = betHistoryList.stream()
+                    .max(Comparator.comparingInt(BetHistory::getResettleNum))
+                    .orElse(null);
+
+            List<BetHistory> sortedBetHistoryList = betHistoryList.stream()
+                    .sorted(Comparator.comparingInt(BetHistory::getResettleNum))
+                    .collect(Collectors.toList());
+
+            detailvo.setBetHistoryList(sortedBetHistoryList);
 
             return new ResponseEntity<>(
                     detailvo,
                     HttpStatus.OK);
-        }else{
+        } else {
             return new ResponseEntity<>(
                     detailvo,
                     HttpStatus.BAD_REQUEST);
@@ -60,9 +72,9 @@ public class BetHistoryController {
     }
 
     @Data
-     static class Detailvo{
+    static class Detailvo {
 
-        public BetHistory betHistory;
+        public List<BetHistory> betHistoryList;
         public BetResultLog betResultLog;
         //public BetRefundLog betRefundLog;
     }
