@@ -75,7 +75,7 @@ public class EndroundAction {
             // this end-point just handle transaction with end status, so set it as result end
             ResultType resultType = ResultType.END;
 
-            // no need to return wallat balance
+            // no need to return wallet balance
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, endroundDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setStatus(ResponseCodes.RS_OK);
