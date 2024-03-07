@@ -71,11 +71,11 @@ public class DebitAction {
             gameSession = gameSessionService.verifyToken(debitDto.getToken());
 
             // check db game code is stg or not
-            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
-                debitDto.setGame_id(debitDto.getGame_id() + "_stg");
-            }
-
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGame_id(),gameSession);
+//            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
+//                debitDto.setGame_id(debitDto.getGame_id() + "_stg");
+//            }
+//
+//            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGame_id(),gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, header.get("x-signature"), body);

@@ -65,6 +65,13 @@ public class BalanceAction {
             // Verify session token
             gameSession = gameSessionService.verifyToken(balanceDto.getToken());
 
+            // check db game code is stg or not
+            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
+                balanceDto.setGame_id(balanceDto.getGame_id() + "_stg");
+            }
+
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(balanceDto.getGame_id(),gameSession);
+
             // Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession, header.get("x-signature"), body);
 
