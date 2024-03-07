@@ -44,6 +44,8 @@ public class DebitAction {
     @Autowired
     private ValidationService validationService;
 
+    private static int postMappingCount = 0;
+
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -55,6 +57,8 @@ public class DebitAction {
         DebitDto debitDto = null;
 
         GameSession gameSession = new GameSession();
+
+        postMappingCount++;
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -70,23 +74,26 @@ public class DebitAction {
             // Verify session token and generate update game session while playing others game
             gameSession = gameSessionService.verifyToken(debitDto.getToken());
 
-            // check db game code is stg or not
-//            if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){
-//                debitDto.setGame_id(debitDto.getGame_id() + "_stg");
-//            }
-//
-//            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(debitDto.getGame_id(),gameSession);
-
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, header.get("x-signature"), body);
 
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            responseVo.setStatus(ResponseCodes.RS_OK);
-            responseVo.setUser(gameSession.getVendorPlayerUsername());
-            responseVo.setBalance(betEvent.getLastBalance().intValue());
-            responseVo.setCurrency(gameSession.getCurrencyCode());
+            if(postMappingCount == 2){
+                responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+                postMappingCount = 0;
+            }else{
+                responseVo.setStatus(ResponseCodes.RS_OK);
+                responseVo.setUser(gameSession.getVendorPlayerUsername());
+                responseVo.setBalance(betEvent.getLastBalance().intValue());
+                responseVo.setCurrency(gameSession.getCurrencyCode());
+            }
+
+//            responseVo.setStatus(ResponseCodes.RS_OK);
+//            responseVo.setUser(gameSession.getVendorPlayerUsername());
+//            responseVo.setBalance(betEvent.getLastBalance().intValue());
+//            responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);
