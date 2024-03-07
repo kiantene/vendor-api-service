@@ -107,7 +107,7 @@ public class WalletAdjustmentAction {
             if (httpRequestLog != null) {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
-                httpRequestLog.setOperatorTimestamp(responseVo.getData().getTimestamp());
+                Optional.ofNullable(responseVo.getData()).ifPresent(data -> httpRequestLog.setOperatorTimestamp(data.getTimestamp()));
 
             }
 
