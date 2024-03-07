@@ -42,6 +42,32 @@ public class BetHistoryController {
 
     //for QA use to test get bet history detail
     @PostMapping(path = "/details")
+    public ResponseEntity<DetailsVo> details(@RequestBody ObjectNode json) {
+        DetailsVo detailsVo = new DetailsVo();
+        if (requestService.isTestEnvironment(profilesActive)) {
+            VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(json.get("username").asText());
+
+            List<BetHistory> betHistoryList = betHistoryRepository.findByExternalTransactionIdAndRoundIdAndVendorLineId(
+                    json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId());
+
+            List<BetHistory> sortedBetHistoryList = betHistoryList.stream()
+                    .sorted(Comparator.comparingInt(BetHistory::getResettleNum))
+                    .collect(Collectors.toList());
+
+            detailsVo.setBetHistoryList(sortedBetHistoryList);
+
+            return new ResponseEntity<>(
+                    detailsVo,
+                    HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(
+                    detailsVo,
+                    HttpStatus.BAD_REQUEST);
+        }
+
+    }
+
+    @PostMapping(path = "/detail")
     public ResponseEntity<Detailvo> detail(@RequestBody ObjectNode json) {
         Detailvo detailvo = new Detailvo();
         if (requestService.isTestEnvironment(profilesActive)) {
@@ -54,11 +80,7 @@ public class BetHistoryController {
                     .max(Comparator.comparingInt(BetHistory::getResettleNum))
                     .orElse(null);
 
-            List<BetHistory> sortedBetHistoryList = betHistoryList.stream()
-                    .sorted(Comparator.comparingInt(BetHistory::getResettleNum))
-                    .collect(Collectors.toList());
-
-            detailvo.setBetHistoryList(sortedBetHistoryList);
+            detailvo.setBetHistory(betHistory);
 
             return new ResponseEntity<>(
                     detailvo,
@@ -68,13 +90,20 @@ public class BetHistoryController {
                     detailvo,
                     HttpStatus.BAD_REQUEST);
         }
+    }
 
+    @Data
+    static class DetailsVo {
+
+        public List<BetHistory> betHistoryList;
+        public BetResultLog betResultLog;
+        //public BetRefundLog betRefundLog;
     }
 
     @Data
     static class Detailvo {
 
-        public List<BetHistory> betHistoryList;
+        public BetHistory betHistory;
         public BetResultLog betResultLog;
         //public BetRefundLog betRefundLog;
     }
