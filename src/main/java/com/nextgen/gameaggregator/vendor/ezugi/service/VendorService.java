@@ -109,4 +109,10 @@ public class VendorService extends BaseVendorService {
             throw new DuplicateExternalTransactionIdException();
         }
     }
+
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+        //Will be using betAmount as effectiveTurnover
+        return betInfo.getBetAmount();
+    }
 }
