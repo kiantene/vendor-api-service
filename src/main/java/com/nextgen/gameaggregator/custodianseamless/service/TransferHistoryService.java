@@ -11,6 +11,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 public class TransferHistoryService {
@@ -20,8 +21,8 @@ public class TransferHistoryService {
 
 
     @Cacheable(value = "RawTransferHistories", key = "{#referenceId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
-    public RawTransferHistory getTransactionHistoryById(String referenceId, Integer  agentId) {
-        return rawTransferHistoryRepository.findByReferenceIdAndAgentId(referenceId, agentId);
+    public Optional<RawTransferHistory> getTransactionHistoryById(String referenceId, Integer  agentId) {
+        return rawTransferHistoryRepository.findById(referenceId+agentId);
     }
 
     @CachePut(value = "RawTransferHistories", key = "{#referenceId, #agentPlayer.agentId}", cacheManager = "cacheManager")

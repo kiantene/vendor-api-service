@@ -9,7 +9,7 @@ import com.nextgen.gameaggregator.custodianseamless.service.TransferService;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
 import com.nextgen.gameaggregator.entity.ga.Currency;
-import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
+import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
@@ -77,9 +77,10 @@ public class GetSingleTransactionAction {
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
 
-            RawTransferHistory transferHistory =
+            TransferHistory transferHistory =
                     transferService.getTransferHistoryByReferenceId(dto.getReferenceId(), apiCredential.getAgent().getId(),
                             currency, dto.getUsername());
+
 
             GetSingleTransactionData getSingleTransactionData = new GetSingleTransactionData(transferHistory, currency);
 

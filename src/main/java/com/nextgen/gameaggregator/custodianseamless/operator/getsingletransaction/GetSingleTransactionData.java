@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.custodianseamless.operator.getsingletransacti
 import com.nextgen.gameaggregator.custodianseamless.constant.TransactionStatus;
 import com.nextgen.gameaggregator.custodianseamless.constant.TransactionType;
 import com.nextgen.gameaggregator.entity.ga.Currency;
-import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
+import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -22,18 +22,18 @@ public class GetSingleTransactionData {
     private BigDecimal transferAmount;
     private Long timestamp;
 
-    public GetSingleTransactionData(RawTransferHistory rawTransferHistory, Currency currency){
-        this.referenceId = rawTransferHistory.getReferenceId();
-        this.transactionId = rawTransferHistory.getId();
+    public GetSingleTransactionData(TransferHistory transferHistory, Currency currency){
+        this.referenceId = transferHistory.getReferenceId();
+        this.transactionId = transferHistory.getId();
         this.transactionStatus =
-                TransactionStatus.getDescriptionByStatus(rawTransferHistory.getTransactionStatus());
-        this.transactionType = TransactionType.getTransactionTypeByStatus(rawTransferHistory.getTransactionType());
-        this.username = rawTransferHistory.getAgentPlayerUsername();
+                TransactionStatus.getDescriptionByStatus(transferHistory.getTransactionStatus());
+        this.transactionType = TransactionType.getTransactionTypeByStatus(transferHistory.getTransactionType());
+        this.username = transferHistory.getAgentPlayerUsername();
         this.currencyCode = currency.getCode();
-        this.beforeBalance = rawTransferHistory.getBalanceBefore();
-        this.afterBalance = rawTransferHistory.getBalanceAfter();
-        this.transferAmount = rawTransferHistory.getTransferAmount();
-        this.timestamp = rawTransferHistory.getCreateTime();
+        this.beforeBalance = transferHistory.getBalanceBefore();
+        this.afterBalance = transferHistory.getBalanceAfter();
+        this.transferAmount = transferHistory.getTransferAmount();
+        this.timestamp = transferHistory.getCreateTime();
 
     }
 

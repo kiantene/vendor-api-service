@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public enum TransactionType {
     DEPOSIT (1, "DEPOSIT"),
-    WITHDRAWAL (3, "WITHDRAWAL")
+    WITHDRAWAL (2, "WITHDRAWAL")
     ;
 
     public final Integer status;

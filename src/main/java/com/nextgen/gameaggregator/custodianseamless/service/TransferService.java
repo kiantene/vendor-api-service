@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.ga.RawTransferHistory;
 import com.nextgen.gameaggregator.entity.wallet.AccessKey;
+import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.DisabledAgentPlayerException;
 import com.nextgen.gameaggregator.exception.DuplicateRequestException;
@@ -21,6 +22,7 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.wallet.reader.AccessKeyReaderRepository;
+import com.nextgen.gameaggregator.repository.wallet.reader.TransferHistoryReaderRepository;
 import com.nextgen.gameaggregator.service.KafkaService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,9 @@ public class TransferService {
     @Autowired
     private KafkaService kafkaService;
 
+    @Autowired
+    private TransferHistoryReaderRepository transferHistoryReaderRepository;
+
     @Cacheable(value = "TraceIds", key = "{#traceId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
     public TraceIdRequest checkTraceIdExists(String traceId, Integer agentId) throws DuplicateRequestException {
         String cacheKey = "TraceIds::" + traceId + "," + agentId;
@@ -63,31 +68,40 @@ public class TransferService {
         }
     }
 
-    public RawTransferHistory checkReferenceIdExists(String referenceId, Integer agentId) throws DuplicateReferenceIdException {
-        RawTransferHistory rawTransferHistory = transferHistoryService.getTransactionHistoryById(referenceId, agentId);
-        if (rawTransferHistory != null) {
-            throw new DuplicateReferenceIdException("referenceId :" + referenceId + " existing within 7 days ");
-        } else {
-            return rawTransferHistory;
+    public void  checkReferenceIdExists(String referenceId, Integer agentId) throws DuplicateReferenceIdException {
+        Optional<RawTransferHistory> rawTransferHistory = transferHistoryService.getTransactionHistoryById(referenceId, agentId);
+        if (rawTransferHistory.isPresent()) {
+            throw new DuplicateReferenceIdException("referenceId :" + referenceId + " existing within 1 days ");
         }
     }
 
-    public RawTransferHistory getTransferHistoryByReferenceId(String referenceId, Integer agentId, Currency currency, String username)
+
+    public TransferHistory getTransferHistoryByReferenceId(String referenceId, Integer agentId, Currency currency, String username)
             throws TransferHistoryNotFoundException {
-        RawTransferHistory rawTransferHistory = transferHistoryService.getTransactionHistoryById(referenceId, agentId);
-        Optional.ofNullable(rawTransferHistory).orElseThrow(TransferHistoryNotFoundException::new);
+        Optional<RawTransferHistory> rawTransferHistory =
+                transferHistoryService.getTransactionHistoryById(referenceId, agentId);
 
-        if (!rawTransferHistory.getCurrencyId().equals(currency.getId())) {
+        TransferHistory transferHistory = null;
+        if (rawTransferHistory.isPresent()) {
+            transferHistory =  new TransferHistory(rawTransferHistory.get());
+        }else{
+            transferHistory = transferHistoryReaderRepository.findTransferHistoriesByAgentIdAndReferenceId(agentId, referenceId);
+        }
+
+        Optional.ofNullable(transferHistory).orElseThrow(TransferHistoryNotFoundException::new);
+
+        if (!transferHistory.getCurrencyId().equals(currency.getId())) {
             throw new TransferHistoryNotFoundException();
         }
 
-        if (!rawTransferHistory.getAgentPlayerUsername().equals(username)) {
+        if (!transferHistory.getAgentPlayerUsername().equals(username)) {
             throw new TransferHistoryNotFoundException();
         }
 
-        return rawTransferHistory;
+        return transferHistory;
 
     }
+
 
 
     @CachePut(value = "AgentPlayers", key = "{#agent.id, #username}", cacheManager = "cacheManager")
@@ -118,7 +132,7 @@ public class TransferService {
         transferHistoryService.updateRawTransferHistory(rawTransferHistory);
         transferHistoryService.saveRawTransferHistory(rawTransferHistory);
         //send to process transfer history kafka topic
-        kafkaService.produceTransferHistory(rawTransferHistory);
+        kafkaService.produceTransferHistory(new TransferHistory(rawTransferHistory));
 
         return new TransferData(rawTransferHistory, currency.getCode());
     }

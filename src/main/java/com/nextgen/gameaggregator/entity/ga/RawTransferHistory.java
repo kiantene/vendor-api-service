@@ -23,6 +23,9 @@ public class RawTransferHistory {
     @Id
     @JsonProperty("id")
     private String id;
+    @Id
+    @JsonProperty("transfer_history_id")
+    private String transferHistoryId;
     @JsonProperty("reference_id")
     private String referenceId;
     @JsonProperty("wallet_transaction_id")
@@ -59,7 +62,8 @@ public class RawTransferHistory {
     //create transaction history before call to wallet service
     public RawTransferHistory
     (String referenceId, AgentPlayer agentPlayer, Currency currency, Integer transactionType, BigDecimal transferAmount) {
-        this.id = String.valueOf(UUID.randomUUID());
+        this.id = referenceId+ "_"+ agentPlayer.getAgentId();
+        this.transferHistoryId = String.valueOf(UUID.randomUUID());
         this.referenceId = referenceId;
         this.walletTransactionId = null;
         this.agentId = agentPlayer.getAgentId();
