@@ -22,7 +22,7 @@ public class TransferHistoryService {
 
     @Cacheable(value = "RawTransferHistories", key = "{#referenceId, #agentId}", cacheManager = "cacheManager", unless = "#result == null")
     public Optional<RawTransferHistory> getTransactionHistoryById(String referenceId, Integer  agentId) {
-        return rawTransferHistoryRepository.findById(referenceId+agentId);
+        return rawTransferHistoryRepository.findById(referenceId+"_"+agentId);
     }
 
     @CachePut(value = "RawTransferHistories", key = "{#referenceId, #agentPlayer.agentId}", cacheManager = "cacheManager")
