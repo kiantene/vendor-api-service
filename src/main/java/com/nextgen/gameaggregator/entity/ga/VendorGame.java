@@ -2,10 +2,9 @@ package com.nextgen.gameaggregator.entity.ga;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -14,11 +13,13 @@ import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity
 @Table(name = "vendor_games")
 @Data
-public class VendorGame extends BaseEntity{
+public class VendorGame extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -118,6 +119,9 @@ public class VendorGame extends BaseEntity{
 
         @JsonProperty("vendor_bet_time")
         private Long vendorBetTime;
+
+        @JsonProperty("create_date")
+        private String createDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
         public SportUnsettledBetMariaDB(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
             ModelMapper modelMapper = new ModelMapper();
