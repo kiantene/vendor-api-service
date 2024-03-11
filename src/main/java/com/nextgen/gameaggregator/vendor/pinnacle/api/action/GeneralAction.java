@@ -27,10 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -67,7 +64,12 @@ public class GeneralAction {
             ActionsDto dto = objectMapper.readValue(body, ActionsDto.class);
 
             // Get game session with username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getActions().get(0).getPlayerInfo().getUserCode());
+            GameSession gameSession;
+            if (Set.of("BETTED", "ACCEPTED").contains(dto.getActions().get(0).getName().toUpperCase())) {
+                gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getActions().get(0).getPlayerInfo().getUserCode());
+            } else {
+                gameSession = null;
+            }
 
             // Create a set to store action name
             Set<String> uniqueActionNames = new HashSet<>();
@@ -86,7 +88,7 @@ public class GeneralAction {
                     .flatMap(List::stream) // Flatten the list of lists into a single list
                     .collect(Collectors.toList());
 
-            responseVo = mergeResponses(commonVos, dto.getActions().get(0), gameSession, httpRequestLog);
+            responseVo = mergeResponses(commonVos, dto.getActions().get(0));
 
         } catch (Exception exception) {
             httpService.logError(httpRequestLog, exception);
@@ -106,10 +108,10 @@ public class GeneralAction {
             switch (actionName) {
                 case "BETTED" -> commonVos.addAll(betService.bet(dto, gameSession, httpRequestLog));
                 case "ACCEPTED" -> commonVos.addAll(acceptService.accept(dto, gameSession, httpRequestLog));
-                case "SETTLED" -> commonVos.addAll(settledService.settled(dto, gameSession, httpRequestLog));
+                case "SETTLED" -> commonVos.addAll(settledService.settled(dto, httpRequestLog));
                 case "REJECTED", "ROLLBACKED", "CANCELLED" ->
-                        commonVos.addAll(refundService.refund(dto, gameSession, httpRequestLog));
-                case "UNSETTLED" -> commonVos.addAll(unsettleService.unsettle(dto, gameSession, httpRequestLog));
+                        commonVos.addAll(refundService.refund(dto, httpRequestLog));
+                case "UNSETTLED" -> commonVos.addAll(unsettleService.unsettle(dto, httpRequestLog));
                 default -> {
                     CommonVo commonVo = new CommonVo();
                     commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
@@ -125,19 +127,16 @@ public class GeneralAction {
         return commonVos;
     }
 
-    private ResponseVo mergeResponses(List<CommonVo> commonVos, Action action, GameSession gameSession, HttpRequestLog httpRequestLog) {
+    private ResponseVo mergeResponses(List<CommonVo> commonVos, Action action) {
         ResponseVo responseVo = new ResponseVo();
         ResultVo result = new ResultVo();
-        String traceId = httpRequestLog.getId();
 
         try {
             // Check if any CommonVo has error
             boolean hasUnknownError = commonVos.stream().anyMatch(commonVo -> commonVo.getResponseCode() != 0);
 
-            // Get latest balance after all actions are done
-            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
             result.setUserCode(action.getPlayerInfo().getUserCode());
-            result.setAvailableBalance(balance);
+            result.setAvailableBalance(Optional.ofNullable(commonVos.get(commonVos.size() - 1).getBalance()).orElse(BigDecimal.ZERO));
             result.setActions(commonVos);
 
             // Set errorCode based on the condition

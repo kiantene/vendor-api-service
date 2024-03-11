@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface BetHistoryRepository extends JpaRepository<BetHistory, String> {
     BetHistory findByRoundIdAndVendorGameIdAndVendorPlayerId(String roundId, Integer vendorGameId, Long vendorPlayerId);
@@ -17,7 +19,7 @@ public interface BetHistoryRepository extends JpaRepository<BetHistory, String> 
 
     BetHistory findByExternalTransactionIdAndVendorIdAndVendorPlayerId(String txnId, Integer vendorId, Long vendorPlayerId);
 
-    BetHistory findByExternalTransactionIdAndRoundIdAndVendorLineId(String externalTransactionId, String roundId, Integer VendorLineId);
+    List<BetHistory> findByExternalTransactionIdAndRoundIdAndVendorLineId(String externalTransactionId, String roundId, Integer VendorLineId);
 
 
     @Query(value = "SELECT " +

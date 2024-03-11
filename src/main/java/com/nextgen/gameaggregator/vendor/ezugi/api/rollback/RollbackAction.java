@@ -138,7 +138,7 @@ public class RollbackAction {
                 rollbackVo.setBalance(vendorService.getCurrentBalance(traceId, rollbackDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
             }
             rollbackVo.setCurrency(rollbackDto.getCurrency());
-            rollbackVo.setTimestamp(System.currentTimeMillis());
+            rollbackVo.setTimestamp(VendorService.getOperatorTimestamp(httpRequestLog));
             httpService.end(httpRequestLog, rollbackVo);
         }
         return rollbackVo;
