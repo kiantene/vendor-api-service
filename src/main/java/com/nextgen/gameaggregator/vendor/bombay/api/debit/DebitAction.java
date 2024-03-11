@@ -129,16 +129,13 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto,GameSession gameSession, String x_signature, String request_body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(DebitDto dto,GameSession gameSession, String x_signature, String request_body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CredentialNotFoundException, InvalidSignatureException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode
         String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
         ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);
-
-        // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor's x-signature
         String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);

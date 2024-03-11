@@ -101,9 +101,6 @@ public class CreditAction {
         } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
-        } catch(CurrencyNotSupportedException e){
-            httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
         } catch(InvalidPlayerException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
@@ -139,16 +136,13 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession, String x_signature, String request_body) throws DisabledGameException, DisabledAgentPlayerException, InvalidPlayerException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(CreditDto dto, GameSession gameSession, String x_signature, String request_body) throws DisabledGameException, DisabledAgentPlayerException, InvalidPlayerException, DisabledVendorLineException, GameNotSupportedException, AuthenticationException, CredentialNotFoundException, InvalidSignatureException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode
         String game_code = vendorService.trimGameCode(gameSession.getVendorGameCode());
         ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);
-
-        // Verify vendor currency
-        ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 
         // Verify vendor's x-signature
         String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
