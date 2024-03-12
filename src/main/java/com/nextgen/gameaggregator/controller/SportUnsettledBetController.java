@@ -46,7 +46,7 @@ public class SportUnsettledBetController {
                     .sorted(Comparator.comparingLong(VendorGame.SportUnsettledBetMariaDB::getCreateDate))
                     .collect(Collectors.toList());
 
-            detailVo.setSportUnsettledBetMariaDB(sportUnsettledBetMariaDBList);
+            detailVo.setSportUnsettledBetMariaDB(sortedSportUnsettledBetMariaDBList);
 
             return new ResponseEntity<>(
                     detailVo,
