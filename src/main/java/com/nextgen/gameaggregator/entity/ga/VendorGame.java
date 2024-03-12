@@ -13,8 +13,6 @@ import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Entity
 @Table(name = "vendor_games")
@@ -121,7 +119,7 @@ public class VendorGame extends BaseEntity {
         private Long vendorBetTime;
 
         @JsonProperty("create_date")
-        private String createDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        private Long createDate = System.currentTimeMillis();
 
         public SportUnsettledBetMariaDB(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
             ModelMapper modelMapper = new ModelMapper();

@@ -43,10 +43,10 @@ public class SportUnsettledBetController {
                     json.get("externalTransactionId").asText(), json.get("roundId").asText(), vendorPlayer.getVendorLineId());
 
             List<VendorGame.SportUnsettledBetMariaDB> sortedSportUnsettledBetMariaDBList = sportUnsettledBetMariaDBList.stream()
-                    .sorted(Comparator.comparing(VendorGame.SportUnsettledBetMariaDB::getCreateDate))
+                    .sorted(Comparator.comparingLong(VendorGame.SportUnsettledBetMariaDB::getCreateDate))
                     .collect(Collectors.toList());
 
-            detailVo.setSportUnsettledBetMariaDB(sortedSportUnsettledBetMariaDBList);
+            detailVo.setSportUnsettledBetMariaDB(sportUnsettledBetMariaDBList);
 
             return new ResponseEntity<>(
                     detailVo,
