@@ -2,10 +2,9 @@ package com.nextgen.gameaggregator.entity.ga;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import jakarta.persistence.*;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -18,7 +17,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "vendor_games")
 @Data
-public class VendorGame extends BaseEntity{
+public class VendorGame extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -118,6 +117,9 @@ public class VendorGame extends BaseEntity{
 
         @JsonProperty("vendor_bet_time")
         private Long vendorBetTime;
+
+        @JsonProperty("create_date")
+        private Long createDate = System.currentTimeMillis();
 
         public SportUnsettledBetMariaDB(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
             ModelMapper modelMapper = new ModelMapper();
