@@ -206,6 +206,7 @@ public class SportWalletService {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
         sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
+        String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
         Integer isResettlementBet = 0;
         BetEvent betEvent = null;
 
@@ -250,11 +251,6 @@ public class SportWalletService {
             WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, null);
 
-            // Update status in sport_unsettled_bet (MariaDB)
-            VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-            sportUnsettledBetMariaDB.setStatus(1);
-            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
-
             // Insert settled bet into bet_history (MariaDB)
             Integer betStatus = BetStatus.SETTLED.code;
             BigDecimal winAmount = sportBetResultData.getWinAmount();
@@ -265,8 +261,16 @@ public class SportWalletService {
             // Insert record into sport_settled_bet (Couchbase)
             sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
 
+            //this to handle sportUnsettledBetCouchbase as settledBet with newId to send to operator but set back old betId to handle delete unsettledBet
+            sportUnsettledBetCouchbase.setBetId(unsettledBetId);
+
             // Delete record in sport_unsettled_bet (Couchbase)
             sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
+
+            // Update status in sport_unsettled_bet (MariaDB)
+            VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
+            sportUnsettledBetMariaDB.setStatus(1);
+            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
