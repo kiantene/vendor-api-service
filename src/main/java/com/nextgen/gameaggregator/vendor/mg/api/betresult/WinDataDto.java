@@ -77,8 +77,8 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        long dateChangeVendorBetId = 1709251200000L; // March 01 2024 GMT + 0
-        return (this.getCreationTimeMs() < dateChangeVendorBetId) ? betId : txnId;
+        // change betId to txnId from March 01 2024 GMT + 0
+        return txnId;
     }
 
     @Override

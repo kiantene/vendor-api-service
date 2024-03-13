@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -81,6 +82,9 @@ public class DebitAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
+            // get x-ambslot-signature value for validation
+            Map<String,String> header = vendorService.headersToHashMap(request);
+
             debitDto = httpService.convertJsonToDto(body, DebitDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -90,7 +94,7 @@ public class DebitAction {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitDto.getUsername(), debitDto.getGameId());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(debitDto, gameSession);
+            this.doVerification(debitDto, gameSession, header.get("x-ambslot-signature"), body);
 
             // Set it as unsettle status even the bet request will show is end round
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
@@ -164,6 +168,7 @@ public class DebitAction {
                InvalidPlayerException |
                AuthenticationException |
                CurrencyNotSupportedException |
+               InvalidSignatureException |
                GameNotSupportedException e){
             httpService.logError(httpRequestLog, e);
 
@@ -202,7 +207,7 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession,dto.getUsername());
 
@@ -219,5 +224,17 @@ public class DebitAction {
         //Verify agent is same with credential
         String agent = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.prefix);
         ValidationUtils.isEquals(agent.toLowerCase(), dto.getAgent(), InvalidRequestException::new);
+
+        // Verify header value
+        String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
+        int iterations = 1000;
+
+        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+
+        String encrypted_value = vendorService.encryption(body, secret, iterations);
+
+        if(!header.equals(encrypted_value)){
+            throw new InvalidSignatureException();
+        }
     }
 }

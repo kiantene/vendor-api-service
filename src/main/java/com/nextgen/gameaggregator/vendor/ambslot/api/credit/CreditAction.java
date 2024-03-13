@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -83,6 +84,9 @@ public class CreditAction {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
 
+            // get x-ambslot-signature value for validation
+            Map<String,String> header = vendorService.headersToHashMap(request);
+
             creditDto = httpService.convertJsonToDto(body, CreditDto.class);
 
             // Validate request parameters from vendor (Non-database related)
@@ -92,7 +96,7 @@ public class CreditAction {
             gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditDto.getUsername(), creditDto.getGameId());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(creditDto,gameSession);
+            this.doVerification(creditDto,gameSession, header.get("x-ambslot-signature"), body);
 
             ResultType resultType = vendorService.generateResultType(creditDto.getAmount(), creditDto.getIsEndRound());
 
@@ -177,6 +181,7 @@ public class CreditAction {
                AuthenticationException |
                InvalidPlayerException |
                BetNotFoundException |
+               InvalidSignatureException |
                CredentialNotFoundException e){
             httpService.logError(httpRequestLog, e);
 
@@ -217,7 +222,7 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession) throws DisabledGameException, DisabledAgentPlayerException, DisabledVendorLineException, InvalidPlayerException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(CreditDto dto, GameSession gameSession, String header, String body) throws DisabledGameException, DisabledAgentPlayerException, DisabledVendorLineException, InvalidPlayerException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException {
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
 
@@ -231,5 +236,17 @@ public class CreditAction {
         //Verify agent is same with credential
         String agent = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.prefix);
         ValidationUtils.isEquals(agent.toLowerCase(), dto.getAgent(), InvalidRequestException::new);
+
+        // Verify header value
+        String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
+        int iterations = 1000;
+
+        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+
+        String encrypted_value = vendorService.encryption(body, secret, iterations);
+
+        if(!header.equals(encrypted_value)){
+            throw new InvalidSignatureException();
+        }
     }
 }
