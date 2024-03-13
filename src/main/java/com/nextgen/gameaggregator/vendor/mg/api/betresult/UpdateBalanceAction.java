@@ -44,8 +44,6 @@ public class UpdateBalanceAction {
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
-    // Determine message for checkUnsettleAndSettleBet
-    private String message = "";
 
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
@@ -61,7 +59,8 @@ public class UpdateBalanceAction {
         HttpHeaders headers = new HttpHeaders();
 
         GameSession gameSession = null;
-        this.message = "";
+        // Determine message for checkUnsettleAndSettleBet
+        StringBuilder message = new StringBuilder();
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -81,7 +80,7 @@ public class UpdateBalanceAction {
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    this.checkUnsettleAndSettleBet(winDataDto, gameSession);
+                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message);
                     ResultType resultType = determineResultType(dto);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -116,7 +115,7 @@ public class UpdateBalanceAction {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         } catch (BetNotFoundException betNotFoundException) {
-            httpService.logError(httpRequestLog, new BetNotFoundException(betNotFoundException.getMessage() + " | " + this.message));
+            httpService.logError(httpRequestLog, new BetNotFoundException(betNotFoundException.getMessage() + " | " + message.toString()));
             status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -171,7 +170,7 @@ public class UpdateBalanceAction {
         return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
     }
 
-    private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession) throws BetNotFoundException, BetResultIdempotentViolationException {
+    private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message) throws BetNotFoundException, BetResultIdempotentViolationException {
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(winDataDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
         if (unsettledBetList.isEmpty()) {
             try {
@@ -180,11 +179,11 @@ public class UpdateBalanceAction {
                     throw new BetResultIdempotentViolationException(settledBetOptional.get());
                 }
             } catch (BetNotFoundException betNotFoundException) {
-                this.message += "MG Class File Exception Cannot find unsettled and settled bets with round Id: " + winDataDto.getRoundId();
+                message.append("MG Class File Exception Cannot find unsettled and settled bets with round Id: " + winDataDto.getRoundId());
                 throw betNotFoundException;
             }
         } else {
-            unsettledBetList.stream().forEach(data -> this.message += "unsettledBet : " + data.getInternalTransactionId() + " ");
+            unsettledBetList.stream().forEach(data -> message.append("unsettledBet : " + data.getInternalTransactionId() + " "));
         }
     }
 }
