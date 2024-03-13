@@ -152,6 +152,10 @@ public class SportWalletService {
         sportUnsettledBetCouchbase.setNewBetAmount(sportBetResultData.getNewBetAmount());
         sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
 
+        if (sportUnsettledBetCouchbase.getOperatorStatus() == ResponseCodes.Status.SC_OK.code) {
+            sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
+        }
+
         loggingService.logProcessTime("processBet ｜ unsettledBetService.idempotentCheck", traceId);
 
         BetEvent betEvent = null;
@@ -234,7 +238,7 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setWinAmount(sportBetResultData.getWinAmount());
             BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
             sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
-            sportUnsettledBetCouchbase.setEffectiveTurnover(sportUnsettledBetCouchbase.getNewBetAmount());
+            sportUnsettledBetCouchbase.setEffectiveTurnover(newBetAmount);
             sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
 
             if (isResettlementBet == 1 || sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
@@ -337,6 +341,10 @@ public class SportWalletService {
 
         try {
             SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportSettledBet.toSportUnsettleBetCouchbase();
+
+            if (sportUnsettledBetCouchbase.getOperatorStatus() == ResponseCodes.Status.SC_OK.code) {
+                sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
+            }
 
             WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);

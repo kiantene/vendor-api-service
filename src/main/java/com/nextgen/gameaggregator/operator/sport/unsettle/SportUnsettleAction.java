@@ -47,8 +47,8 @@ public class SportUnsettleAction {
     private VendorGameRepository vendorGameRepository;
 
     public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
-        InvalidAgentApiCredentialException, InvalidOperatorResponseException {
-            
+            InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
         Integer agentId = betInformation.getAgentId();
@@ -134,7 +134,8 @@ public class SportUnsettleAction {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException | ResponseNotMatchRequestException invalidResponseException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 ResponseNotMatchRequestException invalidResponseException) {
 
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
@@ -154,7 +155,7 @@ public class SportUnsettleAction {
         SportUnsettleDto sportUnsettleDto = new SportUnsettleDto();
         sportUnsettleDto.setTraceId(traceId);
         sportUnsettleDto.setBetId(betInformation.getBetId());
-        sportUnsettleDto.setTransactionId(betInformation.getId());
+        sportUnsettleDto.setTransactionId(betInformation.getInternalTransactionId());
         sportUnsettleDto.setUsername(agentPlayerUsername);
         sportUnsettleDto.setCurrency(currencyCode);
         sportUnsettleDto.setExternalTransactionId(betInformation.getExternalTransactionId());
