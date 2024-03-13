@@ -4,7 +4,7 @@ public class ResponseCodes {
     // response code
     public static final Integer SUCCESS = 0;
     public static final Integer INVALID_REQUEST = 997;
-    public static final Integer INVALID_AGENT = 998;
+
     public static final Integer RESPONSE_ERROR = 1600;
     public static final Integer RESPONSE_TIMEOUT_ERROR = 1601;
     public static final Integer DUPLICATED_TRANSACTION_ERROR = 900;

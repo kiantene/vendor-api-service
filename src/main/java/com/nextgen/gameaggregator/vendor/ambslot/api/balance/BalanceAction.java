@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -56,6 +57,9 @@ public class BalanceAction {
 
             BalanceDto balanceDto = httpService.convertJsonToDto(body,BalanceDto.class);
 
+            // get x-ambslot-signature value for validation
+            Map<String,String> header = vendorService.headersToHashMap(request);
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
 
@@ -63,7 +67,7 @@ public class BalanceAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession);
+            this.doVerification(balanceDto, gameSession, header.get("x-ambslot-signature"), body);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
@@ -79,6 +83,7 @@ public class BalanceAction {
                InvalidFormatException |
                InvalidPlayerException |
                AuthenticationException |
+               InvalidSignatureException |
                JsonParseException |
                CredentialNotFoundException e){
             httpService.logError(httpRequestLog, e);
@@ -118,7 +123,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -131,8 +136,20 @@ public class BalanceAction {
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
 
-        //Verify received agentId is same with credential
+        // Verify received agentId is same with credential
         String agentId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.prefix);
         ValidationUtils.isEquals(agentId.toLowerCase(), dto.getAgentId(), InvalidRequestException::new);
+
+        // Verify header value
+        String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
+        int iterations = 1000;
+
+        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+
+        String encrypted_value = vendorService.encryption(body, secret, iterations);
+
+        if(!header.equals(encrypted_value)){
+            throw new InvalidSignatureException();
+        }
     }
 }
