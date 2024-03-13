@@ -1,5 +1,7 @@
 package com.nextgen.gameaggregator.vendor.bombay.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -155,6 +157,25 @@ public class VendorService extends BaseVendorService {
         }
 
         return headersMap;
+    }
+
+    public static String convertObjectMapper(String body){
+        // Create ObjectMapper instance
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        String convertedJsonString = null;
+
+        try{
+            // Parse JSON string into JsonNode
+            JsonNode jsonNode = objectMapper.readTree(body);
+
+            // Convert JsonNode back to JSON string
+            convertedJsonString = objectMapper.writeValueAsString(jsonNode);
+        } catch (Exception e) {
+            return null;
+        }
+
+        return convertedJsonString;
     }
 
     // if one of the multi bet failed, will happen rollback request for that transaction id

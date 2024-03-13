@@ -139,9 +139,10 @@ public class BalanceAction {
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGame_id(), GameNotSupportedException::new);
 
         // Verify vendor's x-signature
-        request_body = request_body.replaceAll("\\s", ""); // Remove all space, \n or \r
+        String convertedJsonString = vendorService.convertObjectMapper(request_body); // Convert json beautified format back to compact JSON string
+
         String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
-        Boolean validateSignature = vendorService.validateSignature(x_signature, request_body, vendor_public_key);
+        Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
 
         // validateSignature not equal to true mean credential problem or this data is not from vendor
         if(!validateSignature){
