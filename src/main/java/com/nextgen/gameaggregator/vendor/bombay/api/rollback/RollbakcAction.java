@@ -127,6 +127,7 @@ public class RollbakcAction {
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
         // Verify vendor's x-signature
+        request_body = request_body.replaceAll("\\s", ""); // Remove all space, \n or \r
         String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
         Boolean validateSignature = vendorService.validateSignature(x_signature, request_body, vendor_public_key);
 
