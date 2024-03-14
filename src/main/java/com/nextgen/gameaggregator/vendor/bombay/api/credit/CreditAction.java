@@ -106,7 +106,7 @@ public class CreditAction {
                         .stream()
                         .findFirst()
                         .map(Map.Entry::getValue) // get the value of the first element
-                        .orElse(ResponseCodes.RS_ERROR_WRONG_SYNTAX); // if there's no value, set it to the default value
+                        .orElse(ResponseCodes.RS_ERROR_UNKNOWN); // if there's no value, set it to the default value
                 responseVo.setStatus(violation);
             }
         } catch(InvalidPlayerException e){
