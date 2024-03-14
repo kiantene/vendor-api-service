@@ -41,8 +41,8 @@ public class RollbackDto implements RollbackData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String round;
 
-    @NotNull
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @NotNull(message = ResponseCodes.RS_ERROR_INVALID_GAME)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.RS_ERROR_INVALID_GAME)
     private String game_id;
 
     @Override
