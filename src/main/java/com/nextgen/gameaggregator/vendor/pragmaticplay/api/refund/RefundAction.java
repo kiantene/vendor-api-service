@@ -11,14 +11,13 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -77,7 +76,7 @@ public class RefundAction {
             } else {
                 //if found the bet other in settled status (cancel / refund)
                 transactionId = betResultIdempotentViolationException.getTransactionId();
-                responseVo.setTransactionId(transactionId);
+                responseVo.setTransactionId(VendorService.getTransactionId(transactionId));
 
             }
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
