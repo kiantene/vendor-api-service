@@ -94,7 +94,16 @@ public class BalanceAction {
             responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_CURRENCY);
         } catch(InvalidRequestException e){
             httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_ERROR_WRONG_SYNTAX);
+
+            if (e.getValidation() != null) {
+                String violation = e.getValidation()
+                        .entrySet()
+                        .stream()
+                        .findFirst()
+                        .map(Map.Entry::getValue) // get the value of the first element
+                        .orElse(ResponseCodes.RS_ERROR_WRONG_SYNTAX); // if there's no value, set it to the default value
+                responseVo.setStatus(violation);
+            }
         } catch(InvalidSignatureException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);

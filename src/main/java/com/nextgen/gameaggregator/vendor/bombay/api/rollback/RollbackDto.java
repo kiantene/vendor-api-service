@@ -3,9 +3,11 @@ package com.nextgen.gameaggregator.vendor.bombay.api.rollback;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 @Data
@@ -15,8 +17,8 @@ public class RollbackDto implements RollbackData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String transaction_uuid;
 
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @NotBlank(message = ResponseCodes.RS_ERROR_INVALID_TOKEN)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX, message = ResponseCodes.RS_ERROR_INVALID_TOKEN)
     private String token;
 
     @NotBlank
@@ -28,6 +30,7 @@ public class RollbackDto implements RollbackData {
     private String reference_transaction_uuid;
 
     @NotNull
+    @PositiveOrZero
     private Integer amount;
 
     @NotBlank
