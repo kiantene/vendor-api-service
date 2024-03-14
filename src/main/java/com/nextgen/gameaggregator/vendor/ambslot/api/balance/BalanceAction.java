@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.vendor.ambslot.api.balance;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.ambslot.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ambslot.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.ambslot.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ambslot.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ambslot.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ambslot.vo.StatusVo;
@@ -80,11 +79,10 @@ public class BalanceAction {
             balanceVo.setStatus(statusVo);
 
         }catch(InvalidRequestException |
-               InvalidFormatException |
+               JsonProcessingException |
                InvalidPlayerException |
                AuthenticationException |
                InvalidSignatureException |
-               JsonParseException |
                CredentialNotFoundException e){
             httpService.logError(httpRequestLog, e);
 
@@ -123,7 +121,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException, JsonProcessingException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -144,9 +142,10 @@ public class BalanceAction {
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
         int iterations = 1000;
 
-        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+        // Convert JsonNode back to JSON string
+        String convertedJsonString = vendorService.convertObjectMapper(body);
 
-        String encrypted_value = vendorService.encryption(body, secret, iterations);
+        String encrypted_value = vendorService.encryption(convertedJsonString, secret, iterations);
 
         if(!header.equals(encrypted_value)){
             throw new InvalidSignatureException();

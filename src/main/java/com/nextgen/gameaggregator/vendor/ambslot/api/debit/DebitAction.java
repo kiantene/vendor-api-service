@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ambslot.api.debit;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
@@ -163,7 +163,7 @@ public class DebitAction {
 
             debitVo.setStatus(statusVo);
         }catch(InvalidRequestException |
-               InvalidFormatException |
+               JsonProcessingException |
                CredentialNotFoundException |
                InvalidPlayerException |
                AuthenticationException |
@@ -207,7 +207,7 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession,dto.getUsername());
 
@@ -229,9 +229,10 @@ public class DebitAction {
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
         int iterations = 1000;
 
-        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+        // Convert JsonNode back to JSON string
+        String convertedJsonString = vendorService.convertObjectMapper(body);
 
-        String encrypted_value = vendorService.encryption(body, secret, iterations);
+        String encrypted_value = vendorService.encryption(convertedJsonString, secret, iterations);
 
         if(!header.equals(encrypted_value)){
             throw new InvalidSignatureException();

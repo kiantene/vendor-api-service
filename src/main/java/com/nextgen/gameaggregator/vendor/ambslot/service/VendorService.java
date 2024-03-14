@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ambslot.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -135,5 +136,10 @@ public class VendorService extends BaseVendorService {
         }
 
         return headersMap;
+    }
+
+    public static String convertObjectMapper(String body) throws JsonProcessingException {
+        // Create ObjectMapper instance
+         return new ObjectMapper().readTree(body).toString();
     }
 }
