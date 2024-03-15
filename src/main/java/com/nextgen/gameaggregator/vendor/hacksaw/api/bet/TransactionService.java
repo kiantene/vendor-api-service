@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @Slf4j
 public class TransactionService {
@@ -26,10 +28,6 @@ public class TransactionService {
     private WalletService walletService;
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
     @Autowired
@@ -43,9 +41,6 @@ public class TransactionService {
             String body = httpRequestLog.getRequestBody();
 
             TransactionDto transactionDto = HttpService.convertJsonToDto(body, TransactionDto.class);
-
-            // check round id is null or not
-            transactionDto.checkRoundId();
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(transactionDto);
@@ -71,7 +66,8 @@ public class TransactionService {
             vo.setResponseCodes(ResponseCodes.ACCOUNT_LOCKED);
             httpService.logError(httpRequestLog, e);
 
-        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException e) {
+        } catch (JsonProcessingException | InvalidRequestException | CredentialNotFoundException |
+                 GameNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_ACTION);
             httpService.logError(httpRequestLog, e);
 
@@ -81,11 +77,6 @@ public class TransactionService {
 
         } catch (CurrencyNotSupportedException e) {
             vo.setResponseCodes(ResponseCodes.INVALID_CURRENCY);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (GameNotSupportedException e) {
-            vo.setResponseCodes(ResponseCodes.GENERAL_ERROR);
-            vo.setStatusMessage("Unknown Game ID");
             httpService.logError(httpRequestLog, e);
 
         } catch (BetResultIdempotentViolationException e) {
@@ -106,6 +97,8 @@ public class TransactionService {
     }
 
     private void doValidation(TransactionDto dto) throws InvalidRequestException {
+        // check round id is null or not
+        Optional.ofNullable(dto.getRoundId()).orElseThrow(InvalidRequestException::new);
         // General validation
         ValidationUtils.validateRequest(dto);
     }

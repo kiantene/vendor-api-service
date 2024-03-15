@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.convert.CustomConversions;
 import org.springframework.data.couchbase.config.AbstractCouchbaseConfiguration;
 import org.springframework.data.couchbase.repository.config.EnableCouchbaseRepositories;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
@@ -15,8 +16,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
 @Configuration
 @EnableCouchbaseRepositories
+@EnableRetry
 public class CouchbaseConfig extends AbstractCouchbaseConfiguration {
 
     @Value("${spring.couchbase.connectionString}")

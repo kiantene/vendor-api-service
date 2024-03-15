@@ -4,7 +4,7 @@ public class Actions {
 
     //vendor to GA
     public static final String AUTHENTICATE = "Authenticate";
-    
+
     public static final String BALANCE = "Balance";
 
     public static final String BET = "Bet";
@@ -13,4 +13,5 @@ public class Actions {
 
     public static final String ROLLBACK = "Rollback";
     public static final String LOGOUT = "logout";
+    
 }

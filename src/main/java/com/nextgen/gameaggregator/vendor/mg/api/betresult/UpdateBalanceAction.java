@@ -4,13 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
@@ -25,6 +24,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -39,6 +40,10 @@ public class UpdateBalanceAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
 
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
@@ -54,6 +59,8 @@ public class UpdateBalanceAction {
         HttpHeaders headers = new HttpHeaders();
 
         GameSession gameSession = null;
+        // Determine message for checkUnsettleAndSettleBet
+        StringBuilder message = new StringBuilder();
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -73,14 +80,13 @@ public class UpdateBalanceAction {
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
+                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message);
                     ResultType resultType = determineResultType(dto);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
                 }
-                default -> {
-                    status = HttpStatus.INTERNAL_SERVER_ERROR;
-                }
+                default -> status = HttpStatus.INTERNAL_SERVER_ERROR;
             }
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
@@ -109,7 +115,7 @@ public class UpdateBalanceAction {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         } catch (BetNotFoundException betNotFoundException) {
-            httpService.logError(httpRequestLog, betNotFoundException);
+            httpService.logError(httpRequestLog, new BetNotFoundException(betNotFoundException.getMessage() + " | " + message.toString()));
             status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         } catch (InvalidPlayerException invalidPlayerException) {
@@ -162,5 +168,22 @@ public class UpdateBalanceAction {
     private ResultType determineResultType(UpdateBalanceDto dto) {
         // Completed True also will happen in Win Situation
         return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
+    }
+
+    private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message) throws BetNotFoundException, BetResultIdempotentViolationException {
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(winDataDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+        if (unsettledBetList.isEmpty()) {
+            try {
+                Optional<SettledBet> settledBetOptional = Optional.ofNullable(settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(winDataDto.getVendorBetId(), winDataDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId()));
+                if (settledBetOptional.isPresent()) {
+                    throw new BetResultIdempotentViolationException(settledBetOptional.get());
+                }
+            } catch (BetNotFoundException betNotFoundException) {
+                message.append("MG Class File Exception Cannot find unsettled and settled bets with round Id: " + winDataDto.getRoundId());
+                throw betNotFoundException;
+            }
+        } else {
+            unsettledBetList.stream().forEach(data -> message.append("unsettledBet : " + data.getInternalTransactionId() + " "));
+        }
     }
 }

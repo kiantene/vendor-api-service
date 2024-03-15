@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.vendor.alize.api.result;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -33,8 +32,7 @@ public class SettleDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gameCode;
 
-    @NotNull
-    @Max(value = 10)
+    // Optional field
     private Integer gameId;
 
     @NotBlank

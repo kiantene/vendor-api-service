@@ -2,8 +2,10 @@ package com.nextgen.gameaggregator.vendor.alize.api.cancelbet;
 
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
@@ -28,8 +30,7 @@ public class CancelBetDto implements RollbackData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gameCode;
 
-    @NotNull
-    @Max(value = 10)
+    // Optional field
     private Integer gameId;
 
     @NotBlank

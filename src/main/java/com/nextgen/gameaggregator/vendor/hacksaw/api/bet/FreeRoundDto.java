@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class FreeRoundDto {
-    private long freeRoundActivationId;
+    private Long freeRoundActivationId;
 
     private String campaignId;
 
@@ -12,5 +12,5 @@ public class FreeRoundDto {
 
     private Integer freeRoundsRemaining;
 
-    private long freespinValue;
+    private Long freespinValue;
 }

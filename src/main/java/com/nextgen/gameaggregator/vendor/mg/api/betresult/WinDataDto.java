@@ -12,18 +12,19 @@ import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WinDataDto implements BetResultData  {
+public class WinDataDto implements BetResultData {
     @NotNull
     private TxnType txnType;
 
     @NotBlank
-    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$") //checks whether the input matches one of the given types(case-insensitive)
+    @Pattern(regexp = "^(?i)(Game|Tournament|Promotion|Achievement|Store)$")
+    //checks whether the input matches one of the given types(case-insensitive)
     private String txnEventType;
 
     @NotBlank
     @Size(max = 50)
     private String playerId;
-    
+
     @NotNull
     @PositiveOrZero
     private BigDecimal amount;
@@ -76,7 +77,8 @@ public class WinDataDto implements BetResultData  {
 
     @Override
     public String getVendorBetId() {
-        return betId;
+        // change betId to txnId from March 01 2024 GMT + 0
+        return txnId;
     }
 
     @Override
