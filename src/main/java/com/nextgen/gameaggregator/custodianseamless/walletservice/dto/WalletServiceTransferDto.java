@@ -23,7 +23,7 @@ public class WalletServiceTransferDto {
     public WalletServiceTransferDto(String traceId, RawTransferHistory rawTransferHistory){
 
         this.traceId = traceId;
-        this.referenceId = rawTransferHistory.getId();
+        this.referenceId = rawTransferHistory.getReferenceId();
         this.username = rawTransferHistory.getAgentPlayerUsername();
         this.playerId = rawTransferHistory.getAgentPlayerId();
         this.entityId = rawTransferHistory.getAgentId();
