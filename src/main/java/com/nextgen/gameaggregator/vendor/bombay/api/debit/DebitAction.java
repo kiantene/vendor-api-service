@@ -44,7 +44,7 @@ public class DebitAction {
     @Autowired
     private ValidationService validationService;
 
-    private static int lala = 0;
+    public static int rara = 0;
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -57,9 +57,7 @@ public class DebitAction {
 
         GameSession gameSession = new GameSession();
 
-        lala++;
-
-        log.info("count number: " + lala);
+        log.info("count number: " + rara);
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -81,18 +79,20 @@ public class DebitAction {
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            if(lala == 1){
+            if(rara == 0){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-                log.info("count number and transaction id(failed): " + lala + ", " + debitDto.getTransaction_uuid());
+                log.info("count number and transaction id(failed): " + rara + ", " + debitDto.getTransaction_uuid());
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
                 responseVo.setUser(gameSession.getVendorPlayerUsername());
                 responseVo.setBalance(betEvent.getLastBalance().intValue());
                 responseVo.setCurrency(gameSession.getCurrencyCode());
-                log.info("count number and transaction id(success): " + lala + ", " + debitDto.getTransaction_uuid());
-                lala = 0;
-                log.info("count number after reset: " + lala + ", " + debitDto.getTransaction_uuid());
+                log.info("count number and transaction id(success): " + rara + ", " + debitDto.getTransaction_uuid());
+                rara = 0;
+                log.info("count number after reset: " + rara + ", " + debitDto.getTransaction_uuid());
             }
+
+            rara++;
 
 //            responseVo.setStatus(ResponseCodes.RS_OK);
 //            responseVo.setUser(gameSession.getVendorPlayerUsername());
