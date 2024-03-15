@@ -59,6 +59,8 @@ public class DebitAction {
 
         postMappingCount++;
 
+        log.info("count number: " + postMappingCount);
+
         try{
             String body = httpRequestLog.getRequestBody();
 
@@ -81,12 +83,15 @@ public class DebitAction {
 
             if(postMappingCount == 1){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
+                log.info("count number while meet first bet: " + postMappingCount);
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
                 responseVo.setUser(gameSession.getVendorPlayerUsername());
                 responseVo.setBalance(betEvent.getLastBalance().intValue());
                 responseVo.setCurrency(gameSession.getCurrencyCode());
+                log.info("count number before reset: " + postMappingCount);
                 postMappingCount = 0;
+                log.info("count number after reset: " + postMappingCount);
             }
 
 //            responseVo.setStatus(ResponseCodes.RS_OK);
