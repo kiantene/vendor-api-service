@@ -82,6 +82,7 @@ public class DebitAction {
             if(rara == 0){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
                 log.info("count number and transaction id(failed): " + rara + ", " + debitDto.getTransaction_uuid());
+                rara++;
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
                 responseVo.setUser(gameSession.getVendorPlayerUsername());
@@ -91,8 +92,6 @@ public class DebitAction {
                 rara = 0;
                 log.info("count number after reset: " + rara + ", " + debitDto.getTransaction_uuid());
             }
-
-            rara++;
 
 //            responseVo.setStatus(ResponseCodes.RS_OK);
 //            responseVo.setUser(gameSession.getVendorPlayerUsername());
