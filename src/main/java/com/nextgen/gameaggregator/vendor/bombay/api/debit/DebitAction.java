@@ -83,7 +83,7 @@ public class DebitAction {
 
             if(lala == 1){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-                log.info("count number and transaction id(failed): " + postMappingCount + ", " + debitDto.getTransaction_uuid());
+                log.info("count number and transaction id(failed): " + lala + ", " + debitDto.getTransaction_uuid());
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
                 responseVo.setUser(gameSession.getVendorPlayerUsername());
