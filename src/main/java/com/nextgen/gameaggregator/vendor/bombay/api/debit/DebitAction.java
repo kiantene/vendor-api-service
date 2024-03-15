@@ -44,7 +44,6 @@ public class DebitAction {
     @Autowired
     private ValidationService validationService;
 
-    public static int rara = 0;
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -56,8 +55,6 @@ public class DebitAction {
         DebitDto debitDto = null;
 
         GameSession gameSession = new GameSession();
-
-        log.info("count number: " + rara);
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -79,24 +76,10 @@ public class DebitAction {
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            if(rara == 0){
-                responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-                log.info("count number and transaction id(failed): " + rara + ", " + debitDto.getTransaction_uuid());
-                rara++;
-            }else{
-                responseVo.setStatus(ResponseCodes.RS_OK);
-                responseVo.setUser(gameSession.getVendorPlayerUsername());
-                responseVo.setBalance(betEvent.getLastBalance().intValue());
-                responseVo.setCurrency(gameSession.getCurrencyCode());
-                log.info("count number and transaction id(success): " + rara + ", " + debitDto.getTransaction_uuid());
-                rara = 0;
-                log.info("count number after reset: " + rara + ", " + debitDto.getTransaction_uuid());
-            }
-
-//            responseVo.setStatus(ResponseCodes.RS_OK);
-//            responseVo.setUser(gameSession.getVendorPlayerUsername());
-//            responseVo.setBalance(betEvent.getLastBalance().intValue());
-//            responseVo.setCurrency(gameSession.getCurrencyCode());
+            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setUser(gameSession.getVendorPlayerUsername());
+            responseVo.setBalance(betEvent.getLastBalance().intValue());
+            responseVo.setCurrency(gameSession.getCurrencyCode());
 
         } catch(AuthenticationException e){
             httpService.logError(httpRequestLog, e);
