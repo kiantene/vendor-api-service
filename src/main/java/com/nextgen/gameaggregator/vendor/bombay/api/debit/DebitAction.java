@@ -44,7 +44,7 @@ public class DebitAction {
     @Autowired
     private ValidationService validationService;
 
-    private static int postMappingCount = 0;
+    private static int lala = 0;
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debit(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
@@ -57,9 +57,9 @@ public class DebitAction {
 
         GameSession gameSession = new GameSession();
 
-        postMappingCount++;
+        lala++;
 
-        log.info("count number: " + postMappingCount);
+        log.info("count number: " + lala);
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -81,17 +81,17 @@ public class DebitAction {
             // Process Bet
             BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, httpRequestLog.getRequestBody(), httpRequestLog);
 
-            if(postMappingCount == 1){
+            if(lala == 1){
                 responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
-                log.info("count number while meet first bet: " + postMappingCount);
+                log.info("count number and transaction id(failed): " + postMappingCount + ", " + debitDto.getTransaction_uuid());
             }else{
                 responseVo.setStatus(ResponseCodes.RS_OK);
                 responseVo.setUser(gameSession.getVendorPlayerUsername());
                 responseVo.setBalance(betEvent.getLastBalance().intValue());
                 responseVo.setCurrency(gameSession.getCurrencyCode());
-                log.info("count number before reset: " + postMappingCount);
-                postMappingCount = 0;
-                log.info("count number after reset: " + postMappingCount);
+                log.info("count number and transaction id(success): " + lala + ", " + debitDto.getTransaction_uuid());
+                lala = 0;
+                log.info("count number after reset: " + lala + ", " + debitDto.getTransaction_uuid());
             }
 
 //            responseVo.setStatus(ResponseCodes.RS_OK);
