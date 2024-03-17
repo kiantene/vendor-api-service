@@ -301,6 +301,10 @@ public class SportWalletService {
         if (sportUnsettledBetCouchbase.getStatus().compareTo(BetStatus.REFUNDED.code) == 0)
             throw new BetRefundIdempotentViolationException();
 
+        if (sportUnsettledBetCouchbase.getOperatorStatus() == ResponseCodes.Status.SC_OK.code) {
+            sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
+        }
+
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
 
