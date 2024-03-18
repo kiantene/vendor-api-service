@@ -1,9 +1,16 @@
 package com.nextgen.gameaggregator.operator.sport.refund;
 
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.util.Optional;
-
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.EndPoints;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
+import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -14,31 +21,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
-import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
-import com.nextgen.gameaggregator.exception.InvalidResponseException;
-import com.nextgen.gameaggregator.exception.ResponseNotMatchRequestException;
-import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
-import com.nextgen.gameaggregator.operator.constant.EndPoints;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.CurrencyConversionService;
-import com.nextgen.gameaggregator.service.RequestService;
-import com.nextgen.gameaggregator.service.VendorService;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
-
 import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.util.Optional;
 
 @Service
 public class SportRefundAction {
@@ -57,10 +44,12 @@ public class SportRefundAction {
     private AgentPlayerRepository agentPlayerRepository;
     @Autowired
     private CurrencyConversionService currencyConversionService;
+    @Autowired
+    private VendorGameRepository vendorGameRepository;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, 
-        InvalidAgentApiCredentialException, InvalidOperatorResponseException {
-            
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
+            InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
         Integer agentId = betInformation.getAgentId();
@@ -70,13 +59,17 @@ public class SportRefundAction {
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
-        
+
         AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
         SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
         headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
+
+        VendorGame vendorGame = vendorGameRepository.findById(betInformation.getVendorGameId()).orElse(null);
+        httpRequestLog.setVendorGameCode(vendorGame.getVendorGameCode());
+        httpRequestLog.setOperatorUsername(agentPlayer.getUsername());
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
@@ -144,7 +137,8 @@ public class SportRefundAction {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException | ResponseNotMatchRequestException invalidResponseException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 ResponseNotMatchRequestException invalidResponseException) {
 
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
