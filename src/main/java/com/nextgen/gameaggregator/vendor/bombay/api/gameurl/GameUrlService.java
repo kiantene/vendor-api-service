@@ -85,8 +85,6 @@ public class GameUrlService implements GameUrl {
 
         String private_key = credentials.get(Credentials.private_key);
 
-//        String public_key = credentials.get(Credentials.public_key);
-
         String signature = null;
 
         // let SHA256 or RSA ignore and bypass the cert(vendor only provide private and public key)
@@ -96,11 +94,6 @@ public class GameUrlService implements GameUrl {
 
             signature = vendorService.generateSignature(forDataToString, private_key);
 
-//            Boolean validateSignature = vendorService.validateSignature(signature, forDataToString, public_key);
-//
-//            if(!validateSignature){
-//                throw new InvalidSignatureException();
-//            }
         }catch(Exception e){
             throw new RuntimeException("Error generating signature", e);
         }
