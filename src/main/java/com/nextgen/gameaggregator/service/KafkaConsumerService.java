@@ -2,19 +2,17 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.ExceedThresholdCounterException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.util.GeneralVendorClass;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -42,9 +40,14 @@ public class KafkaConsumerService {
     private VendorService vendorService;
     @Autowired
     private SportWalletService sportWalletService;
+    @Autowired
+    private GeneralVendorClass generalVendorClass;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
-    public void consumeEndRoundProcess(String message) throws InterruptedException {
+    public void consumeEndRoundProcess(String message) throws InterruptedException, GameNotSupportedException {
+
+
+        GeneralVendorClass vendorClass = new GeneralVendorClass();
 
         //0. set default value and start counting the entire process start time
         ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
@@ -64,6 +67,12 @@ public class KafkaConsumerService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
         Integer operatorStatusExceededNumOfRetries = ResponseCodes.Status.SC_EXCEEDED_NUMBER_OF_RETRIES.code;
         Integer updatedOperatorStatus = operatorStatusProcessing;
+
+        endRoundSettledBet.getVendorGameId();
+        endRoundSettledBet.getCurrencyId();
+
+        generalVendorClass.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
+
 
         try {
             //0. check bet exists
@@ -104,7 +113,15 @@ public class KafkaConsumerService {
                 log.info(new Gson().toJson(betHistory));
 
                 //8. send to process bet history kafka topic
-                kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                loggingService.logStart();
+                if(!vendorService.getBetPreprocess().getIsPreProcessBet()){
+                    // process bet as normal bet and send to kafka topic_bet_history topic
+                    kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                }else{
+                    // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                    kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                }
+
 
                 //delete unsettled bet
                 UnsettledBet unsettledBet = new UnsettledBet(settledBet);
