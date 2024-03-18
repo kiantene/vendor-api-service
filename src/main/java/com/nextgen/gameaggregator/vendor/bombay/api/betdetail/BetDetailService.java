@@ -74,7 +74,7 @@ public class BetDetailService implements BetDetailUrl {
 
         String private_key = credentials.get(Credentials.private_key);
 
-        String public_key = credentials.get(Credentials.public_key);
+//        String public_key = credentials.get(Credentials.public_key);
 
         String signature = null;
 
@@ -85,11 +85,11 @@ public class BetDetailService implements BetDetailUrl {
 
             signature = vendorService.generateSignature(forDataToString, private_key);
 
-            Boolean validateSignature = vendorService.validateSignature(signature, forDataToString, public_key);
-
-            if(!validateSignature){
-                throw new InvalidSignatureException();
-            }
+//            Boolean validateSignature = vendorService.validateSignature(signature, forDataToString, public_key);
+//
+//            if(!validateSignature){
+//                throw new InvalidSignatureException();
+//            }
         }catch(Exception e){
             throw new RuntimeException("Error generating signature", e);
         }
