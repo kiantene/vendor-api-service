@@ -1,19 +1,15 @@
 package com.nextgen.gameaggregator.entity.ga;
 
-import lombok.Data;
-
 import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
 @Table(name = "vendor_game_codes")
 @Data
-public class VendorGameCode  extends BaseEntity{
+public class VendorGameCode extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-//    private Integer vendorGameId;
-
-//    private Integer vendorId;
     private String name;
     private String openGameCode;
     private String betGameCode;
