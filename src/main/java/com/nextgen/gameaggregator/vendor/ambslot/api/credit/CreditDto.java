@@ -92,7 +92,7 @@ public class CreditDto implements BetResultData {
     @Override
     @JsonIgnore
     public String getRoundId() {
-        return this.roundId;
+        return this.getTransactionId();
     }
 
     @Override
