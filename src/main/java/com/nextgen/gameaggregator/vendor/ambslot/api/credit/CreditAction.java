@@ -21,6 +21,7 @@ import com.nextgen.gameaggregator.vendor.ambslot.vo.StatusVo;
 import com.nextgen.gameaggregator.vendor.ambslot.vo.WalletVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -102,17 +103,10 @@ public class CreditAction {
 
             balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
-            if(creditDto.getIsEndRound().equals(true)){
-                // Retrieve settled data
-                settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), creditDto.getTransactionId());
+            // Retrieve settled data
+            settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), creditDto.getTransactionId());
 
-                before_bet_balance = settledBet.getBetAmount().setScale(2, RoundingMode.DOWN).doubleValue() + settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
-            }else{
-                // Retrieve unsettle data
-                unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(gameSession.getVendorId(), creditDto.getTransactionId());
-
-                before_bet_balance = unsettledBet.getBetAmount().setScale(2, RoundingMode.DOWN).doubleValue() + unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
-            }
+            before_bet_balance = settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
 
             statusVo.setCode(ResponseCodes.SUCCESS);
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
@@ -131,49 +125,19 @@ public class CreditAction {
             dataVo.setRefId(creditDto.getTransactionId());
 
             creditVo.setData(dataVo);
-        }catch(TransactionStillProcessingException e){
+        }catch(TransactionStillProcessingException |
+                BetResultIdempotentViolationException e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
             statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
 
             creditVo.setStatus(statusVo);
-        }catch(BetResultIdempotentViolationException e){
-            // avoid credit occur error and causing retry whole transaction request from bet to settle request
-            if(creditDto.getIsEndRound().equals(true)){
-                // Retrieve settled data
-                settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), creditDto.getTransactionId());
+        }catch(InvalidCredentialsException e){
+            httpService.logError(httpRequestLog, e);
 
-                before_bet_balance = settledBet.getBetAmount().setScale(2, RoundingMode.DOWN).doubleValue() + settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
-
-                walletVo.setBalance(settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-                balanceVo.setAfter(settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-            }else{
-                // Retrieve unsettle data
-                unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), creditDto.getTransactionId());
-
-                before_bet_balance = unsettledBet.getBetAmount().setScale(2, RoundingMode.DOWN).doubleValue() + unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
-
-                walletVo.setBalance(unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-                balanceVo.setAfter(unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-            }
-
-            statusVo.setCode(ResponseCodes.SUCCESS);
-            statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
-
-            creditVo.setStatus(statusVo);
-
-            walletVo.setLastUpdate(dateTime);
-
-            balanceVo.setBefore(before_bet_balance);
-
-            dataVo.setUsername(creditDto.getUsername());
-            dataVo.setWallet(walletVo);
-            dataVo.setBalance(balanceVo);
-            dataVo.setRefId(creditDto.getTransactionId());
-
-            creditVo.setData(dataVo);
-
+            statusVo.setCode(ResponseCodes.INVALID_AGENT);
+            statusVo.setMessage(ResponseCodes.INVALID_AGENT_MSG);
         }catch(InvalidRequestException |
                JsonProcessingException |
                GameNotSupportedException |
@@ -222,7 +186,7 @@ public class CreditAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(CreditDto dto, GameSession gameSession, String header, String body) throws DisabledGameException, DisabledAgentPlayerException, DisabledVendorLineException, InvalidPlayerException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException {
+    private void doVerification(CreditDto dto, GameSession gameSession, String header, String body) throws DisabledGameException, DisabledAgentPlayerException, DisabledVendorLineException, InvalidPlayerException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException, InvalidCredentialsException {
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
 
@@ -235,7 +199,7 @@ public class CreditAction {
 
         //Verify agent is same with credential
         String agent = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.prefix);
-        ValidationUtils.isEquals(agent.toLowerCase(), dto.getAgent(), InvalidRequestException::new);
+        ValidationUtils.isEquals(agent.toLowerCase(), dto.getAgent(), InvalidCredentialsException::new);
 
         // Verify header value
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);

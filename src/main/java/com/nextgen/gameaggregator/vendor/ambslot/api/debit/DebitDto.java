@@ -91,7 +91,7 @@ public class DebitDto implements BetResultData {
     @Override
     @JsonIgnore
     public String getRoundId() {
-        return this.roundId;
+        return this.getTransactionId();
     }
 
     @Override

@@ -154,10 +154,6 @@ public class CreditDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if(this.getIsEndRound().equals(true)){
-            return BetStatus.SETTLED;
-        }else{
-            return BetStatus.UNSETTLED;
-        }
+        return BetStatus.SETTLED;
     }
 }

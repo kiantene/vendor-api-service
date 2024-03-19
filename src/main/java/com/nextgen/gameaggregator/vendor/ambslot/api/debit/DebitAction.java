@@ -20,6 +20,7 @@ import com.nextgen.gameaggregator.vendor.ambslot.vo.StatusVo;
 import com.nextgen.gameaggregator.vendor.ambslot.vo.WalletVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -123,38 +124,14 @@ public class DebitAction {
             dataVo.setRefId(debitDto.getTransactionId());
 
             debitVo.setData(dataVo);
-        }catch(TransactionStillProcessingException e){
+        }catch(TransactionStillProcessingException |
+                BetResultIdempotentViolationException e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
             statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
 
             debitVo.setStatus(statusVo);
-        }catch(BetResultIdempotentViolationException e){
-            // let those transactions go through when halfway through process happen error and causing retry
-            // Retrieve unsettle data
-            unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), e.getBetInformation().getExternalTransactionId());
-
-            // Get wallet balance before bet
-            before_bet_balance = unsettledBet.getBetAmount().setScale(2, RoundingMode.DOWN).doubleValue() + unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
-
-            statusVo.setCode(ResponseCodes.SUCCESS);
-            statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
-
-            debitVo.setStatus(statusVo);
-
-            walletVo.setBalance(unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-            walletVo.setLastUpdate(dateTime);
-
-            balanceVo.setBefore(before_bet_balance);
-            balanceVo.setAfter(unsettledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-
-            dataVo.setUsername(debitDto.getUsername());
-            dataVo.setWallet(walletVo);
-            dataVo.setBalance(balanceVo);
-            dataVo.setRefId(debitDto.getTransactionId());
-
-            debitVo.setData(dataVo);
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
 
@@ -188,6 +165,11 @@ public class DebitAction {
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
             debitVo.setStatus(statusVo);
+        }catch(InvalidCredentialsException e){
+            httpService.logError(httpRequestLog, e);
+
+            statusVo.setCode(ResponseCodes.INVALID_AGENT);
+            statusVo.setMessage(ResponseCodes.INVALID_AGENT_MSG);
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
 
@@ -207,7 +189,7 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException, InvalidCredentialsException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession,dto.getUsername());
 
@@ -223,7 +205,7 @@ public class DebitAction {
 
         //Verify agent is same with credential
         String agent = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.prefix);
-        ValidationUtils.isEquals(agent.toLowerCase(), dto.getAgent(), InvalidRequestException::new);
+        ValidationUtils.isEquals(agent.toLowerCase(), dto.getAgent(), InvalidCredentialsException::new);
 
         // Verify header value
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
