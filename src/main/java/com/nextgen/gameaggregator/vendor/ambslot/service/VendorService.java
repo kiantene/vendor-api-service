@@ -106,9 +106,7 @@ public class VendorService extends BaseVendorService {
         return formattedDateTime;
     }
 
-    public static ResultType generateResultType(Double amount, Boolean endround){
-        // filter endround
-
+    public static ResultType generateResultType(Double amount){
 
         if(amount > 0){
             return ResultType.WIN;

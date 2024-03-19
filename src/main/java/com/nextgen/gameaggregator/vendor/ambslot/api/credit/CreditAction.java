@@ -97,7 +97,7 @@ public class CreditAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto,gameSession, header.get("x-ambslot-signature"), body);
 
-            ResultType resultType = vendorService.generateResultType(creditDto.getAmount(), creditDto.getIsEndRound());
+            ResultType resultType = vendorService.generateResultType(creditDto.getAmount());
 
             balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
