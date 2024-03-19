@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.repository.ga.writer.RawSettledBetRepository;
@@ -75,7 +74,6 @@ public class CreditAction {
         BigDecimal balance = null;
 
         SettledBet settledBet = null;
-        UnsettledBet unsettledBet = null;
 
         Double before_bet_balance = null;
 
@@ -106,7 +104,7 @@ public class CreditAction {
             // Retrieve settled data
             settledBet = rawSettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), creditDto.getTransactionId());
 
-            before_bet_balance = settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue();
+            before_bet_balance = settledBet.getBalance().setScale(2, RoundingMode.DOWN).doubleValue() - creditDto.getAmount().doubleValue();
 
             statusVo.setCode(ResponseCodes.SUCCESS);
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
