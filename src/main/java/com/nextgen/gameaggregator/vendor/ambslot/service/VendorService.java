@@ -112,13 +112,9 @@ public class VendorService extends BaseVendorService {
 
         if(amount > 0){
             return ResultType.WIN;
-        }else{
-            if(endround){
-                return ResultType.END;
-            }
-
-            return ResultType.LOSE;
         }
+
+        return ResultType.END;
     }
 
     public static Map<String, String> headersToHashMap(HttpServletRequest request) {
