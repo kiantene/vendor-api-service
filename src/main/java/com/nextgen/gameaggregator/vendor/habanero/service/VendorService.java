@@ -141,7 +141,7 @@ public class VendorService extends BaseVendorService {
 
         try {
             // Add retry to find settled bet, because DNC request (debit & credit) and Query request very frequently
-            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(vendorBetId, roundId, vendorId, vendorPlayerId);
+            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
