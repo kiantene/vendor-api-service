@@ -88,7 +88,8 @@ public class SettledBetService {
         return settledBet;
     }
 
-    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 5, backoff = @Backoff(delay = 200))
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
+    @Cacheable(value = "SettledBet", key = "{#vendorBetId, #roundId, #vendorId, #vendorPlayerId}", cacheManager = "cacheManager")
     public SettledBet getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
 
         SettledBet settledBet = rawSettledBetRepository.findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
