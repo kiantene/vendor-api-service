@@ -1,6 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ambslot.api.debit;
 
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
@@ -30,9 +30,11 @@ import java.math.RoundingMode;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class DebitAction {
+    @Autowired
+    VendorService vendorService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -45,8 +47,6 @@ public class DebitAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
     @Autowired
     private WalletAdjustmentService walletAdjustmentService;
     @Autowired
@@ -79,11 +79,11 @@ public class DebitAction {
 
         String dateTime = vendorService.convertUnixToDateTime(System.currentTimeMillis());
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
             // get x-ambslot-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            Map<String, String> header = vendorService.headersToHashMap(request);
 
             debitDto = httpService.convertJsonToDto(body, DebitDto.class);
 
@@ -123,14 +123,14 @@ public class DebitAction {
             dataVo.setRefId(debitDto.getTransactionId());
 
             debitVo.setData(dataVo);
-        }catch(TransactionStillProcessingException e){
+        } catch (TransactionStillProcessingException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
             statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
 
             debitVo.setStatus(statusVo);
-        }catch(BetResultIdempotentViolationException e){
+        } catch (BetResultIdempotentViolationException e) {
             // let those transactions go through when halfway through process happen error and causing retry
             // Retrieve unsettle data
             unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), e.getBetInformation().getExternalTransactionId());
@@ -155,47 +155,47 @@ public class DebitAction {
             dataVo.setRefId(debitDto.getTransactionId());
 
             debitVo.setData(dataVo);
-        }catch(InsufficientBalanceException e){
+        } catch (InsufficientBalanceException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             statusVo.setMessage(ResponseCodes.INSUFFICIENT_BALANCE_MSG);
 
             debitVo.setStatus(statusVo);
-        }catch(InvalidRequestException |
-               InvalidFormatException |
-               CredentialNotFoundException |
-               InvalidPlayerException |
-               AuthenticationException |
-               CurrencyNotSupportedException |
-               InvalidSignatureException |
-               GameNotSupportedException e){
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 CredentialNotFoundException |
+                 InvalidPlayerException |
+                 AuthenticationException |
+                 CurrencyNotSupportedException |
+                 InvalidSignatureException |
+                 GameNotSupportedException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
 
             debitVo.setStatus(statusVo);
-        }catch(InvalidAgentApiCredentialException |
-               VendorCurrencyNotSupportException |
-               DisabledAgentPlayerException |
-               DisabledGameException |
-               InvalidOperatorResponseException |
-               DisabledVendorLineException e){
+        } catch (InvalidAgentApiCredentialException |
+                 VendorCurrencyNotSupportException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
             debitVo.setStatus(statusVo);
-        }catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
             debitVo.setStatus(statusVo);
-        }finally{
+        } finally {
             httpService.end(httpRequestLog, debitVo);
         }
 
@@ -207,9 +207,9 @@ public class DebitAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException {
+    private void doVerification(DebitDto dto, GameSession gameSession, String header, String body) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, GameNotSupportedException, CurrencyNotSupportedException, CredentialNotFoundException, InvalidRequestException, InvalidSignatureException, JsonProcessingException {
         //validate vendor username, agent vendor line, player status, and game status
-        validationService.validateEligibleBet(gameSession,dto.getUsername());
+        validationService.validateEligibleBet(gameSession, dto.getUsername());
 
         // Verify username
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), InvalidPlayerException::new);
@@ -229,11 +229,12 @@ public class DebitAction {
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
         int iterations = 1000;
 
-        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+        // Convert JsonNode back to JSON string
+        String convertedJsonString = vendorService.convertObjectMapper(body);
 
-        String encrypted_value = vendorService.encryption(body, secret, iterations);
+        String encrypted_value = vendorService.encryption(convertedJsonString, secret, iterations);
 
-        if(!header.equals(encrypted_value)){
+        if (!header.equals(encrypted_value)) {
             throw new InvalidSignatureException();
         }
     }

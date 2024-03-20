@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.vendor.ambslot.api.balance;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.ambslot.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ambslot.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.ambslot.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.ambslot.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.ambslot.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ambslot.vo.StatusVo;
@@ -24,9 +23,11 @@ import java.math.RoundingMode;
 import java.util.Map;
 
 @RestController
-@RequestMapping(path= EndPoints.PATH)
+@RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class BalanceAction {
+    @Autowired
+    VendorService vendorService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -39,11 +40,9 @@ public class BalanceAction {
     private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
 
     @PostMapping(path = EndPoints.BALANCE)
-    public BalanceVo balance(HttpServletRequest request){
+    public BalanceVo balance(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         String traceId = httpRequestLog.getId();
@@ -52,13 +51,13 @@ public class BalanceAction {
         DataVo dataVo = new DataVo();
         StatusVo statusVo = new StatusVo();
 
-        try{
+        try {
             String body = httpRequestLog.getRequestBody();
 
-            BalanceDto balanceDto = httpService.convertJsonToDto(body,BalanceDto.class);
+            BalanceDto balanceDto = httpService.convertJsonToDto(body, BalanceDto.class);
 
             // get x-ambslot-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            Map<String, String> header = vendorService.headersToHashMap(request);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -79,39 +78,38 @@ public class BalanceAction {
             balanceVo.setData(dataVo);
             balanceVo.setStatus(statusVo);
 
-        }catch(InvalidRequestException |
-               InvalidFormatException |
-               InvalidPlayerException |
-               AuthenticationException |
-               InvalidSignatureException |
-               JsonParseException |
-               CredentialNotFoundException e){
+        } catch (InvalidRequestException |
+                 JsonProcessingException |
+                 InvalidPlayerException |
+                 AuthenticationException |
+                 InvalidSignatureException |
+                 CredentialNotFoundException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
 
             balanceVo.setStatus(statusVo);
-        }catch(InvalidAgentApiCredentialException |
-               VendorCurrencyNotSupportException |
-               DisabledAgentPlayerException |
-               DisabledGameException |
-               InvalidOperatorResponseException |
-               DisabledVendorLineException e){
+        } catch (InvalidAgentApiCredentialException |
+                 VendorCurrencyNotSupportException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidOperatorResponseException |
+                 DisabledVendorLineException e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_TIMEOUT_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_TIMEOUT_ERROR_MSG);
 
             balanceVo.setStatus(statusVo);
-        }catch(Exception e){
+        } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_TIMEOUT_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_TIMEOUT_ERROR_MSG);
 
             balanceVo.setStatus(statusVo);
-        }finally {
+        } finally {
             httpService.end(httpRequestLog, balanceVo);
         }
 
@@ -123,7 +121,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException, JsonProcessingException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -144,11 +142,12 @@ public class BalanceAction {
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
         int iterations = 1000;
 
-        body = body.replaceAll("\\s", ""); // Remove all space, \n or \r
+        // Convert JsonNode back to JSON string
+        String convertedJsonString = vendorService.convertObjectMapper(body);
 
-        String encrypted_value = vendorService.encryption(body, secret, iterations);
+        String encrypted_value = vendorService.encryption(convertedJsonString, secret, iterations);
 
-        if(!header.equals(encrypted_value)){
+        if (!header.equals(encrypted_value)) {
             throw new InvalidSignatureException();
         }
     }

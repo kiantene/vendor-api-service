@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ambslot.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -26,15 +27,15 @@ import java.util.Map;
 @Slf4j
 public class VendorService extends BaseVendorService {
 
-    public static String trimGameCode(String gameCode){
+    public static String trimGameCode(String gameCode) {
 
         String trimmedGameCode = null;
 
         // check if game code contain _stg (ignore case-sensitive)
-        if(gameCode.toLowerCase().contains("_stg")){
+        if (gameCode.toLowerCase().contains("_stg")) {
             // Trim value by removing _stg (ignore case-sensitive)
             trimmedGameCode = gameCode.replaceFirst("(?i)_stg$", "");
-        }else{
+        } else {
             // let trimmedCode same as gameCode
             trimmedGameCode = gameCode;
         }
@@ -42,7 +43,7 @@ public class VendorService extends BaseVendorService {
         return trimmedGameCode;
     }
 
-    public static String convertMapToJson(MultiValueMap<String, String> dataMap){
+    public static String convertMapToJson(MultiValueMap<String, String> dataMap) {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             return objectMapper.writeValueAsString(dataMap.toSingleValueMap());
@@ -65,8 +66,8 @@ public class VendorService extends BaseVendorService {
         return Base64.getEncoder().encodeToString(hashBytes);
     }
 
-    public static String encryption(String jsonString, String vendor_secrect, int iterations){
-        try{
+    public static String encryption(String jsonString, String vendor_secrect, int iterations) {
+        try {
             // Convert the jsonString to bytes
             byte[] passwordBytes = jsonString.getBytes(StandardCharsets.UTF_8);
 
@@ -74,7 +75,7 @@ public class VendorService extends BaseVendorService {
             String hash = generatePBKDF2Hash(passwordBytes, vendor_secrect, iterations, 64);
 
             return hash;
-        }catch(Exception e){
+        } catch (Exception e) {
             return null;
         }
     }
@@ -86,7 +87,7 @@ public class VendorService extends BaseVendorService {
         return millisecondsSinceEpoch;
     }
 
-    public static String convertUnixToDateTime(long unixTimestampMillis){
+    public static String convertUnixToDateTime(long unixTimestampMillis) {
         // Convert Unix timestamp with milliseconds to Instant
         Instant instant = Instant.ofEpochMilli(unixTimestampMillis);
 
@@ -105,14 +106,14 @@ public class VendorService extends BaseVendorService {
         return formattedDateTime;
     }
 
-    public static ResultType generateResultType(Double amount, Boolean endround){
+    public static ResultType generateResultType(Double amount, Boolean endround) {
         // filter endround
 
 
-        if(amount > 0){
+        if (amount > 0) {
             return ResultType.WIN;
-        }else{
-            if(endround){
+        } else {
+            if (endround) {
                 return ResultType.END;
             }
 
@@ -135,5 +136,10 @@ public class VendorService extends BaseVendorService {
         }
 
         return headersMap;
+    }
+
+    public static String convertObjectMapper(String body) throws JsonProcessingException {
+        // Create ObjectMapper instance
+        return new ObjectMapper().readTree(body).toString();
     }
 }
