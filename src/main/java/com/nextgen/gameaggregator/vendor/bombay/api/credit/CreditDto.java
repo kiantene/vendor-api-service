@@ -51,7 +51,7 @@ public class CreditDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.reference_transaction_uuid;
+        return this.transaction_uuid;
     }
 
     @Override
