@@ -39,6 +39,8 @@ public class SportAdjustmentAction {
     private VendorService vendorService;
     @Autowired
     private RequestService requestService;
+    @Autowired
+    private BetResultRetryLogService betResultRetryLogService;
 
     @Value("${spring.profiles.active}")
     private String profilesActive;
@@ -47,7 +49,8 @@ public class SportAdjustmentAction {
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException, VendorCurrencyNotSupportException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-        WalletBalanceVo responseVo;
+        WalletBalanceVo responseVo = null;
+        Integer defaultResponses = ResponseCodes.Status.SC_OK.code;
 
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
         BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
@@ -74,35 +77,35 @@ public class SportAdjustmentAction {
             httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_ADJUSTMENT);
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_ADJUSTMENT)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
+        try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_ADJUSTMENT)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
+                    .block();
 
-        long endTime = System.currentTimeMillis();
+            long endTime = System.currentTimeMillis();
 
-        if (apiResponse != null) {
-            httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
-        }
-        httpRequestLog.setOperatorEnd(endTime);
-
-        if (httpRequestLog != null) {
             if (apiResponse != null) {
                 httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
             }
             httpRequestLog.setOperatorEnd(endTime);
-        }
 
-        try {
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
@@ -132,18 +135,26 @@ public class SportAdjustmentAction {
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-
-            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE.code;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
+            defaultResponses = invalidOperatorResponseException.getOperatorStatus();
 
         } catch (Exception exception) {
-            //RequestService.failResponseLog(requestLogVo, exception);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+
+        } finally {
+            if (defaultResponses != ResponseCodes.Status.SC_OK.code) {
+                //do nothing if success
+
+            } else {
+                //create betResultRetryLog info for retry send to operator
+                responseVo.getData().setBalance(BigDecimal.ZERO);
+                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_ADJUSTMENT);
+            }
+
         }
+
         return responseVo;
     }
 
