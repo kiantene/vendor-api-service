@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -78,6 +79,7 @@ public class EndroundAction {
             this.doVerification(endroundDto, gameSession, header.get("x-signature"), body);
 
             userLock = redissonService.getRedissonClient().getLock("RedissonLock:BOMBAY:" + endroundDto.getRound());
+            userLock.lock(1L, TimeUnit.SECONDS);
 
             // this end-point just handle transaction with end status, so set it as result end
             ResultType resultType = ResultType.END;
