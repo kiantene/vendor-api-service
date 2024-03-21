@@ -6,7 +6,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.bombay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bombay.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.bombay.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
@@ -138,14 +137,14 @@ public class EndroundAction {
         ValidationUtils.isEquals(game_code, dto.getGameId(), GameNotSupportedException::new);
 
         // Verify vendor's x-signature
-        String convertedJsonString = vendorService.convertObjectMapper(request_body); // Convert json beautified format back to compact JSON string
-
-        String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
-        Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
-
-        // validateSignature not equal to true mean credential problem or this data is not from vendor
-        if(!validateSignature){
-            throw new InvalidSignatureException();
-        }
+//        String convertedJsonString = vendorService.convertObjectMapper(request_body); // Convert json beautified format back to compact JSON string
+//
+//        String vendor_public_key = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.vendor_public_key);
+//        Boolean validateSignature = vendorService.validateSignature(x_signature, convertedJsonString, vendor_public_key);
+//
+//        // validateSignature not equal to true mean credential problem or this data is not from vendor
+//        if(!validateSignature){
+//            throw new InvalidSignatureException();
+//        }
     }
 }
