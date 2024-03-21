@@ -109,8 +109,6 @@ public class CreditAction {
             statusVo.setCode(ResponseCodes.SUCCESS);
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
 
-            creditVo.setStatus(statusVo);
-
             walletVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             walletVo.setLastUpdate(dateTime);
 
@@ -130,12 +128,12 @@ public class CreditAction {
             statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
             statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
 
-            creditVo.setStatus(statusVo);
         }catch(InvalidCredentialsException e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INVALID_AGENT);
             statusVo.setMessage(ResponseCodes.INVALID_AGENT_MSG);
+
         }catch(InvalidRequestException |
                JsonProcessingException |
                GameNotSupportedException |
@@ -150,7 +148,6 @@ public class CreditAction {
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
 
-            creditVo.setStatus(statusVo);
         }catch(VendorCurrencyNotSupportException |
                InsufficientBalanceException |
                InvalidOperatorResponseException |
@@ -164,15 +161,14 @@ public class CreditAction {
             statusVo.setCode(ResponseCodes.RESPONSE_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
-            creditVo.setStatus(statusVo);
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
-            creditVo.setStatus(statusVo);
         }finally{
+            creditVo.setStatus(statusVo);
             httpService.end(httpRequestLog, creditVo);
         }
 

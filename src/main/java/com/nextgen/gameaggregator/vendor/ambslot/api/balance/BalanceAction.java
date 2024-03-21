@@ -77,7 +77,6 @@ public class BalanceAction {
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
 
             balanceVo.setData(dataVo);
-            balanceVo.setStatus(statusVo);
 
         }catch(InvalidRequestException |
                JsonProcessingException |
@@ -90,7 +89,6 @@ public class BalanceAction {
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
 
-            balanceVo.setStatus(statusVo);
         }catch(InvalidAgentApiCredentialException |
                VendorCurrencyNotSupportException |
                DisabledAgentPlayerException |
@@ -102,20 +100,20 @@ public class BalanceAction {
             statusVo.setCode(ResponseCodes.RESPONSE_TIMEOUT_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_TIMEOUT_ERROR_MSG);
 
-            balanceVo.setStatus(statusVo);
         }catch(InvalidCredentialsException e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INVALID_AGENT);
             statusVo.setMessage(ResponseCodes.INVALID_AGENT_MSG);
+
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_TIMEOUT_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_TIMEOUT_ERROR_MSG);
 
-            balanceVo.setStatus(statusVo);
         }finally {
+            balanceVo.setStatus(statusVo);
             httpService.end(httpRequestLog, balanceVo);
         }
 

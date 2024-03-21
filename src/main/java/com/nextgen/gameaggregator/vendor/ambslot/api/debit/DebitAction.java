@@ -110,8 +110,6 @@ public class DebitAction {
             statusVo.setCode(ResponseCodes.SUCCESS);
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
 
-            debitVo.setStatus(statusVo);
-
             walletVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
             walletVo.setLastUpdate(dateTime);
 
@@ -131,14 +129,12 @@ public class DebitAction {
             statusVo.setCode(ResponseCodes.DUPLICATED_TRANSACTION_ERROR);
             statusVo.setMessage(ResponseCodes.DUPLICATED_TRANSACTION_ERROR_MSG);
 
-            debitVo.setStatus(statusVo);
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INSUFFICIENT_BALANCE);
             statusVo.setMessage(ResponseCodes.INSUFFICIENT_BALANCE_MSG);
 
-            debitVo.setStatus(statusVo);
         }catch(InvalidRequestException |
                JsonProcessingException |
                CredentialNotFoundException |
@@ -152,7 +148,6 @@ public class DebitAction {
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
 
-            debitVo.setStatus(statusVo);
         }catch(InvalidAgentApiCredentialException |
                VendorCurrencyNotSupportException |
                DisabledAgentPlayerException |
@@ -164,20 +159,20 @@ public class DebitAction {
             statusVo.setCode(ResponseCodes.RESPONSE_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
-            debitVo.setStatus(statusVo);
         }catch(InvalidCredentialsException e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.INVALID_AGENT);
             statusVo.setMessage(ResponseCodes.INVALID_AGENT_MSG);
+
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_ERROR_MSG);
 
-            debitVo.setStatus(statusVo);
         }finally{
+            debitVo.setStatus(statusVo);
             httpService.end(httpRequestLog, debitVo);
         }
 
