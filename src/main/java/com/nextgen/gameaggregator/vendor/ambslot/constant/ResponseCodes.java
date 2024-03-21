@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.ambslot.constant;
 public class ResponseCodes {
     // response code
     public static final Integer SUCCESS = 0;
+    public static final Integer INVALID_USERNAME_OR_TOKEN = 908;
     public static final Integer INVALID_REQUEST = 997;
     public static final Integer INVALID_AGENT = 998;
     public static final Integer RESPONSE_ERROR = 1600;
@@ -13,6 +14,7 @@ public class ResponseCodes {
 
     // response code message
     public static final String SUCCESS_MSG = "Success";
+    public static final String INVALID_USERNAME_OR_TOKEN_MSG = "Invalid username or token";
     public static final String INVALID_REQUEST_MSG = "Invalid request data";
     public static final String INVALID_AGENT_MSG = "Invalid agent id";
     public static final String RESPONSE_ERROR_MSG = "Response error";

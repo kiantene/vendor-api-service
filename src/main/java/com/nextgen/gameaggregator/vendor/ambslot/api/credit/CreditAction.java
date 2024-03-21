@@ -138,8 +138,6 @@ public class CreditAction {
                JsonProcessingException |
                GameNotSupportedException |
                CurrencyNotSupportedException |
-               AuthenticationException |
-               InvalidPlayerException |
                BetNotFoundException |
                InvalidSignatureException |
                CredentialNotFoundException e){
@@ -147,6 +145,13 @@ public class CreditAction {
 
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
+
+        }catch(AuthenticationException |
+                InvalidPlayerException e){
+            httpService.logError(httpRequestLog, e);
+
+            statusVo.setCode(ResponseCodes.INVALID_USERNAME_OR_TOKEN);
+            statusVo.setMessage(ResponseCodes.INVALID_USERNAME_OR_TOKEN_MSG);
 
         }catch(VendorCurrencyNotSupportException |
                InsufficientBalanceException |
