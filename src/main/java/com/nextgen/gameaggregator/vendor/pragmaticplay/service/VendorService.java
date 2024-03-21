@@ -1,13 +1,18 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.service;
 
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.WalletService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
 import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +21,9 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    private WalletService walletService;
+
     public static String getTransactionId(String transactionId) {
         return transactionId.replace("-", "");
     }
@@ -73,5 +81,14 @@ public class VendorService extends BaseVendorService {
             log.error(msg);
             throw new InvalidSignatureException(msg);
         }
+    }
+
+    public BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        BigDecimal balance = BigDecimal.ZERO;
+        try {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+        } catch (Exception exception) {
+        }
+        return balance;
     }
 }

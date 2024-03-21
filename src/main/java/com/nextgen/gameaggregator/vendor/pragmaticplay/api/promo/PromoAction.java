@@ -44,6 +44,7 @@ public class PromoAction {
         PromoVo responseVo = new PromoVo();
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
+        GameSession gameSession = new GameSession();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -56,7 +57,7 @@ public class PromoAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
 
             // 3. Verify remaining parameters (Verify against database values)
 //            this.doVerification(httpRequestLog, dto, gameSession);
@@ -74,7 +75,7 @@ public class PromoAction {
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
-            responseVo.setCash(idempotentViolationException.getBalance());
+            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setBonus(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, idempotentViolationException);
