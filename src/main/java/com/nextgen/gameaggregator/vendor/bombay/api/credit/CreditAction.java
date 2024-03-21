@@ -79,7 +79,7 @@ public class CreditAction {
             this.doVerification(creditDto, gameSession, header.get("x-signature"), body);
 
             userLock = redissonService.getRedissonClient().getLock("RedissonLock:BOMBAY:" + creditDto.getRound());
-            userLock.lock(1L, TimeUnit.SECONDS);
+            userLock.lock(30L, TimeUnit.SECONDS);
 
             // this end-point just handle transaction with win status, so set it as result win
             ResultType resultType = ResultType.WIN;
@@ -140,9 +140,9 @@ public class CreditAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
-            if (userLock != null) {
-                userLock.forceUnlock();
-            }
+//            if (userLock != null) {
+//                userLock.forceUnlock();
+//            }
 
             responseVo.setRequest_uuid(creditDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
