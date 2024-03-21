@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +41,8 @@ public class EndroundAction {
     VendorService vendorService;
     @Autowired
     ValidationService validationService;
+    @Autowired
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.END_ROUND)
     public ResponseVo credit(HttpServletRequest request) {
@@ -54,8 +57,11 @@ public class EndroundAction {
 
         GameSession gameSession = new GameSession();
 
+        RLock userLock = null;
+
         try{
             String body = httpRequestLog.getRequestBody();
+
 
             // get x-signature value for validation
             Map<String,String> header = vendorService.headersToHashMap(request);
@@ -70,6 +76,8 @@ public class EndroundAction {
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(endroundDto, gameSession, header.get("x-signature"), body);
+
+            userLock = redissonService.getRedissonClient().getLock("RedissonLock:BOMBAY:" + endroundDto.getRound());
 
             // this end-point just handle transaction with end status, so set it as result end
             ResultType resultType = ResultType.END;

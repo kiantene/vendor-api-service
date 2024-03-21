@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.vendor.bombay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bombay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
@@ -40,6 +42,8 @@ public class CreditAction {
     VendorService vendorService;
     @Autowired
     ValidationService validationService;
+    @Autowired
+    private RedissonService redissonService;
 
     @PostMapping(path = EndPoints.CREDIT)
     public ResponseVo credit(HttpServletRequest request) {
@@ -54,6 +58,8 @@ public class CreditAction {
         GameSession gameSession = new GameSession();
 
         BigDecimal balance = null;
+
+        RLock userLock = null;
 
         try{
             String body = httpRequestLog.getRequestBody();
@@ -71,6 +77,9 @@ public class CreditAction {
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto, gameSession, header.get("x-signature"), body);
+
+            userLock = redissonService.getRedissonClient().getLock("RedissonLock:BOMBAY:" + creditDto.getRound());
+            userLock.lock(1L, TimeUnit.SECONDS);
 
             // this end-point just handle transaction with win status, so set it as result win
             ResultType resultType = ResultType.WIN;
@@ -131,6 +140,10 @@ public class CreditAction {
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
         } finally{
+            if (userLock != null) {
+                userLock.forceUnlock();
+            }
+
             responseVo.setRequest_uuid(creditDto.getRequest_uuid());
             httpService.end(httpRequestLog, responseVo);
         }
