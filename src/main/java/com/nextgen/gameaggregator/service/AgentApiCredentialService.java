@@ -34,10 +34,14 @@ public class AgentApiCredentialService {
 
         AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
         Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
-        //UPDATE PG : TEMP WHITELIST LOCALHOST
+
         try{
-            if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
-                ValidationUtils.isValidUrl(credential.getCallbackUrl());
+            //ignore validation check callback url if the wallet type is custodial wallet
+            if(credential.getAgent().getSeamlessType().equals(1)){
+                //UPDATE PG : TEMP WHITELIST LOCALHOST
+                if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
+                    ValidationUtils.isValidUrl(credential.getCallbackUrl());
+                }
             }
         }catch (InvalidUrlException invalidUrlException){
             throw new InvalidAgentApiCredentialException();
