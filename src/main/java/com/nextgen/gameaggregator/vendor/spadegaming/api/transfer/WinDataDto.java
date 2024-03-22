@@ -1,23 +1,24 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.nextgen.gameaggregator.enums.BetStatus;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.constraints.Range;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-
-import org.hibernate.validator.constraints.Range;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.util.ValidationUtils;
-
-import jakarta.validation.constraints.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 @Data
 @Slf4j
@@ -86,10 +87,10 @@ public class WinDataDto implements BetResultData {
 
     @NotNull
     private String transferTime;
-    
+
     private String betId;
     private BigDecimal vendorWinLoss;
-    
+
     public String getAcctId() {
         return this.acctId.toLowerCase();
     }
@@ -162,7 +163,7 @@ public class WinDataDto implements BetResultData {
     @Override
     public Integer getIsFreespin() {
         if (getSpecialGame() != null) {
-            return (getSpecialGame().getType().equals("Free") && getSpecialGame().getSequence() > 0) ? 1 : 0;
+            return (getSpecialGame().getType() != null && getSpecialGame().getSequence() > 0) ? 1 : 0;
         } else {
             return 0;
         }

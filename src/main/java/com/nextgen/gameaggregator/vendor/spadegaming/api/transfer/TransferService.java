@@ -1,11 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import java.math.BigDecimal;
-import java.util.Optional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -15,10 +9,17 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.spadegaming.constant.*;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Actions;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Channel;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.spadegaming.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.spadegaming.service.VendorService;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Optional;
 
 @Service
 public class TransferService {
@@ -45,7 +46,7 @@ public class TransferService {
         String merchantTxId = "";
         String acctId = "";
         Boolean isCancel = false;
-        
+
         try {
             TransferDto dto = HttpService.convertJsonToDto(body, TransferDto.class);
             transferVo.setMerchantCode(dto.getMerchantCode());
@@ -197,19 +198,19 @@ public class TransferService {
 
     private ResultType determineResultType(String type, WinDataDto winDataDto) {
         BigDecimal amount = winDataDto.getAmount();
-        boolean isFreeType = type != null && type.equals("Free");
-    
+        boolean isSpecialType = type != null;
+
         if (amount.compareTo(BigDecimal.ZERO) > 0) {
-            if (isFreeType && winDataDto.getSpecialGame().getSequence() == 0) {
+            if (isSpecialType && winDataDto.getSpecialGame().getSequence() == 0) {
                 return ResultType.WIN;
 
             } else {
-                return isFreeType ? ResultType.BET_WIN : ResultType.WIN;
+                return isSpecialType ? ResultType.BET_WIN : ResultType.WIN;
 
             }
-            
+
         } else {
-            return isFreeType ? ResultType.BET_LOSE : ResultType.END;
+            return isSpecialType ? ResultType.BET_LOSE : ResultType.END;
         }
-    } 
+    }
 }
