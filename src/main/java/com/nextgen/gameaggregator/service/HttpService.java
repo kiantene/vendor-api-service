@@ -230,7 +230,7 @@ public class HttpService {
         return object;
     }
 
-    private Map<String, String> getHeadersInfo(HttpServletRequest request) {
+    public Map<String, String> getHeadersInfo(HttpServletRequest request) {
         Map<String, String> map = new HashMap<>();
 
         Enumeration<String> headerNames = request.getHeaderNames();
@@ -243,7 +243,7 @@ public class HttpService {
         return map;
     }
 
-    private String getRawRequestBody(HttpServletRequest request) throws IOException {
+    public String getRawRequestBody(HttpServletRequest request) throws IOException {
         String contentEncoding = request.getHeader("Content-Encoding");
         String result;
 

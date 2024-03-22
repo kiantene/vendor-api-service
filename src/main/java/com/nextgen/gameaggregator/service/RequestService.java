@@ -142,7 +142,6 @@ public class RequestService {
                 }
             });
 
-            System.err.println(validation);
             if (!validation.isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidResponseException(validation.toString());
             }

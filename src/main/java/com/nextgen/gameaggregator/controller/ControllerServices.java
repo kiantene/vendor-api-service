@@ -10,6 +10,11 @@ public class ControllerServices {
     public void clearAgentApiCredentials(){
     }
 
+    @CacheEvict(value = "AgentApiCredentialsByApiKey", allEntries = true, cacheManager = "cacheManager")
+    public void clearAgentApiCredentialsByApiKey(){
+    }
+
+
     @CacheEvict(value = "AgentPlayers", allEntries = true, cacheManager = "cacheManager")
     public void clearAgentPlayers(){
     }

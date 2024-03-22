@@ -59,7 +59,7 @@ public class RollbackAction {
                 String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
                 AgentApiCredential agentApiCredential = validationService.validateApiKey(apiKey);
 
-                String apiUrl = agentApiCredential.getCallbackUrl();
+                String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
                 Map<String, String> headerMap = new HashMap<String, String>();
 
 
@@ -71,7 +71,7 @@ public class RollbackAction {
                 responseResultVo.setApiUrl(apiUrl + EndPoints.WALLET_ROLLBACK);
 
                 responseResultVo.setRequestStartTime(System.currentTimeMillis());
-                ResponseEntity<String> apiResponse = WebClient.create(agentApiCredential.getCallbackUrl())
+                ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                         .post()
                         .uri(EndPoints.WALLET_ROLLBACK)
                         .header(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE))
