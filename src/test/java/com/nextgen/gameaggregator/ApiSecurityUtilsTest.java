@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceDto;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
@@ -87,19 +86,19 @@ public class ApiSecurityUtilsTest {
 
     @Test
     void testSignatureWalletBalance() {
-        Gson gson = new Gson();
-        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+//        Gson gson = new Gson();
+//        WalletBalanceDto walletBalanceDto = new WalletBalanceDto();
+//
+//        walletBalanceDto.setTraceId("4fce7194-b507-492a-a757-723f643c130a");
+//        walletBalanceDto.setUsername("testsignature");
+//        walletBalanceDto.setCurrency("CNY");
+//        walletBalanceDto.setToken("af766113-2ce7-4827-b746-8ef056efbafd");
 
-        walletBalanceDto.setTraceId("4fce7194-b507-492a-a757-723f643c130a");
-        walletBalanceDto.setUsername("testsignature");
-        walletBalanceDto.setCurrency("CNY");
-        walletBalanceDto.setToken("af766113-2ce7-4827-b746-8ef056efbafd");
-
-        String jsonPayload = gson.toJson(walletBalanceDto);
-
-        System.out.println(jsonPayload);
-        String apiSecret = "9632b4a7a57fcdfb8339b7dc2e57dae3778216378810155f9f74c057cb99921b";
-        String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
-        System.err.println(actualSignature);
+       // String jsonPayload = "{\"traceId\":\"{{traceId}}\",\"referenceId\":\"{{traceId}}\",\"username\":\"aabbcc\",\"currency\":\"CNY\",\"transferAmount\":0.01}";
+//System.err.println(jsonPayload);
+//        System.out.println(jsonPayload);
+//        String apiSecret = "5053edc990e1a386fef606cd7ee5ac4a6e5f2fda6d56b81ef05422dc58d40068";
+//        String actualSignature = ApiSecurityUtils.getHmacSignature(jsonPayload, apiSecret);
+//        System.err.println(actualSignature);
     }
 }

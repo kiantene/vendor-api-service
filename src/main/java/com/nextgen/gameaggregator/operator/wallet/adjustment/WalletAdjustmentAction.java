@@ -54,7 +54,7 @@ public class WalletAdjustmentAction {
         WalletBalanceVo responseVo;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         WalletAdjustmentDto dto = this.newWalletAdjustmentDto(traceId, gameSession, betInformation);
         dto.setAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getAmount(), fromVendorConversionRate));

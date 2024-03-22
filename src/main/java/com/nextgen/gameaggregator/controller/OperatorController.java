@@ -56,6 +56,7 @@ public class OperatorController {
                 Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
+                controllerServices.clearAgentApiCredentialsByApiKey();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
@@ -85,6 +86,7 @@ public class OperatorController {
                 Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
+                controllerServices.clearAgentApiCredentialsByApiKey();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
