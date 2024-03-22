@@ -92,7 +92,7 @@ public class CreditAction {
             this.doValidation(creditDto);
 
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(creditDto.getUsername(), creditDto.getGameId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto,gameSession, header.get("x-ambslot-signature"), body);

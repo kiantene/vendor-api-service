@@ -92,7 +92,7 @@ public class DebitAction {
             this.doValidation(debitDto);
 
             // Verify session token
-            gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(debitDto.getUsername(), debitDto.getGameId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(debitDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, header.get("x-ambslot-signature"), body);
