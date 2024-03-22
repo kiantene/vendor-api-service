@@ -198,6 +198,7 @@ public class TransferService {
 
     private ResultType determineResultType(String type, WinDataDto winDataDto) {
         BigDecimal amount = winDataDto.getAmount();
+        //free spin,bonus,free bonus,bonus free
         boolean isSpecialType = type != null;
 
         if (amount.compareTo(BigDecimal.ZERO) > 0) {
