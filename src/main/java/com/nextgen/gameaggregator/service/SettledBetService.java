@@ -17,6 +17,7 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
@@ -99,6 +100,12 @@ public class SettledBetService {
         }
 
         return settledBet;
+    }
+
+    @Recover
+    public SettledBet recoverData(BetNotFoundException ex) {
+        // Handle recovery logic here, such as returning a default value or logging the error
+        return null;
     }
 
     /**
