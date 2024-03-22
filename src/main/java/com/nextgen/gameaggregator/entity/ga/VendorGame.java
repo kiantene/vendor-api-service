@@ -13,6 +13,7 @@ import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Entity
 @Table(name = "vendor_games")
@@ -127,6 +128,7 @@ public class VendorGame extends BaseEntity {
             modelMapper.map(sportUnsettledBetCouchbase, this);
 
             this.setId(sportUnsettledBetCouchbase.getBetId());
+            Optional.ofNullable(sportUnsettledBetCouchbase.getNewBetAmount()).ifPresent(this::setBetAmount);
         }
     }
 }

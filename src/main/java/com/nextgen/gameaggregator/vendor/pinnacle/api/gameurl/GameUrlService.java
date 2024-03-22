@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.json.JsonParser;
 import org.springframework.boot.json.JsonParserFactory;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -65,7 +66,9 @@ public class GameUrlService implements GameUrl {
         String agentKey = Optional.ofNullable(credentials.get(Credentials.AGENT_KEY)).orElseThrow(InvalidVendorLineException::new);
         String secretKey = Optional.ofNullable(credentials.get(Credentials.SECRET_KEY)).orElseThrow(InvalidVendorLineException::new);
 
-        if (!VendorService.isCorrectVendorPlayerUsername(Objects.requireNonNull(formData.getFirst("userCode")), agentCode)) {
+        String userCode = formData.toSingleValueMap().getOrDefault("userCode", null);
+        Boolean validVendorPlayerUsername = VendorService.isCorrectVendorPlayerUsername(userCode, agentCode);
+        if (Objects.equals(validVendorPlayerUsername, Boolean.FALSE)) {
             createUserCode(gameSession, credentials);
             formData.put("userCode", List.of(gameSession.getVendorPlayerUsername()));
         }
@@ -83,7 +86,7 @@ public class GameUrlService implements GameUrl {
                 .headers(header -> header.addAll(headerMap))
                 .bodyValue(formData)
                 .retrieve()
-                .onStatus(httpStatus -> httpStatus.isError(), response -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
@@ -96,7 +99,7 @@ public class GameUrlService implements GameUrl {
 
         try {
             // 1. validate HTTP Response Code
-            requestService.validateVendorHttpStatusResponse(apiResponse);
+            requestService.validateVendorHttpStatusResponse(Objects.requireNonNull(apiResponse));
             responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVo.class);
 
             // 2. validate vendor response
@@ -130,7 +133,7 @@ public class GameUrlService implements GameUrl {
                 .uri(apiCreateUrl)
                 .headers(headers -> headers.addAll(headerMap))
                 .retrieve()
-                .onStatus(httpStatus -> httpStatus.isError(), response -> Mono.empty())
+                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
@@ -143,7 +146,7 @@ public class GameUrlService implements GameUrl {
 
         try {
             // 1. validate HTTP Response Code
-            requestService.validateVendorHttpStatusResponse(apiCreateResponse);
+            requestService.validateVendorHttpStatusResponse(Objects.requireNonNull(apiCreateResponse));
 
             JsonParser jsonParser = JsonParserFactory.getJsonParser();
             String userCode = jsonParser.parseMap(apiCreateResponse.getBody()).get("userCode").toString();
