@@ -22,6 +22,7 @@ public class DebitDto implements BetResultData {
     private String username;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String agent;
 
     @NotBlank
