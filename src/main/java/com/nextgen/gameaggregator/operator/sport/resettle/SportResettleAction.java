@@ -57,7 +57,7 @@ public class SportResettleAction {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
         ResponseCodes.Status defaultResponses = ResponseCodes.Status.SC_OK;
-        Integer agentId = betInformation.getAgentId();
+        Integer agentId = sportSettledBet.getAgentId();
 
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
         BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
@@ -165,7 +165,7 @@ public class SportResettleAction {
                 responseVo.getData().setBalance(BigDecimal.ZERO);
                 responseVo.setStatus(defaultResponses);
                 responseVo.setTraceId(traceId);
-                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_RESETTLE);
+                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), sportSettledBet, EndPoints.SPORT_RESETTLE);
             }
 
         }
