@@ -13,6 +13,7 @@ import com.nextgen.gameaggregator.vendor.ambslot.service.VendorService;
 import com.nextgen.gameaggregator.vendor.ambslot.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -76,7 +77,6 @@ public class BalanceAction {
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
 
             balanceVo.setData(dataVo);
-            balanceVo.setStatus(statusVo);
 
         }catch(InvalidRequestException |
                JsonProcessingException |
@@ -89,7 +89,6 @@ public class BalanceAction {
             statusVo.setCode(ResponseCodes.INVALID_REQUEST);
             statusVo.setMessage(ResponseCodes.INVALID_REQUEST_MSG);
 
-            balanceVo.setStatus(statusVo);
         }catch(InvalidAgentApiCredentialException |
                VendorCurrencyNotSupportException |
                DisabledAgentPlayerException |
@@ -101,15 +100,20 @@ public class BalanceAction {
             statusVo.setCode(ResponseCodes.RESPONSE_TIMEOUT_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_TIMEOUT_ERROR_MSG);
 
-            balanceVo.setStatus(statusVo);
+        }catch(InvalidCredentialsException e){
+            httpService.logError(httpRequestLog, e);
+
+            statusVo.setCode(ResponseCodes.INVALID_AGENT);
+            statusVo.setMessage(ResponseCodes.INVALID_AGENT_MSG);
+
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
 
             statusVo.setCode(ResponseCodes.RESPONSE_TIMEOUT_ERROR);
             statusVo.setMessage(ResponseCodes.RESPONSE_TIMEOUT_ERROR_MSG);
 
-            balanceVo.setStatus(statusVo);
         }finally {
+            balanceVo.setStatus(statusVo);
             httpService.end(httpRequestLog, balanceVo);
         }
 
@@ -121,7 +125,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException, JsonProcessingException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException, JsonProcessingException, InvalidCredentialsException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -136,7 +140,7 @@ public class BalanceAction {
 
         // Verify received agentId is same with credential
         String agentId = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.prefix);
-        ValidationUtils.isEquals(agentId.toLowerCase(), dto.getAgentId(), InvalidRequestException::new);
+        ValidationUtils.isEquals(agentId.toLowerCase(), dto.getAgentId(), InvalidCredentialsException::new);
 
         // Verify header value
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
