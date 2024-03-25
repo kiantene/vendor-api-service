@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.operator.sport.settle;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -49,7 +52,7 @@ public class SportSettleAction {
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
@@ -63,7 +66,7 @@ public class SportSettleAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
+        String gameCode = vendorGameRepository.findByIdAndStatus(sportUnsettledBetCouchbase.getVendorGameId(), 1).getCode();
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(sportUnsettledBetCouchbase.getAgentPlayerId()).orElse(null);
         SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportUnsettledBetCouchbase, gameCode);
@@ -162,7 +165,7 @@ public class SportSettleAction {
                 responseVo.getData().setBalance(BigDecimal.ZERO);
                 responseVo.setStatus(defaultResponses);
                 responseVo.setTraceId(traceId);
-                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_SETTLE);
+                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), sportUnsettledBetCouchbase, EndPoints.SPORT_SETTLE);
             }
 
         }

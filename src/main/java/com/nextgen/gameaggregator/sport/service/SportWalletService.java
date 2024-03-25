@@ -258,7 +258,7 @@ public class SportWalletService {
         }
 
         try {
-            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, sportUnsettledBetCouchbase, httpRequestLog);
+            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
             // Insert settled bet into bet_history (MariaDB)
