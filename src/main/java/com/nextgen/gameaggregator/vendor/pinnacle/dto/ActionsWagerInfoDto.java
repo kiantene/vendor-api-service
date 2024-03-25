@@ -2,11 +2,6 @@ package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.BetType;
-import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
-import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
-import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -14,7 +9,7 @@ import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData, SportUnsettleData {
+public class ActionsWagerInfoDto {
     private String vendorPlayerUsername;
 
     @JsonProperty("WagerId")
@@ -24,7 +19,7 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData,
     private String type;
 
     @JsonProperty("BetType")
-    private Long betType;
+    private Long betTypes;
 
     @JsonProperty("Odds")
     private BigDecimal odds;
@@ -97,85 +92,4 @@ public class ActionsWagerInfoDto implements SportBetResultData, SportRefundData,
 
     @JsonProperty("RoundRobinOptions")
     private List<String> roundRobinOptions;
-
-    @Override
-    public String getExternalTransactionId() {
-        return wagerId.toString();
-    }
-
-    @Override
-    public String getVendorBetId() {
-        return wagerId.toString();
-    }
-
-    @Override
-    public String getRoundId() {
-        return wagerId.toString();
-    }
-
-    @Override
-    public String getGameId() {
-        return sportId.toString();
-    }
-
-    @Override
-    public BigDecimal getBetAmount() {
-        return stake;
-    }
-
-    @Override
-    public BigDecimal getWinAmount() {
-        return toWin;
-    }
-
-    @Override
-    public BigDecimal getWinLoss() {
-        return null;
-    }
-
-    @Override
-    public BigDecimal getEffectiveTurnover() {
-        return stake;
-    }
-
-    @Override
-    public Long getVendorBetTime() {
-        return System.currentTimeMillis();
-    }
-
-    @Override
-    public Long getResultTime() {
-        return System.currentTimeMillis();
-    }
-
-    @Override
-    public Long getVendorSettleTime() {
-        return System.currentTimeMillis();
-    }
-
-    @Override
-    public BetStatus getBetStatus() {
-        return BetStatus.UNSETTLED;
-    }
-
-    @Override
-    public String getVendorPlayerUsername() {
-        return vendorPlayerUsername;
-    }
-
-    @Override
-    public Long getTimestamp() {
-        return System.currentTimeMillis();
-    }
-
-    @Override
-    public BigDecimal getNewBetAmount() {
-        return stake;
-    }
-
-    @Override
-    public Integer getBetType() {
-        return this.getType().equalsIgnoreCase("PARLAY") ? BetType.PARLAY_BET.code : BetType.NORMAL_BET.code;
-    }
-
 }

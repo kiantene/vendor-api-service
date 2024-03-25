@@ -15,7 +15,6 @@ public class ResponseVo {
     @Size(min = 36, max = 36, message = "UUID format only")
     @Pattern(regexp = ValidationUtils.UUID_REGEX, message = "UUID format only") // Only alphanumeric allowed
     private String traceId;
-
     @NotNull(message = "status can not be blank")
     private ResponseCodes.Status status;
 

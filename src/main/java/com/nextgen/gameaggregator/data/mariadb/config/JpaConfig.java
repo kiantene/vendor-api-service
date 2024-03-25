@@ -27,12 +27,26 @@ public class JpaConfig {
         return DataSourceBuilder.create().build();
     }
 
+    @Bean("walletServiceWriterDb")
+    @ConfigurationProperties(prefix = "spring.datasource.wallet-service-writer")
+    public DataSource walletServiceWriterDb() {
+        return DataSourceBuilder.create().build();
+    }
+
+    @Bean("walletServiceReaderDb")
+    @ConfigurationProperties(prefix = "spring.datasource.wallet-service-reader")
+    public DataSource walletServiceReaderDb() {
+        return DataSourceBuilder.create().build();
+    }
+
 
     @Bean(name = "chainedTransactionManager")
     public ChainedTransactionManager transactionManager(@Qualifier("transactionManagerGaServiceWriterDb") PlatformTransactionManager GaServiceWriterDb,
-                                                        @Qualifier("transactionManagerGaServiceReaderDb") PlatformTransactionManager GaServiceReaderDb
+                                                        @Qualifier("transactionManagerGaServiceReaderDb") PlatformTransactionManager GaServiceReaderDb,
+                                                        @Qualifier("transactionManagerWalletServiceWriterDb") PlatformTransactionManager walletServiceWriterDb,
+                                                        @Qualifier("transactionManagerWalletServiceReaderDb") PlatformTransactionManager walletServiceReaderDb
     ) {
-        return new ChainedTransactionManager(GaServiceWriterDb,  GaServiceReaderDb
+        return new ChainedTransactionManager(GaServiceWriterDb,  GaServiceReaderDb, walletServiceWriterDb, walletServiceReaderDb
 
         );
     }

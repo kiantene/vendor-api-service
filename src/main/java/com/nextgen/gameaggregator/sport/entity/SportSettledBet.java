@@ -99,6 +99,8 @@ public class SportSettledBet extends BetInformation {
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(this, sportUnsettledBetCouchbase);
 
+        sportUnsettledBetCouchbase.setIsUnsettledBet(1);
+
         return sportUnsettledBetCouchbase;
     }
 }

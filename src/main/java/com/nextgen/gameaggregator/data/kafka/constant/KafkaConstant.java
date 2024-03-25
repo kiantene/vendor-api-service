@@ -11,4 +11,5 @@ public class KafkaConstant {
     public static final String TOPIC_UNSETTLED_BET = "sports_unsettled_bet";
     public static final String TOPIC_SETTLED_BET = "sports_settled_bet";
     public static final String TOPIC_RAW_SETTLED_BET = "topic_raw_settled_bet";
+    public static final String TOPIC_TRANSFER_HISTORY = "topic_transfer_history";
 }
