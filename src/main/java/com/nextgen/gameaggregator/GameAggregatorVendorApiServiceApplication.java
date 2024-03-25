@@ -12,6 +12,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
+//add cron
 @EnableScheduling
 @ServletComponentScan
 @SpringBootApplication(exclude = {SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class})
