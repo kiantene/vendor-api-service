@@ -17,8 +17,10 @@ import java.util.List;
 @Collection("bet_result_retry_log")
 public interface RawBetResultRetryLogRepository extends CouchbaseRepository<RawBetResultRetryLog, String> {
 
-    List<RawBetResultRetryLog> findTop10ByRetryCounterAndNextRetryTimeAndStatus(Integer retryCounter, Long nextRetryTime, Integer status);
+    @Query("#{#n1ql.selectEntity} WHERE nextRetryTime < $nextRetryTime AND retryCounter < $retryCounter AND status = $status")
+    List<RawBetResultRetryLog> findByNextRetryTimeLessThanAndRetryCounterLessThanAndStatusEquals(
+            @Param("nextRetryTime") Long nextRetryTime,
+            @Param("retryCounter") Integer retryCounter,
+            @Param("status") Integer status);
 
-    @Query(value = "SELECT * FROM bet_result_retry_log WHERE retryCounter <= :retryCounter AND nextRetryTime <= :nextRetryTime AND status = :status LIMIT :limit", nativeQuery = true)
-    List<RawBetResultRetryLog> findByRetryCounterAndNextRetryTimeAndStatusAndLimit(@Param("retryCounter") Integer retryCounter, @Param("nextRetryTime") Long nextRetryTime, @Param("status") Integer status, @Param("limit") Integer limit);
 }

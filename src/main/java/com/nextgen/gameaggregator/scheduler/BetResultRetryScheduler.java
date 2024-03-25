@@ -27,32 +27,36 @@ public class BetResultRetryScheduler {
     @Scheduled(fixedDelay = 3000, initialDelay = 3000)
     public void processBetResultRetryLog() {
         HttpRequestLog httpRequestLog;
-        Long currentTime = System.currentTimeMillis();
-        Integer maxRetryCounter = 6;
-        Integer retrieveLimit = 10;
+        Long currentTime = System.currentTimeMillis() + 1;
+        Integer maxRetryCounter = 7;
         Integer status = RetryStatus.FAILED.code;
 
         //get maximum 10 records once per query
-        List<RawBetResultRetryLog> rawBetResultRetryLogList = rawBetResultRetryLogRepository.findByRetryCounterAndNextRetryTimeAndStatusAndLimit(maxRetryCounter, currentTime, status, retrieveLimit);
+        List<RawBetResultRetryLog> rawBetResultRetryLogList = rawBetResultRetryLogRepository.findByNextRetryTimeLessThanAndRetryCounterLessThanAndStatusEquals(currentTime, maxRetryCounter, status);
 
-        for (RawBetResultRetryLog rawBetResultRetryLogItem : rawBetResultRetryLogList) {
-            try {
-                betResultRetryLogService.call(rawBetResultRetryLogItem.getOperatorData(), rawBetResultRetryLogItem.getAction(), rawBetResultRetryLogItem.getAgentId());
-                rawBetResultRetryLogItem.setStatus(RetryStatus.SUCCESS.code);
+        if (!rawBetResultRetryLogList.isEmpty()) {
+            for (RawBetResultRetryLog rawBetResultRetryLogItem : rawBetResultRetryLogList) {
+                try {
+                    betResultRetryLogService.call(rawBetResultRetryLogItem.getOperatorData(), rawBetResultRetryLogItem.getAction(), rawBetResultRetryLogItem.getAgentId());
+                    rawBetResultRetryLogItem.setStatus(RetryStatus.SUCCESS.code);
 
-            } catch (Exception exception) {
-                rawBetResultRetryLogItem.setStatus(RetryStatus.FAILED.code);
-                rawBetResultRetryLogItem.setRetryCounter(rawBetResultRetryLogItem.getRetryCounter() + 1);
-                rawBetResultRetryLogItem.setNextRetryTime(betResultRetryLogService.calculateNextRetryTime(rawBetResultRetryLogItem.getRetryCounter(), rawBetResultRetryLogItem.getNextRetryTime()));
+                } catch (Exception e) {
+                    //TODO HANDLE INTERNAL ERROR InvalidFormatException
+                    rawBetResultRetryLogItem.setStatus(RetryStatus.FAILED.code);
+                    rawBetResultRetryLogItem.setRetryCounter(rawBetResultRetryLogItem.getRetryCounter() + 1);
+                    rawBetResultRetryLogItem.setNextRetryTime(betResultRetryLogService.calculateNextRetryTime(rawBetResultRetryLogItem.getRetryCounter(), currentTime));
 
-                if (rawBetResultRetryLogItem.getRetryCounter() > maxRetryCounter) {
-                    rawBetResultRetryLogItem.setStatus(RetryStatus.TIMEOUT.code);
+                    if (rawBetResultRetryLogItem.getRetryCounter() > maxRetryCounter) {
+                        rawBetResultRetryLogItem.setStatus(RetryStatus.TIMEOUT.code);
+                    }
+
                 }
+                rawBetResultRetryLogRepository.save(rawBetResultRetryLogItem);
+                System.out.println("rawBetResultRetryLogItemAfter = " + rawBetResultRetryLogItem);
 
             }
-            rawBetResultRetryLogRepository.save(rawBetResultRetryLogItem);
-
         }
+        System.out.println("processBetResultRetryLogEND");
 
     }
 }

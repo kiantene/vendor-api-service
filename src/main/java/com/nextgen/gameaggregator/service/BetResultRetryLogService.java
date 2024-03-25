@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.enums.RetryStatus;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
@@ -65,12 +66,11 @@ public class BetResultRetryLogService {
     }
 
     public Long calculateNextRetryTime(Integer retryCounter, Long nextRetryTime) {
-        Integer delaySeconds = 30000;
         Integer maxRetryCounter = 6;
-        Long totalDelaySeconds = 0l;
+        Integer totalDelaySeconds = 30000;
 
         for (Integer i = 1; i <= maxRetryCounter; i++) {
-            totalDelaySeconds = (i == 1) ? delaySeconds : i * totalDelaySeconds;
+            totalDelaySeconds = i * totalDelaySeconds;
 
             if (retryCounter == i) {
                 break;
@@ -82,7 +82,8 @@ public class BetResultRetryLogService {
         return nextRetryTime;
     }
 
-    public void call(String operatorData, String action, Integer agentId) {
+    public void call(String operatorData, String action, Integer agentId) throws Exception, InvalidFormatException {
+
         try {
             MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
             WalletBalanceVo responseVo;
@@ -115,8 +116,11 @@ public class BetResultRetryLogService {
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
-        } catch (Exception exception) {
+        } catch (InvalidFormatException | InvalidAgentApiCredentialException e) {
+            throw new InvalidFormatException(e.getMessage());
 
+        } catch (Exception e) {
+            throw new Exception(e);
         }
 
     }

@@ -90,9 +90,12 @@ public class SportWalletService {
             httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
         }
-
-        sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbaseOld = sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
+        if (sportUnsettledBetCouchbaseOld != null) {
+            sportUnsettledBetCouchbase.setBetId(sportUnsettledBetCouchbaseOld.getBetId());
+            sportUnsettledBetCouchbase.setInternalTransactionId(sportUnsettledBetCouchbaseOld.getInternalTransactionId());
+        }
         BetEvent betEvent = null;
 
         try {
@@ -312,6 +315,7 @@ public class SportWalletService {
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
         String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
 
+        //TODO HANDLE WITH BETIDEMPOTENT LOG
         if (sportUnsettledBetCouchbase.getStatus().compareTo(BetStatus.REFUNDED.code) == 0)
             throw new BetRefundIdempotentViolationException();
 
