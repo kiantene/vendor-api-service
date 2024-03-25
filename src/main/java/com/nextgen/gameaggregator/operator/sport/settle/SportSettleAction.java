@@ -152,7 +152,7 @@ public class SportSettleAction {
             defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
-            if (defaultResponses != ResponseCodes.Status.SC_OK) {
+            if (defaultResponses == ResponseCodes.Status.SC_OK) {
                 //do nothing if success
 
             } else {

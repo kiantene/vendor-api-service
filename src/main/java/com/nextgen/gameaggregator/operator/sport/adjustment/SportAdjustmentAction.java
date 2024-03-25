@@ -50,7 +50,7 @@ public class SportAdjustmentAction {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
-        Integer defaultResponses = ResponseCodes.Status.SC_OK.code;
+        ResponseCodes.Status defaultResponses = ResponseCodes.Status.SC_OK;
 
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
         BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
@@ -135,16 +135,17 @@ public class SportAdjustmentAction {
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-            defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE.code;
+            defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            defaultResponses = invalidOperatorResponseException.getOperatorStatus();
+            //defaultResponses = invalidOperatorResponseException.getOperatorStatus();
+            defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (Exception exception) {
-            defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+            defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
-            if (defaultResponses != ResponseCodes.Status.SC_OK.code) {
+            if (defaultResponses == ResponseCodes.Status.SC_OK) {
                 //do nothing if success
 
             } else {

@@ -95,7 +95,7 @@ public class SportRefundAction {
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
                 .block();
 
         long endTime = System.currentTimeMillis();

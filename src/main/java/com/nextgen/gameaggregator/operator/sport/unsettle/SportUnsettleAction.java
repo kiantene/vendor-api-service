@@ -45,12 +45,15 @@ public class SportUnsettleAction {
     private CurrencyConversionService currencyConversionService;
     @Autowired
     private VendorGameRepository vendorGameRepository;
+    @Autowired
+    private BetResultRetryLogService betResultRetryLogService;
 
     public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
             InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-        WalletBalanceVo responseVo;
+        WalletBalanceVo responseVo = null;
+        ResponseCodes.Status defaultResponses = ResponseCodes.Status.SC_OK;
         Integer agentId = betInformation.getAgentId();
 
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
@@ -88,7 +91,7 @@ public class SportUnsettleAction {
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
                 .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
                 .block();
 
         long endTime = System.currentTimeMillis();
@@ -136,16 +139,28 @@ public class SportUnsettleAction {
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
-            throw new InvalidOperatorResponseException(operatorStatus);
+            //TODO TEMPORARY RESPONSES INVALID RESPONSES
+            defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (Exception exception) {
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
+        } finally {
+            if (defaultResponses == ResponseCodes.Status.SC_OK) {
+                //do nothing if success
+
+            } else {
+                WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
+                //create betResultRetryLog info for retry send to operator
+                responseVo.setData(responseData);
+                responseVo.getData().setBalance(BigDecimal.ZERO);
+                responseVo.setStatus(defaultResponses);
+                responseVo.setTraceId(traceId);
+                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_UNSETTLE);
+            }
         }
 
         return responseVo;
