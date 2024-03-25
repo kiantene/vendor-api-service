@@ -67,7 +67,7 @@ public class WithdrawRequest {
         AccessKey accessKey = transferService.getWalletServiceAccessKey();
         String apiUrl = walletServiceUrl;
 
-        WalletServiceTransferDto dto = new WalletServiceTransferDto(traceId, rawTransferHistory);
+        WalletServiceTransferDto dto = new WalletServiceTransferDto(traceId, rawTransferHistory, TransactionType.WITHDRAWAL.status);
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         String signature = authenticationService.generateSignature(dto, accessKey.getApiSecret());
