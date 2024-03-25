@@ -15,6 +15,7 @@ import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 @Document
 @Scope("raw")
@@ -25,6 +26,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
     private BigDecimal newBetAmount;
     private String vendorPlayerUsername;
     private Integer isConfirmBet;
+    private Integer isUnsettledBet;
 
     public SportUnsettledBetCouchbase(GameSession gameSession, String rawData, SportBetResultData sportBetResultData, String traceId, Integer resultType) {
         super(sportBetResultData);
@@ -52,6 +54,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setBalance(BigDecimal.ZERO);
         this.setResettleNum(0);
         this.setIsConfirmBet(0);
+        this.setIsUnsettledBet(0);
 
         //new betType
         this.setBetType(sportBetResultData.getBetType());
@@ -59,23 +62,6 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setNewBetAmount(sportBetResultData.getNewBetAmount());
 
         this.setId(this.generateId());
-    }
-
-    public String generateId() {
-        return this.getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
-    }
-
-    public BetHistory toBetHistory(Integer betStatus, Integer resultType) {
-        BetHistory betHistory = new BetHistory();
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        modelMapper.map(this, betHistory);
-
-        betHistory.setId(this.getBetId());
-        betHistory.setStatus(betStatus);
-        betHistory.setResultType(resultType);
-
-        return betHistory;
     }
 
     public SportUnsettledBetCouchbase(String rawData, BetHistory betHistory, String traceId, Integer resultType, String couchbaseId) {
@@ -99,5 +85,25 @@ public class SportUnsettledBetCouchbase extends BetInformation {
         this.setIsFreespin(0);
         this.setBalance(BigDecimal.ZERO);
         this.setId(couchbaseId);
+    }
+
+    public String generateId() {
+        return this.getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
+    }
+
+    public BetHistory toBetHistory(Integer betStatus, Integer resultType) {
+        BetHistory betHistory = new BetHistory();
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(this, betHistory);
+
+        betHistory.setId(this.getBetId());
+        betHistory.setStatus(betStatus);
+        betHistory.setResultType(resultType);
+
+        // if new bet amount Exists, Bet History stored new bet amount
+        Optional.ofNullable(this.getNewBetAmount()).ifPresent(betHistory::setBetAmount);
+
+        return betHistory;
     }
 }

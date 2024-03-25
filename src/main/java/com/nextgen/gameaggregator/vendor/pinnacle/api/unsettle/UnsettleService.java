@@ -2,54 +2,56 @@ package com.nextgen.gameaggregator.vendor.pinnacle.api.unsettle;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
+import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsTransactionDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class UnsettleService {
     @Autowired
+    private HttpService httpService;
+    @Autowired
     private SportWalletService sportWalletService;
 
-    public List<CommonVo> unsettle(ActionsDto dto, HttpRequestLog httpRequestLog) {
+    public CommonVo unsettle(Action action, HttpRequestLog httpRequestLog) {
         String traceId = httpRequestLog.getId();
+        Long transactionId = Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionId).orElse(null);
+        Long wagerId = Optional.ofNullable(action.getWagerInfo()).map(ActionsWagerInfoDto::getWagerId).orElse(null);
+        CommonVo commonVo = new CommonVo(action.getId(), transactionId, wagerId);
 
-        return dto.getActions().stream()
-                .filter(action -> "UNSETTLED".equals(action.getName()))
-                .map(action -> {
-                    CommonVo commonVo = new CommonVo();
-                    commonVo.setId(action.getId());
-                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
+        try {
+            UnsettleDto unsettleDto = new ModelMapper().map(action.getWagerInfo(), UnsettleDto.class);
+            unsettleDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
+            BetEvent response = sportWalletService.unsettle(traceId, unsettleDto, httpRequestLog.getRequestBody(), httpRequestLog);
+            commonVo.setBalance(response.getLastBalance());
 
-                    try {
-                        if (action.getTransaction() != null) {
-                            ActionsWagerInfoDto actionsWagerInfoDto = action.getWagerInfo();
-                            actionsWagerInfoDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
-                            BetEvent response = sportWalletService.unsettle(traceId, actionsWagerInfoDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                            commonVo.setBalance(response.getLastBalance());
-                        }
-                        commonVo.setResponseCode(ResponseCode.SUCCESS.code);
+        } catch (InsufficientBalanceException e) {
+            httpService.logError(httpRequestLog, e);
+            commonVo.setResponseCode(ResponseCode.INSUFFICIENT_FUND.code);
 
-                    } catch (Exception e) {
-                        log.error("Exception while unsettling bet: {}", e.getMessage());
-                        commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-                    }
+        } catch (Exception e) {
+            httpService.logError(httpRequestLog, e);
+            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
 
-                    if (action.getTransaction() != null) {
-                        commonVo.setTransactionId(action.getTransaction().getTransactionId());
-                    }
-                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
-                    return commonVo;
-                })
-                .collect(Collectors.toList());
+        }
+
+        // for Testing
+        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004U")) {
+            commonVo.setResponseCode(ResponseCode.INSUFFICIENT_FUND.code);
+        }
+
+        return commonVo;
     }
 }

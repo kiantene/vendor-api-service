@@ -14,14 +14,13 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 
@@ -46,6 +45,7 @@ public class JackpotAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         JackpotVo responseVo = new JackpotVo();
         String traceId = httpRequestLog.getId();
+        GameSession gameSession = new GameSession();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -56,7 +56,7 @@ public class JackpotAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = gameSessionService.verifyToken(dto.getToken());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             responseVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -75,7 +75,7 @@ public class JackpotAction {
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
-            responseVo.setCash(idempotentViolationException.getBalance());
+            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
             httpService.logError(httpRequestLog, idempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
@@ -134,5 +134,4 @@ public class JackpotAction {
         // 4. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
     }
-
 }

@@ -2,7 +2,10 @@ package com.nextgen.gameaggregator.operator.sport.resettle;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -10,6 +13,7 @@ import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -46,23 +50,23 @@ public class SportResettleAction {
     @Autowired
     private VendorGameRepository vendorGameRepository;
 
-    public WalletBalanceVo call(String traceId, BetInformation betInformation, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, SportSettledBet sportSettledBet, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
-        Integer agentId = betInformation.getAgentId();
+        Integer agentId = sportSettledBet.getAgentId();
 
-        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
+        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
         BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
+        String gameCode = vendorGameRepository.findByIdAndStatus(sportSettledBet.getVendorGameId(), 1).getCode();
 
-        AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
-        SportResettleDto dto = this.newSportResettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, sportResettleData, gameCode);
+        AgentPlayer agentPlayer = agentPlayerRepository.findById(sportSettledBet.getAgentPlayerId()).orElse(null);
+        SportResettleDto dto = this.newSportResettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportSettledBet, sportResettleData, gameCode);
         dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -135,7 +139,8 @@ public class SportResettleAction {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException | ResponseNotMatchRequestException invalidResponseException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 ResponseNotMatchRequestException invalidResponseException) {
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
@@ -150,10 +155,10 @@ public class SportResettleAction {
         return responseVo;
     }
 
-    private SportResettleDto newSportResettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation, SportResettleData sportResettleData, String gameCode) {
-        BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
-        BigDecimal winAmount = new BigDecimal(betInformation.getWinAmount().stripTrailingZeros().toPlainString());
-        BigDecimal winLoss = new BigDecimal(betInformation.getWinLoss().stripTrailingZeros().toPlainString());
+    private SportResettleDto newSportResettleDto(String traceId, String agentPlayerUsername, String currencyCode, SportSettledBet sportSettledBet, SportResettleData sportResettleData, String gameCode) {
+        BigDecimal betAmount = new BigDecimal(Optional.ofNullable(sportSettledBet.getNewBetAmount()).orElse(sportSettledBet.getBetAmount()).stripTrailingZeros().toPlainString());
+        BigDecimal winAmount = new BigDecimal(sportSettledBet.getWinAmount().stripTrailingZeros().toPlainString());
+        BigDecimal winLoss = new BigDecimal(sportSettledBet.getWinLoss().stripTrailingZeros().toPlainString());
         BigDecimal newWinAmount = new BigDecimal(sportResettleData.getNewWinAmount().stripTrailingZeros().toPlainString());
         BigDecimal creditAmount = BigDecimal.ZERO;
         BigDecimal debitAmount = BigDecimal.ZERO;
@@ -167,14 +172,14 @@ public class SportResettleAction {
 
         SportResettleDto sportResettleDto = new SportResettleDto();
         sportResettleDto.setTraceId(traceId);
-        sportResettleDto.setBetId(betInformation.getBetId());
-        sportResettleDto.setTransactionId(betInformation.getInternalTransactionId());
+        sportResettleDto.setBetId(sportSettledBet.getBetId());
+        sportResettleDto.setTransactionId(sportSettledBet.getInternalTransactionId());
         sportResettleDto.setUsername(agentPlayerUsername);
         sportResettleDto.setCurrency(currencyCode);
-        sportResettleDto.setExternalTransactionId(betInformation.getVendorBetId());
+        sportResettleDto.setExternalTransactionId(sportSettledBet.getVendorBetId());
         sportResettleDto.setBetAmount(betAmount);
-        sportResettleDto.setRoundId(betInformation.getRoundId());
-        sportResettleDto.setTimestamp(betInformation.getVendorBetTime());
+        sportResettleDto.setRoundId(sportSettledBet.getRoundId());
+        sportResettleDto.setTimestamp(sportSettledBet.getVendorBetTime());
         sportResettleDto.setGameCode(gameCode);
         sportResettleDto.setWinAmount(winAmount);
         sportResettleDto.setWinLoss(winLoss);
