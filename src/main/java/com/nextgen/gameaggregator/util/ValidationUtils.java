@@ -29,6 +29,8 @@ public class ValidationUtils {
     public static final String ALPHANUMERIC_DASH_COLON_REGEX = "^[a-zA-Z0-9:_-]+$";
     public static final String WEB_OR_H5 = "^web|WEB|h5|H5+$";
 
+    public static final String BigDecimalPositiveOnly = "[1-9]\\d*(\\.\\d{1,4})?";
+
     public static <T> void validateRequest(T requestObject) throws InvalidRequestException {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();

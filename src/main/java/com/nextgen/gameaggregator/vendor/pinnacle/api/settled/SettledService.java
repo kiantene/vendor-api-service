@@ -2,52 +2,72 @@ package com.nextgen.gameaggregator.vendor.pinnacle.api.settled;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
+import com.nextgen.gameaggregator.exception.BetFailedException;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
+import com.nextgen.gameaggregator.sport.service.SportUnsettledBetService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.Action;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsTransactionDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
 import com.nextgen.gameaggregator.vendor.pinnacle.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class SettledService {
     @Autowired
+    private HttpService httpService;
+    @Autowired
     private SportWalletService sportWalletService;
+    @Autowired
+    private SportUnsettledBetService sportUnsettledBetService;
 
-    public List<CommonVo> settled(ActionsDto dto, HttpRequestLog httpRequestLog) {
+    public CommonVo settled(Action action, HttpRequestLog httpRequestLog) {
+        String traceId = httpRequestLog.getId();
+        Long transactionId = Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionId).orElse(null);
+        Long wagerId = Optional.ofNullable(action.getWagerInfo()).map(ActionsWagerInfoDto::getWagerId).orElse(null);
+        CommonVo commonVo = new CommonVo(action.getId(), transactionId, wagerId);
 
-        return dto.getActions().stream()
-                .filter(action -> "SETTLED".equals(action.getName()))
-                .map(action -> {
-                    CommonVo commonVo = new CommonVo();
-                    commonVo.setId(action.getId());
-                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
+        try {
+            SettledDto settledDto = new ModelMapper().map(action.getWagerInfo(), SettledDto.class);
+            settledDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
+            // check is confirmed bet or (settled bet -> unsettled bet)
+            this.checkIsConfirmBetOrIsUnsettledBet(settledDto);
+            BetEvent response = sportWalletService.settle(traceId, settledDto, httpRequestLog);
+            commonVo.setBalance(response.getLastBalance());
 
-                    try {
-                        String traceId = UUID.randomUUID().toString();
-                        action.getWagerInfo().setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
-                        BetEvent response = sportWalletService.settle(traceId, action.getWagerInfo(), httpRequestLog);
-                        commonVo.setResponseCode(ResponseCode.SUCCESS.code);
-                        commonVo.setBalance(response.getLastBalance());
+        } catch (Exception e) {
+            httpService.logError(httpRequestLog, e);
+            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+        }
 
-                    } catch (Exception e) {
-                        log.error("Exception while settling bet: {}", e.getMessage());
-                        commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-                    }
+        // for Testing
+        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004O")) {
+            commonVo.setSetResponseVoErrorCode(Boolean.TRUE);
+            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+        }
+        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004S")) {
+            commonVo.setSetResponseVoErrorCode(Boolean.FALSE);
+            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
+        }
 
-                    if (action.getTransaction() != null) {
-                        commonVo.setTransactionId(action.getTransaction().getTransactionId());
-                    }
+        return commonVo;
+    }
 
-                    commonVo.setWagerId(action.getWagerInfo().getWagerId());
-                    return commonVo;
-                })
-                .collect(Collectors.toList());
+    private void checkIsConfirmBetOrIsUnsettledBet(SettledDto settledDto) throws BetFailedException, BetNotFoundException {
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(settledDto.getVendorPlayerUsername(), settledDto.getExternalTransactionId());
+        Integer isConfirmBet = Objects.requireNonNullElse(sportUnsettledBetCouchbase.getIsConfirmBet(), 0);
+        Integer isUnsettledBet = Objects.requireNonNullElse(sportUnsettledBetCouchbase.getIsUnsettledBet(), 0);
+        if (!isConfirmBet.equals(1) && !isUnsettledBet.equals(1))
+            throw new BetFailedException("Bet External Transaction Id : " + settledDto.getExternalTransactionId() + " not confirmed bet.");
     }
 }

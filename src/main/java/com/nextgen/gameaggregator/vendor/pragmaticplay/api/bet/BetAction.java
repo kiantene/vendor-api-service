@@ -11,14 +11,13 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 
@@ -48,6 +47,7 @@ public class BetAction {
         BetVo responseVo = new BetVo();
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
+        GameSession gameSession = new GameSession();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -57,7 +57,7 @@ public class BetAction {
             this.doValidation(dto);
 
             // 2. Retrieve and verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = gameSessionService.verifyToken(dto.getToken());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
@@ -82,7 +82,7 @@ public class BetAction {
             String betId = betResultIdempotentViolationException.getBetId();
             responseVo.setTransactionId(VendorService.getTransactionId(betId));
             responseVo.setCurrency(vendorCurrencyCode);
-            responseVo.setCash(betResultIdempotentViolationException.getBalance());
+            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
             responseVo.setBonus(BigDecimal.ZERO);
             responseVo.setUsedPromo(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);

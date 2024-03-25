@@ -68,7 +68,7 @@ public class WalletBetResultAction {
         WalletBalanceVo responseVo;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
         currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);

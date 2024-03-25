@@ -397,6 +397,11 @@ public class WalletService {
                         }
 
                         settledBet.setResettleNum(resettleNum + 1);
+                        settledBet.setBetAmount(settledBet.getBetAmount().negate());
+                        settledBet.setWinAmount(settledBet.getWinAmount().negate());
+                        settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
+                        settledBet.setWinLoss(settledBet.getWinLoss().negate());
+                        settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
 
                     }
                 }

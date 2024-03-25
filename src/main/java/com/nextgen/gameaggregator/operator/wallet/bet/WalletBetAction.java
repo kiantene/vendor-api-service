@@ -62,7 +62,7 @@ public class WalletBetAction {
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         WalletBetDto dto = this.newWalletBetDto(traceId, gameSession, betInformation);
         dto.setAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getAmount(), fromVendorConversionRate));

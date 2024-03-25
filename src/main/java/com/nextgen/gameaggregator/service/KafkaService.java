@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.entity.ga.BetHistory;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
@@ -65,6 +66,17 @@ public class KafkaService {
         } catch (Exception e) {
             log.error(e.getMessage());
 
+        }
+    }
+
+    public void produceTransferHistory(TransferHistory transferHistory) {
+        try {
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_TRANSFER_HISTORY, transferHistory);
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> referenceId = " + transferHistory.getId() + " data : " + new Gson().toJson(transferHistory));
+            e.printStackTrace();
         }
     }
 }
