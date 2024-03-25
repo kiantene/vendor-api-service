@@ -20,7 +20,7 @@ public class WalletServiceTransferDto {
     private Long timestamp;
 
 
-    public WalletServiceTransferDto(String traceId, RawTransferHistory rawTransferHistory){
+    public WalletServiceTransferDto(String traceId, RawTransferHistory rawTransferHistory, Integer transactionType){
 
         this.traceId = traceId;
         this.referenceId = rawTransferHistory.getReferenceId();
@@ -28,7 +28,7 @@ public class WalletServiceTransferDto {
         this.playerId = rawTransferHistory.getAgentPlayerId();
         this.entityId = rawTransferHistory.getAgentId();
         this.walletType = 1; //main wallet
-        this.transactionType = 1; //Deposit
+        this.transactionType = transactionType; //1 = Deposit, 2 = withdraw
         this.tokenId = rawTransferHistory.getCurrencyId();
         this.amount = rawTransferHistory.getTransferAmount();
         this.timestamp = rawTransferHistory.getCreateTime();
