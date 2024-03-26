@@ -115,6 +115,8 @@ public class BetResultRetryLogService {
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
+            
+            requestService.operatorStatusException(responseVo.getStatus());
 
         } catch (InvalidFormatException | InvalidAgentApiCredentialException e) {
             throw new InvalidFormatException(e.getMessage());

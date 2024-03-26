@@ -34,7 +34,7 @@ public class BetResultRetryScheduler {
         Long currentTime = System.currentTimeMillis() + 1;
         Integer maxRetryCounter = 7;
         Integer status = RetryStatus.FAILED.code;
-        useScheduler = false;
+        //useScheduler = false;
 
         if (!useScheduler) {
             System.out.println("useScheduler Do nothing");
