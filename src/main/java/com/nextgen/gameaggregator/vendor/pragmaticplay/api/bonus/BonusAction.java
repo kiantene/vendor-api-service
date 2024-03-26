@@ -79,7 +79,7 @@ public class BonusAction {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
             responseVo.setCurrency(vendorCurrencyCode);
-            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
+            responseVo.setCash(idempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, idempotentViolationException);
 

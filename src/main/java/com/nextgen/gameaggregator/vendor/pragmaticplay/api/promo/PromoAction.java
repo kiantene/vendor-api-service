@@ -75,7 +75,7 @@ public class PromoAction {
         } catch (BetResultIdempotentViolationException idempotentViolationException) {
             // duplicate bet result received, do not process but return original transaction id back to vendor
             responseVo.setTransactionId(VendorService.getTransactionId(idempotentViolationException.getTransactionId()));
-            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
+            responseVo.setCash(idempotentViolationException.getBalance());
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setBonus(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, idempotentViolationException);
