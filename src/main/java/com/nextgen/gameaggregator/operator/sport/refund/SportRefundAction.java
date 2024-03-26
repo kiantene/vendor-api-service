@@ -58,7 +58,6 @@ public class SportRefundAction {
         Integer agentId = betInformation.getAgentId();
 
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
-        BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);

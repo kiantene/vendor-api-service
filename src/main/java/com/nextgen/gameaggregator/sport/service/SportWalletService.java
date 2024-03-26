@@ -90,8 +90,11 @@ public class SportWalletService {
             httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
             httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
         }
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbaseOld = sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
+
+        Integer unconfirmedBetStatus = 0;
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbaseOld = sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId(), unconfirmedBetStatus);
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase(gameSession, rawData, sportBetResultData, traceId, ResultType.BET.code);
+
         if (sportUnsettledBetCouchbaseOld != null) {
             sportUnsettledBetCouchbase.setBetId(sportUnsettledBetCouchbaseOld.getBetId());
             sportUnsettledBetCouchbase.setInternalTransactionId(sportUnsettledBetCouchbaseOld.getInternalTransactionId());
@@ -150,8 +153,9 @@ public class SportWalletService {
 
         loggingService.logStart();
 
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
-        if (sportUnsettledBetCouchbase.getIsConfirmBet() == 1) throw new BetResultIdempotentViolationException();
+        Integer confirmBetStatus = 1;
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId(), confirmBetStatus);
+
         // Update Bet Parameter
         BigDecimal newBetAmount = Optional.ofNullable(sportBetResultData.getNewBetAmount()).orElse(Objects.requireNonNullElse(sportBetResultData.getBetAmount(), sportUnsettledBetCouchbase.getBetAmount()));
         sportUnsettledBetCouchbase.setNewBetAmount(newBetAmount);

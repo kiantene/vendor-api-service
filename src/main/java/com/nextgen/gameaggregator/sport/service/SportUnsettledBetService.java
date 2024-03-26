@@ -43,7 +43,7 @@ public class SportUnsettledBetService {
         return sportUnsettledBetCouchbase;
     }
 
-    public SportUnsettledBetCouchbase idempotentCheck(String vendorPlayerUsername, String externalTransactionId) throws BetResultIdempotentViolationException {
+    public SportUnsettledBetCouchbase idempotentCheck(String vendorPlayerUsername, String externalTransactionId, Integer isConfirmBet) throws BetResultIdempotentViolationException {
         String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
 
@@ -56,7 +56,7 @@ public class SportUnsettledBetService {
             if (!operatorStatus.equals(ResponseCodes.Status.SC_OK.code) && betTimingDifferenceInMillieSeconds < this.getTimingDifferenceForStillProcessing()) {
                 throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
 
-            } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code)) {
+            } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code) && sportUnsettledBetCouchbase.getIsConfirmBet() == isConfirmBet) {
                 throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
 
             } else {
