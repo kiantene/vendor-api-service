@@ -59,19 +59,19 @@ public class CancelBetAction {
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into commonDto
-            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+//            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
 
             //Validate request parameters from vendor (Non-database related)
-            this.doValidation(commonDto);
+//            this.doValidation(commonDto);
 
-            //Get vendor line id by agent code from vendor line credential
-            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
-
-            //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+//            //Get vendor line id by agent code from vendor line credential
+//            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
+//
+//            //Decrypt raw respond with key from vendor line credential
+//            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into cancelBetDto
-            CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
+            CancelBetDto cancelbetDto = HttpService.convertJsonToDto(body, CancelBetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(cancelbetDto);
@@ -80,7 +80,7 @@ public class CancelBetAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(cancelbetDto.getMemberAccount(), Integer.toString(cancelbetDto.getGameID()));
 
             //Verify remaining parameters (Verify against database values)
-            this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
+//            this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
 
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
 
@@ -126,14 +126,14 @@ public class CancelBetAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (
-                InvalidDecryptionException |
-                InvalidEncryptionException |
+//                InvalidDecryptionException |
+//                InvalidEncryptionException |
                 InvalidPlayerException |
                 InvalidRequestException |
                 CurrencyNotSupportedException |
                 JsonProcessingException |
-                CredentialNotFoundException |
-                DisabledGameException |
+//                CredentialNotFoundException |
+//                DisabledGameException |
                 InvalidAgentApiCredentialException |
                 AuthenticationException otherException) {
             commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
