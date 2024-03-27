@@ -55,28 +55,28 @@ public class BetAction {
             String body = httpRequestLog.getRequestBody();
 
             //Convert original request body into commonDto
-//            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
-//
-//            //Validate request parameters from vendor (Non-database related)
-//            this.doValidation(commonDto);
-//
-//            //Get vendor line id by agent code from vendor line credential
-//            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
-//
-//            //Decrypt raw respond with key from vendor line credential
-//            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
+            CommonDto commonDto = HttpService.convertQueryStringToDtoUrlDecode(body, CommonDto.class);
+
+            //Validate request parameters from vendor (Non-database related)
+            this.doValidation(commonDto);
+
+            //Get vendor line id by agent code from vendor line credential
+            Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
+
+            //Decrypt raw respond with key from vendor line credential
+            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into betDto
-            BetDto betDto = HttpService.convertJsonToDto(body, BetDto.class);
+            BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
-//            this.doDecryptValidation(betDto);
+            this.doDecryptValidation(betDto);
 
             //get rawGameSession by player name and vendor game id
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsernameAndVendorGameCode(betDto.getMemberAccount(), betDto.getGameId());
 
             //Verify remaining parameters (Verify against database values)
-//            this.doVerification(commonDto, betDto, gameSession, jsonParam);
+            this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
             //Process full bet data
             ResultType resultType = this.getResultType(betDto);
@@ -95,12 +95,12 @@ public class BetAction {
 
         } catch (
                 AuthenticationException |
-//                InvalidDecryptionException |
-//                InvalidEncryptionException |
-//                CredentialNotFoundException |
-//                DisabledVendorLineException |
-//                InvalidVendorLineException |
-//                DisabledAgentPlayerException |
+                InvalidDecryptionException |
+                InvalidEncryptionException |
+                CredentialNotFoundException |
+                DisabledVendorLineException |
+                InvalidVendorLineException |
+                DisabledAgentPlayerException |
                 JsonProcessingException paramException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
@@ -128,38 +128,32 @@ public class BetAction {
             commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
             httpService.logError(httpRequestLog, insufficientBalanceException);
 
-        }
-//        catch (CurrencyNotSupportedException currencyNotSupportedException) {
-//            commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
-//            httpService.logError(httpRequestLog, currencyNotSupportedException);
-//
-//        }
-//        catch (InvalidPlayerException invalidPlayerException) {
-//            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
-//            httpService.logError(httpRequestLog, invalidPlayerException);
-//
-//        }
-//        catch (InvalidDateException invalidDateException) {
-//            commonVo.setErrorResponseCode(ResponseCodes.DATE_INPUT_MISSING);
-//            httpService.logError(httpRequestLog, invalidDateException);
-//
-//        }
-//        catch (DisabledGameException disabledGameException) {
-//            commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
-//            httpService.logError(httpRequestLog, disabledGameException);
-//
-//        }
-//        catch (InvalidRequestException invalidRequestException) {
-//            //return error message according param
-//            if (invalidRequestException.getValidation() != null) {
-//                commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
-//            } else {
-//                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
-//            }
-//            httpService.logError(httpRequestLog, invalidRequestException);
-//
-//        }
-        catch (Exception exception) {
+        } catch (CurrencyNotSupportedException currencyNotSupportedException) {
+            commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
+
+        } catch (InvalidDateException invalidDateException) {
+            commonVo.setErrorResponseCode(ResponseCodes.DATE_INPUT_MISSING);
+            httpService.logError(httpRequestLog, invalidDateException);
+
+        } catch (DisabledGameException disabledGameException) {
+            commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, disabledGameException);
+
+        } catch (InvalidRequestException invalidRequestException) {
+            //return error message according param
+            if (invalidRequestException.getValidation() != null) {
+                commonVo.setErrorResponseCode(invalidRequestException.getValidation().values().stream().findFirst().orElse(ResponseCodes.PARAM_CONTAIN_ERROR));
+            } else {
+                commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            }
+            httpService.logError(httpRequestLog, invalidRequestException);
+
+        } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
             httpService.logError(httpRequestLog, exception);
