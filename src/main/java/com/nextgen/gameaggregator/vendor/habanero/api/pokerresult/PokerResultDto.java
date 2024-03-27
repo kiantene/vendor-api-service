@@ -30,12 +30,20 @@ public class PokerResultDto extends FundInfoDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
+        // if amount less than Zero, mean have negative amount
+        if (this.getAmount().compareTo(BigDecimal.ZERO) < 0) {
+            return this.getAmount().abs();
+        }
         return BigDecimal.ZERO;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return this.getAmount().abs();
+        // if amount more than Zero, mean have positive amount
+        if (this.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            return this.getAmount().abs();
+        }
+        return BigDecimal.ZERO;
     }
 
     @Override
@@ -75,6 +83,10 @@ public class PokerResultDto extends FundInfoDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        if (this.getGameStateMode().equals(GameStateMode.ENDROUND) || this.getGameStateMode().equals(GameStateMode.EXPIRE)) {
+            //handle settle bet
+            return BetStatus.SETTLED;
+        }
+        return BetStatus.UNSETTLED;
     }
 }
