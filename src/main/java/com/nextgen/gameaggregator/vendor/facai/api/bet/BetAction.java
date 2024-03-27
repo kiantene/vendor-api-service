@@ -121,14 +121,12 @@ public class BetAction {
             //SC_INSUFFICIENT_FUNDS
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
 
-                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
-
                 // 1 mean fish game(vendor does not allow fish game to cancel bet request, so return error to force cancel)
-//                if(betDto.getGameType().equals(1)){
-//                    commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
-//                }else{
-//
-//                }
+                if(betDto.getGameType().equals(1)){
+                    commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                }else{
+                    commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+                }
             } else {
                 commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             }
