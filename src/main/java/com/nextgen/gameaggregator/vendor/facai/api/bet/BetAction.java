@@ -50,6 +50,8 @@ public class BetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
 
+        BetDto betDto = null;
+
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -67,7 +69,7 @@ public class BetAction {
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into betDto
-            BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
+            betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
@@ -89,8 +91,15 @@ public class BetAction {
             //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-            commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+
+            // 1 mean fish game(vendor does not allow fish game to cancel bet request, so return error to force cancel)
+            if(betDto.getGameType().equals(1)){
+                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            }else{
+                commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+                commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
+            }
+
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (
