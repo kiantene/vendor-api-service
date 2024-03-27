@@ -7,6 +7,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +28,10 @@ public class RedissonConfig {
     private String username;
     private String password;
     private Integer database = 0;
+
+    @Value("${spring.data.redis.addressname:redis}")
+    private String redisAddressKey;
+
 
     @Bean
     public RedissonClient redissonClient() {
@@ -51,7 +56,7 @@ public class RedissonConfig {
 
 
         nodehosts.forEach(nodeAddress -> {
-            clusterConfig.addNodeAddress("redis://" + nodeAddress);
+            clusterConfig.addNodeAddress(redisAddressKey+"://" + nodeAddress);
         });
 
 //        List<String> formattedNodeAddresses = nodehosts.stream()
@@ -66,7 +71,7 @@ public class RedissonConfig {
 
     private void configureSingleServer(Config config) {
         SingleServerConfig singleServerConfig = config.useSingleServer()
-                .setAddress("redis://" + host + ":" + port);
+                .setAddress(redisAddressKey+"://" + host + ":" + port);
 
         setIfNonEmpty(username, singleServerConfig::setUsername);
         setIfNonEmpty(password, singleServerConfig::setPassword);
