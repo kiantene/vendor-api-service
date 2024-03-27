@@ -29,8 +29,8 @@ public class RedissonConfig {
     private String password;
     private Integer database = 0;
 
-    @Value("${spring.data.redis.addressname:redis}")
-    private String redisAddressKey;
+    @Value("${spring.data.redis.protocol:redis}")
+    private String redisProtocol;
 
 
     @Bean
@@ -56,7 +56,7 @@ public class RedissonConfig {
 
 
         nodehosts.forEach(nodeAddress -> {
-            clusterConfig.addNodeAddress(redisAddressKey+"://" + nodeAddress);
+            clusterConfig.addNodeAddress(redisProtocol+"://" + nodeAddress);
         });
 
 //        List<String> formattedNodeAddresses = nodehosts.stream()
@@ -71,7 +71,7 @@ public class RedissonConfig {
 
     private void configureSingleServer(Config config) {
         SingleServerConfig singleServerConfig = config.useSingleServer()
-                .setAddress(redisAddressKey+"://" + host + ":" + port);
+                .setAddress(redisProtocol+"://" + host + ":" + port);
 
         setIfNonEmpty(username, singleServerConfig::setUsername);
         setIfNonEmpty(password, singleServerConfig::setPassword);
