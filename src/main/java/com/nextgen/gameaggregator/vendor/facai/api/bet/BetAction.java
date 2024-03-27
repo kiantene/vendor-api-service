@@ -91,15 +91,8 @@ public class BetAction {
             //commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-
-            // 1 mean fish game(vendor does not allow fish game to cancel bet request, so return error to force cancel)
-            if(betDto.getGameType().equals(1)){
-                commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
-            }else{
-                commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
-                commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
-            }
-
+            commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
+            commonVo.setMainPoints(betResultIdempotentViolationException.getBalance().setScale(2, RoundingMode.DOWN).doubleValue());
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (
@@ -127,7 +120,13 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
-                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+
+                // 1 mean fish game(vendor does not allow fish game to cancel bet request, so return error to force cancel)
+                if(betDto.getGameType().equals(1)){
+                    commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+                }else{
+                    commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
+                }
             } else {
                 commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             }
