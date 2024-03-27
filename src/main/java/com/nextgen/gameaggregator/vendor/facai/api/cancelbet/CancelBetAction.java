@@ -88,7 +88,8 @@ public class CancelBetAction {
             commonVo.setMainPoints(balance.setScale(2, RoundingMode.DOWN).doubleValue());
 
         } catch (BetNotFoundException betNotFoundException) {
-            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
+            commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+//            commonVo.setErrorResponseCode(ResponseCodes.TRANSACTION_NOT_EXIST);
             httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
