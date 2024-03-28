@@ -50,7 +50,7 @@ public class BetResultRetryLogService {
         Integer defaultRetryCounter = 1;
         Long nextRetryTime = System.currentTimeMillis();
 
-        rawBetResultRetryLog.setId(betInformation.getBetId());
+        rawBetResultRetryLog.setId(betInformation.getBetId() + action);
         rawBetResultRetryLog.setTransactionId(betInformation.getInternalTransactionId());
         rawBetResultRetryLog.setAction(action);
         rawBetResultRetryLog.setVendorId(vendorId);
@@ -115,7 +115,7 @@ public class BetResultRetryLogService {
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
-            
+
             requestService.operatorStatusException(responseVo.getStatus());
 
         } catch (InvalidFormatException | InvalidAgentApiCredentialException e) {
