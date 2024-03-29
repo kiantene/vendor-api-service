@@ -50,8 +50,6 @@ public class BetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
 
-        BetDto betDto = null;
-
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -69,7 +67,7 @@ public class BetAction {
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into betDto
-            betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
+            BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
@@ -120,13 +118,7 @@ public class BetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
-
-                // 1 mean fish game(vendor does not allow fish game to cancel bet request, so return error to force cancel)
-                if(betDto.getGameType().equals(1)){
-                    commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
-                }else{
-                    commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
-                }
+                commonVo.setErrorResponseCode(ResponseCodes.INSUFFICIENT_BALANCE);
             } else {
                 commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
             }
