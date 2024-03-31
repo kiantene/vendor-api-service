@@ -190,7 +190,7 @@ public class KafkaConsumerService {
     @KafkaListener(topics = KafkaConstant.TOPIC_RAW_SETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeRawSettledBet(String message) {
         String traceId = UUID.randomUUID().toString();
-        HttpRequestLog httpRequestLog = httpService.startInternal();
+        HttpRequestLog httpRequestLog = httpService.startInternalConsumerForRawSettledBet();
         GeneralVo vo = new GeneralVo();
 
         try {

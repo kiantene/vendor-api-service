@@ -185,11 +185,12 @@ public class HttpService {
         return httpRequestLog;
     }
 
-    public HttpRequestLog startInternal() {
+    public HttpRequestLog startInternalConsumerForRawSettledBet() {
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();
 
         try {
+            httpRequestLog.setUrl("Internal Consumer For RawSettledBet");
             httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setStartTime(System.currentTimeMillis());
