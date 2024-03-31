@@ -12,6 +12,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -196,9 +197,11 @@ public class KafkaConsumerService {
             SportRawSettledBet sportRawSettledBet = new Gson().fromJson(message, SportRawSettledBet.class);
             BetEvent responseVo = sportWalletService.settle(traceId, sportRawSettledBet, null);
             vo.setBalance(responseVo.getLastBalance());
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             e.printStackTrace();
 
         } finally {
