@@ -199,6 +199,7 @@ public class KafkaConsumerService {
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
+            e.printStackTrace();
 
         } finally {
             httpService.end(httpRequestLog, vo);

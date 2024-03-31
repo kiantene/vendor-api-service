@@ -187,7 +187,7 @@ public class HttpService {
 
     public HttpRequestLog startInternal() {
 
-        HttpRequestLog httpRequestLog = null;
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
 
         try {
             httpRequestLog.setId(UUID.randomUUID().toString());
