@@ -195,7 +195,7 @@ public class KafkaConsumerService {
 
         try {
             SportRawSettledBet sportRawSettledBet = new Gson().fromJson(message, SportRawSettledBet.class);
-            BetEvent responseVo = sportWalletService.settle(traceId, sportRawSettledBet, null);
+            BetEvent responseVo = sportWalletService.settle(traceId, sportRawSettledBet, httpRequestLog);
             vo.setBalance(responseVo.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
 

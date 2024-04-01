@@ -86,31 +86,32 @@ public class SportSettleAction {
             httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_SETTLE);
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_SETTLE)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-            }
-            httpRequestLog.setOperatorEnd(endTime);
-        }
-
-        requestService.createRequestLogVo(EndPoints.SPORT_SETTLE, apiUrl, dto, apiResponse, headerMap, startTime, endTime, this.getClass().getPackage().getName(), profilesActive);
-
         try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_SETTLE)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
+            requestService.createRequestLogVo(EndPoints.SPORT_SETTLE, apiUrl, dto, apiResponse, headerMap, startTime, endTime, this.getClass().getPackage().getName(), profilesActive);
+
+
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
