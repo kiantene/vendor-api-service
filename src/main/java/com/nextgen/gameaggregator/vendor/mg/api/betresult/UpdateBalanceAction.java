@@ -172,7 +172,6 @@ public class UpdateBalanceAction {
 
     private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message) throws BetNotFoundException, BetResultIdempotentViolationException {
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(winDataDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
-        vendorService.setVendorClassFileUnsettledBetList(unsettledBetList);
         if (unsettledBetList.isEmpty()) {
             try {
                 Optional<SettledBet> settledBetOptional = Optional.ofNullable(settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(winDataDto.getVendorBetId(), winDataDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId()));
@@ -184,6 +183,7 @@ public class UpdateBalanceAction {
                 throw betNotFoundException;
             }
         } else {
+            vendorService.setVendorClassFileUnsettledBetList(unsettledBetList);
             unsettledBetList.stream().forEach(data -> message.append("unsettledBet : " + data.getInternalTransactionId() + " "));
         }
     }
