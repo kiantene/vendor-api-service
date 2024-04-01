@@ -161,7 +161,8 @@ public class BetAction {
             httpService.logError(httpRequestLog, exception);
         } finally {
             if(betDto.getMemberAccount().equals("yqlatnb")){
-
+                commonVo.setErrorResponseCode(ResponseCodes.REQUIRE_CANCEL_REQUEST);
+                commonVo.setMainPoints(null);
             }
             httpService.end(httpRequestLog, commonVo);
         }
