@@ -183,6 +183,7 @@ public class UpdateBalanceAction {
                 throw betNotFoundException;
             }
         } else {
+            vendorService.setVendorClassFileUnsettledBetList(unsettledBetList);
             unsettledBetList.stream().forEach(data -> message.append("unsettledBet : " + data.getInternalTransactionId() + " "));
         }
     }
