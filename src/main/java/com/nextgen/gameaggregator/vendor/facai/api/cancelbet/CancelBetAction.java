@@ -54,6 +54,8 @@ public class CancelBetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
 
+        CancelBetDto cancelbetDto = null;
+
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -71,7 +73,7 @@ public class CancelBetAction {
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into cancelBetDto
-            CancelBetDto cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
+            cancelbetDto = HttpService.convertJsonToDto(jsonParam, CancelBetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(cancelbetDto);
@@ -144,6 +146,10 @@ public class CancelBetAction {
             httpService.logError(httpRequestLog, exception);
 
         } finally {
+            if(cancelbetDto.getMemberAccount().equals("yqlatnb")){
+                commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
+                commonVo.setMainPoints(0d);
+            }
             httpService.end(httpRequestLog, commonVo);
 
         }

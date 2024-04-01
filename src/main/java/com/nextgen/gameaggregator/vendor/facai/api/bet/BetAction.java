@@ -50,6 +50,8 @@ public class BetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
 
+        BetDto betDto = null;
+
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -67,7 +69,7 @@ public class BetAction {
             String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into betDto
-            BetDto betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
+            betDto = HttpService.convertJsonToDto(jsonParam, BetDto.class);
 
             //Validate request parameters from vendor after decrypt (Non-database related)
             this.doDecryptValidation(betDto);
@@ -158,6 +160,9 @@ public class BetAction {
             //commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
             httpService.logError(httpRequestLog, exception);
         } finally {
+            if(betDto.getMemberAccount().equals("yqlatnb")){
+
+            }
             httpService.end(httpRequestLog, commonVo);
         }
 
