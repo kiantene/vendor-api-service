@@ -62,7 +62,7 @@ public class ConfirmBetAction {
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
-            vo.setMsg("System Error");
+            vo.setMsg(ResponseCode.SYSTEM_ERROR_RETRY.message);
             httpService.logError(httpRequestLog, e);
 
         } finally {

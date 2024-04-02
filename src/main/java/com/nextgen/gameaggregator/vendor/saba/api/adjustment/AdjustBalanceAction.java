@@ -50,8 +50,8 @@ public class AdjustBalanceAction {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
         } catch (Exception e) {
-            vo.setStatus("999");
-            vo.setMsg("System Error");
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            vo.setMsg(ResponseCode.SYSTEM_ERROR_RETRY.message);
             httpService.logError(httpRequestLog, e);
 
         } finally {

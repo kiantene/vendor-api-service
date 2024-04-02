@@ -250,6 +250,8 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
             sportUnsettledBetCouchbase.setEffectiveTurnover(newBetAmount);
             sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
+            sportUnsettledBetCouchbase.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
+            sportUnsettledBetCouchbase.setResultTime(sportUnsettledBetCouchbase.getVendorSettleTime());
 
             if (isResettlementBet == 1 || sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
                 //if its resettled or the bet is unsettled from settle bet (betResultType = Adjustment), then should generate as a new betId
@@ -315,8 +317,22 @@ public class SportWalletService {
         }
 
         loggingService.logStart();
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase();
 
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
+        try {
+            sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
+
+        } catch (BetNotFoundException e) {
+            //check exists in settledBet
+            SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportUnsettledBetCouchbase.getVendorPlayerUsername(), sportUnsettledBetCouchbase.getExternalTransactionId());
+
+            if (sportSettledBet.getStatus() == BetStatus.REFUNDED.code) {
+                throw new BetRefundIdempotentViolationException();
+
+            }
+
+        }
+
         String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
 
         //TODO HANDLE WITH BETIDEMPOTENT LOG

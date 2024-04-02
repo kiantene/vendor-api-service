@@ -188,7 +188,7 @@ public class SportSettleAction {
         sportSettleDto.setExternalTransactionId(sportUnsettledBetCouchbase.getVendorBetId());
         sportSettleDto.setBetAmount(betAmount);
         sportSettleDto.setRoundId(sportUnsettledBetCouchbase.getRoundId());
-        sportSettleDto.setTimestamp(sportUnsettledBetCouchbase.getVendorBetTime());
+        sportSettleDto.setTimestamp(sportUnsettledBetCouchbase.getVendorSettleTime());
         sportSettleDto.setGameCode(gameCode);
         sportSettleDto.setWinAmount(winAmount);
         sportSettleDto.setWinLoss(winLoss);

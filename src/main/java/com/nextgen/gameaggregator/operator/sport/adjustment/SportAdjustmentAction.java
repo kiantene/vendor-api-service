@@ -129,7 +129,12 @@ public class SportAdjustmentAction {
             // 5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
-            //RequestService.successResponseLog(requestLogVo);
+            BigDecimal balance = responseVo.getData().getBalance();
+
+            boolean isNegativeBalance = balance.compareTo(BigDecimal.ZERO) < 0;
+            if (isNegativeBalance) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+            }
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
@@ -150,7 +155,12 @@ public class SportAdjustmentAction {
 
             } else {
                 //create betResultRetryLog info for retry send to operator
+                WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
+                //create betResultRetryLog info for retry send to operator
+                responseVo.setData(responseData);
                 responseVo.getData().setBalance(BigDecimal.ZERO);
+                responseVo.setStatus(defaultResponses);
+                responseVo.setTraceId(traceId);
                 betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_ADJUSTMENT);
             }
 
