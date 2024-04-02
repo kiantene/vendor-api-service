@@ -52,16 +52,12 @@ public class SportSettleAction {
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
         ResponseCodes.Status defaultResponses = ResponseCodes.Status.SC_OK;
         Integer agentId = sportUnsettledBetCouchbase.getAgentId();
-
-        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
-        BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
-        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
@@ -69,8 +65,7 @@ public class SportSettleAction {
         String gameCode = vendorGameRepository.findByIdAndStatus(sportUnsettledBetCouchbase.getVendorGameId(), 1).getCode();
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(sportUnsettledBetCouchbase.getAgentPlayerId()).orElse(null);
-        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportUnsettledBetCouchbase, gameCode);
-        dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
+        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportUnsettledBetCouchbase, gameCode, vendorCurrency.getFromVendorRate());
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -134,7 +129,7 @@ public class SportSettleAction {
             requestService.operatorStatusException(responseVo.getStatus());
 
             // 5. add conversion rate when returning the balance to vendor
-            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, vendorCurrency.getToVendorRate());
 
             BigDecimal balance = responseVo.getData().getBalance();
 
@@ -174,7 +169,7 @@ public class SportSettleAction {
         return responseVo;
     }
 
-    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, String gameCode) {
+    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, String gameCode, BigDecimal fromVendorConversionRate) {
         BigDecimal betAmount = new BigDecimal(Optional.ofNullable(sportUnsettledBetCouchbase.getNewBetAmount()).orElse(sportUnsettledBetCouchbase.getBetAmount()).stripTrailingZeros().toPlainString());
         BigDecimal winAmount = new BigDecimal(sportUnsettledBetCouchbase.getWinAmount().stripTrailingZeros().toPlainString());
         BigDecimal winLoss = new BigDecimal(sportUnsettledBetCouchbase.getWinLoss().stripTrailingZeros().toPlainString());
@@ -186,13 +181,14 @@ public class SportSettleAction {
         sportSettleDto.setUsername(agentPlayerUsername);
         sportSettleDto.setCurrency(currencyCode);
         sportSettleDto.setExternalTransactionId(sportUnsettledBetCouchbase.getVendorBetId());
-        sportSettleDto.setBetAmount(betAmount);
         sportSettleDto.setRoundId(sportUnsettledBetCouchbase.getRoundId());
         sportSettleDto.setTimestamp(sportUnsettledBetCouchbase.getVendorSettleTime());
         sportSettleDto.setGameCode(gameCode);
-        sportSettleDto.setWinAmount(winAmount);
-        sportSettleDto.setWinLoss(winLoss);
-        sportSettleDto.setEffectiveTurnover(betAmount);
+
+        sportSettleDto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(betAmount, fromVendorConversionRate));
+        sportSettleDto.setWinAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(winAmount, fromVendorConversionRate));
+        sportSettleDto.setEffectiveTurnover(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(betAmount, fromVendorConversionRate));
+        sportSettleDto.setWinLoss(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(winLoss, fromVendorConversionRate));
 
         return sportSettleDto;
     }

@@ -49,16 +49,13 @@ public class SportRefundAction {
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException,
             InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
         ResponseCodes.Status defaultResponses = ResponseCodes.Status.SC_OK;
         Integer agentId = betInformation.getAgentId();
-
-        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(betInformation.getVendorId(), betInformation.getCurrencyId());
-        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
@@ -131,7 +128,7 @@ public class SportRefundAction {
             requestService.operatorStatusException(responseVo.getStatus());
 
             // 5. add conversion rate when returning the balance to vendor
-            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, vendorCurrency.getToVendorRate());
 
             BigDecimal balance = responseVo.getData().getBalance();
 

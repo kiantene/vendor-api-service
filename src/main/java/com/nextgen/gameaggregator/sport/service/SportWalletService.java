@@ -102,13 +102,14 @@ public class SportWalletService {
         BetEvent betEvent = null;
 
         try {
-            WalletBalanceVo balanceVo = sportBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
+            WalletBalanceVo balanceVo = sportBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB, vendorCurrency.getFromVendorRate());
 
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
@@ -171,7 +172,8 @@ public class SportWalletService {
         BetEvent betEvent = null;
         try {
             // record operator processing time
-            WalletBalanceVo balanceVo = sportUpdateBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog);
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
+            WalletBalanceVo balanceVo = sportUpdateBetAction.call(traceId, gameSession, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
             BigDecimal balance = balanceVo.getData().getBalance();
 
             // Update record in sport_unsettled_bet (Couchbase)
@@ -182,7 +184,7 @@ public class SportWalletService {
 
             // Update record in sport_unsettled_bet (MariaDB)
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB, vendorCurrency.getFromVendorRate());
 
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balance);
 
@@ -264,7 +266,8 @@ public class SportWalletService {
         }
 
         try {
-            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
+            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
             // Insert settled bet into bet_history (MariaDB)
@@ -274,7 +277,7 @@ public class SportWalletService {
 
             // Insert record bet_history (MariaDB)
             BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
-            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
             // Insert record into sport_settled_bet (Couchbase)
             sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
@@ -288,7 +291,7 @@ public class SportWalletService {
             // Update status in sport_unsettled_bet (MariaDB)
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             sportUnsettledBetMariaDB.setStatus(1);
-            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+            kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB, vendorCurrency.getFromVendorRate());
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -357,9 +360,10 @@ public class SportWalletService {
 
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
+        VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
 
         try {
-            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
+            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setStatus(betStatus);
@@ -379,7 +383,7 @@ public class SportWalletService {
 
         // Insert record bet_history (MariaDB)
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, BetResultType.BET.code);
-        kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+        kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
         // Insert record into sport_settled_bet (Couchbase)
         sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
@@ -392,7 +396,7 @@ public class SportWalletService {
 
         // Update status in sport_unsettled_bet (MariaDB)
         VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-        kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
+        kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB, vendorCurrency.getFromVendorRate());
 
         return betEvent;
     }
@@ -411,7 +415,8 @@ public class SportWalletService {
                 sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
             }
 
-            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog);
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
+            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setResultType(BetResultType.ADJUSTMENT.code);
@@ -423,8 +428,8 @@ public class SportWalletService {
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB);
 
             // Generate new bet history to offset the old records
-            BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code));
-            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+            BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
+            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
             // Delete data from couchbase settled bet
             sportSettledBetService.delete(sportSettledBet);
@@ -459,7 +464,8 @@ public class SportWalletService {
         sportSettledBet.setBetId(traceId);
 
         try {
-            WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog);
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
+            WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog, vendorCurrency);
 
             BigDecimal diffWinAmount = sportResettleData.getNewWinAmount().subtract(sportSettledBet.getWinAmount());
 
@@ -478,7 +484,7 @@ public class SportWalletService {
             betHistory.setWinAmount(diffWinAmount);
             betHistory.setWinLoss(diffWinAmount);
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
-            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
         } catch (Exception e) {
             throw new InvalidOperatorResponseException();
@@ -504,9 +510,10 @@ public class SportWalletService {
 
         try {
             SportSettledBet sportSettledBet = new SportSettledBet(traceId, vendorPlayer, agentPlayer, sportAdjustmentData, httpRequestLog.getRequestBody());
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
 
             // Adjustment Request to Operator
-            WalletBalanceVo balanceVo = sportAdjustmentAction.call(traceId, agentPlayer.getAgentId(), sportSettledBet, httpRequestLog);
+            WalletBalanceVo balanceVo = sportAdjustmentAction.call(traceId, agentPlayer.getAgentId(), sportSettledBet, httpRequestLog, vendorCurrency);
 
             // update operator status after receiving response from operator
             sportSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
@@ -523,7 +530,7 @@ public class SportWalletService {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
-            kafkaService.produceBetHistory(betHistory, null, BigDecimal.ONE);
+            kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
         } catch (InvalidOperatorResponseException e) {
 

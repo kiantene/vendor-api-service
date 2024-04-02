@@ -52,24 +52,19 @@ public class SportUpdateBetAction {
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
         ResponseCodes.Status defaultResponses = ResponseCodes.Status.SC_OK;
         Integer agentId = gameSession.getAgentId();
 
-        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
-        BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
-        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
-
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
         String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
 
-        SportUpdateBetDto dto = this.newSportUpdateBetDto(traceId, gameSession, betInformation, gameCode);
-        dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
+        SportUpdateBetDto dto = this.newSportUpdateBetDto(traceId, gameSession, betInformation, gameCode, vendorCurrency);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -131,7 +126,7 @@ public class SportUpdateBetAction {
             requestService.operatorStatusException(responseVo.getStatus());
 
             // 5. add conversion rate when returning the balance to vendor
-            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, vendorCurrency.getToVendorRate());
 
             BigDecimal balance = responseVo.getData().getBalance();
 
@@ -173,7 +168,7 @@ public class SportUpdateBetAction {
         return responseVo;
     }
 
-    private SportUpdateBetDto newSportUpdateBetDto(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, String gameCode) {
+    private SportUpdateBetDto newSportUpdateBetDto(String traceId, GameSession gameSession, SportUnsettledBetCouchbase betInformation, String gameCode, VendorCurrency vendorCurrency) {
         BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal newBetAmount = new BigDecimal(betInformation.getNewBetAmount().stripTrailingZeros().toPlainString());
         BigDecimal creditAmount = betAmount.subtract(newBetAmount);
@@ -185,13 +180,13 @@ public class SportUpdateBetAction {
         sportUpdateBetDto.setUsername(gameSession.getAgentPlayerUsername());
         sportUpdateBetDto.setCurrency(gameSession.getCurrencyCode());
         sportUpdateBetDto.setExternalTransactionId(betInformation.getVendorBetId());
-        sportUpdateBetDto.setBetAmount(betAmount);
         sportUpdateBetDto.setRoundId(betInformation.getRoundId());
         sportUpdateBetDto.setTimestamp(betInformation.getVendorBetTime());
         sportUpdateBetDto.setGameCode(gameCode);
 
-        sportUpdateBetDto.setNewBetAmount(newBetAmount);
-        sportUpdateBetDto.setCreditAmount(creditAmount);
+        sportUpdateBetDto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(betAmount, vendorCurrency.getFromVendorRate()));
+        sportUpdateBetDto.setNewBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(newBetAmount, vendorCurrency.getFromVendorRate()));
+        sportUpdateBetDto.setCreditAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(creditAmount, vendorCurrency.getFromVendorRate()));
 
         return sportUpdateBetDto;
     }
