@@ -1,14 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.ga.BetInformation;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public abstract class BaseVendorService {
@@ -35,7 +34,7 @@ public abstract class BaseVendorService {
         if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
             effectiveTurnover = betInfo.getBetAmount();
         }
-        
+
         return effectiveTurnover;
     }
 
@@ -80,5 +79,9 @@ public abstract class BaseVendorService {
         }
 
         return gameSession;
+    }
+
+    public List<UnsettledBet> getVendorClassFileUnsettledBetList() {
+        return Collections.emptyList();
     }
 }
