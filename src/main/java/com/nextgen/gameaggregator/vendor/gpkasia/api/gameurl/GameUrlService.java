@@ -15,6 +15,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -46,6 +47,17 @@ public class GameUrlService implements GameUrl {
     @Override
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession) throws InvalidVendorLineException{
         GameUrlVo gameUrlVo = new GameUrlVo();
+
+        //construct API address
+        String urlScheme = credentials.get(Credentials.api_url);
+
+        //check vendor status in our DB
+        Optional.ofNullable(urlScheme).orElseThrow(InvalidVendorLineException::new);
+
+        // convert multi value map into hash map
+        Map<String, Object> hashMap = vendorService.convertToHashMap(formData);
+
+        
 
         return gameUrlVo;
     }
