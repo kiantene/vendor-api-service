@@ -149,7 +149,6 @@ public class TransactionListService {
             query.setParameter(entry.getKey(), entry.getValue());
         }
         Long resultCount = this.getTotalCount(agentId, dto, partitionsString);
-        System.err.println("resultCount : " + resultCount);
 
         TransactionsListData transData = new TransactionsListData();
         transData.setCurrentPage(currentPage);

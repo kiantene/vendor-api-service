@@ -19,6 +19,10 @@ public class Agent {
 
     private Integer walletType;
 
+    private Integer status;
+
+    private Integer  seamlessType;
+
     @ManyToOne
     private Currency currency;
 }

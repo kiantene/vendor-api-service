@@ -45,6 +45,7 @@ public class AdjustmentAction {
         AdjustmentVo responseVo = new AdjustmentVo();
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
+        GameSession gameSession = new GameSession();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -55,7 +56,7 @@ public class AdjustmentAction {
             this.doValidation(dto);
 
             // 2. Retrieve and verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = gameSessionService.verifyToken(dto.getToken());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
@@ -98,7 +99,7 @@ public class AdjustmentAction {
             RawBetAdjustmentLog rawBetAdjustmentLog = e.getRawBetAdjustmentLog();
             responseVo.setTransactionId(VendorService.getTransactionId(rawBetAdjustmentLog.getBetAdjustmentId()));
             responseVo.setCurrency(vendorCurrencyCode);
-            responseVo.setCash(rawBetAdjustmentLog.getBalance());
+            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
             responseVo.setBonus(BigDecimal.ZERO);
             httpService.logError(httpRequestLog, e);
 

@@ -63,7 +63,7 @@ public class SportSettleAction {
         String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(sportUnsettledBetCouchbase.getAgentPlayerId()).orElse(null);
-        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
+        SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportUnsettledBetCouchbase, gameCode);
         dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
@@ -156,21 +156,21 @@ public class SportSettleAction {
         return responseVo;
     }
 
-    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, BetInformation betInformation, String gameCode) {
-        BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
-        BigDecimal winAmount = new BigDecimal(betInformation.getWinAmount().stripTrailingZeros().toPlainString());
-        BigDecimal winLoss = new BigDecimal(betInformation.getWinLoss().stripTrailingZeros().toPlainString());
+    private SportSettleDto newSportSettleDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, String gameCode) {
+        BigDecimal betAmount = new BigDecimal(Optional.ofNullable(sportUnsettledBetCouchbase.getNewBetAmount()).orElse(sportUnsettledBetCouchbase.getBetAmount()).stripTrailingZeros().toPlainString());
+        BigDecimal winAmount = new BigDecimal(sportUnsettledBetCouchbase.getWinAmount().stripTrailingZeros().toPlainString());
+        BigDecimal winLoss = new BigDecimal(sportUnsettledBetCouchbase.getWinLoss().stripTrailingZeros().toPlainString());
 
         SportSettleDto sportSettleDto = new SportSettleDto();
         sportSettleDto.setTraceId(traceId);
-        sportSettleDto.setBetId(betInformation.getBetId());
-        sportSettleDto.setTransactionId(betInformation.getInternalTransactionId());
+        sportSettleDto.setBetId(sportUnsettledBetCouchbase.getBetId());
+        sportSettleDto.setTransactionId(sportUnsettledBetCouchbase.getInternalTransactionId());
         sportSettleDto.setUsername(agentPlayerUsername);
         sportSettleDto.setCurrency(currencyCode);
-        sportSettleDto.setExternalTransactionId(betInformation.getVendorBetId());
+        sportSettleDto.setExternalTransactionId(sportUnsettledBetCouchbase.getVendorBetId());
         sportSettleDto.setBetAmount(betAmount);
-        sportSettleDto.setRoundId(betInformation.getRoundId());
-        sportSettleDto.setTimestamp(betInformation.getVendorBetTime());
+        sportSettleDto.setRoundId(sportUnsettledBetCouchbase.getRoundId());
+        sportSettleDto.setTimestamp(sportUnsettledBetCouchbase.getVendorBetTime());
         sportSettleDto.setGameCode(gameCode);
         sportSettleDto.setWinAmount(winAmount);
         sportSettleDto.setWinLoss(winLoss);
