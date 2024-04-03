@@ -7,4 +7,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    public static long getCurrentTime(){
+        return System.currentTimeMillis();
+    }
 }

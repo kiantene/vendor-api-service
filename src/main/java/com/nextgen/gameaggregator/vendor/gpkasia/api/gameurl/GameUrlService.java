@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +34,11 @@ public class GameUrlService implements GameUrl {
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
         formData.add("platform", credentials.get(Credentials.platform_id));
-        formData.add("timestamp", "");
+        formData.add("timestamp", String.valueOf(vendorService.getCurrentTime()));
         formData.add("mode", gameSession.getVendorGameCode());
         formData.add("home_url", gameSession.getLobbyUrl());
         formData.add("lang", gameSession.getVendorLanguageCode());
-        formData.add("client_type", gameSession.getVendorLanguageCode());
+        formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
 
         return formData;
     }
