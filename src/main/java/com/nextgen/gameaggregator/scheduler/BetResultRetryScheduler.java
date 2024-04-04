@@ -37,7 +37,6 @@ public class BetResultRetryScheduler {
         //useScheduler = false;
 
         if (!useScheduler) {
-            System.out.println("useScheduler Do nothing");
             //Do nothing
         } else {
 
@@ -62,12 +61,8 @@ public class BetResultRetryScheduler {
 
                     }
                     rawBetResultRetryLogRepository.save(rawBetResultRetryLogItem);
-                    System.out.println("rawBetResultRetryLogItemAfter = " + rawBetResultRetryLogItem);
-
                 }
             }
-            System.out.println("processBetResultRetryLogEND");
-
         }
     }
 }

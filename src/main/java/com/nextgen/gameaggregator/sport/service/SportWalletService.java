@@ -327,7 +327,7 @@ public class SportWalletService {
 
         } catch (BetNotFoundException e) {
             //check exists in settledBet
-            SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportUnsettledBetCouchbase.getVendorPlayerUsername(), sportUnsettledBetCouchbase.getExternalTransactionId());
+            SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getExternalTransactionId());
 
             if (sportSettledBet.getStatus() == BetStatus.REFUNDED.code) {
                 throw new BetRefundIdempotentViolationException();
@@ -478,7 +478,7 @@ public class SportWalletService {
             betEvent = new BetEvent(sportSettledBet, balanceVo.getData().getBalance());
 
             // Generate new bet history to offset the old records
-            int resultType = sportSettledBet.getWinAmount().compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
+            int resultType = diffWinAmount.compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, resultType);
             betHistory.setBetAmount(BigDecimal.ZERO);
             betHistory.setWinAmount(diffWinAmount);
