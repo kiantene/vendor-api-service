@@ -82,7 +82,8 @@ public class RollbakcAction {
         } catch(BetNotFoundException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
-        } catch(BetRefundIdempotentViolationException e){
+        } catch(BetRefundIdempotentViolationException |
+                BetResultIdempotentViolationException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_TRANSACTION);
         } catch(AuthenticationException e){
