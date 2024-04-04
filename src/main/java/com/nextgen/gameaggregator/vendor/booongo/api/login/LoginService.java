@@ -71,7 +71,9 @@ public class LoginService {
             loginPlayer.setBrand(brand);
             loginPlayer.setCurrency(gameSession.getVendorCurrencyCode());
             loginPlayer.setMode("REAL"); // "FUN" or "REAL", REAL by default. Mode of the player. 'FUN' stands for playing for fun not using real funds, 'REAL' stands for playing using real funds
-            loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
+//            loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
+
+            loginPlayer.setIs_test(true);
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
