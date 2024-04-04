@@ -74,7 +74,7 @@ public class LoginService {
             loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
 
             if(gameSession.getVendorPlayerUsername().equals("1a5ef2qi")){
-                loginPlayer.setIs_test(true);
+                loginPlayer.setIs_test(true); //if this param value is not same as previous login, it will cause unable to login game
             }
 
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
