@@ -109,10 +109,9 @@ public class EndroundAction {
         } catch(InvalidSignatureException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_SIGNATURE);
-        } catch(TransactionStillProcessingException |
-                BetResultIdempotentViolationException e){
+        } catch(BetResultIdempotentViolationException e){
             httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_OK);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_REQUEST);
         } catch(VendorCurrencyNotSupportException |
                 InsufficientBalanceException |
                 InvalidOperatorResponseException |
@@ -120,6 +119,7 @@ public class EndroundAction {
                 InvalidAgentApiCredentialException |
                 DisabledAgentPlayerException |
                 MergedBetDataIntegrityException |
+                TransactionStillProcessingException |
                 DisabledGameException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_UNKNOWN);
