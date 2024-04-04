@@ -7,10 +7,10 @@ import lombok.Data;
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo{
 
     @NotNull(message = "url can not be blank")
-    private DataVo data;
+    private String data;
 
     @Override
     public String getGameUrl() {
-        return this.data.getUrl();
+        return this.data;
     }
 }
