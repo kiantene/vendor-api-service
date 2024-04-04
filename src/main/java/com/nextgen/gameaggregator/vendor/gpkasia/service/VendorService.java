@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.Map;
 @Slf4j
 public class VendorService extends BaseVendorService {
     public static long getCurrentTime(){
-        return System.currentTimeMillis();
+        return Instant.now().getEpochSecond();
     }
 
     public static Map<String, Object> convertToHashMap(MultiValueMap<String, String> multiValueMap) {
