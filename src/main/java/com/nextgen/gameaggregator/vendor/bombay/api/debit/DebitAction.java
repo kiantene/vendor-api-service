@@ -105,7 +105,7 @@ public class DebitAction {
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_USER);
         } catch(BetResultIdempotentViolationException e){
             httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_REQUEST);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_TRANSACTION);
         } catch(InvalidAgentApiCredentialException |
                 VendorCurrencyNotSupportException |
                 DisabledAgentPlayerException |

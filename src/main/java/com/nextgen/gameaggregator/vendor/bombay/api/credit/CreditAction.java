@@ -96,7 +96,7 @@ public class CreditAction {
             responseVo.setStatus(ResponseCodes.RS_ERROR_TRANSACTION_DOES_NOT_EXIST);
         } catch(BetResultIdempotentViolationException e){
             httpService.logError(httpRequestLog, e);
-            responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_REQUEST);
+            responseVo.setStatus(ResponseCodes.RS_ERROR_DUPLICATE_TRANSACTION);
         } catch(GameNotSupportedException e){
             httpService.logError(httpRequestLog, e);
             responseVo.setStatus(ResponseCodes.RS_ERROR_INVALID_GAME);
