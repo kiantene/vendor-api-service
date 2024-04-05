@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -151,6 +152,7 @@ public class GameUrlService implements GameUrl {
         ResponseEntity<String> apiResponse = WebClient.create()
                 .post()
                 .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(createPlayer)
                 .retrieve()
                 // TODO: to catch more error codes
@@ -159,6 +161,8 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
+
+        log.info("lala: " + apiResponse.getBody().toString());
 
         return apiResponse;
     }
@@ -174,6 +178,7 @@ public class GameUrlService implements GameUrl {
         ResponseEntity<String> apiResponse = WebClient.create()
                 .post()
                 .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(loginGame)
                 .retrieve()
                 // TODO: to catch more error codes
@@ -182,6 +187,8 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
+
+        log.info("lala2: " + apiResponse.getBody().toString());
 
         return apiResponse;
     }
