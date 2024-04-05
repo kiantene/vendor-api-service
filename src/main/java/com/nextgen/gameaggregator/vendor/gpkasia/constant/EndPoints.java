@@ -12,5 +12,5 @@ public class EndPoints {
 
     public static final String LAUNCH_GAME = "LoginGame";
 
-
+    public static final String BALANCE = "CallBalance";
 }
