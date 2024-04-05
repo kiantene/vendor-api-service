@@ -106,8 +106,6 @@ public class GameUrlService implements GameUrl {
 
         long startTime2 = System.currentTimeMillis();
 
-        log.info("gpk createember: " + requestLogVo.toString());
-
         // Convert HashMap to JSON string using Gson
         Gson gson2 = new Gson();
         String jsonString2 = gson2.toJson(loginGame);
@@ -120,8 +118,6 @@ public class GameUrlService implements GameUrl {
         RequestLogVo requestLogVo2 = requestService.createRequestLogVo(
                 EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime2, endTime2,
                 this.getClass().getPackage().getName(), profilesActive);
-
-        log.info("gpk logingame: " + requestLogVo2.toString());
 
         try{
             // 1. validate HTTP Response Code
@@ -166,7 +162,8 @@ public class GameUrlService implements GameUrl {
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
 
-        log.info("lala: " + apiResponse.getBody().toString());
+        log.info("create member request: " + createPlayer);
+        log.info("create member response: " +apiResponse.getBody());
 
         return apiResponse;
     }
@@ -192,7 +189,8 @@ public class GameUrlService implements GameUrl {
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
 
-        log.info("lala2: " + apiResponse.getBody().toString());
+        log.info("login game request: " + loginGame);
+        log.info("login game response: " +apiResponse.getBody());
 
         return apiResponse;
     }
