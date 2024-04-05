@@ -106,6 +106,8 @@ public class GameUrlService implements GameUrl {
 
         long startTime2 = System.currentTimeMillis();
 
+        log.info("gpk createember: " + requestLogVo.toString());
+
         // Convert HashMap to JSON string using Gson
         Gson gson2 = new Gson();
         String jsonString2 = gson2.toJson(loginGame);
@@ -116,8 +118,10 @@ public class GameUrlService implements GameUrl {
         long endTime2 = System.currentTimeMillis();
 
         RequestLogVo requestLogVo2 = requestService.createRequestLogVo(
-                EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse, null, startTime, endTime,
+                EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime2, endTime2,
                 this.getClass().getPackage().getName(), profilesActive);
+
+        log.info("gpk logingame: " + requestLogVo2.toString());
 
         try{
             // 1. validate HTTP Response Code
