@@ -73,7 +73,7 @@ public class LoginService {
             loginPlayer.setMode("REAL"); // "FUN" or "REAL", REAL by default. Mode of the player. 'FUN' stands for playing for fun not using real funds, 'REAL' stands for playing using real funds
             loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
 
-            if(gameSession.getAgentPlayerUsername().equals("testlyw300")){
+            if(gameSession.getAgentPlayerUsername().equals("testlyw300") && gameSession.getCurrencyCode().equals("THB")){
                 loginPlayer.setIs_test(true); //if this param value is not same as previous login, it will cause unable to login game
             }
 
