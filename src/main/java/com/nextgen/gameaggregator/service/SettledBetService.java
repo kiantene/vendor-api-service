@@ -1,22 +1,28 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.couchbase.client.core.deps.com.fasterxml.jackson.core.JsonProcessingException;
+import com.couchbase.client.core.deps.com.fasterxml.jackson.databind.ObjectMapper;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawBetIdempotentLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.repository.RawSettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawSettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -24,6 +30,8 @@ public class SettledBetService {
 
     @Autowired
     RawSettledBetRepository rawSettledBetRepository;
+    @Autowired
+    BetIdempotentLogService betIdempotentLogService;
 
     @Caching(put = {
             @CachePut(value = "SettledBet", key = "{#settledBet.externalTransactionId, #settledBet.vendorPlayerId}", cacheManager = "cacheManager"),
@@ -36,7 +44,7 @@ public class SettledBetService {
         }
 
         if (settledBet.getRawData() == null) {
-            if(rawData == null)settledBet.setRawData("");
+            if (rawData == null) settledBet.setRawData("");
         }
 
         settledBet.setProcessingStatus(0);
@@ -81,6 +89,25 @@ public class SettledBetService {
         return settledBet;
     }
 
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
+    @Cacheable(value = "SettledBet", key = "{#vendorBetId, #roundId, #vendorId, #vendorPlayerId}", cacheManager = "cacheManager")
+    public SettledBet getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(String vendorBetId, String roundId, Integer vendorId, Long vendorPlayerId) throws BetNotFoundException {
+
+        SettledBet settledBet = rawSettledBetRepository.findByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+
+        if (settledBet == null) { // No matching bet record for the given round Id
+            throw new BetNotFoundException("getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId");
+        }
+
+        return settledBet;
+    }
+
+    @Recover
+    public SettledBet recoverData(BetNotFoundException ex) {
+        // Handle recovery logic here, such as returning a default value or logging the error
+        return null;
+    }
+
     /**
      * Delete settled bet record of the given settleBet entity object after successful inserted into kafka.
      *
@@ -90,7 +117,7 @@ public class SettledBetService {
         try {
             rawSettledBetRepository.delete(settledBet);
         } catch (Exception e) {
-            log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
+            //log.warn("Couchbase Delete SettledBet.exception -> vendorBetId = " + settledBet.getVendorBetId() + "& roundId = " + settledBet.getRoundId());
         }
     }
 
@@ -115,13 +142,12 @@ public class SettledBetService {
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
+                Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(settledBet.getCreateTime());
                 // throw idempotent exception if status is processing or success
-                if (operatorStatus.equals(operatorStatusProcessing)) {
-                    log.warn("idempotentCheck.processing [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
+                if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                     throw new TransactionStillProcessingException();
 
                 } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                    log.warn("idempotentCheck.success [" + traceId + "]: vendorBetId (" + vendorBetId + ") roundId (" + roundId + ")");
                     throw new BetResultIdempotentViolationException(settledBet);
 
                 } else { // when settled bet found and operator status is error, set status back to processing and resend txn to operator
@@ -130,15 +156,58 @@ public class SettledBetService {
                 }
             }
         } catch (BetNotFoundException betNotFoundException) {
-            // bet not found is expected
+
+            RawBetIdempotentLog betIdempotentLog = null;
+
+            if (betResultData.getVendorBetTime() != null || betResultData.getVendorSettleTime() != null) {
+                Long vendorBetTime = (betResultData.getVendorBetTime() != null) ? betResultData.getVendorBetTime() : betResultData.getVendorSettleTime();
+                Long timeDifference = System.currentTimeMillis() - vendorBetTime;
+
+                //if vendorBetTime is over 2 hours, check exists against bet_idempotent_log table
+                if (timeDifference > betIdempotentLogService.getTimingDifference()) {
+                    betIdempotentLog = betIdempotentLogService.checkExists(betResultData, gameSession);
+
+                }
+
+            } else {
+                //if vendorBetTime and vendorSettleTime is null, then check against bet_idempotent_log table
+                betIdempotentLog = betIdempotentLogService.checkExists(betResultData, gameSession);
+
+            }
+
+            if (betIdempotentLog != null) {
+
+                try {
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    String jsonBetResultData = objectMapper.writeValueAsString(betResultData);
+                    //log if found matched data after 2 hours for bet idempotent log checking
+                    log.info("betIdempotentLogService.checkExists : vendorPlayerUsername = " + gameSession.getVendorPlayerUsername() + ", betResultData = " + jsonBetResultData);
+
+                } catch (JsonProcessingException e) {
+                    log.error("generateBetIdempotentId ERROR : " + e.getMessage());
+
+                }
+
+                throw new BetResultIdempotentViolationException(betIdempotentLog);
+
+            }
+
+            // else just process normally as bet not found could be expected
             // save the data into couchbase first for idempotency checks
-            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId);
+            SettledBet processingSettledBet = new SettledBet(betResultData, traceId, vendorGameId, vendorPlayerId, gameSession);
             processingSettledBet.setOperatorStatus(operatorStatusProcessing);
             processingSettledBet.setVendorId(gameSession.getVendorId());
             processingSettledBet.setVendorPlayerId(gameSession.getVendorPlayerId());
             this.save(processingSettledBet, "");
+
         }
 
         return settledBet;
+    }
+
+    public List<SettledBet> getByVendorPlayerIdAndRoundId(Long vendorPlayerId, String roundId) {
+        List<SettledBet> settledBetList = rawSettledBetRepository.findByVendorPlayerIdAndRoundId(vendorPlayerId, roundId);
+
+        return settledBetList;
     }
 }

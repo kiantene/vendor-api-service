@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -53,6 +53,7 @@ public class CreditAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(creditDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(creditDto, gameSession);
 
@@ -90,6 +91,7 @@ public class CreditAction {
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
             idempotentSetBalance(httpRequestLog, responseVo);
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -119,7 +121,6 @@ public class CreditAction {
 
         // 1. Verify Username, GameCode, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), creditDto.getUserId(), InvalidPlayerException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(creditDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), creditDto.getCurrency(), CurrencyNotSupportedException::new);
     }
 
@@ -127,12 +128,14 @@ public class CreditAction {
         try {
             CreditDto creditDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CreditDto.class);
             GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
-            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession));
+            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(creditDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, e);
         }
     }
 }

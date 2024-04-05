@@ -1,12 +1,14 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.endround;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
@@ -15,7 +17,6 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,10 +37,6 @@ public class EndRoundAction {
     @Autowired
     private VendorLineService vendorLineService;
     @Autowired
-    private BetHistoryService betHistoryService;
-    @Autowired
-    private Environment environment;
-    @Autowired
     private VendorService vendorService;
 
     @PostMapping(path = Endpoints.END_ROUND)
@@ -47,17 +44,18 @@ public class EndRoundAction {
         HttpRequestLog httpRequestLog = httpService.start(request);
         EndRoundVo responseVo = new EndRoundVo();
         String traceId = httpRequestLog.getId();
+        GameSession gameSession = new GameSession();
 
         try {
             // Retrieve request body in original string format and convert into dto
-            String body = httpRequestLog.getRequestBody();
-            EndRoundDto dto = HttpService.convertQueryStringToDto(body, EndRoundDto.class);
+            EndRoundDto dto = HttpService.convertQueryStringToDto(httpRequestLog, EndRoundDto.class);
 
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -70,25 +68,31 @@ public class EndRoundAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            responseVo.setCash(betResultIdempotentViolationException.getBalance());
+            responseVo.setCash(vendorService.getCurrentBalance(traceId, gameSession, httpRequestLog));
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
@@ -96,18 +100,23 @@ public class EndRoundAction {
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (BetNotFoundException betNotFoundException) {
-            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            //update bet not found for end round to retry due to vendor async send issue
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_END_ROUND_RETRY);
             httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //Set balance to zero if agent credential is disabled
             responseVo.setCash(BigDecimal.ZERO);
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -132,15 +141,10 @@ public class EndRoundAction {
         // 1. Verify received username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUserId(), InvalidPlayerException::new);
 
-        // 2. Verify received game id is the same from game session
-        if (!gameSession.getVendorGameCode().equals("101")) {
-            ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-        }
-
-        // 3. Retrieve vendor line credentials and secretKey for hash validation
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 4. Validate request signature
+        // 3. Validate request signature
         VendorService.verifyHash(request.getRequestBody(), secretKey);
     }
 }

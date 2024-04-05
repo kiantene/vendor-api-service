@@ -2,8 +2,9 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -29,9 +30,6 @@ public class BetDetailService implements BetDetailUrl {
 
     @Autowired
     RequestService requestService;
-    @Autowired
-    VendorService vendorService;
-
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
@@ -61,6 +59,20 @@ public class BetDetailService implements BetDetailUrl {
     @Override
     public com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo, VendorLanguageCode vendorLanguageCode) throws InvalidVendorResponseException, InvalidVendorLineException {
 
+        String provider = formData.getFirst("provider");
+
+        if (provider.equals("relax")) {
+            UrlVo urlVo = new UrlVo();
+            urlVo.setRecord("");
+            urlVo.setRecordType("URL");
+
+            BetDetailUrlVo betDetailUrlVo = new BetDetailUrlVo();
+            betDetailUrlVo.setCode(1000);
+            betDetailUrlVo.setMsg("Success");
+            betDetailUrlVo.setData(urlVo);
+            return betDetailUrlVo;
+        }
+
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
@@ -69,6 +81,9 @@ public class BetDetailService implements BetDetailUrl {
 
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
+
+        //bet details do not have player session;
+        GameSession gameSession = new GameSession();
 
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
@@ -96,12 +111,12 @@ public class BetDetailService implements BetDetailUrl {
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidVendorResponseException());
-            requestService.validateResponse(responseVo);
+            RequestService.validateResponse(responseVo);
 
-            requestService.successResponseLog(requestLogVo);
+            RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
+            requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
         }
 

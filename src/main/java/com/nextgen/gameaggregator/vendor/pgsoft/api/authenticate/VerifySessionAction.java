@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.vendor.pgsoft.api.authenticate;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.VendorGameRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pgsoft.constant.Credentials;
@@ -34,9 +34,10 @@ public class VerifySessionAction {
     private VendorLineService vendorLineService;
     @Autowired
     private AgentApiCredentialService agentApiCredentialService;
-
     @Autowired
     private VendorGameRepository vendorGameRepository;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo<VerifySessionVo> authenticate(HttpServletRequest request) {
@@ -57,12 +58,15 @@ public class VerifySessionAction {
             // If Token has been tampered, then AuthenticationException will be thrown
             GameSession gameSession = gameSessionService.verifyToken(dto.getOperatorPlayerSession());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
+            httpRequestLog.setVendorUsername(gameSession.getVendorPlayerUsername());
+            httpRequestLog.setVendorGameCode(gameSession.getVendorGameCode());
             // x. Check credential line inactive
             agentApiCredentialService.getAgentApiCredential(gameSession.getAgentId());
             // 3. Validate vendor game code
             VendorService.validateVendorGameCode(String.valueOf(dto.getGameId()), gameSession.getVendorGameCode());
             // x. Validate is game disabled
-            VendorGame game = vendorGameRepository.findByVendorGameCodeAndVendorId(String.valueOf(dto.getGameId()), gameSession.getVendorId());
+            VendorGame game = vendorGameService.getByVendorGameCodeAndVendorId(String.valueOf(dto.getGameId()), gameSession.getVendorId());
+
             VendorService.validateGameStatus(game);
             // 4. Retrieve vendor line operatorToken and secretKey for validation
             String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
@@ -81,26 +85,32 @@ public class VerifySessionAction {
         } catch (InvalidRequestException invalidRequestException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_OPERATOR);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_OPERATOR));
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (GameNotSupportedException gameNotSupportedException) {
             parentResponseVo.setErrorCode(ResponseCodes.GAME_DOES_NOT_EXIST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.GAME_DOES_NOT_EXIST));
+            httpService.logError(httpRequestLog, gameNotSupportedException);
 
         } catch (AuthenticationException authenticationException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_PLAYER_SESSION_1300);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_PLAYER_SESSION_1300));
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         }  catch (NoAvailableLineException noAvailableLineException) {
             parentResponseVo.setErrorCode(ResponseCodes.INVALID_REQUEST);
             parentResponseVo.setErrorMessage(ResponseCodes.RESPONSE_DESCRIPTION.get(ResponseCodes.INVALID_REQUEST));
+            httpService.logError(httpRequestLog, noAvailableLineException);
 
         } catch (Exception exception) { // any other exception encountered
             parentResponseVo.setErrorCode(ResponseCodes.INTERNAL_SERVER_ERROR);

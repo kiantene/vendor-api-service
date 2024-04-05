@@ -1,16 +1,16 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.*;
+import com.nextgen.gameaggregator.repository.ga.writer.*;
 import com.nextgen.gameaggregator.util.ApiSecurityUtils;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,7 +18,6 @@ import java.util.Optional;
 public class ValidationService {
     @Autowired
     private AgentApiCredentialRepository agentApiCredentialRepository;
-
     @Autowired
     private AgentPlayerRepository agentPlayerRepository;
     @Autowired
@@ -27,7 +26,12 @@ public class ValidationService {
     private VendorGameCurrencyRepository vendorGameCurrencyRepository;
     @Autowired
     private AgentVendorLineRepository agentVendorLineRepository;
+    @Autowired
+    private LoggingService loggingService;
+    @Autowired
+    private VendorGameDeactivatedService vendorGameDeactivatedService;
 
+    @Cacheable(value = "AgentApiCredentialsByApiKey", key = "#apiKey", cacheManager = "cacheManager")
     public AgentApiCredential validateApiKey(String apiKey) throws AuthenticationException {
         if (apiKey == null || apiKey.isEmpty()) {
             throw new AuthenticationException();
@@ -40,6 +44,20 @@ public class ValidationService {
         }
 
         return entity;
+    }
+
+    public void validateAgentStatus(Agent agent) throws AuthenticationException {
+        if (!agent.getStatus().equals(Status.ACTIVE.code)) {
+            throw new AuthenticationException();
+        }
+    }
+
+    public void validateIsCustodianSeamlessAgentWalletType(Agent agent) throws InvalidWalletTypeException{
+        if(!agent.getWalletType().equals(1)){
+            throw new InvalidWalletTypeException();
+        }else if(!agent.getSeamlessType().equals(2)){
+            throw new InvalidWalletTypeException();
+        }
     }
 
     public void validateSignature(String payload, String secret, String signature) throws InvalidSignatureException {
@@ -66,29 +84,46 @@ public class ValidationService {
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), vendorUserName, InvalidPlayerException::new);
 
         //3. verify agent Vendor line
-        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
-                findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus(
+        loggingService.logStart();
+        AgentVendorLine agentVendorLines = agentVendorLineRepository.
+                findTop1ByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus(
                         gameSession.getAgentId(), gameSession.getVendorId(), gameSession.getCurrencyId(),
                         gameSession.getGameCategoryId(), Status.ACTIVE.code);
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ agentVendorLineRepository.findTop1ByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus(" + gameSession.getAgentId() + ","
+                        + gameSession.getVendorId() + "," + gameSession.getCurrencyId() + "," + gameSession.getGameCategoryId() + "," + Status.ACTIVE.code + ")",
+                gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         //vendor line not found
-        if (agentVendorLines.isEmpty()) {
-            throw new DisabledVendorLineException();
-        }
+        Optional.ofNullable(agentVendorLines).orElseThrow(DisabledVendorLineException::new);
 
         //4. Verify Agent Player status
+        loggingService.logStart();
         AgentPlayer agentPlayer = agentPlayerRepository.
                 findByAgentIdAndUsernameAndStatus(gameSession.getAgentId(), gameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ agentPlayerRepository.findByAgentIdAndUsernameAndStatus(" + gameSession.getAgentId() + ","
+                + gameSession.getAgentPlayerUsername() + Status.ACTIVE.code + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
 
-        //5. verify vendor Game status with platform and language
-        VendorGameCode vendorGameCode = vendorGameCodeRepository.
-                findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(gameSession.getVendorGameId(),
-                        gameSession.getPlatformId(), gameSession.getLanguageId(), Status.ACTIVE.code);
+        //5. verify by vendor openGameCode instead, for play game with different game code token
+        loggingService.logStart();
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(gameSession.getVendorGameCode(),
+                gameSession.getPlatformId(), gameSession.getLanguageId(), Status.ACTIVE.code, gameSession.getVendorId());
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(" + gameSession.getVendorGameCode() + ","
+                        + gameSession.getPlatformId() + "," + gameSession.getLanguageId() + "," + Status.ACTIVE.code + "," + gameSession.getVendorId() + ")",
+                gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         Optional.ofNullable(vendorGameCode).orElseThrow(DisabledGameException::new);
 
         //6.  verify vendor Game status with currency
+        loggingService.logStart();
         VendorGameCurrency vendorGameCurrency = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyIdAndStatus(
                 gameSession.getVendorGameId(), gameSession.getCurrencyId(), Status.ACTIVE.code);
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyIdAndStatus(" + gameSession.getVendorGameId() + ","
+                + gameSession.getCurrencyId() + Status.ACTIVE.code + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         Optional.ofNullable(vendorGameCurrency).orElseThrow(DisabledGameException::new);
+
+        //7.  verify game deactivated status for agent, master agent and house level
+        loggingService.logStart();
+        vendorGameDeactivatedService.checkGameSupported(agentVendorLines.getAgent(), gameSession.getVendorGameId());
+        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameDeactivatedService.checkGameSupported(" + agentVendorLines.getAgent() + ","
+                + vendorGameCode.getId() + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
     }
 }

@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.facai.api.balance;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -65,7 +65,7 @@ public class BalanceAction {
             Integer vendorLineId = vendorLineService.getVendorLineIdByNameAndValue(Credentials.AGENT_CODE, commonDto.getAgentCode());
 
             //Decrypt raw respond with key from vendor line credential
-            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY));
+            String jsonParam = vendorService.aesDecrypt(commonDto.getParams(), vendorLineService.getCredentialValueByName(vendorLineId, Credentials.AGENT_KEY), httpRequestLog, body);
 
             //map decrypted data(string json) into balanceDto
             BalanceDto balanceDto = HttpService.convertJsonToDto(jsonParam, BalanceDto.class);
@@ -96,12 +96,20 @@ public class BalanceAction {
                 JsonProcessingException paramException
         ) {
             commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
+            httpService.logError(httpRequestLog, paramException);
+
         } catch (CurrencyNotSupportedException currencyNotSupportedException) {
             commonVo.setErrorResponseCode(ResponseCodes.CURRENCY_MISSING);
+            httpService.logError(httpRequestLog, currencyNotSupportedException);
+
         } catch (InvalidPlayerException invalidPlayerException) {
             commonVo.setErrorResponseCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
+
         } catch (DisabledGameException disabledGameException) {
             commonVo.setErrorResponseCode(ResponseCodes.GAME_NOT_FOUND);
+            httpService.logError(httpRequestLog, disabledGameException);
+
         } catch (InvalidRequestException invalidRequestException) {
             //return error message according param
             if (invalidRequestException.getValidation() != null) {
@@ -109,8 +117,12 @@ public class BalanceAction {
             } else {
                 commonVo.setErrorResponseCode(ResponseCodes.PARAM_CONTAIN_ERROR);
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (Exception exception) {
             commonVo.setErrorResponseCode(ResponseCodes.UNEXPECTED_ERROR);
+            httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, commonVo);
         }

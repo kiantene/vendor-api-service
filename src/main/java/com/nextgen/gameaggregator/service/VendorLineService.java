@@ -1,13 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
-import com.nextgen.gameaggregator.repository.AgentVendorLineRepository;
-import com.nextgen.gameaggregator.repository.VendorLineCredentialRepository;
-import com.nextgen.gameaggregator.repository.VendorLineRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentVendorLineRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLineCredentialRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorLineRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -27,8 +27,8 @@ public class VendorLineService {
     @Autowired
     private AgentVendorLineRepository agentVendorLineRepository;
 
-
-    public VendorLine findAgentVendorLine(Agent agent, Vendor vendor,Currency currency , GameCategory gameCategory)
+    @Cacheable(value = "VendorLines", key = "{#agent.id, #vendor.id, #currency.id, #gameCategory.id}" , cacheManager = "cacheManager")
+    public VendorLine findAgentVendorLine(Agent agent, Vendor vendor, Currency currency, GameCategory gameCategory)
             throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine>  agentVendorLines = agentVendorLineRepository.
@@ -51,7 +51,7 @@ public class VendorLineService {
         Optional.ofNullable(activeAgentVendorLine).orElseThrow(DisabledVendorLineException::new);
 
         if(activeAgentVendorLine.getVendorLine().getStatus().equals(Status.INACTIVE.code)){
-            
+            throw new DisabledVendorLineException();
         }
 
         return activeAgentVendorLine.getVendorLine();
@@ -59,10 +59,10 @@ public class VendorLineService {
 
 
 
-    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, Currency currency) throws InvalidVendorLineException, DisabledVendorLineException {
+    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, List<Integer> currencyIds ) throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
-                findByAgentIdAndVendorIdAndCurrencyId(agent.getId(), vendor.getId(), currency.getId());
+                findByAgentIdAndVendorIdAndCurrencyIdIn(agent.getId(), vendor.getId(), currencyIds);
 
         //vendor line not found
         if (agentVendorLines.isEmpty()) {
@@ -134,7 +134,8 @@ public class VendorLineService {
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
-    public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException, DisabledVendorLineException {
+    @Cacheable(value = "VendorLines", key = "{#vendorLineId, #vendorId}", cacheManager = "cacheManager")
+    public VendorLine getVendorLineById(Integer vendorLineId, Integer vendorId) throws InvalidVendorLineException, DisabledVendorLineException {
 
         //1. get vendor line
         VendorLine vendorLine = vendorLineRepository.findById(vendorLineId).orElse(null);

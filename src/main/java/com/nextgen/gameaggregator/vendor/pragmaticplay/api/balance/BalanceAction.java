@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.balance;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -33,7 +33,6 @@ public class BalanceAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
-
     @Autowired
     private AgentPlayerService agentPlayerService;
 
@@ -58,7 +57,6 @@ public class BalanceAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-
             // 5. Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
@@ -71,15 +69,19 @@ public class BalanceAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -91,13 +93,16 @@ public class BalanceAction {
 
         } catch (InvalidAgentApiCredentialException e) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, e);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);

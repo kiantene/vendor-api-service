@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bgaming.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
@@ -20,9 +21,11 @@ public class CommonDto {
     @JsonProperty("game")
     private String game;
     @JsonProperty("game_id")
-    private String gameId;
+    private String vendorRoundId;
     @JsonProperty("finished")
     private Boolean finished = false;
     @JsonProperty("actions")
     private List<ActionDto> actions;
+    @JsonIgnore
+    private ActionDto actionDto;
 }

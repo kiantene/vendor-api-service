@@ -37,4 +37,9 @@ public class GameListDto {
     @Range(min= 1, max= 500, message = "min 1 and max 500 numeric number only")
     private Integer pageSize = 500;
 
+
+    //@NotBlank( message = "min 3 and max 10  characters")
+    @Size(min = 3, max = 10, message = "min 3 and max 10  characters")
+    private String currency;
+
 }

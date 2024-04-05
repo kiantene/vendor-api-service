@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -47,7 +47,7 @@ public class AuthenticateAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUsername());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -61,21 +61,31 @@ public class AuthenticateAction {
             responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (AuthenticationException playerNotFoundException) {
+            httpService.logError(httpRequestLog, playerNotFoundException);
+            responseVo.setResponseCode(ResponseCode.ERROR);
+
+        } catch (CredentialNotFoundException credentialNotFoundException) {
+            httpService.logError(httpRequestLog, credentialNotFoundException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
@@ -95,7 +105,7 @@ public class AuthenticateAction {
     }
 
     private void doVerification(AuthenticateDto dto, GameSession gameSession) throws AuthenticationException,
-            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException {
+            DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException {
         // Verify received vendor player username is the same from game session
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUsername(), AuthenticationException::new);
         // Verify vendor line is active
@@ -104,6 +114,8 @@ public class AuthenticateAction {
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 
 }

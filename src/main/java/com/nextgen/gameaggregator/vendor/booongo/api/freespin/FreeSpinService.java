@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.freespin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -72,14 +72,14 @@ public class FreeSpinService {
         }catch (InsufficientBalanceException e) {
             errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
 
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             vo.setError(errorVo);
         }catch (BetResultIdempotentViolationException e) {
             // this exception happened when handle repeated data
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -91,7 +91,7 @@ public class FreeSpinService {
                 errorVo.setCode(ResponseCodes.FUNDS_EXCEED);
             }
 
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -111,7 +111,7 @@ public class FreeSpinService {
                 CredentialNotFoundException e) {
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -120,7 +120,7 @@ public class FreeSpinService {
             httpService.logError(httpRequestLog, exception);
             errorVo.setCode(ResponseCodes.SESSION_CLOSED_TRANSACTION);
 
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             // Retrieve current wallet balance
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -134,12 +134,12 @@ public class FreeSpinService {
         return vo;
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         BigDecimal balance = BigDecimal.ZERO;
 
         try {
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } catch (Exception exception) {
 

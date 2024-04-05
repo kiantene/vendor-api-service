@@ -1,11 +1,8 @@
 package com.nextgen.gameaggregator.operator.transactions.list;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.InvalidRequestException;
-import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
@@ -17,6 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.exception.InvalidFromTimeException;
+import com.nextgen.gameaggregator.exception.InvalidRequestException;
+import com.nextgen.gameaggregator.exception.InvalidSignatureException;
+import com.nextgen.gameaggregator.exception.InvalidDateRangeException;
+
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -56,6 +59,15 @@ public class TransactionsListAction {
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
+            // 4. Validate from time not before last 60 days
+            transactionListService.isStartTimeValid(dto.getFromTime());
+            // 5. Validate date range not more than one day
+            transactionListService.isDateRangeValid(dto.getFromTime(), dto.getToTime());
+
+            if(dto.getPageSize()<2000){
+                dto.setPageSize(2000);
+            }
+
             TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getAgent().getId());
             responseVo.setData(transactionsListData);
 
@@ -78,6 +90,12 @@ public class TransactionsListAction {
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
+
+        } catch (InvalidFromTimeException invalidFromTimeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_FROM_TIME);
+
+        } catch (InvalidDateRangeException invalidDateRangeException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_DATE_RANGE);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);

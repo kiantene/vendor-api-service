@@ -1,9 +1,6 @@
 package com.nextgen.gameaggregator.vendor.ezugi.service;
 
-import com.nextgen.gameaggregator.entity.BetNotFoundLog;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
-import com.nextgen.gameaggregator.entity.VendorGameCode;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -19,6 +16,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -40,7 +38,7 @@ public class VendorService extends BaseVendorService {
                 "HmacSHA256");
         sha256_HMAC.init(secret_key);
         String generatedHash = Base64.encodeBase64String(sha256_HMAC.doFinal(data.getBytes()));
-        if (!hashKey.equals(generatedHash)) {
+        if (hashKey == null || !hashKey.equals(generatedHash)) {
             String msg = "Expected hash: " + generatedHash + ", but received: " + hashKey;
             log.error("Request body: " + data);
             log.error(msg);
@@ -60,6 +58,12 @@ public class VendorService extends BaseVendorService {
         if (betType == null) {
             throw new InvalidFormatException();
         }
+    }
+
+    public static Long getOperatorTimestamp(HttpRequestLog httpRequestLog) {
+        return Optional.ofNullable(httpRequestLog.getOperatorTimestamp())
+                .orElseGet(() -> Optional.ofNullable(httpRequestLog.getOperatorEnd())
+                        .orElse(System.currentTimeMillis()));
     }
 
     public void verifyRollbackAmount(RollbackDto rollbackDto, GameSession gameSession) throws InvalidFormatException, BetNotFoundException, TransactionStillProcessingException {
@@ -88,11 +92,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public BigDecimal getCurrentBalance(String traceId, String token) {
+    public BigDecimal getCurrentBalance(String traceId, String token, HttpRequestLog httpRequestLog) {
         BigDecimal balance = BigDecimal.ZERO;
         try {
             GameSession gameSession = gameSessionService.verifyToken(token);
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
         } catch (Exception exception) {
         }
         return balance;
@@ -104,5 +108,11 @@ public class VendorService extends BaseVendorService {
         if (betNotFoundLog != null) {
             throw new DuplicateExternalTransactionIdException();
         }
+    }
+
+    @Override
+    public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
+        //Will be using betAmount as effectiveTurnover
+        return betInfo.getBetAmount();
     }
 }

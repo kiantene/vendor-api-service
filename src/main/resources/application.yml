@@ -3,9 +3,6 @@ server:
   http2:
     enabled: true
   tomcat:
-    basedir: .. # pointing to parent folder, to be configured when deploying to server
-    accesslog:
-      enabled: true
     accept-count: 2500 # Maximum queue length for incoming connection requests when all possible request processing threads are in use.
     max-connections: 16384 # Default: 8192 (Maximum number of connections that the server accepts and processes at any given time.)
     #    max-threads: 4000
@@ -102,12 +99,17 @@ springdoc:
     tryItOutEnabled: true
   paths-to-match: /**
 logging:
-  http-request: true
+  config: 'classpath:logback-spring.xml'
   process-time: false
-logstash:
-  host: 
-  port: 
 image:
   gameurl:
 testing:
   stub: false
+aws:
+  s3:
+    id: 'AKIAZHVJ7PY7KFDXP6WW'
+    secret: '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'
+    bucket: 'gameurl'
+    region: 'ap-northeast-1'
+    gameUrl: 'https://gameurl.s3.ap-northeast-1.amazonaws.com/'
+    folder: ''

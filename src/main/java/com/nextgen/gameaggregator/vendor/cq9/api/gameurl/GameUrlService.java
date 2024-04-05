@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.cq9.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -51,7 +51,7 @@ public class GameUrlService implements GameUrl {
     }
 
     @Override
-    public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
+    public GameUrlVendorResponseVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
@@ -84,17 +84,18 @@ public class GameUrlService implements GameUrl {
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVendorResponseVo.class);
+            responseVo.setLeaveUrl(gameSession.getLobbyUrl());
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
         }
 
-        return responseVo.getData();
+        return responseVo;
     }
 }

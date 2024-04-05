@@ -3,8 +3,8 @@ package com.nextgen.gameaggregator.controller.agent;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nextgen.gameaggregator.controller.ControllerServices;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialRepository;
 import com.nextgen.gameaggregator.service.RequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +39,7 @@ public class AgentApiCredentialController {
         if (requestService.isTestEnvironment(profilesActive)) {
             AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
             controllerServices.clearAgentApiCredentials();
+            controllerServices.clearAgentApiCredentialsByApiKey();
 
             if (agentApiCredential != null) {
                 agentApiCredential.setStatus(Integer.parseInt(json.get("status").toString()));
@@ -69,6 +70,7 @@ public class AgentApiCredentialController {
         if (requestService.isTestEnvironment(profilesActive)) {
             AgentApiCredential agentApiCredential = agentApiCredentialRepository.findByAgentId(Integer.parseInt(json.get("id").toString()));
             controllerServices.clearAgentApiCredentials();
+            controllerServices.clearAgentApiCredentialsByApiKey();
 
             if (agentApiCredential != null) {
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());

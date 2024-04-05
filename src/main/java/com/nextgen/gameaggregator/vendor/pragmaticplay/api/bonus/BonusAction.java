@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.bonus;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -45,6 +44,7 @@ public class BonusAction {
         BonusVo responseVo = new BonusVo();
         String traceId = httpRequestLog.getId();
         String vendorCurrencyCode = "";
+        GameSession gameSession = new GameSession();
 
         try {
             // Retrieve request body in original string format and convert into dto
@@ -55,7 +55,9 @@ public class BonusAction {
             this.doValidation(dto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUserId());
+            //bonusAction dto gameId will always be empty.
+            //gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
             vendorCurrencyCode = gameSession.getVendorCurrencyCode();
 
             // 3. Verify remaining parameters (Verify against database values)
@@ -79,38 +81,23 @@ public class BonusAction {
             responseVo.setCurrency(vendorCurrencyCode);
             responseVo.setCash(idempotentViolationException.getBalance());
             responseVo.setBonus(BigDecimal.ZERO);
+            httpService.logError(httpRequestLog, idempotentViolationException);
 
         } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
-//        } catch (CredentialNotFoundException credentialNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-
-//        } catch (AuthenticationException authenticationException) {
-//            responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
-
-//        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-//            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
-//            httpService.logError(httpRequestLog, invalidOperatorResponseException);
-
-//        } catch (InvalidSignatureException invalidSignatureException) {
-//            responseVo.setResponseCode(ResponseCode.INVALID_HASH);
-
-//        } catch (InvalidAgentApiCredentialException InvalidAgentApiCredentialException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//
-//        } catch (BetNotFoundException betNotFoundException) {
-//            responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
-//            httpRequestLog.setErrorMessage(betNotFoundException.getMessage());
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
+
         }
 
         httpService.end(httpRequestLog, responseVo);

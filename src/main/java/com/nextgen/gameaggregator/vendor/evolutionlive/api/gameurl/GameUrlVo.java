@@ -16,9 +16,14 @@ public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.G
     private String entry;
     private String entryEmbedded;
     private List<GameUrlErrorVo> errors;
+    private String gameUrl;
 
     @Override
     public String getGameUrl() {
-        return this.entry;
+        return this.gameUrl;
+    }
+
+    public void setGameUrl(String apiUrl) {
+        this.gameUrl = apiUrl + this.entry;
     }
 }

@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.dotconnections.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -50,7 +50,7 @@ public class GameUrlService implements GameUrl {
 
         String brandUid = gameSession.getVendorPlayerUsername();
         String platform = Platforms.WEB;
-        if (gameSession.getPlatformId() != Platforms.H5_CODE) {
+        if (gameSession.getVendorPlatformCode().equals(Platforms.H5)) {
             platform = Platforms.H5;
         }
 
@@ -104,7 +104,7 @@ public class GameUrlService implements GameUrl {
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
-            responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVendorResponseVo.class);
+            responseVo = new Gson().fromJson(apiResponse.getBody(), GameUrlVendorResponseVo.class);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -113,7 +113,7 @@ public class GameUrlService implements GameUrl {
             RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
         }

@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.controller;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetDto;
-import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialRepository;
 import com.nextgen.gameaggregator.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -56,10 +56,11 @@ public class OperatorController {
                 Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
+                controllerServices.clearAgentApiCredentialsByApiKey();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 
-                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession);
+                BigDecimal balance = walletService.getBalance(json.get("traceId").asText(), gameSession, null);
 
                 responseMap.put("balance", balance);
             }
@@ -85,6 +86,7 @@ public class OperatorController {
                 Integer agentId = gameSession.getAgentId();
                 AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
                 controllerServices.clearAgentApiCredentials();
+                controllerServices.clearAgentApiCredentialsByApiKey();
                 agentApiCredential.setCallbackUrl(json.get("callbackUrl").asText());
                 agentApiCredentialRepository.save(agentApiCredential);
 

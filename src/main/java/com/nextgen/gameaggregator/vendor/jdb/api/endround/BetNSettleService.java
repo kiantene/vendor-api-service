@@ -1,23 +1,23 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.endround;
 
-import java.math.BigDecimal;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jdb.api.action.ActionDto;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jdb.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jdb.vo.CommonVo;
-
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
 
 @Service
 @Slf4j
@@ -58,38 +58,48 @@ public class BetNSettleService {
 
             vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
+        
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            vo.setBalance(betResultIdempotentViolationException.getBalance());
+            vo.setSuccessResponseCode(ResponseCode.SUCCESS);
 
-        } catch (AuthenticationException |
-                 InvalidPlayerException playerNotFoundException) {
+        } catch (AuthenticationException | InvalidPlayerException playerNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
-        } catch (BetNotFoundException |
-                 MergedBetDataIntegrityException |
-                 DisabledAgentPlayerException |
-                 DisabledVendorLineException |
-                 DisabledGameException failedException) {
+
+        } catch (BetNotFoundException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException failedException) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
+
+        } catch (TransactionStillProcessingException cannotCancelException) {
+            vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                //insufficient balance
+                vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+
+            } else {
+                //Other operator errors
+                vo.setErrorResponseCode(ResponseCode.WORK_IN_PROCESS);
+
+            }
         } catch (InsufficientBalanceException insufficientBalanceException) {
             vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
-        } catch (InvalidOperatorResponseException |
-                 JsonProcessingException |
-                 GameNotSupportedException |
-                 CurrencyNotSupportedException |
-                 VendorPlatformNotSupportedException invalidValidRequestException) {
+
+        } catch (JsonProcessingException | GameNotSupportedException |
+            CurrencyNotSupportedException | VendorPlatformNotSupportedException invalidValidRequestException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+
         } catch (InvalidRequestException invalidRequestException) {
-            if (invalidRequestException.getValidation() != null) {
-                String violation = invalidRequestException.getValidation()
-                        .entrySet()
-                        .stream()
-                        .findFirst()
-                        .map(Map.Entry::getValue) // get the value of the first element
-                        .orElse(ResponseCode.INVALID_REQUEST_PARAMETER); // if there's no value, set it to the default invalid request parameter
+            if (invalidRequestException.getValidation() != null && !invalidRequestException.getValidation().isEmpty()) {
+                String violation = invalidRequestException.getValidation().entrySet().iterator().next().getValue();
                 vo.setErrorResponseCode(violation);
             } else {
                 vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
-            }          
+            }
+            
         } catch (Exception exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
         }

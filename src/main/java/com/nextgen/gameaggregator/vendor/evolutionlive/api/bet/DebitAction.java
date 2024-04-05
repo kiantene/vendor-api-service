@@ -1,17 +1,15 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +30,10 @@ public class DebitAction {
     private WalletService walletService;
     @Autowired
     private ValidationService validationService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debitAction(HttpServletRequest request) {
@@ -50,11 +52,12 @@ public class DebitAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(debitDto, gameSession);
 
             // process bet
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
 
             responseVo.setBalance(betEvent.getLastBalance());
             responseVo.setUuid(debitDto.getUuid());
@@ -83,6 +86,8 @@ public class DebitAction {
             httpService.logError(httpRequestLog, e);
         } catch (BetResultIdempotentViolationException e) {
             idempotentSetBalance(httpRequestLog, responseVo);
+        } catch (DuplicateExternalTransactionIdException e) {
+            responseVo.setResponseCode(ResponseCode.FINAL_ERROR_ACTION_FAILED);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -108,27 +113,33 @@ public class DebitAction {
             DisabledGameException,
             GameNotSupportedException,
             CurrencyNotSupportedException,
-            InvalidPlayerException {
+            InvalidPlayerException,
+            DuplicateExternalTransactionIdException {
 
         // 1. Verify Username, GameCode, CurrencyCode
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), debitDto.getUserId(), InvalidPlayerException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(debitDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), debitDto.getCurrency(), CurrencyNotSupportedException::new);
+        //vendorGameService.getByVendorGameCodeAndVendorId(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession.getVendorId());
 
         // 2. validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, debitDto.getUserId());
+
+        // Verify debit after rollback or not
+        vendorService.verifyDebitAfterRollback(gameSession.getVendorPlayerId(), debitDto.getExternalTransactionId());
     }
 
     private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
         try {
             DebitDto debitDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), DebitDto.class);
             GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
-            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession));
+            responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(debitDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, e);
         }
     }
 }

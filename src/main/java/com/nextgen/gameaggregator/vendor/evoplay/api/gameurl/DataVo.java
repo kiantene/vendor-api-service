@@ -11,6 +11,6 @@ public class DataVo {
     private String link;
 
     @SerializedName("session_id")
-    private Integer sessionId;
+    private String sessionId;
 
 }

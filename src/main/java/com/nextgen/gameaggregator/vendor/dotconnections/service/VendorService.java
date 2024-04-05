@@ -1,22 +1,17 @@
 package com.nextgen.gameaggregator.vendor.dotconnections.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.exception.AuthenticationException;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
-import com.nextgen.gameaggregator.vendor.dotconnections.api.bet.WagerDto;
 import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseDataVo;
 import com.nextgen.gameaggregator.vendor.dotconnections.vo.ResponseVo;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -32,8 +27,6 @@ public class VendorService extends BaseVendorService {
 
     @Autowired
     private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
     @Autowired
     private WalletService walletService;
 
@@ -60,24 +53,18 @@ public class VendorService extends BaseVendorService {
         return sb.toString();
     }
 
-    public ResponseVo getCurrentBalanceResponseVo(HttpServletRequest request, String traceId, String body) {
-        HttpRequestLog httpRequestLog = httpService.start(request);
+    public ResponseVo getCurrentBalanceResponseVo(HttpRequestLog httpRequestLog, String traceId, GameSession gameSession) {
 
         ResponseVo responseVo = new ResponseVo();
         ResponseDataVo responseDataVo = new ResponseDataVo();
 
         try {
-            WagerDto dto = HttpService.convertJsonToDto(body, WagerDto.class);
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getBrandUid());
-
             responseDataVo.setBrandUid(gameSession.getVendorPlayerUsername());
             responseDataVo.setCurrency(gameSession.getVendorCurrencyCode());
-            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession));
+            responseDataVo.setBalance(walletService.getBalance(traceId, gameSession, httpRequestLog));
             responseVo.setData(responseDataVo);
 
-        } catch (AuthenticationException authenticationException) {
-            responseVo.setCode(ResponseCodes.SIGN_ERROR);
-        } catch (InvalidAgentApiCredentialException | JsonProcessingException systemErrorException) {
+        } catch (InvalidAgentApiCredentialException systemErrorException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setCode(ResponseCodes.SYSTEM_ERROR);

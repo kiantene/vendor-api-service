@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.operator.transactions.detail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.*;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -70,7 +70,7 @@ public class TransactionDetailAction {
             IBetDetailUrlInfo iBetDetailUrlInfo = betHistoryService.getBetHistoryDetail(apiCredential.getAgent().getId(), dto.getBetId());
 
             //6. check vendor line
-            VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId());
+            VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId(), iBetDetailUrlInfo.getVendorId());
 
             //7. check if vendor language supported
             VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendor(), language);
@@ -78,7 +78,11 @@ public class TransactionDetailAction {
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);
 
-            transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            if (iBetDetailUrlInfo.getGameCategoryCode().equalsIgnoreCase("SPORT")) {
+                transactionDetailData = betHistoryService.getSportBetDetail(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            } else {
+                transactionDetailData = betHistoryService.getDetailUrl(iBetDetailUrlInfo, transactionDetailData, vendorLine, vendorLanguageCode);
+            }
 
             responseVo.setData(transactionDetailData);
 

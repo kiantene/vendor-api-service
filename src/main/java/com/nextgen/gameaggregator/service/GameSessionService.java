@@ -1,12 +1,10 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlDto;
-import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
-import com.nextgen.gameaggregator.repository.AgentRepository;
-import com.nextgen.gameaggregator.repository.RawGameSessionRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawGameSessionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +13,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.core.env.Environment;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,17 +26,6 @@ public class GameSessionService {
     private RawGameSessionRepository rawGameSessionRepository;
 
     @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
-    @Autowired
-    private AgentRepository agentRepository;
-
-    @Autowired
-    private RedisConnectionFactory connectionFactory;
-
-    @Autowired
-    private Environment environment;
-
-    @Autowired
     private CacheManager cacheManager;
 
     @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
@@ -49,29 +34,32 @@ public class GameSessionService {
         GameSession session = rawGameSessionRepository.findByToken(token);
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
-        //TODO (by Alex), validate gameId param from vendor is match with game_sessions table's vendor_game_id
         return session;
     }
 
-    @Caching( put = {
-            @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
     })
-    public GameSession updateSession(GameSession gameSession){
+    public GameSession updateSession(GameSession gameSession) {
         rawGameSessionRepository.save(gameSession);
         return gameSession;
 
     }
 
     //TODO, Figure a way to handle while connection lost to redis server, For Insert and Read
-    @Caching( put = {
-            @CachePut(value = "GameSessions", key = "#gameSession.token" , cacheManager = "cacheManager"),
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
                                      String vendorPlatformCode, String lobbyUrl, String ipAddress) throws AuthenticationException {
+
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
         gameSession.setVendorId(vendorGame.getVendor().getId());
@@ -94,11 +82,6 @@ public class GameSessionService {
 
     }
 
-//    @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager")
-//    public GameSession createSessionByVendorPlayer(GameSession gameSession){
-//        return gameSession;
-//    }
-
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
         GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(username);
@@ -114,11 +97,12 @@ public class GameSessionService {
         return session;
     }
 
-    public void clearGameSession(GameSession gameSession, String username, String vendorGameCode){
+    public void clearGameSession(GameSession gameSession, String username, String vendorGameCode) {
+        cacheManager.getCache("GameSessions").evict(gameSession.getAgentId() + "," + username + "," + gameSession.getVendorLineId() + "," + gameSession.getCurrencyId());
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername());
         cacheManager.getCache("GameSessions").evict(username);
-        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername()+","+gameSession.getVendorGameCode());
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername() + "," + gameSession.getVendorGameCode());
         gameSession.setStatus(0);
         gameSession.setTerminateTime(System.currentTimeMillis());
         rawGameSessionRepository.save(gameSession);
@@ -127,7 +111,7 @@ public class GameSessionService {
 
 
     public void terminateSessionByUserName(String userName) throws AuthenticationException {
-         List<GameSession> gameSessionList = rawGameSessionRepository.findByAgentPlayerUsernameAndStatus(userName, Status.ACTIVE.code);
+        List<GameSession> gameSessionList = rawGameSessionRepository.findByAgentPlayerUsernameAndStatus(userName, Status.ACTIVE.code);
         for (GameSession gameSession : gameSessionList) {
             this.clearGameSession(gameSession, gameSession.getAgentPlayerUsername(), gameSession.getVendorGameCode());
         }
@@ -156,6 +140,4 @@ public class GameSessionService {
         rawGameSessionRepository.save(newGameSession);
         return newGameSession;
     }
-
-
 }

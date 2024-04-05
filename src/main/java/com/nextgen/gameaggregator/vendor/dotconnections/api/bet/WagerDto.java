@@ -5,47 +5,22 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.dotconnections.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.dotconnections.dto.CommonDto;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
 
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Digits;
-
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-public class WagerDto implements BetResultData {
+public class WagerDto extends CommonDto implements BetResultData {
 
     @NotBlank
-    @Size(max = 7)
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    public String brandId;
-
-    @NotBlank
-    @Size(max = 32)
-    @Pattern(regexp = "^[A-Z0-9]*$")
-    public String sign;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(max = 32)
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX, message = ResponseCodes.PLAYER_NOT_EXIST)
+    @Size(min = 32, max = 32, message = ResponseCodes.PLAYER_NOT_EXIST)
     public String token;
-
-    @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
-    @Size(min = 3, max = 20)
-    public String brandUid;
-
-    @NotBlank
-    @Size(min = 3, max = 4)
-    @Pattern(regexp = "[a-zA-Z]+")
-    public String currency;
 
     @NotNull
     @PositiveOrZero
@@ -123,20 +98,17 @@ public class WagerDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getResultTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
     public Long getVendorSettleTime() {
-        Instant instant = Instant.now();
-        return instant.toEpochMilli();
+        return getCurrentTimeStamp();
     }
 
     @Override
@@ -146,7 +118,7 @@ public class WagerDto implements BetResultData {
 
     @Override
     public BigDecimal getJackpotAmount() {
-        return this.jackpotContribution;
+        return BigDecimal.ZERO;
     }
 
     @Override

@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -70,9 +70,28 @@ public class GetBalanceAction {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.UNAUTHORIZED;
 
-        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException| AuthenticationException invalidException) {
+        } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
+            status = HttpStatus.UNAUTHORIZED;
+
+        } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             status = HttpStatus.UNAUTHORIZED;
 
         } catch (Exception exception) { // any other exception encountered

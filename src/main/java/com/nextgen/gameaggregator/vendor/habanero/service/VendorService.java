@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.vendor.habanero.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.RawBetResultLog;
-import com.nextgen.gameaggregator.entity.SettledBet;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.RawBetResultLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
@@ -16,14 +16,14 @@ import com.nextgen.gameaggregator.service.UnsettledBetService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 
 import java.security.MessageDigest;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @Slf4j
@@ -35,19 +35,6 @@ public class VendorService extends BaseVendorService {
     private SettledBetService settledBetService;
     @Autowired
     private BetResultLogService betResultLogService;
-
-    public static String generateUrl(String apiUrl, MultiValueMap<String, String> parameters) {
-        // form query string
-        String queryString = "";
-        List<String> values = new ArrayList<>();
-        for (String key : parameters.keySet()){
-            values.add(key + "=" + parameters.getFirst(key));
-        }
-
-        String loginUrl = apiUrl + "?" + String.join("&", values);
-
-        return loginUrl;
-    }
 
     public static String generateSHA256Hash(String input) throws InvalidEncryptionException {
         try {
@@ -72,6 +59,19 @@ public class VendorService extends BaseVendorService {
         } catch (DateTimeParseException e) {
             return false;
         }
+    }
+
+    public static Long dateTimeConvert(String rawDateTime) {
+
+        //convert date time string to timestamp
+        Long timestamp = null;
+        if (rawDateTime != null) {
+            LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ISO_DATE_TIME);
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC"));
+            timestamp = zonedDateTime.toInstant().toEpochMilli();
+        }
+        return timestamp;
+
     }
 
     public void unsettledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
@@ -140,7 +140,8 @@ public class VendorService extends BaseVendorService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+            // Add retry to find settled bet, because DNC request (debit & credit) and Query request very frequently
+            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(vendorBetId, roundId, vendorId, vendorPlayerId);
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();

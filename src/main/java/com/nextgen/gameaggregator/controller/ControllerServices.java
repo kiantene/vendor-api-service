@@ -1,9 +1,5 @@
 package com.nextgen.gameaggregator.controller;
 
-import com.nextgen.gameaggregator.entity.AgentApiCredential;
-import com.nextgen.gameaggregator.repository.AgentApiCredentialRepository;
-import com.nextgen.gameaggregator.repository.AgentPlayerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +9,11 @@ public class ControllerServices {
     @CacheEvict(value = "AgentApiCredentials", allEntries = true, cacheManager = "cacheManager")
     public void clearAgentApiCredentials(){
     }
+
+    @CacheEvict(value = "AgentApiCredentialsByApiKey", allEntries = true, cacheManager = "cacheManager")
+    public void clearAgentApiCredentialsByApiKey(){
+    }
+
 
     @CacheEvict(value = "AgentPlayers", allEntries = true, cacheManager = "cacheManager")
     public void clearAgentPlayers(){

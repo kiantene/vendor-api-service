@@ -39,9 +39,20 @@ public class ResponseCodes {
         SC_VENDOR_LANGUAGE_NOT_SUPPORTED(29, "Vendor language is not supported"),
         SC_VENDOR_PLATFORM_NOT_SUPPORTED(30, "Vendor platform is not supported"),
         SC_EXCEEDED_NUMBER_OF_RETRIES(31, "Exceeded number of retries."),
+        SC_OPERATOR_TIMEOUT(32, "Operator timed out"),
+        SC_INVALID_FROM_TIME(33, "Data only available last 60 days"),
+        SC_INVALID_DATE_RANGE(34, "Date range should be within one day."),
+
+        SC_REFERENCE_ID_DUPLICATED(35, "Duplicate reference Id was sent."),
+        SC_TRANSACTION_DOES_NOT_EXIST(36, "Corresponding reference Id cannot be found."),
+        SC_INTERNAL_ERROR(37, "Internal error. please checked in relevant support channel"),
+
+        SC_WALLET_NOT_SUPPORTED(38, "Wallet Type is not supported."),
+
         ;
 
         public final Integer code;
         public final String description;
     }
+
 }

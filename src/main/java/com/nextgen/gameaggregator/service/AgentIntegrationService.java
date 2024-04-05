@@ -1,13 +1,13 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.AgentIntegrationDetail;
-import com.nextgen.gameaggregator.entity.AgentIntegrationSubCaseStep;
+import com.nextgen.gameaggregator.entity.ga.AgentIntegrationDetail;
+import com.nextgen.gameaggregator.entity.ga.AgentIntegrationSubCaseStep;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.RecordNotFoundException;
 import com.nextgen.gameaggregator.operator.apiverification.agentinfo.AgentInfoVo;
 import com.nextgen.gameaggregator.operator.apiverification.agenttestreport.update.AgentTestCaseStepUpdateDto;
-import com.nextgen.gameaggregator.repository.AgentIntegrationDetailRepository;
-import com.nextgen.gameaggregator.repository.AgentIntegrationSubCaseStepRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentIntegrationDetailRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.AgentIntegrationSubCaseStepRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

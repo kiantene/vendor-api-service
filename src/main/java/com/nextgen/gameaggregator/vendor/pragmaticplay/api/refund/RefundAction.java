@@ -1,8 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.refund;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.RawBetRefundLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -12,14 +11,13 @@ import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.service.VendorService;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.vo.ResponseVo;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH, consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
@@ -61,13 +59,14 @@ public class RefundAction {
             this.doVerification(httpRequestLog, dto, gameSession);
 
             // 4. Send refund to Operator
-            walletService.processRollback(traceId, dto, gameSession, vendorService);
+            walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
 
             transactionId = VendorService.getTransactionId(traceId);
             responseVo.setTransactionId(transactionId);
 
         } catch (BetNotFoundException betNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
@@ -77,9 +76,10 @@ public class RefundAction {
             } else {
                 //if found the bet other in settled status (cancel / refund)
                 transactionId = betResultIdempotentViolationException.getTransactionId();
-                responseVo.setTransactionId(transactionId);
+                responseVo.setTransactionId(VendorService.getTransactionId(transactionId));
 
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
@@ -94,40 +94,37 @@ public class RefundAction {
                 //Other operator errors
                 responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             }
-
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (
-                InvalidRequestException invalidRequestException) {
+        } catch (InvalidRequestException invalidRequestException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
             if (invalidRequestException.getValidation() != null) {
                 String validations = invalidRequestException.getValidation().toString();
-                log.error(validations);
                 httpRequestLog.setErrorMessage(validations);
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
-        } catch (
-                InvalidPlayerException invalidPlayerException) {
+        } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
-        } catch (
-                AuthenticationException authenticationException) {
+        } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
-        } catch (
-                InvalidSignatureException invalidSignatureException) {
+        } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
-        } catch (
-                CredentialNotFoundException credentialNotFoundException) {
+        } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INVALID_REQUEST);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
-        } catch (
-                InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             responseVo.setResponseCode(ResponseCode.BET_NOT_ALLOWED);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
-        } catch (
-                Exception exception) { // any other exception encountered
+        } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
         }

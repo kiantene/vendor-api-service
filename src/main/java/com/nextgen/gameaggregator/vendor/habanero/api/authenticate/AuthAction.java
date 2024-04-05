@@ -1,18 +1,14 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.authenticate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.service.GameSessionService;
-import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.WalletService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.habanero.constant.ResponseCodes;
-import com.nextgen.gameaggregator.vendor.habanero.vo.StatusVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +32,10 @@ public class AuthAction {
     private WalletService walletService;
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
 
     @PostMapping(path = EndPoints.AUTHENTICATE)
     public AuthVo balance(HttpServletRequest request) {
@@ -44,10 +44,6 @@ public class AuthAction {
 
         // Construct VO
         AuthVo responseVo = new AuthVo();
-        PlayerDetailResponseVo playerDetailResponseVo = new PlayerDetailResponseVo();
-        StatusVo statusVo = new StatusVo();
-        playerDetailResponseVo.setStatusVo(statusVo);
-        responseVo.setPlayerDetailResponseVo(playerDetailResponseVo);
 
         try {
             //Retrieve request body in original string format
@@ -66,38 +62,34 @@ public class AuthAction {
             this.doVerification(authDto, gameSession);
 
             //Get walletBalance
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             //return success respond
-            statusVo.setSuccess(true);
-            statusVo.setAuthError(false);
-            statusVo.setMessage("");
-            playerDetailResponseVo.setAccountId(gameSession.getVendorPlayerUsername());
-            playerDetailResponseVo.setAccountnName(gameSession.getVendorPlayerUsername());
-            playerDetailResponseVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
-            playerDetailResponseVo.setCurrencyCode(gameSession.getVendorCurrencyCode());
+            responseVo.getPlayerDetailResponseVo().setAccountId(gameSession.getVendorPlayerUsername());
+            responseVo.getPlayerDetailResponseVo().setAccountnName(gameSession.getVendorPlayerUsername());
+            responseVo.getPlayerDetailResponseVo().setBalance(balance.setScale(2, RoundingMode.DOWN));
+            responseVo.getPlayerDetailResponseVo().setCurrencyCode(gameSession.getVendorCurrencyCode());
 
         } catch (InvalidAgentApiCredentialException |
                  AuthenticationException |
                  InvalidRequestException |
                  NoAvailableLineException |
                  JsonProcessingException |
-                 CredentialNotFoundException generalException) {
-            statusVo.setSuccess(false);
-            statusVo.setAuthError(true);
-            statusVo.setMessage(ResponseCodes.AUTHENTICATE_FAIL);
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            statusVo.setSuccess(false);
-            statusVo.setAuthError(true);
-            statusVo.setMessage(ResponseCodes.AUTHENTICATE_FAIL);
-            httpService.logError(httpRequestLog, invalidOperatorResponseException);
+                 CredentialNotFoundException |
+                 DisabledVendorLineException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                InvalidOperatorResponseException generalException) {
+            responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
+            httpService.logError(httpRequestLog, generalException);
+
         } catch (Exception exception) {
-            statusVo.setSuccess(false);
-            statusVo.setAuthError(true);
-            statusVo.setMessage(ResponseCodes.AUTHENTICATE_FAIL);
+            responseVo.setResponseCode(ResponseCodes.AUTHENTICATE_ERROR);
             httpService.logError(httpRequestLog, exception);
+
         } finally {
             httpService.end(httpRequestLog, responseVo);
+
         }
 
         return responseVo;
@@ -113,7 +105,12 @@ public class AuthAction {
         ValidationUtils.isEquals("playerdetailrequest", dto.getType(), InvalidRequestException::new);
     }
 
-    private void doVerification(AuthDto dto, GameSession gameSession) throws NoAvailableLineException, CredentialNotFoundException {
+    private void doVerification(AuthDto dto, GameSession gameSession) throws
+            NoAvailableLineException,
+            CredentialNotFoundException,
+            DisabledVendorLineException,
+            DisabledAgentPlayerException,
+            DisabledGameException {
 
         //Verify received passkey is the same from credential
         String passkey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.PASSKEY);
@@ -125,6 +122,15 @@ public class AuthAction {
 
         //Verify vendor game code is the same from gameSession
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getBaseGame().getKeyName(), NoAvailableLineException::new);
+
+        //Verify vendor line is active
+        vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
+
+        //Verify agent player is active
+        agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
+
+        //Verify vendor game is active
+        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
 
     }
 }

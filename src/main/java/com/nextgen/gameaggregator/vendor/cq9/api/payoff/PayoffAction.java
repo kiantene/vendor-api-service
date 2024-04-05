@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.payoff;
 
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -70,9 +70,11 @@ public class PayoffAction {
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -80,8 +82,11 @@ public class PayoffAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

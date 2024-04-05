@@ -1,9 +1,17 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import com.nextgen.gameaggregator.entity.ga.BetNotFoundLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.BetNotFoundLogService;
+import com.nextgen.gameaggregator.vendor.evolutionlive.api.endround.CreditDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.gameurl.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -11,6 +19,9 @@ import java.time.Instant;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    private BetNotFoundLogService betNotFoundLogService;
+
     public static Long getTimestamp() {
         return Instant.now().toEpochMilli();
     }
@@ -42,6 +53,12 @@ public class VendorService extends BaseVendorService {
         return configChannelDto;
     }
 
+    public ConfigUrlsDto setConfigUrlsDto(GameSession gameSession) {
+        ConfigUrlsDto configUrlsDto = new ConfigUrlsDto();
+        configUrlsDto.setLobby(gameSession.getLobbyUrl());
+        return configUrlsDto;
+    }
+
     public GameTableDto setGameTableDto(GameSession gameSession) {
         GameTableDto gameTableDto = new GameTableDto();
         gameTableDto.setId(gameSession.getVendorGameCode());
@@ -54,10 +71,40 @@ public class VendorService extends BaseVendorService {
         return configGameDto;
     }
 
-    public ConfigDto setConfigDto(ConfigGameDto configGameDto, ConfigChannelDto configChannelDto) {
+    public ConfigDto setConfigDto(ConfigGameDto configGameDto, ConfigChannelDto configChannelDto, ConfigUrlsDto configUrlsDto) {
         ConfigDto configDto = new ConfigDto();
         configDto.setGame(configGameDto);
         configDto.setChannel(configChannelDto);
+        configDto.setUrls(configUrlsDto);
         return configDto;
+    }
+
+    public void verifyDebitAfterRollback(Long vendorPlayerId, String externalTransactionId) throws DuplicateExternalTransactionIdException {
+        BetNotFoundLog betNotFoundLog = betNotFoundLogService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        // if have data mean have call rollback before
+        if (betNotFoundLog != null) {
+            throw new DuplicateExternalTransactionIdException();
+        }
+    }
+
+    @Override
+    public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
+        // Get the JSON request body from the HttpRequestLog
+        String requestBody = rawData;
+        Gson gson = new Gson();
+
+        try {
+            // Convert the JSON request body to SettleDto object
+            CreditDto dto = gson.fromJson(requestBody, CreditDto.class);
+
+            // Remap roundId
+            settledBet.setRoundId(dto.getGame().getId().split("-")[0]);
+
+
+        } catch (JsonParseException e) {
+            log.error("Error parsing JSON: " + e.getMessage());
+        }
+
+        return settledBet;
     }
 }

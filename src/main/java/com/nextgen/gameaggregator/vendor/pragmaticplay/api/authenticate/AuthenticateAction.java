@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.pragmaticplay.api.authenticate;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -37,6 +37,8 @@ public class AuthenticateAction {
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
+    @Autowired
+    private VendorService vendorService;
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
@@ -55,6 +57,7 @@ public class AuthenticateAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGameId(), gameSession);
 
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -76,12 +79,15 @@ public class AuthenticateAction {
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCode.INVALID_HASH);
+            httpService.logError(httpRequestLog, invalidSignatureException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
@@ -89,12 +95,15 @@ public class AuthenticateAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
 
-        } catch (DisabledGameException disabledGameException) {
+        } catch (DisabledGameException | GameNotSupportedException disabledGameException) {
             responseVo.setResponseCode(ResponseCode.INVALID_GAME);
+            httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
@@ -103,10 +112,13 @@ public class AuthenticateAction {
         } catch (DisabledVendorLineException disabledVendorLineException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, disabledVendorLineException);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             //TODO to be discuss the response code
             responseVo.setResponseCode(ResponseCode.PLAYER_FROZEN);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+
         } catch (Exception exception) { // any other exception encountered
             responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_NO_RETRY);
             httpService.logError(httpRequestLog, exception);
@@ -125,27 +137,22 @@ public class AuthenticateAction {
 
     private void doVerification(HttpRequestLog request, AuthenticateDto dto, GameSession gameSession) throws
             DisabledGameException, AuthenticationException, DisabledVendorLineException, CredentialNotFoundException,
-            InvalidSignatureException, DisabledAgentPlayerException {
-        // 1. Verify received game id is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameId(), AuthenticationException::new);
-
-        // 2. Verify vendor line is active
+            InvalidSignatureException, DisabledAgentPlayerException, GameNotSupportedException {
+        // 1. Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
-        // 3. Retrieve vendor line credentials and secretKey for hash validation
+        // 2. Retrieve vendor line credentials and secretKey for hash validation
         String secretKey = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.SECRET_KEY);
 
-        // 4. Verify request signature is valid
+        // 3. Verify request signature is valid
         VendorService.verifyHash(request.getRequestBody(), secretKey);
 
-        // 5. Verify agent player is active
+        // 4. Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
 
-        // 6. Verify vendor game is active
-        vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
+        // 5. Verify vendor game is supported
+        vendorGameService.getByVendorGameCodeAndVendorId(dto.getGameId(), gameSession.getVendorId());
 
-        //TODO (by Alex), should have child game table for save vendor game code by language, platform
     }
 
 }

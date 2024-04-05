@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -57,7 +57,7 @@ public class BalanceService {
             String merchantCode = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.MERCHANT_CODE);
             this.doVerification(dto, gameSession, merchantCode);
             // Get the user's account balance using the game session and trace ID
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // Populate the AcctInfoVo object with user details
             acctInfoVo.setAcctId(gameSession.getVendorPlayerUsername());
@@ -71,26 +71,44 @@ public class BalanceService {
             authBalanceVo.setMerchantCode(dto.getMerchantCode());
             authBalanceVo.setResponseCode(ResponseCode.SUCCESS);
             authBalanceVo.setSerialNo(traceId);
-        } catch (AuthenticationException e) {
+
+        } catch (AuthenticationException authenticationException) {
             // handle account not found errors
+            httpService.logError(httpRequestLog, authenticationException);
             authBalanceVo.setResponseCode(ResponseCode.ACCT_NOT_FOUND);
-        } catch (CredentialNotFoundException | UnableToFindCredentialsException e) {
+
+        } catch (CredentialNotFoundException | UnableToFindCredentialsException merchantNotFoundException) {
             // handle merchant not found errors
+            httpService.logError(httpRequestLog, merchantNotFoundException);
             authBalanceVo.setResponseCode(ResponseCode.MERCHANT_NOT_FOUND);
+
         } catch (DisabledVendorLineException | DisabledAgentPlayerException |
-                DisabledGameException e) {
+                DisabledGameException serviceInaccessibleException) {
             // handle service inaccessible errors
+            httpService.logError(httpRequestLog, serviceInaccessibleException);
             authBalanceVo.setResponseCode(ResponseCode.SERVICE_INACCESSIBLE);
+
         } catch (InvalidRequestException | InvalidOperatorResponseException |
-                InvalidAgentApiCredentialException | GameNotSupportedException e) {
+                InvalidAgentApiCredentialException | GameNotSupportedException invalidRequestException) {
             // handle invalid request errors
+            httpService.logError(httpRequestLog, invalidRequestException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_REQUEST);
-        } catch (JsonProcessingException e) {
+
+        } catch (JsonProcessingException invalidFormatException) {
             // handle invalid format errors
+            httpService.logError(httpRequestLog, invalidFormatException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_FORMAT);
-        } catch (IllegalArgumentException e) {
+
+        } catch (IllegalArgumentException illegalArgumentException) {
             // handle invalid parameter errors
+            httpService.logError(httpRequestLog, illegalArgumentException);
             authBalanceVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+
+        } catch (Exception exception) {
+            // others
+            httpService.logError(httpRequestLog, exception);
+            authBalanceVo.setResponseCode(ResponseCode.SYSTEM_ERROR);
+            
         } finally {
             // End the HTTP request logging and return the AuthBalanceVo object
             httpService.end(httpRequestLog, authBalanceVo);

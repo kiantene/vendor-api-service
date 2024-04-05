@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.DisabledGameException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.repository.VendorGameRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,9 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    @Cacheable(value = "VendorGames", key = "{#vendorGameCode, #vendorId}", cacheManager = "cacheManager")
     public VendorGame getByVendorGameCodeAndVendorId(String vendorGameCode, Integer vendorId) throws GameNotSupportedException {
+
         VendorGame vendorGame = vendorGameRepository.findByVendorGameCodeAndVendorId(vendorGameCode, vendorId);
         Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
 
@@ -34,6 +36,7 @@ public class VendorGameService {
         return vendorGame;
     }
 
+    @Cacheable(value = "VendorGames", key = "{#gameCode}", cacheManager = "cacheManager")
     public VendorGame checkGameSupported(String gameCode) throws GameNotSupportedException, DisabledGameException {
         VendorGame vendorGame = vendorGameRepository.findByCode(gameCode);
         Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);

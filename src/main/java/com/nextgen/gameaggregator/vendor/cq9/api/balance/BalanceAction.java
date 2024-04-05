@@ -1,9 +1,9 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.balance;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.VendorLine;
-import com.nextgen.gameaggregator.entity.VendorPlayer;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorLine;
+import com.nextgen.gameaggregator.entity.ga.VendorPlayer;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -73,7 +73,7 @@ public class BalanceAction {
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
             // 5. Get vendor line supported currency
-            VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId());
+            VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId(), vendorPlayer.getVendorId());
 
             // Construct VO
             commonVo.setBalance(balance);
@@ -82,28 +82,34 @@ public class BalanceAction {
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
-        } catch (
-                InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.GAME_ACTION_ERROR);
+            httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (InvalidPlayerException invalidPlayerException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
+                httpService.logError(httpRequestLog, invalidRequestException);
             }
 
         } catch (InvalidVendorLineException invalidVendorLineException) { // any other exception encountered
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

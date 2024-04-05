@@ -3,7 +3,7 @@ package com.nextgen.gameaggregator.vendor.bgaming.api.gameurl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -115,7 +115,7 @@ public class GameUrlService implements GameUrl {
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
                  JsonProcessingException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
         }
         return responseVo;

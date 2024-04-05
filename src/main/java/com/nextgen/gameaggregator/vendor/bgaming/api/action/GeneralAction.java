@@ -1,18 +1,25 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.action;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bgaming.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.bgaming.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.bgaming.api.endround.EndRoundService;
+import com.nextgen.gameaggregator.vendor.bgaming.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.bgaming.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.bgaming.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
+import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bgaming.vo.ResponseVo;
-import com.nextgen.gameaggregator.vendor.bgaming.vo.TransactionVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
@@ -23,8 +30,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedList;
+import java.util.Map;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
@@ -38,13 +45,16 @@ public class GeneralAction {
     private BetService betService;
     @Autowired
     private EndRoundService endRoundService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     @PostMapping(path = EndPoints.PLAY)
     public ResponseEntity<ResponseVo> action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
 
         ResponseVo responseVo = new ResponseVo();
-        Integer httpStatus;
         CommonDto commonDto = null;
         try {
             // Retrieve request body in original string format
@@ -56,90 +66,58 @@ public class GeneralAction {
             // Validate the commonDto object
             this.doValidation(commonDto);
 
+            // Get vendor player details
+            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getUserId());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(gameSession, httpRequestLog, request);
+
             // Handle the action and return the resulting value
-            responseVo = this.serviceHandling(commonDto, httpRequestLog, request);
+            this.serviceHandling(commonDto, httpRequestLog, request, responseVo, gameSession);
 
             responseVo.setHttpStatus(HttpStatus.SC_OK);
+
         } catch (InvalidSignatureException e) {
-            responseVo.setCode(HttpStatus.SC_FORBIDDEN);
-            responseVo.setMessage("Request sign doesn't match.");
-            responseVo.setHttpStatus(HttpStatus.SC_FORBIDDEN);
+            responseVo.setResponseCodes(ResponseCodes.REQUEST_SIGN_DOES_NOT_MATCH);
             httpService.logError(httpRequestLog, e);
-        } catch (AuthenticationException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+
+        } catch (AuthenticationException |
+                 DisabledVendorLineException |
+                 CredentialNotFoundException |
+                 InvalidAgentApiCredentialException |
+                 DisabledAgentPlayerException |
+                 DisabledGameException |
+                 InvalidRequestException |
+                 BetNotFoundException |
+                 InvalidPlayerException |
+                 JsonProcessingException e) {
+            responseVo.setResponseCodes(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
+
         } catch (InsufficientBalanceException e) {
-            responseVo.setCode(HttpStatus.SC_CONTINUE);
-            responseVo.setMessage("Funds not enough.");
-            responseVo.setHttpStatus(HttpStatus.SC_PRECONDITION_FAILED);
+            responseVo.setResponseCodes(ResponseCodes.FUND_NOT_ENOUGH);
             httpService.logError(httpRequestLog, e);
-        } catch (DisabledVendorLineException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (CredentialNotFoundException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidAgentApiCredentialException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidPlayerException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledAgentPlayerException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (DisabledGameException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (InvalidRequestException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (BetNotFoundException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
-        } catch (JsonProcessingException | MergedBetDataIntegrityException | CouchbaseDataIntegrityException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
-            httpService.logError(httpRequestLog, e);
+
         } catch (TransactionStillProcessingException | BetResultIdempotentViolationException e) {
-            responseVo = handleDuplicateBet(commonDto, httpRequestLog, request);
-            responseVo.setHttpStatus(HttpStatus.SC_OK);
+            handleDuplicateBet(commonDto, httpRequestLog, request, responseVo);
+            responseVo.setResponseCodes(ResponseCodes.SUCCESS);
             httpService.logError(httpRequestLog, e);
+
         } catch (CurrencyNotSupportedException e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Currency not support (maybe need integrate new currency code for handle convert amount).");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+            responseVo.setResponseCodes(ResponseCodes.CURRENCY_NOT_SUPPORT);
             httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+            responseVo.setResponseCodes(ResponseCodes.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
+
         } finally {
-            httpStatus = responseVo.getHttpStatus();
-            responseVo.setHttpStatus(null);
+            if (commonDto.getActions() != null && commonDto.getActions().isEmpty()) {
+                responseVo.setTransactions(new LinkedList<>());
+            }
             httpService.end(httpRequestLog, responseVo);
         }
-        return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(httpStatus));
+        return new ResponseEntity<>(responseVo, HttpStatusCode.valueOf(responseVo.getHttpStatus()));
     }
 
     private void doValidation(CommonDto dto) throws InvalidRequestException {
@@ -147,63 +125,48 @@ public class GeneralAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private ResponseVo serviceHandling(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws InvalidRequestException, InvalidAgentApiCredentialException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException, DisabledAgentPlayerException, DisabledGameException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, DisabledVendorLineException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException {
-        ResponseVo responseVo = new ResponseVo();
+    private void doVerification(GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws JsonProcessingException, CredentialNotFoundException, InvalidSignatureException {
+        // Convert Body to Map for signature check
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> bodyObj = mapper.readValue(httpRequestLog.getRequestBody(), Map.class);
+
+        // Verify Signature key from vendor given
+        String authToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AUTH_TOKEN);
+        VendorService.verifySign(authToken, new Gson().toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
+    }
+
+    private void serviceHandling(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request, ResponseVo responseVo, GameSession gameSession) throws InvalidRequestException, InvalidAgentApiCredentialException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException, DisabledAgentPlayerException, DisabledGameException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, DisabledVendorLineException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
 
         if (!commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
             // No action , Get balance
-            responseVo = balanceService.balance(commonDto, httpRequestLog, request);
+            balanceService.balance(commonDto, httpRequestLog, request, responseVo);
         } else if (commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
-            TransactionVo transactionVo = endRoundService.endRound(commonDto, null, httpRequestLog, request);
-            responseVo.setBalance(transactionVo.getBalance());
-            responseVo.setGameId(commonDto.getGameId());
+            endRoundService.endRound(commonDto, null, request, responseVo, gameSession);
         } else {
-            int count = 0;
-            List<TransactionVo> transactionVoList = new ArrayList<>();
             for (ActionDto actionDto : commonDto.getActions()) {
-                TransactionVo transactionVo;
-                count++;
+                commonDto.setActionDto(actionDto);
                 switch (actionDto.getAction()) {
-                    case "bet" -> {
-                        transactionVo = betService.bet(commonDto, actionDto, httpRequestLog, count, request);
-                    }
-                    case "win" -> {
-                        transactionVo = endRoundService.endRound(commonDto, actionDto, httpRequestLog, request);
-                    }
-                    default -> {
+                    case "bet":
+                        betService.bet(commonDto, request, responseVo, gameSession);
+                        // If this is last bet action and finished true then will process to end round
+                        if (!(commonDto.getFinished() && (commonDto.getActions().indexOf(actionDto) == (commonDto.getActions().size() - 1)))) {
+                            break;
+                        }
+                    case "win":
+                        endRoundService.endRound(commonDto, actionDto, request, responseVo, gameSession);
+                        break;
+                    default:
                         throw new InvalidRequestException();
-                    }
                 }
-                responseVo.setBalance(transactionVo.getBalance());
-                transactionVo.setBalance(null);
-                transactionVoList.add(transactionVo);
             }
-            responseVo.setGameId(commonDto.getGameId());
-            responseVo.setTransactions(transactionVoList);
         }
-        return responseVo;
     }
 
-    private ResponseVo handleDuplicateBet(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) {
-        ResponseVo responseVo = new ResponseVo();
+    private void handleDuplicateBet(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request, ResponseVo responseVo) {
         try {
-            responseVo = balanceService.balance(commonDto, httpRequestLog, request);
-            List<TransactionVo> transactionVoList = new ArrayList<>();
-            if (commonDto.getActions() != null && !commonDto.getActions().isEmpty()) {
-                for (ActionDto actionDto : commonDto.getActions()) {
-                    TransactionVo transactionVo = new TransactionVo();
-                    transactionVo.setActionId(actionDto.getActionId());
-                    transactionVo.setTxId(actionDto.getActionId());
-                    transactionVoList.add(transactionVo);
-                }
-            }
-            responseVo.setGameId(commonDto.getGameId());
-            responseVo.setTransactions(transactionVoList);
+            balanceService.balance(commonDto, httpRequestLog, request, responseVo);
         } catch (Exception e) {
-            responseVo.setCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
-            responseVo.setMessage("Unknown error.");
-            responseVo.setHttpStatus(HttpStatus.SC_BAD_REQUEST);
+            responseVo.setResponseCodes(ResponseCodes.UNKNOWN_ERROR);
         }
-        return responseVo;
     }
 }

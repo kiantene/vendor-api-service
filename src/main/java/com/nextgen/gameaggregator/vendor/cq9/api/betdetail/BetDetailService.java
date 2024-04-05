@@ -2,8 +2,9 @@ package com.nextgen.gameaggregator.vendor.cq9.api.betdetail;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.VendorLanguageCode;
-import com.nextgen.gameaggregator.entity.custom.IBetDetailUrlInfo;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.VendorLanguageCode;
+import com.nextgen.gameaggregator.entity.ga.custom.IBetDetailUrlInfo;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.transactions.detail.BetDetailUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -57,6 +58,9 @@ public class BetDetailService implements BetDetailUrl {
         BetDetailUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
 
+        //BetDetails do not have game session;
+        GameSession gameSession = new GameSession();
+
         long startTime = System.currentTimeMillis();
         ResponseEntity apiResponse = WebClient.create(apiUrl)
                 .get()
@@ -94,11 +98,11 @@ public class BetDetailService implements BetDetailUrl {
             requestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            requestService.failResponseLog(requestLogVo, invalidException);
+            requestService.failResponseLog(requestLogVo, invalidException, gameSession);
             throw new InvalidVendorResponseException();
         } catch (Exception exception) {
             exception.printStackTrace();
-            requestService.failResponseLog(requestLogVo, exception);
+            requestService.failResponseLog(requestLogVo, exception, gameSession);
             throw new InvalidVendorResponseException();
         }
 

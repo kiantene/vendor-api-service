@@ -3,15 +3,17 @@ package com.nextgen.gameaggregator.vendor.bgaming.api.balance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.bgaming.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.bgaming.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
 import com.nextgen.gameaggregator.vendor.bgaming.service.VendorService;
 import com.nextgen.gameaggregator.vendor.bgaming.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.bgaming.vo.TransactionVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,19 +32,12 @@ public class BalanceService {
     @Autowired
     private WalletService walletService;
     @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
     private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameService vendorGameService;
 
-    public ResponseVo balance(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException {
+    public void balance(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request, ResponseVo responseVo) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, InvalidRequestException, DisabledVendorLineException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, VendorCurrencyNotSupportException {
         String traceId = httpRequestLog.getId();
-        ResponseVo responseVo = new ResponseVo();
 
         // Get vendor player details
         GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(commonDto.getUserId());
@@ -51,15 +46,19 @@ public class BalanceService {
         this.doVerification(commonDto, gameSession, httpRequestLog, request);
 
         // Get walletBalance
-        BigDecimal balance = walletService.getBalance(traceId, gameSession);
-
-        // Convert Amount
-        Integer convertedBalance = vendorService.convertAmountToInteger(balance, commonDto.getCurrency());
+        BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         // Construct VO
-        responseVo.setBalance(convertedBalance);
-
-        return responseVo;
+        if (commonDto.getActions() != null && !commonDto.getActions().isEmpty()) {
+            for (ActionDto actionDto : commonDto.getActions()) {
+                TransactionVo transactionVo = new TransactionVo();
+                transactionVo.setActionId(actionDto.getActionId());
+                transactionVo.setTxId(actionDto.getActionId());
+                responseVo.addTransactions(transactionVo);
+            }
+        }
+        responseVo.setBalance(balance.intValue());
+        responseVo.setGameId(commonDto.getVendorRoundId());
     }
 
     private void doVerification(CommonDto commonDto, GameSession gameSession, HttpRequestLog httpRequestLog, HttpServletRequest request) throws

@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.pragmaticplay.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -52,6 +52,7 @@ public class GameUrlService implements GameUrl {
         formData.add("language", gameSession.getVendorLanguageCode());
         formData.add("technology", "H5");
         formData.add("token", gameSession.getToken());
+        formData.add("externalPlayerId", gameSession.getVendorPlayerUsername());
         formData.add("platform", gameSession.getVendorPlatformCode());
         formData.add("currency", gameSession.getVendorCurrencyCode());
         formData.add("lobbyUrl", gameSession.getLobbyUrl());
@@ -73,7 +74,7 @@ public class GameUrlService implements GameUrl {
         Long startTime = System.currentTimeMillis();
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(Endpoints.GAME_URL )
+                .uri(Endpoints.GAME_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(formData))
                 .retrieve()
@@ -101,7 +102,7 @@ public class GameUrlService implements GameUrl {
             RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
         }

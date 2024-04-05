@@ -1,15 +1,15 @@
 package com.nextgen.gameaggregator.vendor.jdb.api.bet;
 
-import java.math.BigDecimal;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.jdb.constant.Formats;
 import com.nextgen.gameaggregator.vendor.jdb.constant.ResponseCode;
-
 import jakarta.validation.constraints.*;
 import lombok.Data;
+
+import java.math.BigDecimal;
 
 @Data
 public class BetDto implements BetResultData {
@@ -56,7 +56,14 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.gameRoundSeqNo.toString();
+        // trim the provider's category for decide round id value
+        String trimCategory = this.mType.toString().toString().substring(0, 2);
+
+        if(trimCategory.equals(Formats.SPRIBE)){
+            return this.transferId.toString();
+        }else{
+            return this.gameRoundSeqNo.toString();
+        }
     }
 
     @Override

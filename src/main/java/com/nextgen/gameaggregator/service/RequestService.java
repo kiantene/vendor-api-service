@@ -1,8 +1,9 @@
 package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.EndRoundSettledBet;
-import com.nextgen.gameaggregator.entity.ProcessEndRoundLog;
+import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.ProcessEndRoundLog;
 import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
 import com.nextgen.gameaggregator.exception.InvalidResponseException;
@@ -141,22 +142,43 @@ public class RequestService {
                 }
             });
 
-            System.err.println(validation);
             if (!validation.isEmpty()) { // Missing/Invalid request parameters
                 throw new InvalidResponseException(validation.toString());
             }
         }
     }
 
-    public static void failResponseLog(RequestLogVo requestLogVo, Exception exception) {
+    public static void failResponseLog(RequestLogVo requestLogVo, Exception exception, GameSession gameSession) {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
+
+        logInfo.put("ResponseLog: ", "FAILURE");
         logInfo.put("ApiUrl: ", requestLogVo.getCallbackUrl() + requestLogVo.getEndpoint());
         logInfo.put("RequestHeaders: ", requestLogVo.getRequestHeaders());
         logInfo.put("RequestParam: ", requestLogVo.getRequestObject());
-        logInfo.put("ResponseBody: ", requestLogVo.getResponseEntity().getBody());
-        logInfo.put("ResponseHeaders: ", requestLogVo.getResponseEntity().getHeaders());
-        logInfo.put("HttpStatusCode: ", requestLogVo.getResponseEntity().getStatusCode());
+
+        if (requestLogVo.getResponseEntity() == null) {
+            logInfo.put("ResponseBody: ", "TIMEOUT");
+            logInfo.put("ResponseHeaders: ", "TIMEOUT");
+            logInfo.put("HttpStatusCode: ", "TIMEOUT");
+
+        } else {
+            logInfo.put("ResponseBody: ", requestLogVo.getResponseEntity().getBody());
+            logInfo.put("ResponseHeaders: ", requestLogVo.getResponseEntity().getHeaders());
+            logInfo.put("HttpStatusCode: ", requestLogVo.getResponseEntity().getStatusCode());
+
+        }
+
+        if (gameSession != null) {
+            logInfo.put("VendorId: ", gameSession.getVendorId());
+            logInfo.put("GameToken: ", gameSession.getToken());
+            logInfo.put("AgentId: ", gameSession.getAgentId());
+            logInfo.put("AgentPlayerUsername: ", gameSession.getAgentPlayerUsername());
+            logInfo.put("VendorPlayerUsername: ", gameSession.getVendorPlayerUsername());
+            logInfo.put("VendorGameCode: ", gameSession.getVendorGameCode());
+
+        }
+
         logInfo.put("RequestStartTime: ", requestLogVo.getStartTime());
         logInfo.put("RequestEndTime: ", requestLogVo.getEndTime());
         logInfo.put("ServicePackage: ", requestLogVo.getPackageName());
@@ -169,6 +191,7 @@ public class RequestService {
     public static void successResponseLog(RequestLogVo requestLogVo) {
         Gson gson = new Gson();
         HashMap<String, Object> logInfo = new HashMap<>();
+        logInfo.put("ResponseLog: ", "SUCCESS");
         logInfo.put("ApiUrl: ", requestLogVo.getCallbackUrl() + requestLogVo.getEndpoint());
         logInfo.put("RequestHeaders: ", requestLogVo.getRequestHeaders());
         logInfo.put("RequestParam: ", requestLogVo.getRequestObject());

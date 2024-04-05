@@ -1,19 +1,11 @@
 package com.nextgen.gameaggregator.vendor.mg.api.betresult;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -22,8 +14,18 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.mg.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
 import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -38,7 +40,11 @@ public class UpdateBalanceAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
-    
+    @Autowired
+    private UnsettledBetService unsettledBetService;
+    @Autowired
+    private SettledBetService settledBetService;
+
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
         // Start the HTTP request logging
@@ -52,6 +58,9 @@ public class UpdateBalanceAction {
         UpdateBalanceVo updateBalanceVo = new UpdateBalanceVo();
         HttpHeaders headers = new HttpHeaders();
 
+        GameSession gameSession = null;
+        // Determine message for checkUnsettleAndSettleBet
+        StringBuilder message = new StringBuilder();
         try {
             // Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -60,42 +69,78 @@ public class UpdateBalanceAction {
             // Validate request parameters (Non-database calls)
             this.doValidation(dto);
             // Get GameSession by vendor player username
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             switch (dto.getTxnType()) {
                 case DEBIT -> {
                     validationService.validateEligibleBet(gameSession, dto.getPlayerId());
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, dto, body, httpRequestLog);
+                    BigDecimal balance = betEvent.getLastBalance();
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
-                    updateBalanceVo.setBalance(betEvent.getLastBalance());
+                    updateBalanceVo.setBalance(balance);
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
+                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message);
                     ResultType resultType = determineResultType(dto);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
                     updateBalanceVo.setBalance(balance);
                 }
-                default -> {
-                    status = HttpStatus.BAD_REQUEST;
-                }
+                default -> status = HttpStatus.INTERNAL_SERVER_ERROR;
             }
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
+            updateBalanceVo.setBalance(betResultIdempotentViolationException.getBalance());
+
+        } catch (
+                InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200, 400, 402, 404, 500
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
             status = HttpStatus.BAD_REQUEST;
 
-        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException|
-            DisabledGameException badRequestException) {
+        } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (BetNotFoundException betNotFoundException) {
+            httpService.logError(httpRequestLog, new BetNotFoundException(betNotFoundException.getMessage() + " | " + message.toString()));
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (InvalidPlayerException invalidPlayerException) {
+            httpService.logError(httpRequestLog, invalidPlayerException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             status = HttpStatus.BAD_REQUEST;
 
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
         } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             status = HttpStatus.PAYMENT_REQUIRED;
 
-        } catch (AuthenticationException| BetNotFoundException| InvalidPlayerException playerNotFoundException) {
-            status = HttpStatus.NOT_FOUND;
-
-        } catch (BetResultIdempotentViolationException internalErrorException) {
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        } catch (TransactionStillProcessingException internalErrorException) {
+            httpService.logError(httpRequestLog, internalErrorException);
+            status = HttpStatus.BAD_REQUEST;
 
         } catch (Exception exception) { // any other exception encountered
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -121,6 +166,25 @@ public class UpdateBalanceAction {
     }
 
     private ResultType determineResultType(UpdateBalanceDto dto) {
-        return dto.getCompleted() ? ResultType.END : (dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE);
+        // Completed True also will happen in Win Situation
+        return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
+    }
+
+    private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message) throws BetNotFoundException, BetResultIdempotentViolationException {
+        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(winDataDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
+        if (unsettledBetList.isEmpty()) {
+            try {
+                Optional<SettledBet> settledBetOptional = Optional.ofNullable(settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(winDataDto.getVendorBetId(), winDataDto.getRoundId(), gameSession.getVendorId(), gameSession.getVendorPlayerId()));
+                if (settledBetOptional.isPresent()) {
+                    throw new BetResultIdempotentViolationException(settledBetOptional.get());
+                }
+            } catch (BetNotFoundException betNotFoundException) {
+                message.append("MG Class File Exception Cannot find unsettled and settled bets with round Id: " + winDataDto.getRoundId());
+                throw betNotFoundException;
+            }
+        } else {
+            vendorService.setVendorClassFileUnsettledBetList(unsettledBetList);
+            unsettledBetList.stream().forEach(data -> message.append("unsettledBet : " + data.getInternalTransactionId() + " "));
+        }
     }
 }

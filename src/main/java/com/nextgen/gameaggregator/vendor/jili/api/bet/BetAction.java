@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.jili.api.bet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.GameSessionService;
@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.jili.service.VendorService;
-import com.nextgen.gameaggregator.vendor.pgsoft.constant.ResponseCodes;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.math.BigDecimal;
 
 @RestController
-@RequestMapping(path = EndPoints.PATH)
+@RequestMapping({EndPoints.PATH_JILI, EndPoints.PATH_TADA})
 @Slf4j
 public class BetAction {
     @Autowired
@@ -76,24 +75,29 @@ public class BetAction {
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             betVo.setUsername(vendorPlayerUsername);
             betVo.setCurrency(vendorCurrencyCode);
             betVo.setBalance(betResultIdempotentViolationException.getBalance());
             betVo.setToken(token);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidRequestException |
                  JsonProcessingException |
                  GameNotSupportedException |
                  CurrencyNotSupportedException invalidRequest) {
             betVo.setResponseCode(ResponseCode.INVALID_PARAMETER);
+            httpService.logError(httpRequestLog, invalidRequest);
 
         } catch (AuthenticationException invalidSessionToken) {
             betVo.setResponseCode(ResponseCode.TOKEN_EXPIRED);
+            httpService.logError(httpRequestLog, invalidSessionToken);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
             betVo.setResponseCode(ResponseCode.NOT_ENOUGH_BALANCE);
+            httpService.logError(httpRequestLog, insufficientBalanceException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //SC_INSUFFICIENT_FUNDS
@@ -109,8 +113,9 @@ public class BetAction {
                  DisabledAgentPlayerException |
                  BetNotFoundException |
                  InvalidAgentApiCredentialException |
-                 InvalidPlayerException e) {
+                 InvalidPlayerException otherErrorException) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
+            httpService.logError(httpRequestLog, otherErrorException);
 
         } catch (Exception exception) {
             betVo.setResponseCode(ResponseCode.OTHER_ERROR);
@@ -137,11 +142,7 @@ public class BetAction {
             CurrencyNotSupportedException,
             InvalidPlayerException {
 
-        // 1. Verify received token is the same from game session
-        // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), betDto.getToken(), AuthenticationException::new);
-
-        // 2. validate vendor username, agent vendor line, player status, and game status
+        // validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, gameSession.getVendorPlayerUsername());
 
         // Verify vendor gameCode and currency

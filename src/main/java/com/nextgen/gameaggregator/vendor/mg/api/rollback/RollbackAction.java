@@ -11,8 +11,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -51,7 +52,8 @@ public class RollbackAction {
         HttpStatus status = HttpStatus.OK;
         RollbackVo rollbackVo = new RollbackVo();
         HttpHeaders headers = new HttpHeaders();
-        Boolean refunded = false;
+        String vendorCurrencyCode = "";
+        BigDecimal balance = null;
 
         try {
             // Retrieve request body in original string format
@@ -64,21 +66,70 @@ public class RollbackAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
             // Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService);
+            balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
             rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
             rollbackVo.setBalance(balance);
 
-        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
-            refunded = true;
+        } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) { // Vendor only accept status 200 and 500
+        } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                status = HttpStatus.BAD_REQUEST;
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                balance = betResultIdempotentViolationException.getBalance();
+                rollbackVo.setCurrency(vendorCurrencyCode);
+                rollbackVo.setBalance(balance);
+            }
+
+        } catch (TransactionStillProcessingException transactionStillProcessingException) {
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (BetNotFoundException betNotFoundException) {
+            httpService.logError(httpRequestLog, betNotFoundException);
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (RecordNotFoundException recordNotFoundException) {
+            httpService.logError(httpRequestLog, recordNotFoundException);
+            status = HttpStatus.BAD_REQUEST;
+
+        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-
-        } catch (JsonProcessingException| InvalidAgentApiCredentialException|
-            InvalidRequestException| DisabledVendorLineException| DisabledAgentPlayerException| BetNotFoundException|
-            DisabledGameException| AuthenticationException| RecordNotFoundException invalidException) {
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            status = HttpStatus.BAD_REQUEST;
+        
+        } catch (BetRefundIdempotentViolationException betRefundIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betRefundIdempotentViolationException);
+            status = HttpStatus.BAD_REQUEST;
 
         } catch (Exception exception) { // any other exception encountered
             status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -86,20 +137,6 @@ public class RollbackAction {
 
         } finally {
             httpService.end(httpRequestLog, rollbackVo);
-        }
-
-        // Set back balance when already refunded
-        if (refunded) {
-            try {
-                String body = httpRequestLog.getRequestBody();
-                RollbackDto dto = HttpService.convertJsonToDto(body, RollbackDto.class);
-                GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getPlayerId());
-                BigDecimal balance = walletService.getBalance(traceId, gameSession);
-                rollbackVo.setCurrency(gameSession.getVendorCurrencyCode());
-                rollbackVo.setBalance(balance);
-            } catch (Exception exception) {
-                status = HttpStatus.INTERNAL_SERVER_ERROR;
-            }
         }
 
         // Calculate response time and add it to the headers

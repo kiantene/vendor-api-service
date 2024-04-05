@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.evolutionlive.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -70,7 +70,8 @@ public class GameUrlService implements GameUrl {
         ConfigChannelDto configChannelDto = vendorService.setConfigChannelDto(gameSession);
         GameTableDto gameTableDto = vendorService.setGameTableDto(gameSession);
         ConfigGameDto configGameDto = vendorService.setConfigGameDto(gameTableDto);
-        ConfigDto configDto = vendorService.setConfigDto(configGameDto, configChannelDto);
+        ConfigUrlsDto configUrlsDto = vendorService.setConfigUrlsDto(gameSession);
+        ConfigDto configDto = vendorService.setConfigDto(configGameDto, configChannelDto, configUrlsDto);
 
         Map<String, Object> formDataMap = new HashMap<>();
         formDataMap.put("uuid", UUID.randomUUID().toString());
@@ -112,6 +113,7 @@ public class GameUrlService implements GameUrl {
             assert apiResponse != null;
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), GameUrlVo.class);
+            responseVo.setGameUrl(apiUrl);
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
@@ -119,7 +121,7 @@ public class GameUrlService implements GameUrl {
             RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
         }

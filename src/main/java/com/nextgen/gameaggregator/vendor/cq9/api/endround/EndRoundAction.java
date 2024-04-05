@@ -2,7 +2,8 @@ package com.nextgen.gameaggregator.vendor.cq9.api.endround;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -17,7 +18,6 @@ import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,14 +63,10 @@ public class EndRoundAction {
         String vendorCurrencyCode = "";
 
         try {
-            // Retrieve request body in original string format
-            String body = httpRequestLog.getRequestBody();
-
             // Convert original request body into dto
-            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(body, EndRoundDto.class);
+            EndRoundDto endRoundDto = HttpService.convertQueryStringToDtoUrlDecode(httpRequestLog, EndRoundDto.class);
             ValidationUtils.validateRequest(endRoundDto);
-            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {
-            });
+            List<EndRoundDataDto> endRoundDataDtoList = HttpService.convertJsonToDto(endRoundDto.getData(), new TypeReference<>() {});
 
             // 1. Validate request parameters from vendor
             this.doValidation(endRoundDto, endRoundDataDtoList, wToken);
@@ -99,21 +95,27 @@ public class EndRoundAction {
             commonVo.setBalance(betResultIdempotentViolationException.getBalance());
             commonVo.setCurrency(vendorCurrencyCode);
             responseVo.setData(commonVo);
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (AuthenticationException authenticationException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, authenticationException);
 
         } catch (BetNotFoundException betNotFoundException) {
             statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, credentialNotFoundException);
 
         } catch (DateTimeParseException dateTimeParseException) {
             statusVo.setCode(ResponseCodes.TIME_FORMAT_ERROR);
+            httpService.logError(httpRequestLog, dateTimeParseException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
@@ -121,6 +123,7 @@ public class EndRoundAction {
 
         } catch (InvalidPlayerException invalidPlayerException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidPlayerException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
@@ -128,11 +131,15 @@ public class EndRoundAction {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
 
+            httpService.logError(httpRequestLog, invalidRequestException);
+
         } catch (InvalidVendorLineException invalidVendorLineException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
+            httpService.logError(httpRequestLog, invalidVendorLineException);
 
         } catch (JsonProcessingException jsonProcessingException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
+            httpService.logError(httpRequestLog, jsonProcessingException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

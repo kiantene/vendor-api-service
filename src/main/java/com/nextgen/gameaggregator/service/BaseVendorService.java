@@ -1,13 +1,21 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.SettledBet;
+import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public abstract class BaseVendorService {
+    @Autowired
+    private VendorGameService vendorGameService;
+    @Autowired
+    private GameSessionService gameSessionService;
+
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
         BigDecimal winAmount = Optional.ofNullable(betInfo.getWinAmount()).orElse(BigDecimal.ZERO);
@@ -19,7 +27,15 @@ public abstract class BaseVendorService {
     }
 
     public BigDecimal calculateEffectiveTurnover(BetInformation betInfo) {
-        return betInfo.getBetAmount();
+
+        BigDecimal effectiveTurnover = betInfo.getEffectiveTurnover();
+
+        //if in the end betData still have null/0 effectiveTurnover, will be using betAmount as effectiveTurnover
+        if (effectiveTurnover == null || effectiveTurnover.compareTo(BigDecimal.ZERO) == 0) {
+            effectiveTurnover = betInfo.getBetAmount();
+        }
+
+        return effectiveTurnover;
     }
 
     //calculate ResultType for sending to operator
@@ -48,5 +64,24 @@ public abstract class BaseVendorService {
     public SettledBet updateSettleBetDataBeforeInsertToKafka(SettledBet settledBet, String rawData) {
 
         return settledBet;
+    }
+
+    public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {
+
+        //if vendorGameCode is not matched with gameSession vendorGameCode, then regenerate the new vendorGameCode details
+        if (vendorGameCode != gameSession.getVendorGameCode()) {
+            VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, gameSession.getVendorId());
+            gameSession.setGameCode(vendorGame.getCode());
+            gameSession.setVendorGameId(vendorGame.getId());
+            gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
+            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+            gameSessionService.updateSession(gameSession);
+        }
+
+        return gameSession;
+    }
+
+    public List<UnsettledBet> getVendorClassFileUnsettledBetList() {
+        return Collections.emptyList();
     }
 }

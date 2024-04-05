@@ -1,22 +1,27 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.UnsettledBet;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +30,8 @@ import java.util.Optional;
 public class UnsettledBetService {
     @Autowired
     private RawUnsettledBetRepository rawUnsettledBetRepository;
+    @Autowired
+    private BetIdempotentLogService betIdempotentLogService;
 
     /**
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
@@ -79,12 +86,20 @@ public class UnsettledBetService {
      */
     @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public void delete(UnsettledBet entity) {
-        rawUnsettledBetRepository.delete(entity);
+        try {
+            rawUnsettledBetRepository.delete(entity);
+        } catch (DataRetrievalFailureException e) {
+            // if cannot find document id will cause this exception
+        }
     }
 
     @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public void deleteWithoutClearingCache(UnsettledBet entity) {
-        rawUnsettledBetRepository.delete(entity);
+        try {
+            rawUnsettledBetRepository.delete(entity);
+        } catch (DataRetrievalFailureException e) {
+            // if cannot find document id will cause this exception
+        }
     }
 
     public UnsettledBet findBetsForRollback(Long vendorPlayerId, String externalTransactionId)
@@ -96,9 +111,10 @@ public class UnsettledBetService {
         } else {
             Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
             Integer operatorStatus = unsettledBet.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(unsettledBet.getCreateTime());
+
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
-                log.warn("getByVendorPlayerIdAndExternalTransactionId.processing: externalTransactionId (" + unsettledBet.getExternalTransactionId() + ") vendorPlayerId (" + unsettledBet.getVendorPlayerId() + ")");
+            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
             }
 
@@ -121,6 +137,21 @@ public class UnsettledBetService {
         return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(roundId, vendorGameId, vendorPlayerId);
     }
 
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
+    public List<UnsettledBet> getByRoundIdRetry(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
+        List<UnsettledBet> unsettledBets = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(roundId, vendorGameId, vendorPlayerId);
+        if (unsettledBets.isEmpty()) {
+            throw new BetNotFoundException();
+        }
+        return unsettledBets;
+    }
+
+    @Recover
+    public List<UnsettledBet> recoverData(BetNotFoundException ex) {
+        // Handle recovery logic here, such as returning a default value or logging the error
+        return Collections.emptyList();
+    }
+
     public UnsettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData, String rawData, ResultType resultType)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
@@ -136,14 +167,13 @@ public class UnsettledBetService {
         try {
             unsettledBet = this.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
             Integer operatorStatus = unsettledBet.getOperatorStatus();
+            Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(unsettledBet.getCreateTime());
 
             // throw idempotent exception if status is processing or success
-            if (operatorStatus.equals(operatorStatusProcessing)) {
-                log.warn("idempotentCheck.processing [" + traceId + "]: transactionId (" + transactionId + ") roundId (" + roundId + ")");
+            if (operatorStatus.equals(operatorStatusProcessing) && betTimingDifferenceInMillieSeconds < betIdempotentLogService.getTimingDifferenceForStillProcessing()) {
                 throw new TransactionStillProcessingException();
 
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
-                log.warn("idempotentCheck.success [" + traceId + "]: transactionId (" + transactionId + ") roundId (" + roundId + ")");
                 throw new BetResultIdempotentViolationException(unsettledBet);
 
             } else { // when bet result found and operator status is error, set status back to processing and resend txn to operator

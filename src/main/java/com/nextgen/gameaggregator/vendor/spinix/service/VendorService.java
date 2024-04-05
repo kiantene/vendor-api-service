@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.spinix.service;
 
-import com.nextgen.gameaggregator.entity.BetInformation;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.BetInformation;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
 import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
@@ -156,7 +156,7 @@ public class VendorService extends BaseVendorService {
             String reqId = dto.getReqId();
             roundPayoutVo.setReqId(reqId);
 
-            BigDecimal balance = walletService.getBalance(traceId, gameSession);
+            BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
 //            if(gameSession.getVendorCurrencyCode().equals("IDR") || gameSession.getVendorCurrencyCode().equals("VND")) {
 //                balance = balance.multiply(new BigDecimal("1000"));

@@ -1,6 +1,8 @@
 package com.nextgen.gameaggregator.vendor.cq9.api.refund;
 
-import com.nextgen.gameaggregator.entity.*;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -13,7 +15,6 @@ import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.cq9.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.ResponseVo;
 import com.nextgen.gameaggregator.vendor.cq9.vo.StatusVo;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.ResponseCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -72,7 +73,6 @@ public class RefundAction {
             this.doValidation(refundDto, wToken);
 
             // 2. Gather require data
-            // TODO: get vendor id by vendor code
             Integer vendorId = vendorService.findVendorByCode(Credentials.VENDOR_CODE).getId();
             UnsettledBet unsettledBet = unsettledBetService.getByVendorIdAndExternalTransactionId(vendorId, refundDto.getMtcode());
 
@@ -84,7 +84,7 @@ public class RefundAction {
             this.doVerification(refundDto, wToken, unsettledBet);
 
             // 5. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, refundDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setBalance(balance);
             commonVo.setCurrency(vendorCurrencyCode);
@@ -92,6 +92,7 @@ public class RefundAction {
 
         } catch (BetNotFoundException betNotFoundException) {
             statusVo.setCode(ResponseCodes.TRANSACTION_RECORD_NOT_FOUND);
+            httpService.logError(httpRequestLog, betNotFoundException);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
             //if found the bet in settled status
@@ -105,9 +106,11 @@ public class RefundAction {
                 responseVo.setData(commonVo);
 
             }
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (TransactionStillProcessingException transactionStillProcessingException) {
             statusVo.setCode(ResponseCodes.SERVER_ERROR);
+            httpService.logError(httpRequestLog, transactionStillProcessingException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 15) {
@@ -125,13 +128,15 @@ public class RefundAction {
                  InvalidAgentApiCredentialException |
                  InvalidVendorLineException playerNotFoundException) {
             statusVo.setCode(ResponseCodes.PLAYER_NOT_FOUND);
-
+            httpService.logError(httpRequestLog, playerNotFoundException);
 
         } catch (InvalidRequestException invalidRequestException) {
             statusVo.setCode(ResponseCodes.PARAMETER_ERROR);
             if (invalidRequestException.getValidation() != null) {
                 httpRequestLog.setErrorMessage(invalidRequestException.getValidation().toString());
             }
+
+            httpService.logError(httpRequestLog, invalidRequestException);
 
         } catch (Exception exception) { // any other exception encountered
             statusVo.setCode(ResponseCodes.SERVER_ERROR);

@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -35,6 +35,8 @@ public class SettleAction {
     private ValidationService validationService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorLineService vendorLineService;
 
     @PostMapping(path = Endpoints.SETTLE_BET)
     public CommonVo settle(HttpServletRequest request) {
@@ -51,7 +53,7 @@ public class SettleAction {
             this.doValidation(dto);
 
             // 3. Verify session token
-            GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(dto.getUsername());
+            GameSession gameSession = gameSessionService.verifyToken(dto.getToken());
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -68,12 +70,15 @@ public class SettleAction {
             responseVo.setTimestamp(System.currentTimeMillis());
 
         } catch (JsonProcessingException jsonProcessingException) {
+            httpService.logError(httpRequestLog, jsonProcessingException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (AuthenticationException authenticationException) {
+            httpService.logError(httpRequestLog, authenticationException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (BetNotFoundException betNotFoundException) {
+            httpService.logError(httpRequestLog, betNotFoundException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
@@ -81,36 +86,47 @@ public class SettleAction {
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
+            httpService.logError(httpRequestLog, invalidAgentApiCredentialException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (MergedBetDataIntegrityException mergedBetDataIntegrityException) {
+            httpService.logError(httpRequestLog, mergedBetDataIntegrityException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InsufficientBalanceException insufficientBalanceException) {
+            httpService.logError(httpRequestLog, insufficientBalanceException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            httpService.logError(httpRequestLog, betResultIdempotentViolationException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidRequestException invalidRequestException) {
+            httpService.logError(httpRequestLog, invalidRequestException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidPlayerException invalidPlayerException) {
+            httpService.logError(httpRequestLog, invalidPlayerException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (CredentialNotFoundException credentialNotFoundException) {
+            httpService.logError(httpRequestLog, credentialNotFoundException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (InvalidSignatureException invalidSignatureException) {
+            httpService.logError(httpRequestLog, invalidSignatureException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledAgentPlayerException disabledAgentPlayerException) {
+            httpService.logError(httpRequestLog, disabledAgentPlayerException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledVendorLineException disabledVendorLineException) {
+            httpService.logError(httpRequestLog, disabledVendorLineException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (DisabledGameException disabledGameException) {
+            httpService.logError(httpRequestLog, disabledGameException);
             responseVo.setResponseCode(ResponseCode.ERROR);
 
         } catch (Exception exception) { // any other exception encountered
@@ -134,9 +150,11 @@ public class SettleAction {
             AuthenticationException, DisabledAgentPlayerException, DisabledVendorLineException, DisabledGameException {
 
         validationService.validateEligibleBet(gameSession, dto.getUsername());
+        // Verify operator ID
+        ValidationUtils.isEquals(vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), "operator"), dto.getOperatorId(), CredentialNotFoundException::new);
     }
 
     private ResultType determineResultType(SettleDto dto) {
-        return dto.getPayout().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.LOSE;
+        return dto.getPayout().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : ResultType.END;
     }
 }

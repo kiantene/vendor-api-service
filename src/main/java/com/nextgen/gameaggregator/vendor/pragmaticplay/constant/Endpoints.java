@@ -7,6 +7,8 @@ public class Endpoints {
     public static final String PATH = "api/v1/pragmaticplay/";
     public static final String GAME_URL = "/game/url";
     public static final String OPEN_HISTORY = "/OpenHistory/";
+    public static final String OPEN_HISTORY_EXTENDED = "/OpenHistoryExtended/";
+
     public static final String AUTHENTICATE = "authenticate";
     public static final String BALANCE = "balance";
     public static final String BET = "bet";
@@ -16,4 +18,5 @@ public class Endpoints {
     public static final String BONUS = "bonusWin";
     public static final String PROMO = "promoWin";
     public static final String END_ROUND = "endRound";
+    public static final String ADJUSTMENT = "adjustment";
 }

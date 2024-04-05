@@ -1,15 +1,15 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.gameurl;
 
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.InvalidFormatException;
 import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
-import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.habanero.constant.Credentials;
-import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
+import com.nextgen.gameaggregator.vendor.habanero.constant.EndPoints;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Map;
 
@@ -33,10 +33,14 @@ public class GameUrlService implements GameUrl {
             throws InvalidVendorLineException {
         GameUrlVo responseVo = new GameUrlVo();
 
-        //Get Vendor game URL
-        String urlScheme = credentials.get(Credentials.API_URL) + EndPoints.GAME_URL;
         //Construct the Game URL
-        String gameUrl = VendorService.generateUrl(urlScheme, formData);
+        String gameUrl = UriComponentsBuilder.fromUriString(credentials.get(Credentials.API_URL))
+                .path(EndPoints.GAME_URL)
+                .queryParams(formData)
+                .build()
+                .encode()
+                .toUri()
+                .toString();
 
         //Save this player's game session
         //Set the game URL and return to Operator

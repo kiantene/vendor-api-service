@@ -1,26 +1,30 @@
 package com.nextgen.gameaggregator.vendor.spadegaming.api.transfer;
 
-import java.math.BigDecimal;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-
-import org.hibernate.validator.constraints.Range;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.constraints.Range;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Data
 @Slf4j
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
+
 public class WinDataDto implements BetResultData {
     @NotBlank
     @Size(max = 50)
@@ -64,6 +68,7 @@ public class WinDataDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String serialNo;
 
+    @NotBlank
     @Size(max = 20)
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_REGEX)
     private String ticketId;
@@ -82,11 +87,10 @@ public class WinDataDto implements BetResultData {
 
     @NotNull
     private String transferTime;
-    
+
     private String betId;
     private BigDecimal vendorWinLoss;
-    private BigDecimal effectiveTurnover;
-    
+
     public String getAcctId() {
         return this.acctId.toLowerCase();
     }
@@ -98,12 +102,7 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        if (getSpecialGame() != null) {
-            // Use transfer id if free spin
-            return (getSpecialGame().getType().equals("Free")) ? transferId : referenceId;
-        } else {
-            return referenceId;
-        }
+        return this.transferId;
     }
 
     @Override
@@ -118,9 +117,9 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
+        // Bet amount is zero when (free spin,bonus,free bonus,bonus free)
         if (getSpecialGame() != null) {
-            // Bet amount is zero when free spin
-            return (getSpecialGame().getType().equals("Free")) ? BigDecimal.ZERO : null;
+            return (getSpecialGame().getType() != null && getSpecialGame().getSequence() > 0) ? BigDecimal.ZERO : null;
         } else {
             return null;
         }
@@ -138,12 +137,12 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        return this.effectiveTurnover;
+        return null;
     }
 
     @Override
     public Long getVendorBetTime() {
-        return null;
+        return convertTimestampToUnix(getTransferTime());
     }
 
     @Override
@@ -163,8 +162,9 @@ public class WinDataDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
+        //free spin,bonus,free bonus,bonus free
         if (getSpecialGame() != null) {
-            return (getSpecialGame().getType().equals("Free")) ? 1 : 0;
+            return (getSpecialGame().getType() != null && getSpecialGame().getSequence() > 0) ? 1 : 0;
         } else {
             return 0;
         }
@@ -179,11 +179,12 @@ public class WinDataDto implements BetResultData {
     }
 
     public Long convertTimestampToUnix(String transferTime) {
-       try {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-            Date date = dateFormat.parse(transferTime);
-            long unixTimestamp = date.getTime() / 1000L;
-            return unixTimestamp;
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            LocalDateTime localDateTime = LocalDateTime.parse(transferTime, formatter);
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("GMT+8"));
+            long unixTimestampSeconds = zonedDateTime.toEpochSecond();
+            return unixTimestampSeconds * 1000;
         } catch (Exception exception) {
             log.error(transferTime, exception);
             return null;

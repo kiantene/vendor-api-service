@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.vendor.joker.api.bet;
 
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -66,7 +66,7 @@ public class BetAction {
             this.doVerification(httpRequestLog, betDto, gameSession);
 
             //Process full bet data
-            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body);
+            BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, body, httpRequestLog);
 
             //return double balance and success code
             commonVo.setResponseCode(ResponseCodes.SUCCESS);

@@ -7,7 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -47,47 +48,64 @@ public class CancelBetService {
             this.doVerification(cancelBetDto, gameSession);
     
             // 4. Send refund to Operator
-            balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService);
-    
+            balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService, actionDto.getHttpRequestLog());
+            
+            vo.setBalance(balance);
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
+
         } catch (BetRefundIdempotentViolationException | RecordNotFoundException successException) {
             vo.setSuccessResponseCode(ResponseCode.SUCCESS);
+
         } catch (AuthenticationException | InvalidPlayerException playerNotFoundException) {
             vo.setErrorResponseCode(ResponseCode.PLAYER_NOT_FOUND);
+
         } catch (InvalidAgentApiCredentialException invalidAgentApiCredentialException) {
             vo.setErrorResponseCode(ResponseCode.NO_AUTHORIZED);
+
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+            if (invalidOperatorResponseException.getOperatorStatus() == 11) {
+                //insufficient balance
+                vo.setErrorResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
+
+            } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
+                //Operator Bet not found
+                vo.setErrorResponseCode(ResponseCode.FAILED);
+
+            } else {
+                //Other operator errors
+                vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+
+            }
         } catch (InvalidRequestException invalidRequestException) {
             if (invalidRequestException.getValidation() != null) {
                 String violation = invalidRequestException.getValidation()
                         .entrySet().stream().findFirst().map(Map.Entry::getValue).orElse(ResponseCode.INVALID_REQUEST_PARAMETER);
                 vo.setErrorResponseCode(violation);
+
             } else {
                 vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+
             }
         } catch (JsonProcessingException jsonProcessingException) {
             vo.setErrorResponseCode(ResponseCode.INVALID_REQUEST_PARAMETER);
+
         } catch (DisabledAgentPlayerException | DisabledVendorLineException | CurrencyNotSupportedException | DisabledGameException exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
+
+        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
+            if (betResultIdempotentViolationException.getStatus() == BetStatus.SETTLED.code) {
+                //if found the bet in settled status
+                vo.setErrorResponseCode(ResponseCode.CANNOT_CANCEL);
+
+            } else {
+                //if found the bet other in settled status (cancel / refund)
+                vo.setBalance(betResultIdempotentViolationException.getBalance());
+                vo.setSuccessResponseCode(ResponseCode.SUCCESS);
+
+            }
         } catch (Exception exception) {
             vo.setErrorResponseCode(ResponseCode.FAILED);
-        }
-    
-        // Set back balance when BetRefundIdempotentViolationException thrown
-        if (vo.getStatus() == ResponseCode.SUCCESS){
-            if (balance != null) {
-                vo.setBalance(balance);
-            } else {
-                try {
-                    CancelBetDto cancelBetDto = HttpService.convertJsonToDto(actionDto.getParams(), CancelBetDto.class);
-                    GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(cancelBetDto.getUid());
-                    balance = walletService.getBalance(traceId, gameSession);
-                    vo.setBalance(balance);
-                } catch (Exception e) {
-                    vo.setErrorResponseCode(ResponseCode.FAILED);
-                }
-            }
+
         }
     
         return vo;

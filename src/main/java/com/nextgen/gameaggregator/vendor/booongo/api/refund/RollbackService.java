@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.booongo.api.refund;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -68,7 +68,7 @@ public class RollbackService {
             this.doVerification(rollbackDto, gameSession);
 
             // Retrieve the latest wallet balance from Operator
-            balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService);
+            balance = walletService.processRollback(traceId, rollbackDto, gameSession, vendorService, httpRequestLog);
 
             // Construct response data into vo
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
@@ -95,7 +95,7 @@ public class RollbackService {
         }catch(BetNotFoundException |
                BetRefundIdempotentViolationException |
                BetResultIdempotentViolationException e){
-            balance = getCurrentBalance(traceId, gameSession);
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
 
             balanceVo.setValue(balance.setScale(2, RoundingMode.DOWN).toString());
             balanceVo.setVersion(BigInteger.valueOf(unixTime));
@@ -148,12 +148,12 @@ public class RollbackService {
         ValidationUtils.isEquals(brand, dto.getArgs().getPlayer().getBrand(), InvalidRequestException::new);
     }
 
-    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession) {
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
 
         BigDecimal balance = BigDecimal.ZERO;
 
         try {
-            balance = walletService.getBalance(traceId, gameSession);
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
         } catch (Exception exception) {
 

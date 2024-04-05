@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.spinix.api.gameurl;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.GameSession;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
@@ -60,6 +60,7 @@ public class GameUrlService implements GameUrl {
         HashMap<String, String> settings = new HashMap<>();
         settings.put("lang", gameSession.getLanguage());
         settings.put("sd", sound);
+        settings.put("eurl", gameSession.getLobbyUrl());
         arrayMap.put("settings", settings);
         String json = new Gson().toJson(arrayMap);
 
@@ -118,7 +119,7 @@ public class GameUrlService implements GameUrl {
             RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-            RequestService.failResponseLog(requestLogVo, invalidException);
+            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
         }

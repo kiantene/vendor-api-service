@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.vendor.evolutionlive.api.refund;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.RawUnsettledBetRepository;
+import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
@@ -59,6 +59,7 @@ public class CancelAction {
 
             // 2. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(cancelDto.getSid());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(cancelDto, gameSession);
 
@@ -70,7 +71,7 @@ public class CancelAction {
 //            }
 
             // 3. Send refund to Operator
-            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService);
+            BigDecimal balance = walletService.processRollback(traceId, cancelDto, gameSession, vendorService, httpRequestLog);
 
 //            responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
             responseVo.setBalance(balance);
@@ -94,11 +95,14 @@ public class CancelAction {
                  DisabledAgentPlayerException |
                  DisabledGameException |
                  InvalidAgentApiCredentialException |
-                 InvalidOperatorResponseException e) {
+                 InvalidOperatorResponseException |
+                 TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCode.TEMPORARY_ERROR);
             httpService.logError(httpRequestLog, e);
         } catch (BetRefundIdempotentViolationException e) {
             responseVo.setResponseCode(ResponseCode.BET_ALREADY_EXIST);
+        } catch (BetResultIdempotentViolationException e) {
+            responseVo.setResponseCode(ResponseCode.BET_ALREADY_SETTLED);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCode.UNKNOWN_ERROR);
             httpService.logError(httpRequestLog, e);
@@ -127,8 +131,9 @@ public class CancelAction {
             InvalidPlayerException {
 
         // 1. Verify Username, GameCode, CurrencyCode
+        ValidationUtils.isEquals(gameSession.getToken(), cancelDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
+        //ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelDto.getCurrency(), CurrencyNotSupportedException::new);
 
         // 2. Verify vendor line is active

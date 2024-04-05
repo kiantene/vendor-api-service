@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.vendor.evoplay.api.endround;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.GameSession;
-import com.nextgen.gameaggregator.entity.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.AgentPlayerService;
@@ -54,7 +54,8 @@ public class WinService {
             InsufficientBalanceException,
             BetNotFoundException,
             InvalidOperatorResponseException,
-            TransactionStillProcessingException {
+            TransactionStillProcessingException,
+            VendorCurrencyNotSupportException {
 
         callbackDto.getData().setDetailsDto(new Gson().fromJson(callbackDto.getData().getDetails(), DetailsDto.class));
         WinDto winDto = new ModelMapper().map(callbackDto, WinDto.class);
