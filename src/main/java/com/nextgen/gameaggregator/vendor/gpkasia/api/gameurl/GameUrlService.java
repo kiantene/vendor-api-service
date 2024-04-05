@@ -162,10 +162,6 @@ public class GameUrlService implements GameUrl {
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
 
-        log.info("create member url: " + uri);
-        log.info("create member request: " + createPlayer);
-        log.info("create member response: " +apiResponse.getBody());
-
         return apiResponse;
     }
 
@@ -189,10 +185,6 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
-
-        log.info("login game url: " + uri);
-        log.info("login game request: " + loginGame);
-        log.info("login game response: " +apiResponse.getBody());
 
         return apiResponse;
     }
