@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @Slf4j
@@ -55,7 +56,7 @@ public class BalanceService {
             vo.setCode(0);
             vo.setMsg("Get the current balance of this member");
 
-            dataVo.setCash(String.valueOf(balance));
+            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setUser(balanceDto.getUser());
             dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
 
