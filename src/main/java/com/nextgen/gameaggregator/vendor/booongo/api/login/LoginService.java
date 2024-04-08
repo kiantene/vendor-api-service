@@ -74,7 +74,7 @@ public class LoginService {
             loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
 
             // check stg vendor user name(testing acc from vendor)
-            if(gameSession.getVendorPlayerUsername().equalsIgnoreCase("40hctq6mi")){
+            if(gameSession.getVendorPlayerUsername().equalsIgnoreCase("2z2kpq8zi")){
                 loginPlayer.setIs_test(true); //if this param value is not same as previous login, it will cause unable to login game
             }
 
