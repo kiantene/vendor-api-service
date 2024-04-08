@@ -114,8 +114,7 @@ public class BetDto implements BetResultData {
 
         //if handle fish
         if(this.gameType.equals(1)){
-//            long dateChangeVendorBetId = 1711929600000L; // April 01 2024 GMT + 0
-            return (this.getVendorBetTime() < 1709222400000L) ? recordID : bankID;
+            return this.bankID;
         }
 
         // if handle slot
