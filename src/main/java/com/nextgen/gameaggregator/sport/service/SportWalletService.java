@@ -251,7 +251,7 @@ public class SportWalletService {
             BigDecimal newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount() != null ? sportUnsettledBetCouchbase.getNewBetAmount() : sportUnsettledBetCouchbase.getBetAmount();
             sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
             sportUnsettledBetCouchbase.setEffectiveTurnover(newBetAmount);
-            sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
+            //sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
             sportUnsettledBetCouchbase.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
             sportUnsettledBetCouchbase.setResultTime(sportUnsettledBetCouchbase.getVendorSettleTime());
 
@@ -277,6 +277,7 @@ public class SportWalletService {
 
             // Insert record bet_history (MariaDB)
             BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
+            betHistory.setResettleNum((betHistory.getResettleNum() != null && betHistory.getResettleNum() > 0) ? betHistory.getResettleNum() + 1 : 0);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
             // Insert record into sport_settled_bet (Couchbase)
