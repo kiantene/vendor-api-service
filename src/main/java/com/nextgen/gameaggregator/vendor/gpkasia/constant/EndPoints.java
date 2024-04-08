@@ -8,9 +8,10 @@ public class EndPoints {
 
     public static final String PATH = "api/v1/gpk";
 
+    // API url call from vendor
+    public static final String ACTION = "/action";
+
     public static final String CREATE_PLAYER = "CreateUser";
 
     public static final String LAUNCH_GAME = "LoginGame";
-
-    public static final String BALANCE = "CallBalance";
 }
