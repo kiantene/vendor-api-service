@@ -222,8 +222,8 @@ public class SportWalletService {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getExternalTransactionId());
         sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
-        String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
-        Integer isResettlementBet = 0;
+        //String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
+        // Integer isResettlementBet = 0;
         BetEvent betEvent = null;
 
         try {
@@ -235,7 +235,7 @@ public class SportWalletService {
 
             } else {
                 //if record is found but newBetAmount and winAmount is not same with sportBetResultData, then it is a resettleBet then set a new betId for it.
-                isResettlementBet = 1;
+                // isResettlementBet = 1;
 
             }
 
@@ -255,11 +255,11 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
             sportUnsettledBetCouchbase.setResultTime(sportUnsettledBetCouchbase.getVendorSettleTime());
 
-            if (isResettlementBet == 1 || sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
-                //if its resettled or the bet is unsettled from settle bet (betResultType = Adjustment), then should generate as a new betId
-                sportUnsettledBetCouchbase.setBetId(traceId);
-
-            }
+//            if (isResettlementBet == 1 || sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
+//                //if its resettled or the bet is unsettled from settle bet (betResultType = Adjustment), then should generate as a new betId
+//                sportUnsettledBetCouchbase.setBetId(traceId);
+//
+//            }
 
         } else {
             //If operatorStatus is not OK, which mean is a resend request, the data should not be updated again and send with same betId but different traceId
@@ -283,7 +283,7 @@ public class SportWalletService {
             sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
 
             //this to handle sportUnsettledBetCouchbase as settledBet with newId to send to operator but set back old betId to handle delete unsettledBet
-            sportUnsettledBetCouchbase.setBetId(unsettledBetId);
+            //sportUnsettledBetCouchbase.setBetId(unsettledBetId);
 
             // Delete record in sport_unsettled_bet (Couchbase)
             sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
@@ -336,7 +336,7 @@ public class SportWalletService {
 
         }
 
-        String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
+        //String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
 
         //TODO HANDLE WITH BETIDEMPOTENT LOG
         if (sportUnsettledBetCouchbase.getStatus().compareTo(BetStatus.REFUNDED.code) == 0)
@@ -347,8 +347,8 @@ public class SportWalletService {
         }
 
         if (sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
-            //if this bet from unsettle bet (betResultType = Adjustment), then should generate as a new betId
-            sportUnsettledBetCouchbase.setBetId(traceId);
+            //if this bet from unsettle bet (betResultType = Adjustment), then should generate as a new resettle_num + 1 unsettledBet
+            //sportUnsettledBetCouchbase.setBetId(traceId);
         }
 
         httpRequestLog.setVendorId(sportUnsettledBetCouchbase.getVendorId());
@@ -389,7 +389,7 @@ public class SportWalletService {
         sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
 
         //this to handle sportUnsettledBetCouchbase as settledBet with newId to send to operator but set back old betId to handle delete unsettledBet
-        sportUnsettledBetCouchbase.setBetId(unsettledBetId);
+        //sportUnsettledBetCouchbase.setBetId(unsettledBetId);
 
         // Delete record in sport_unsettled_bet (Couchbase)
         sportUnsettledBetService.delete(sportUnsettledBetCouchbase);
@@ -406,7 +406,7 @@ public class SportWalletService {
 
         BetEvent betEvent = null;
         SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportUnsettleData.getVendorPlayerUsername(), sportUnsettleData.getExternalTransactionId());
-        sportSettledBet.setBetId(traceId);
+        //sportSettledBet.setBetId(traceId);
 
         try {
             SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportSettledBet.toSportUnsettleBetCouchbase();
@@ -461,7 +461,7 @@ public class SportWalletService {
     public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException {
         BetEvent betEvent = null;
         SportSettledBet sportSettledBet = sportSettledBetService.getByExternalTransactionId(sportResettleData.getVendorPlayerUsername(), sportResettleData.getExternalTransactionId());
-        sportSettledBet.setBetId(traceId);
+        //sportSettledBet.setBetId(traceId);
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
