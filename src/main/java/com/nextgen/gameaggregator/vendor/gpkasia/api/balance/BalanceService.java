@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
@@ -53,8 +54,7 @@ public class BalanceService {
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            vo.setCode(0);
-            vo.setMsg("Get the current balance of this member");
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setUser(balanceDto.getUser());
@@ -70,12 +70,10 @@ public class BalanceService {
                  DisabledVendorLineException |
                  CredentialNotFoundException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCode(1001);
-            vo.setMsg("Error");
+            vo.setCodeMsg(ResponseCodes.ERROR);
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
-            vo.setCode(1001);
-            vo.setMsg("Error");
+            vo.setCodeMsg(ResponseCodes.ERROR);
         }
 
         return vo;
