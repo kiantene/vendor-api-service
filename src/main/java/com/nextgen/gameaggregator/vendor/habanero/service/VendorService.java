@@ -61,6 +61,19 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public static Long dateTimeConvert(String rawDateTime) {
+
+        //convert date time string to timestamp
+        Long timestamp = null;
+        if (rawDateTime != null) {
+            LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ISO_DATE_TIME);
+            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC"));
+            timestamp = zonedDateTime.toInstant().toEpochMilli();
+        }
+        return timestamp;
+
+    }
+
     public void unsettledBetIdempotentCheck(GameSession gameSession, String vendorBetId, String roundId)
             throws TransactionStillProcessingException, BetResultIdempotentViolationException {
 
@@ -127,7 +140,8 @@ public class VendorService extends BaseVendorService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(vendorBetId, roundId, vendorId, vendorPlayerId);
+            // Add retry to find settled bet, because DNC request (debit & credit) and Query request very frequently
+            settledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerIdRetry(vendorBetId, roundId, vendorId, vendorPlayerId);
 
             if (settledBet != null) { // duplicate request found in settled_bet
                 Integer operatorStatus = settledBet.getOperatorStatus();
@@ -145,19 +159,6 @@ public class VendorService extends BaseVendorService {
         } catch (BetNotFoundException betNotFoundException) {
             //no action
         }
-    }
-
-    public static Long dateTimeConvert(String rawDateTime) {
-
-        //convert date time string to timestamp
-        Long timestamp = null;
-        if (rawDateTime != null) {
-            LocalDateTime localDateTime = LocalDateTime.parse(rawDateTime, DateTimeFormatter.ISO_DATE_TIME);
-            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.of("UTC"));
-            timestamp = zonedDateTime.toInstant().toEpochMilli();
-        }
-        return timestamp;
-
     }
 
 }

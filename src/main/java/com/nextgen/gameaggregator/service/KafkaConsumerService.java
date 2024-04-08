@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
@@ -13,6 +14,8 @@ import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultActio
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.util.GeneralVendorClass;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -42,6 +45,7 @@ public class KafkaConsumerService {
     private SportWalletService sportWalletService;
     @Autowired
     private GeneralVendorClass generalVendorClass;
+    private HttpService httpService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcess(String message) throws InterruptedException, GameNotSupportedException {
@@ -206,12 +210,22 @@ public class KafkaConsumerService {
     @KafkaListener(topics = KafkaConstant.TOPIC_RAW_SETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeRawSettledBet(String message) {
         String traceId = UUID.randomUUID().toString();
+        HttpRequestLog httpRequestLog = httpService.startInternalConsumerForRawSettledBet();
+        GeneralVo vo = new GeneralVo();
 
         try {
             SportRawSettledBet sportRawSettledBet = new Gson().fromJson(message, SportRawSettledBet.class);
-            sportWalletService.settle(traceId, sportRawSettledBet, null);
+            BetEvent responseVo = sportWalletService.settle(traceId, sportRawSettledBet, httpRequestLog);
+            vo.setBalance(responseVo.getLastBalance());
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (Exception e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            e.printStackTrace();
+
+        } finally {
+            httpService.end(httpRequestLog, vo);
 
         }
     }

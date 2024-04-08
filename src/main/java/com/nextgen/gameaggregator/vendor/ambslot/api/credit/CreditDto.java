@@ -23,6 +23,7 @@ public class CreditDto implements BetResultData {
     private String username;
 
     @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String agent;
 
     @NotBlank
@@ -92,7 +93,7 @@ public class CreditDto implements BetResultData {
     @Override
     @JsonIgnore
     public String getRoundId() {
-        return this.roundId;
+        return this.getTransactionId();
     }
 
     @Override
@@ -154,10 +155,6 @@ public class CreditDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if(this.getIsEndRound().equals(true)){
-            return BetStatus.SETTLED;
-        }else{
-            return BetStatus.UNSETTLED;
-        }
+        return BetStatus.SETTLED;
     }
 }

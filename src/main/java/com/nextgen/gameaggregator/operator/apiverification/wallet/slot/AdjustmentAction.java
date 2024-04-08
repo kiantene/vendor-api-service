@@ -60,7 +60,7 @@ public class AdjustmentAction {
                 String apiKey = request.getHeader(EndPoints.HEADER_API_KEY);
                 AgentApiCredential agentApiCredential = validationService.validateApiKey(apiKey);
 
-                String apiUrl = agentApiCredential.getCallbackUrl();
+                String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
                 Map<String, String> headerMap = new HashMap<String, String>();
 
                 headerMap.put(EndPoints.HEADER_SIGNATURE, request.getHeader(EndPoints.HEADER_SIGNATURE));

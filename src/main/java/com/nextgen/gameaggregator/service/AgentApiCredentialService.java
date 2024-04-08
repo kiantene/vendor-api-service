@@ -11,6 +11,7 @@ import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialReposit
 import com.nextgen.gameaggregator.repository.ga.writer.AgentCurrencyRepository;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,10 @@ import java.util.Optional;
 
 @Service
 public class AgentApiCredentialService {
+
+    @Value("${walletservice.host}")
+    private String walletServiceUrl;
+
     @Autowired
     private AgentApiCredentialRepository agentApiCredentialRepository;
     @Autowired
@@ -29,10 +34,14 @@ public class AgentApiCredentialService {
 
         AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
         Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
-        //UPDATE PG : TEMP WHITELIST LOCALHOST
+
         try{
-            if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
-                ValidationUtils.isValidUrl(credential.getCallbackUrl());
+            //ignore validation check callback url if the wallet type is custodial wallet
+            if(credential.getAgent().getSeamlessType().equals(1)){
+                //UPDATE PG : TEMP WHITELIST LOCALHOST
+                if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
+                    ValidationUtils.isValidUrl(credential.getCallbackUrl());
+                }
             }
         }catch (InvalidUrlException invalidUrlException){
             throw new InvalidAgentApiCredentialException();
@@ -69,5 +78,13 @@ public class AgentApiCredentialService {
 
         return agentCurrencies;
 
+    }
+
+    public String getAgentCallbackUrlBySeamlessType(AgentApiCredential agentApiCredential){
+        if(agentApiCredential.getAgent().getSeamlessType().equals(2)){
+            return walletServiceUrl+"/seamless";
+        }else{
+            return agentApiCredential.getCallbackUrl();
+        }
     }
 }

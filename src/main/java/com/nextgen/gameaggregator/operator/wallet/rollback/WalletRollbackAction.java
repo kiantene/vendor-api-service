@@ -63,7 +63,7 @@ public class WalletRollbackAction {
         BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
         WalletRollbackDto dto = this.newWalletRollbackDto(traceId, betId, vendorBetId, roundId, gameSession, rollbackTimestamp, internalTransactionId);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());

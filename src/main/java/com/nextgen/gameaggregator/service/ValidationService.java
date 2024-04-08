@@ -46,6 +46,20 @@ public class ValidationService {
         return entity;
     }
 
+    public void validateAgentStatus(Agent agent) throws AuthenticationException {
+        if (!agent.getStatus().equals(Status.ACTIVE.code)) {
+            throw new AuthenticationException();
+        }
+    }
+
+    public void validateIsCustodianSeamlessAgentWalletType(Agent agent) throws InvalidWalletTypeException{
+        if(!agent.getWalletType().equals(1)){
+            throw new InvalidWalletTypeException();
+        }else if(!agent.getSeamlessType().equals(2)){
+            throw new InvalidWalletTypeException();
+        }
+    }
+
     public void validateSignature(String payload, String secret, String signature) throws InvalidSignatureException {
         if (signature == null || signature.isEmpty()) {
             throw new InvalidSignatureException();
@@ -76,7 +90,7 @@ public class ValidationService {
                         gameSession.getAgentId(), gameSession.getVendorId(), gameSession.getCurrencyId(),
                         gameSession.getGameCategoryId(), Status.ACTIVE.code);
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ agentVendorLineRepository.findTop1ByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryIdAndStatus(" + gameSession.getAgentId() + ","
-                + gameSession.getVendorId() + "," + gameSession.getCurrencyId() + "," + gameSession.getGameCategoryId() + "," + Status.ACTIVE.code + ")",
+                        + gameSession.getVendorId() + "," + gameSession.getCurrencyId() + "," + gameSession.getGameCategoryId() + "," + Status.ACTIVE.code + ")",
                 gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         //vendor line not found
         Optional.ofNullable(agentVendorLines).orElseThrow(DisabledVendorLineException::new);
@@ -86,7 +100,7 @@ public class ValidationService {
         AgentPlayer agentPlayer = agentPlayerRepository.
                 findByAgentIdAndUsernameAndStatus(gameSession.getAgentId(), gameSession.getAgentPlayerUsername(), Status.ACTIVE.code);
         loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ agentPlayerRepository.findByAgentIdAndUsernameAndStatus(" + gameSession.getAgentId() + ","
-                        + gameSession.getAgentPlayerUsername() + Status.ACTIVE.code + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
+                + gameSession.getAgentPlayerUsername() + Status.ACTIVE.code + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
 
         //5. verify by vendor openGameCode instead, for play game with different game code token
