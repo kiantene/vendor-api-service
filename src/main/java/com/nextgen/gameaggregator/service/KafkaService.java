@@ -42,6 +42,20 @@ public class KafkaService {
         }
     }
 
+    public void producePreprocessingBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
+        try {
+            System.err.println("SEND TO "+ KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING);
+            //will do currency conversion before send to kafka
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING, betHistory);
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
             stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS, new Gson().toJson(endRoundSettledBet));

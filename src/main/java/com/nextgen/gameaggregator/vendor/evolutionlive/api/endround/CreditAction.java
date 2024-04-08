@@ -59,6 +59,7 @@ public class CreditAction {
 
             // 3.
             ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
+            vendorService.verifyIsPreProcessingVendorGame(gameSession.getVendorGameId());
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setBalance(balance);
