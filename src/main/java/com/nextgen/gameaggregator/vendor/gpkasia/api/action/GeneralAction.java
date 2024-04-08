@@ -4,8 +4,10 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
+import com.nextgen.gameaggregator.vendor.gpkasia.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.Actions;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -21,20 +23,53 @@ public class GeneralAction {
 
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private BalanceService balanceService;
 
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request){
         HttpRequestLog httpRequestLog = httpService.start(request);
-        httpRequestLog.setRequestBody(request.getQueryString());
+
         String traceId = httpRequestLog.getId();
 
         CommonVo vo = new CommonVo();
 
         try{
+            String body = httpRequestLog.getRequestBody();
 
-        }finally{
+            // Construct this vo for action handling purpose
+            ActionDto actionDto = httpService.convertQueryStringToDto(body, ActionDto.class);
+
+            // Validate the actionDto object
+            this.doValidation(actionDto);
+
+            vo = this.actionHandling(actionDto, traceId, httpRequestLog);
+
+        } catch (InvalidRequestException e) {
+            httpService.logError(httpRequestLog, e);
+            vo.setCode(1001);
+            vo.setMsg("Error");
+        } finally{
             httpService.end(httpRequestLog, vo);
+        }
+
+        return vo;
+    }
+
+    private CommonVo actionHandling(ActionDto actionDto, String traceId, HttpRequestLog httpRequestLog){
+        CommonVo vo = new CommonVo();
+
+        switch (actionDto.getCmd()) {
+            case Actions.BALANCE:
+                vo = balanceService.balance(httpRequestLog, traceId);
+                break;
+            case Actions.BET_SETTLE:
+                vo = null;
+                break;
+            case Actions.ROLLBACK:
+                vo = null;
+                break;
         }
 
         return vo;
