@@ -48,7 +48,7 @@ public class ResponseCodes {
         SC_INTERNAL_ERROR(37, "Internal error. please checked in relevant support channel"),
 
         SC_WALLET_NOT_SUPPORTED(38, "Wallet Type is not supported."),
-
+        SC_INVALID_GAME_TOPIC(39, "Invalid game topic subscribed; Supported: 1.) hot 2.) top."),
         ;
 
         public final Integer code;
