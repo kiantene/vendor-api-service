@@ -23,6 +23,6 @@ public interface VendorGameDeactivatedRepository extends JpaRepository<VendorGam
             "Limit 0,1", nativeQuery = true)
     VendorGameDeactivated findByVendorGameIdAndAgentIdAndAgentMasterIdAndHouseIdAndSasEntityHierarchyIdAndIsDeleted(@Param("vendorGameId") Integer vendorGameId, @Param("agentId") Integer agentId,
                                                                                                                     @Param("masterAgentId") Integer masterAgentId, @Param("houseId") Integer houseId,
-                                                                                                                    @Param("isDeleted") Integer isDeleted, @Param("sasEntityHierarchyId") Integer sasEntityHierarchyId);
+                                                                                                                    @Param("isDeleted") Integer isDeleted);
 
 }
