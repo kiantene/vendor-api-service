@@ -1,0 +1,126 @@
+package com.nextgen.gameaggregator.vendor.gpkasia.api.rollback;
+
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
+import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
+import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+@Service
+@Slf4j
+public class RollBackService {
+    @Autowired
+    private GameSessionService gameSessionService;
+    @Autowired
+    private VendorLineService vendorLineService;
+    @Autowired
+    private WalletService walletService;
+    @Autowired
+    private HttpService httpService;
+    @Autowired
+    private VendorService vendorService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorGameService vendorGameService;
+
+    public CommonVo rollback(HttpRequestLog httpRequestLog, String traceId) {
+        RollBackDto rollBackDto = new RollBackDto();
+        CommonVo vo = new CommonVo();
+        RollBackDataVo dataVo = new RollBackDataVo();
+
+        BigDecimal balance = null;
+
+        GameSession gameSession = null;
+
+        try{
+            // Retrieve request body in original string format
+            rollBackDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), RollBackDto.class);
+
+            // Validate request parameters from vendor (Non-database related)
+            this.doValidation(rollBackDto);
+
+            // Verify session token
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollBackDto.getUser());
+
+            // Verify remaining parameters (Verify against database values)
+            this.doVerification(rollBackDto, gameSession);
+
+            // Retrieve the latest wallet balance from Operator
+            balance = walletService.processRollback(traceId, rollBackDto, gameSession, vendorService, httpRequestLog);
+
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+            dataVo.setMoney(rollBackDto.getMoney());
+            dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            dataVo.setDealid(rollBackDto.getDealid());
+
+           vo.setData(dataVo);
+        }catch(BetNotFoundException e){
+            httpService.logError(httpRequestLog, e);
+
+            balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
+
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+            dataVo.setMoney(rollBackDto.getMoney());
+            dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            dataVo.setDealid(rollBackDto.getDealid());
+
+            vo.setData(dataVo);
+        } catch(BetRefundIdempotentViolationException |
+                BetResultIdempotentViolationException |
+                AuthenticationException |
+                InvalidRequestException |
+                InvalidPlayerException |
+                CredentialNotFoundException e){
+            httpService.logError(httpRequestLog, e);
+            vo.setCodeMsg(ResponseCodes.ERROR);
+        }catch(Exception e){
+            httpService.logError(httpRequestLog, e);
+            vo.setCodeMsg(ResponseCodes.ERROR);
+        }
+
+        return vo;
+    }
+
+    private void doValidation(RollBackDto dto) throws InvalidRequestException {
+        // General validation
+        ValidationUtils.validateRequest(dto);
+    }
+
+    private void doVerification(RollBackDto dto, GameSession gameSession) throws InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
+        //Verify received username is the same from game session
+        ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), dto.getUser(), InvalidPlayerException::new);
+
+        //Verify received api_token is same with credential
+        String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
+        ValidationUtils.isEquals(token, dto.getApi_token(), InvalidRequestException::new);
+    }
+
+    private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
+
+        BigDecimal balance = BigDecimal.ZERO;
+
+        try {
+            balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+
+        } catch (Exception exception) {
+
+        }
+
+        return balance;
+    }
+}

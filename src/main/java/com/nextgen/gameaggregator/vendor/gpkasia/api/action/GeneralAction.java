@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.api.balance.BalanceService;
 import com.nextgen.gameaggregator.vendor.gpkasia.api.bet.BetService;
+import com.nextgen.gameaggregator.vendor.gpkasia.api.rollback.RollBackService;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Actions;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
@@ -29,6 +30,8 @@ public class GeneralAction {
     private BalanceService balanceService;
     @Autowired
     private BetService betService;
+    @Autowired
+    private RollBackService rollBackService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request){
@@ -72,7 +75,7 @@ public class GeneralAction {
                 vo = betService.transaction(httpRequestLog, traceId);
                 break;
             case Actions.ROLLBACK:
-                vo = null;
+                vo = rollBackService.rollback(httpRequestLog, traceId);
                 break;
         }
 
