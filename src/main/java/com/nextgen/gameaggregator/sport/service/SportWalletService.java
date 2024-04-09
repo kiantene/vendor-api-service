@@ -162,6 +162,7 @@ public class SportWalletService {
         sportUnsettledBetCouchbase.setNewBetAmount(newBetAmount);
         sportUnsettledBetCouchbase.setEffectiveTurnover(Objects.requireNonNullElse(sportBetResultData.getEffectiveTurnover(), newBetAmount));
         sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
+        Optional.ofNullable(sportBetResultData.getVendorBetTime()).ifPresent(sportUnsettledBetCouchbase::setVendorBetTime);
 
         if (sportUnsettledBetCouchbase.getOperatorStatus() == ResponseCodes.Status.SC_OK.code) {
             sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
@@ -252,8 +253,8 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setWinLoss(sportBetResultData.getWinAmount().subtract(newBetAmount));
             sportUnsettledBetCouchbase.setEffectiveTurnover(newBetAmount);
             sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() > 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
-            sportUnsettledBetCouchbase.setVendorSettleTime(sportBetResultData.getVendorSettleTime());
-            sportUnsettledBetCouchbase.setResultTime(sportUnsettledBetCouchbase.getVendorSettleTime());
+            sportUnsettledBetCouchbase.setVendorSettleTime(Objects.requireNonNullElse(sportBetResultData.getVendorSettleTime(), System.currentTimeMillis()));
+            sportUnsettledBetCouchbase.setResultTime(Objects.requireNonNullElse(sportBetResultData.getResultTime(), sportUnsettledBetCouchbase.getVendorSettleTime()));
 
             if (isResettlementBet == 1 || sportUnsettledBetCouchbase.getResultType().equals(BetResultType.ADJUSTMENT.code)) {
                 //if its resettled or the bet is unsettled from settle bet (betResultType = Adjustment), then should generate as a new betId
@@ -337,6 +338,8 @@ public class SportWalletService {
         }
 
         String unsettledBetId = sportUnsettledBetCouchbase.getBetId();
+        sportUnsettledBetCouchbase.setVendorSettleTime(Objects.requireNonNullElse(sportRefundData.getTimestamp(), System.currentTimeMillis()));
+        sportUnsettledBetCouchbase.setResultTime(sportUnsettledBetCouchbase.getVendorSettleTime());
 
         //TODO HANDLE WITH BETIDEMPOTENT LOG
         if (sportUnsettledBetCouchbase.getStatus().compareTo(BetStatus.REFUNDED.code) == 0)
@@ -410,6 +413,10 @@ public class SportWalletService {
 
         try {
             SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportSettledBet.toSportUnsettleBetCouchbase();
+            Optional.ofNullable(sportUnsettleData.getTimestamp()).ifPresent(timestamp -> {
+                sportUnsettledBetCouchbase.setResultTime(timestamp);
+                sportUnsettledBetCouchbase.setVendorSettleTime(timestamp);
+            });
 
             if (sportUnsettledBetCouchbase.getOperatorStatus() == ResponseCodes.Status.SC_OK.code) {
                 sportUnsettledBetCouchbase.setInternalTransactionId(traceId);

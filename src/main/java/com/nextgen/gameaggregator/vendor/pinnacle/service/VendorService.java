@@ -8,7 +8,12 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -56,6 +61,16 @@ public class VendorService {
     public static Boolean isCorrectVendorPlayerUsername(String vendorPlayerUsername, String prefix) {
 
         return vendorPlayerUsername.startsWith(prefix);
+    }
+
+    public static Long convertDateTimeStringToTimestamp(String dateTimeString, String dateTimeFormat, ZoneId zoneId) {
+
+        if (Objects.isNull(dateTimeString) || Objects.isNull(dateTimeFormat) || Objects.isNull(zoneId))
+            return System.currentTimeMillis();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateTimeFormat);
+        ZonedDateTime zonedDateTime = LocalDateTime.parse(dateTimeString, formatter).atZone(zoneId);
+        return zonedDateTime.toInstant().toEpochMilli();
     }
 
     public String generateToken(String agentCode, String agentKey, String secretKey) {
