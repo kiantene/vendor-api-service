@@ -41,6 +41,8 @@ public class GeneralAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
+            log.info("gpk: "  + body);
+
             // Construct this vo for action handling purpose
             ActionDto actionDto = httpService.convertQueryStringToDto(body, ActionDto.class);
 
