@@ -5,8 +5,10 @@ import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.api.balance.BalanceService;
+import com.nextgen.gameaggregator.vendor.gpkasia.api.bet.BetService;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Actions;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.EndPoints;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +27,8 @@ public class GeneralAction {
     private HttpService httpService;
     @Autowired
     private BalanceService balanceService;
-
+    @Autowired
+    private BetService betService;
 
     @PostMapping(path = EndPoints.ACTION)
     public CommonVo action(HttpServletRequest request){
@@ -48,8 +51,7 @@ public class GeneralAction {
 
         } catch (InvalidRequestException e) {
             httpService.logError(httpRequestLog, e);
-            vo.setCode(1001);
-            vo.setMsg("Error");
+            vo.setCodeMsg(ResponseCodes.ERROR);
         } finally{
             httpService.end(httpRequestLog, vo);
         }
@@ -65,7 +67,7 @@ public class GeneralAction {
                 vo = balanceService.balance(httpRequestLog, traceId);
                 break;
             case Actions.BET_SETTLE:
-                vo = null;
+                vo = betService.transaction(httpRequestLog, traceId);
                 break;
             case Actions.ROLLBACK:
                 vo = null;
