@@ -60,7 +60,6 @@ public class CreditAction {
             // 3.
             ResultType resultType = vendorService.calculateResultType(creditDto.getBetAmount(), creditDto.getWinAmount(), creditDto.getJackpotAmount(), false);
             vendorService.verifyIsPreProcessingVendorGame(gameSession.getVendorGameId());
-            log.info("CHECK EVOLUTION LIVE is preprocess:" +vendorService.getBetPreprocess().getIsPreProcessBet() + "game ID:"+gameSession.getVendorGameId());
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, creditDto, resultType, vendorService, httpRequestLog);
 
             responseVo.setBalance(balance);
