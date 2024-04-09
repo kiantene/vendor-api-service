@@ -85,22 +85,36 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        // 1 is increase, 2 is decrease
-        if(this.code.equals("2")){
-            return new BigDecimal(this.money);
+        BigDecimal turnover = null;
+
+        //bgaming
+        if(this.platform.equals("9")){
+            // end round with decrease code is lose
+            if(this.code.equals("2") && this.finished.equals("1")){
+                turnover = new BigDecimal(this.money);
+            }
+
+            // first round is place bet
+            if(this.code.equals("2") && this.finished.equals("0")){
+                turnover = new BigDecimal(this.money);
+            }
         }
 
-        return null;
+        return turnover;
     }
 
     @Override
     public Long getVendorBetTime() {
-        // 1 is increase, 2 is decrease
-        if(this.code.equals("2")){
-            return Long.parseLong(this.timestamp) * 1000;
+        Long time = null;
+
+        //bgaming
+        if(this.platform.equals("9")){
+            if(this.finished.equals("0")){
+                time = Long.parseLong(this.timestamp) * 1000;
+            }
         }
 
-        return null;
+        return time;
     }
 
     @Override
@@ -110,7 +124,17 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return null;
+        Long time = null;
+
+        //bgaming
+        if(this.platform.equals("9")){
+            // end round
+            if(this.finished.equals("1")){
+                time = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        return time;
     }
 
     @Override
@@ -125,11 +149,19 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        // 1 is increase, 2 is decrease
-        if(this.code.equals("2")){
-            return BetStatus.UNSETTLED;
+
+        BetStatus status = null;
+
+        //bgaming
+        if(this.platform.equals("9")){
+            // not yet finish
+            if(this.finished.equals("0")){
+                status = BetStatus.UNSETTLED;
+            }else{
+                status = BetStatus.SETTLED;
+            }
         }
 
-        return BetStatus.SETTLED;
+        return status;
     }
 }
