@@ -38,6 +38,8 @@ public class BetService {
         try{
             betDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
+            log.info("bet: " + httpRequestLog.getRequestBody().toString());
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
