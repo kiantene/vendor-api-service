@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.sport.service;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
 import com.nextgen.gameaggregator.sport.repository.UnsettledBetCouchbaseRepository;
@@ -42,14 +43,42 @@ public class SportUnsettledBetService {
         return sportUnsettledBetCouchbase;
     }
 
-    public void idempotentCheck(String vendorPlayerUsername, String externalTransactionId) throws BetResultIdempotentViolationException {
+    public SportUnsettledBetCouchbase idempotentCheck(String vendorPlayerUsername, String externalTransactionId, Integer isConfirmBet) throws BetResultIdempotentViolationException {
         String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
 
         sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
         if (sportUnsettledBetCouchbase != null) { // No matching bet record
-            throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+            Integer operatorStatus = sportUnsettledBetCouchbase.getOperatorStatus();
+            //TODO TO BE CHANGED TO CREATE_TIME
+            Long betTimingDifferenceInMillieSeconds = this.compareWithExistingTimingDifference(sportUnsettledBetCouchbase.getVendorBetTime());
+
+            if (!operatorStatus.equals(ResponseCodes.Status.SC_OK.code) && betTimingDifferenceInMillieSeconds < this.getTimingDifferenceForStillProcessing()) {
+                throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+
+            } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code) && sportUnsettledBetCouchbase.getIsConfirmBet() == isConfirmBet) {
+                throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+
+            } else {
+                // do nothing
+            }
         }
+
+        return sportUnsettledBetCouchbase;
+    }
+
+    public Long compareWithExistingTimingDifference(Long createdDate) {
+
+        Long existingTime = System.currentTimeMillis();
+        Long timingDifference = existingTime - createdDate;
+        return timingDifference;
+
+    }
+
+    public Long getTimingDifferenceForStillProcessing() {
+        Long fiveSecondsInMillis = 5L * 1000L;
+        return fiveSecondsInMillis;
+
     }
 
     public List<VendorGame.SportUnsettledBetMariaDB> mariaDBGetByRoundId(String vendorId, String roundId) throws BetNotFoundException {

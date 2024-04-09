@@ -73,6 +73,11 @@ public class LoginService {
             loginPlayer.setMode("REAL"); // "FUN" or "REAL", REAL by default. Mode of the player. 'FUN' stands for playing for fun not using real funds, 'REAL' stands for playing using real funds
             loginPlayer.setIs_test(false); // 'false' meant players are a subject for invoicing at production environment!
 
+            // check stg vendor user name(testing acc from vendor)
+            if(gameSession.getVendorPlayerUsername().equalsIgnoreCase("2z2kpq8zi")){
+                loginPlayer.setIs_test(true); //if this param value is not same as previous login, it will cause unable to login game
+            }
+
             long unixTime = System.currentTimeMillis(); //unix timestamp with millisecond
 
             balanceVo.setValue(balance.toString());
