@@ -5,10 +5,7 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -25,7 +22,7 @@ public class BetDto extends ActionDto implements BetResultData {
     private String user;
 
     @NotNull
-    @Pattern(regexp = "^\\d+\\.\\d{2}$")
+    @Positive
     private Double money;
 
     @NotBlank
