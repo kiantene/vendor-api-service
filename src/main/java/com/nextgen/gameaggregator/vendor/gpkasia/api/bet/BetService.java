@@ -53,7 +53,7 @@ public class BetService {
             vo.setCodeMsg(ResponseCodes.ERROR);
         }
 
-        return null;
+        return vo;
     }
 
     private void doValidation(BetDto dto) throws InvalidRequestException {
