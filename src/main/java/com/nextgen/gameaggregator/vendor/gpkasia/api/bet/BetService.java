@@ -38,8 +38,6 @@ public class BetService {
         try{
             betDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
-            log.info("bet: " + httpRequestLog.getRequestBody().toString());
-
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
@@ -49,7 +47,7 @@ public class BetService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
-            vo.setMsg("testing");
+            vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);

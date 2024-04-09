@@ -30,7 +30,7 @@ public class BetDto extends ActionDto {
 
     private String finished;
 
-    private String betinfo;
-
     private String gameinfo;
+
+    private String platform;
 }
