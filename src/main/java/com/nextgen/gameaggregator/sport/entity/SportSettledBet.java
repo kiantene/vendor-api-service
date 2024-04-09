@@ -62,7 +62,6 @@ public class SportSettledBet extends BetInformation {
         this.setJackpotAmount(BigDecimal.ZERO);
         this.setWinLoss(sportAdjustmentData.getAmount());
         this.setEffectiveTurnover(BigDecimal.ZERO);
-        this.setIsFreespin(0);
 
         this.setResultType(BetResultType.ADJUSTMENT.code);
         this.setRawData(rawData);

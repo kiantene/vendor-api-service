@@ -35,95 +35,6 @@ public class HttpService {
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
 
-    public HttpRequestLog start(HttpServletRequest request) {
-        HttpRequestLog httpRequestLog = new HttpRequestLog();
-        try {
-            Map<String, String> headers = this.getHeadersInfo(request);
-            String requestBody = this.getRawRequestBody(request);
-
-            if (headers.containsKey("host")) {
-                httpRequestLog.setHost(headers.get("host"));
-            }
-
-            if (headers.containsKey("x-api-key")) {
-                httpRequestLog.setApiKey(request.getHeader("x-api-key"));
-            }
-
-            if (headers.containsKey("x-signature")) {
-                httpRequestLog.setSignature(request.getHeader("x-signature"));
-            }
-
-            if (headers.containsKey("cf-connecting-ip")) {
-                httpRequestLog.setCallerIp(request.getHeader("cf-connecting-ip"));
-            }
-
-            if (headers.containsKey("user-agent")) {
-                httpRequestLog.setUserAgent(request.getHeader("user-agent"));
-            }
-
-            httpRequestLog.setId(UUID.randomUUID().toString());
-            httpRequestLog.setUrl(request.getRequestURI());
-            httpRequestLog.setMethod(request.getMethod());
-            httpRequestLog.setRequestBody(requestBody);
-            httpRequestLog.setStatus(PROCESSING);
-            httpRequestLog.setRequestIp(request.getRemoteAddr());
-            httpRequestLog.setStartTime(System.currentTimeMillis());
-            String jsonHeaders = new Gson().toJson(headers.toString());
-            httpRequestLog.setHeader(jsonHeaders);
-
-        } catch (Exception exception) {
-            log.error(exception.getMessage());
-            exception.printStackTrace();
-        }
-
-        return httpRequestLog;
-    }
-
-    public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
-        if (!enableHttpRequestLog) return;
-
-        if (requestLog != null && responseVo != null) {
-            requestLog.setEndTime(System.currentTimeMillis());
-            THREAD_POOL.submit(() -> {
-                try {
-                    String jsonResponseVo = new Gson().toJson(responseVo);
-                    requestLog.setResponseBody(jsonResponseVo);
-                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
-                    requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
-
-                    if (requestLog.getOperatorEnd() != null) {
-                        requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
-                    }
-
-                    if (requestLog.getBetEnd() != null) {
-                        Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
-                        requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
-                    }
-
-                    Gson gson = new Gson();
-                    //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
-                    log.info(gson.toJson(requestLog));
-
-                } catch (Exception exception) {
-                    log.error(exception.getMessage());
-                    exception.printStackTrace();
-                }
-            });
-        } else {
-            log.warn("HttpService.end: requestLog or responseVo is null");
-        }
-    }
-
-    public void logError(HttpRequestLog requestLog, Exception exception) {
-        if (requestLog != null) {
-            requestLog.setStatus(ERROR);
-            requestLog.setErrorMessage(exception.toString());
-        } else {
-            log.warn("HttpService.logError: requestLog is null");
-            exception.printStackTrace();
-        }
-    }
-
     public static String getStackTrace(Exception exception) {
         final String NEWLINE = "\r\n";
         log.error(exception.toString());
@@ -228,6 +139,113 @@ public class HttpService {
 //        httpRequestLog.setRequestBodyDto(object);
 
         return object;
+    }
+
+    public HttpRequestLog start(HttpServletRequest request) {
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        try {
+            Map<String, String> headers = this.getHeadersInfo(request);
+            String requestBody = this.getRawRequestBody(request);
+
+            if (headers.containsKey("host")) {
+                httpRequestLog.setHost(headers.get("host"));
+            }
+
+            if (headers.containsKey("x-api-key")) {
+                httpRequestLog.setApiKey(request.getHeader("x-api-key"));
+            }
+
+            if (headers.containsKey("x-signature")) {
+                httpRequestLog.setSignature(request.getHeader("x-signature"));
+            }
+
+            if (headers.containsKey("cf-connecting-ip")) {
+                httpRequestLog.setCallerIp(request.getHeader("cf-connecting-ip"));
+            }
+
+            if (headers.containsKey("user-agent")) {
+                httpRequestLog.setUserAgent(request.getHeader("user-agent"));
+            }
+
+            httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setUrl(request.getRequestURI());
+            httpRequestLog.setMethod(request.getMethod());
+            httpRequestLog.setRequestBody(requestBody);
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setRequestIp(request.getRemoteAddr());
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+            String jsonHeaders = new Gson().toJson(headers.toString());
+            httpRequestLog.setHeader(jsonHeaders);
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
+    public HttpRequestLog startInternalConsumerForRawSettledBet() {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("Internal Consumer For RawSettledBet");
+            httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+
+    public void end(HttpRequestLog requestLog, HttpResponse responseVo) {
+        if (!enableHttpRequestLog) return;
+
+        if (requestLog != null && responseVo != null) {
+            requestLog.setEndTime(System.currentTimeMillis());
+            THREAD_POOL.submit(() -> {
+                try {
+                    String jsonResponseVo = new Gson().toJson(responseVo);
+                    requestLog.setResponseBody(jsonResponseVo);
+                    requestLog.setTimeTaken(requestLog.getEndTime() - requestLog.getStartTime());
+                    requestLog.setStatus(!responseVo.hasError() ? COMPLETED : ERROR);
+
+                    if (requestLog.getOperatorEnd() != null) {
+                        requestLog.setOperatorTimeTaken(requestLog.getOperatorEnd() - requestLog.getOperatorStart());
+                    }
+
+                    if (requestLog.getBetEnd() != null) {
+                        Long operatorProcessTime = Optional.ofNullable(requestLog.getOperatorTimeTaken()).orElse(0L);
+                        requestLog.setBetTimeTaken(requestLog.getBetEnd() - requestLog.getBetStart() - operatorProcessTime);
+                    }
+
+                    Gson gson = new Gson();
+                    //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
+                    log.info(gson.toJson(requestLog));
+
+                } catch (Exception exception) {
+                    log.error(exception.getMessage());
+                    exception.printStackTrace();
+                }
+            });
+        } else {
+            log.warn("HttpService.end: requestLog or responseVo is null");
+        }
+    }
+
+    public void logError(HttpRequestLog requestLog, Exception exception) {
+        if (requestLog != null) {
+            requestLog.setStatus(ERROR);
+            requestLog.setErrorMessage(exception.toString());
+        } else {
+            log.warn("HttpService.logError: requestLog is null");
+            exception.printStackTrace();
+        }
     }
 
     public Map<String, String> getHeadersInfo(HttpServletRequest request) {
