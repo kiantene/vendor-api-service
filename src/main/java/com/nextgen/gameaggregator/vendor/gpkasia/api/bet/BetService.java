@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -12,6 +13,9 @@ import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Service
 @Slf4j
@@ -35,6 +39,10 @@ public class BetService {
 
         BetDto betDto = new BetDto();
 
+        BetDataVo betDataVo = new BetDataVo();
+
+        BigDecimal balance = null;
+
         try{
             betDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
@@ -47,7 +55,27 @@ public class BetService {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
 
-            vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
+            if(betDto.getCode().equals("2")){
+                // unsettle
+                BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                balance = betEvent.getLastBalance();
+            }
+//            else{
+//                // settle
+//                ResultType resultType = ResultType.WIN;;
+//                balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+//            }
+
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
+
+            betDataVo.setDealid(betDto.getDealid());
+            betDataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            betDataVo.setMoney(money);
+            betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+
+            vo.setData(betDataVo);
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
