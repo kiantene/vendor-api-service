@@ -66,7 +66,7 @@ public class BetService {
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
 
-                // first round bet with unfinish status mean place bet (it will receive win bet request)
+                // first round bet with unfinished status mean place bet (it will receive win bet request)
                 if(betDto.getCode().equals("2") && betDto.getFinished().equals("0")){
                     // unsettle
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
@@ -82,7 +82,7 @@ public class BetService {
 
             vo.setCodeMsg(ResponseCodes.SUCCESS);
 
-            // check the code value to define it is deduct or gain money
+            // check the code value to define it is deducted or gain money
             Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
