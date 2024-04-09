@@ -107,9 +107,12 @@ public class BetService {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException {
+    private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUser());
+
+        // Verify vendor gameCode
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
