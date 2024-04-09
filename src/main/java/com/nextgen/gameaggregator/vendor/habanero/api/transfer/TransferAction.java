@@ -11,8 +11,8 @@ import com.nextgen.gameaggregator.service.VendorLineService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.habanero.api.pokerbet.PokerBetService;
 import com.nextgen.gameaggregator.vendor.habanero.api.pokerresult.PokerResultService;
-import com.nextgen.gameaggregator.vendor.habanero.api.slotbet.SlotBetService;
 import com.nextgen.gameaggregator.vendor.habanero.api.refund.RefundService;
+import com.nextgen.gameaggregator.vendor.habanero.api.slotbet.SlotBetService;
 import com.nextgen.gameaggregator.vendor.habanero.api.slotresult.SlotResultService;
 import com.nextgen.gameaggregator.vendor.habanero.constant.*;
 import com.nextgen.gameaggregator.vendor.habanero.service.VendorService;
@@ -246,11 +246,11 @@ public class TransferAction {
 
         FundInfoDto fundInfoDto = transferDto.getFundTransferRequestDto().getFundDto().getFundInfoDto()[0];
         switch (fundInfoDto.getGameStateMode()) {
-            case GameStateMode.STARTROUND, GameStateMode.COUTINUEATION -> {
+            case GameStateMode.STARTROUND -> {
                 //process bet result into unsettle bet when gamestatemode = 1(game round start) or 0(double)
                 responseVo = pokerBetService.bet(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
             }
-            case GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
+            case GameStateMode.COUTINUEATION, GameStateMode.ENDROUND, GameStateMode.EXPIRE -> {
                 //process bet result into settle bet when gamestatemode = 2(game round end) or 3(expire bet round end)
                 responseVo = pokerResultService.result(fundInfoDto, transferDto.getFundTransferRequestDto(), responseVo, transferDto.getBaseGame().getKeyName(), gameSession, request);
             }
