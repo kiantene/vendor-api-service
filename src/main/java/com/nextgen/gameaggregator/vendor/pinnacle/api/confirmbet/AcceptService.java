@@ -51,16 +51,6 @@ public class AcceptService {
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
         }
 
-        // for Testing
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004N")) {
-            commonVo.setSetResponseVoErrorCode(Boolean.TRUE);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004R")) {
-            commonVo.setSetResponseVoErrorCode(Boolean.FALSE);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-
         return commonVo;
     }
 
