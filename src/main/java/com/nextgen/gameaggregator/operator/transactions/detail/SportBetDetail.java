@@ -10,11 +10,11 @@ import org.springframework.util.MultiValueMap;
 
 import java.util.Map;
 
-public interface SportBetDetail {
+public interface SportBetDetail<T> {
     MultiValueMap<String, String> formDataBuilder(Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo,
                                                   VendorLanguageCode vendorLanguageCode)
             throws InvalidVendorLineException, InvalidFormatException, RecordNotFoundException;
 
-    SportBetDetailVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo,
-                          VendorLanguageCode vendorLanguageCode) throws InvalidVendorResponseException, InvalidVendorLineException;
+    T call(MultiValueMap<String, String> formData, Map<String, String> credentials, IBetDetailUrlInfo iBetDetailUrlInfo,
+           VendorLanguageCode vendorLanguageCode) throws InvalidVendorResponseException, InvalidVendorLineException;
 }
