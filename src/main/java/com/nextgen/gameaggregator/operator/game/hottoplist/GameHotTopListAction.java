@@ -30,8 +30,6 @@ import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.GameHotTopListService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.ValidationService;
-import com.nextgen.gameaggregator.service.VendorLineService;
-import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,10 +45,6 @@ public class GameHotTopListAction {
     @Autowired
     private ValidationService validationService;
     @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
     private GameHotTopListService gameHotTopListService;
     @Autowired
     private GameUrlService gameUrlService;
@@ -58,9 +52,9 @@ public class GameHotTopListAction {
     private AgentApiCredentialService agentApiCredentialService;
 
     @PostMapping(path = "hotTopList")
-    public OperatorResponseVo<Object> list(HttpServletRequest request) {
+    public OperatorResponseVo<List<GameHotTopData>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo<Object> responseVo = new OperatorResponseVo<>();
+        OperatorResponseVo<List<GameHotTopData>> responseVo = new OperatorResponseVo<>();
         try {
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
@@ -102,8 +96,9 @@ public class GameHotTopListAction {
                 currencyIds.add(currency.getId());
             }
 
-            Object gameListData = gameHotTopListService.getHotTopGameList(dto, currencyIds);
-            responseVo.setData(gameListData);
+            List<GameHotTopData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds);
+ 
+            responseVo.setData(gameDataList);
 
         } catch (IllegalArgumentException illegalArgumentException) {
             // thrown when any field encountered type mismatch during conversion from json to dto
