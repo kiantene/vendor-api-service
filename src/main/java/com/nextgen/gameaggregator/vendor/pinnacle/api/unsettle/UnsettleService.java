@@ -34,6 +34,7 @@ public class UnsettleService {
         try {
             UnsettleDto unsettleDto = new ModelMapper().map(action.getWagerInfo(), UnsettleDto.class);
             unsettleDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
+            unsettleDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
             BetEvent response = sportWalletService.unsettle(traceId, unsettleDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 
@@ -45,11 +46,6 @@ public class UnsettleService {
             httpService.logError(httpRequestLog, e);
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
 
-        }
-
-        // for Testing
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004U")) {
-            commonVo.setResponseCode(ResponseCode.INSUFFICIENT_FUND.code);
         }
 
         return commonVo;

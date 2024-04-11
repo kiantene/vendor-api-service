@@ -58,17 +58,17 @@ public class AcceptDto extends ActionsWagerInfoDto implements SportBetResultData
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override

@@ -102,8 +102,6 @@ public class GeneralAction {
         } finally {
             resultVo.setAvailableBalance((commonVos.isEmpty() || commonVos.iterator().next().getBalance() == null) ? BigDecimal.ZERO : commonVos.iterator().next().getBalance());
             resultVo.setActions(commonVos.isEmpty() ? Collections.singletonList(commonVo) : commonVos);
-            if (commonVos.stream().anyMatch(CommonVo::getSetResponseVoErrorCode))
-                responseVo.setErrorCode(ResponseCode.UNKNOWN_ERROR.code);
             responseVo.setResult(resultVo);
             httpService.end(httpRequestLog, responseVo);
         }
