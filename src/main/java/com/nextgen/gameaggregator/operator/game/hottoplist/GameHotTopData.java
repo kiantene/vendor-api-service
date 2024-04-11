@@ -6,7 +6,9 @@ import lombok.Data;
 public class GameHotTopData {
 
 	private String gameCode;
+	private String gameName;
 	private String name;
+	private String code;
 	private String categoryCode;
 	private String imageSquare;
 	private String imageLandscape;

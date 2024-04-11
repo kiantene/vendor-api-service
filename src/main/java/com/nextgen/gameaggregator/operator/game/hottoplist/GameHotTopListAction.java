@@ -11,21 +11,17 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
-import com.nextgen.gameaggregator.entity.ga.AgentVendorLine;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.Vendor;
 import com.nextgen.gameaggregator.enums.DateRangeType;
 import com.nextgen.gameaggregator.enums.HotTopGameType;
 import com.nextgen.gameaggregator.exception.AuthenticationException;
-import com.nextgen.gameaggregator.exception.DisabledVendorException;
-import com.nextgen.gameaggregator.exception.DisabledVendorLineException;
 import com.nextgen.gameaggregator.exception.InvalidCurrencyException;
 import com.nextgen.gameaggregator.exception.InvalidDateRangeException;
 import com.nextgen.gameaggregator.exception.InvalidHotTopGameTypeException;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.exception.InvalidSignatureException;
-import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorException;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
@@ -94,11 +90,7 @@ public class GameHotTopListAction {
             String signature = request.getHeader(EndPoints.HEADER_SIGNATURE);
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
-            // 4. Validate vendor code and vendor supported wallet type
-            Vendor vendor = vendorService.verifyVendorByCodeAndWalletType
-                    (dto.getVendorCode(), apiCredential.getAgent().getWalletType());
-
-            // 5. Get Agent Supported Currency
+            // 4. Get Agent Supported Currency
             List<Integer> currencyIds = new ArrayList<>();
             if(dto.getCurrency()==null){
                 List<AgentCurrency> agentCurrencies = agentApiCredentialService.getAgentSupportedCurrency(apiCredential.getAgent().getId());
@@ -110,15 +102,7 @@ public class GameHotTopListAction {
                 currencyIds.add(currency.getId());
             }
 
-            // 6. validate agent supported vendor line
-            List<AgentVendorLine> agentVendorLines =
-                    vendorLineService.getVendorLineByAgent(apiCredential.getAgent(), vendor, currencyIds);
-            currencyIds.clear();
-            for (AgentVendorLine agentVendorLine : agentVendorLines) {
-                currencyIds.add(agentVendorLine.getCurrency().getId());
-            }
-
-            Object gameListData = gameHotTopListService.getHotTopGameList(dto, agentVendorLines, vendor, currencyIds);
+            Object gameListData = gameHotTopListService.getHotTopGameList(dto, currencyIds);
             responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
@@ -139,20 +123,17 @@ public class GameHotTopListAction {
         } catch (InvalidCurrencyException invalidCurrencyException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_WRONG_CURRENCY);
 
-        } catch (DisabledVendorLineException | DisabledVendorException disabledVendorLineException) {
-            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_LINE_DISABLED);
-
         } catch (InvalidSignatureException invalidSignatureException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_SIGNATURE);
-
-        } catch (InvalidVendorLineException invalidVendorLineException) {
-            responseVo.setResponseCode(ResponseCodes.Status.SC_VENDOR_CURRENCY_NOT_SUPPORTED);
 
         } catch (InvalidDateRangeException invalidDateRangeException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_DATE_RANGE);
 
         } catch (InvalidHotTopGameTypeException invalidHotTopGameTypeException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_GAME_TOPIC);
+
+        } catch (InvalidVendorException invalidVendorException) {
+            responseVo.setResponseCode(ResponseCodes.Status.SC_INVALID_VENDOR);
 
         } catch (Exception exception) {
             responseVo.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR);
