@@ -73,7 +73,7 @@ public class VendorService {
         return zonedDateTime.toInstant().toEpochMilli();
     }
 
-    public String generateToken(String agentCode, String agentKey, String secretKey) {
+    public static String generateToken(String agentCode, String agentKey, String secretKey) {
         String sTimestamp = String.valueOf(System.currentTimeMillis());
         String hashToken = DigestUtils.md5Hex(agentCode + sTimestamp + agentKey);
         String tokenPayLoad = String.format("%s|%s|%s", agentCode, sTimestamp, hashToken);
