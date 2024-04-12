@@ -309,9 +309,7 @@ public class SportWalletService {
             httpRequestLog.setBetStart(System.currentTimeMillis());
         }
 
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase();
-
-        sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(sportRefundData.getVendorPlayerUsername(), sportRefundData.getRoundId(), sportRefundData.getExternalTransactionId());
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(sportRefundData.getVendorPlayerUsername(), sportRefundData.getRoundId(), sportRefundData.getExternalTransactionId());
 
         // if idempotent check is passed then set internalTransactionId as new traceId
         if (sportUnsettledBetCouchbase.getStatus() == ResponseCodes.Status.SC_OK.code) {
