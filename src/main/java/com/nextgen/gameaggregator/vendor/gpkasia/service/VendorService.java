@@ -32,9 +32,9 @@ public class VendorService extends BaseVendorService {
         return hashMap;
     }
 
-    //maybe apply for others bgaming game categories(not for slot)
-//    @Override
-//    public boolean shouldRejectCancelRequest() {
-//        return false;
-//    }
+    //apply for bgaming platform
+    @Override
+    public boolean shouldRejectCancelRequest() {
+        return false;
+    }
 }
