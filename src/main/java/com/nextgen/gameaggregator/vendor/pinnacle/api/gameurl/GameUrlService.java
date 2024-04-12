@@ -36,8 +36,6 @@ public class GameUrlService implements GameUrl {
     @Autowired
     private RequestService requestService;
     @Autowired
-    private VendorService vendorService;
-    @Autowired
     private VendorPlayerService vendorPlayerService;
 
     @Value("${spring.profiles.active}")
@@ -61,7 +59,7 @@ public class GameUrlService implements GameUrl {
     public GameUrlVo call(MultiValueMap<String, String> formData, Map<String, String> credentials, GameSession gameSession)
             throws InvalidVendorLineException, InvalidVendorResponseException {
 
-        String apiUrl = Optional.ofNullable(credentials.get(Credentials.LOGIN_URL)).orElseThrow(InvalidVendorLineException::new);
+        String apiUrl = Optional.ofNullable(credentials.get(Credentials.API_URL)).orElseThrow(InvalidVendorLineException::new);
         String agentCode = Optional.ofNullable(credentials.get(Credentials.AGENT_CODE)).orElseThrow(InvalidVendorLineException::new);
         String agentKey = Optional.ofNullable(credentials.get(Credentials.AGENT_KEY)).orElseThrow(InvalidVendorLineException::new);
         String secretKey = Optional.ofNullable(credentials.get(Credentials.SECRET_KEY)).orElseThrow(InvalidVendorLineException::new);
@@ -76,25 +74,25 @@ public class GameUrlService implements GameUrl {
         GameUrlVo responseVo = null;
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
         headerMap.add("userCode", agentCode);
-        headerMap.add("token", vendorService.generateToken(agentCode, agentKey, secretKey));
+        headerMap.add("token", VendorService.generateToken(agentCode, agentKey, secretKey));
 
         long startTime = System.currentTimeMillis();
 
-        ResponseEntity<String> apiResponse = WebClient.create()
+        ResponseEntity<String> apiResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(apiUrl)
+                .uri(Endpoints.PLAYER_LOGIN)
                 .headers(header -> header.addAll(headerMap))
                 .bodyValue(formData)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
-                .retry(3)
+                .retry(Endpoints.RETRY)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
         long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                "", apiUrl, formData, apiResponse, headerMap, startTime, endTime,
+                Endpoints.PLAYER_LOGIN, apiUrl, formData, apiResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {
@@ -117,31 +115,31 @@ public class GameUrlService implements GameUrl {
 
     private void createUserCode(GameSession gameSession, Map<String, String> credentials) throws InvalidVendorResponseException, InvalidVendorLineException {
 
-        String apiCreateUrl = Optional.ofNullable(credentials.get(Credentials.CREATE_URL)).orElseThrow(InvalidVendorLineException::new);
+        String apiUrl = Optional.ofNullable(credentials.get(Credentials.API_URL)).orElseThrow(InvalidVendorLineException::new);
         String agentCode = Optional.ofNullable(credentials.get(Credentials.AGENT_CODE)).orElseThrow(InvalidVendorLineException::new);
         String agentKey = Optional.ofNullable(credentials.get(Credentials.AGENT_KEY)).orElseThrow(InvalidVendorLineException::new);
         String secretKey = Optional.ofNullable(credentials.get(Credentials.SECRET_KEY)).orElseThrow(InvalidVendorLineException::new);
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<String, String>();
         headerMap.add("userCode", agentCode);
-        headerMap.add("token", vendorService.generateToken(agentCode, agentKey, secretKey));
+        headerMap.add("token", VendorService.generateToken(agentCode, agentKey, secretKey));
 
         long startTime = System.currentTimeMillis();
 
-        ResponseEntity<String> apiCreateResponse = WebClient.create()
+        ResponseEntity<String> apiCreateResponse = WebClient.create(apiUrl)
                 .post()
-                .uri(apiCreateUrl)
+                .uri(Endpoints.PLAYER_CREATE)
                 .headers(headers -> headers.addAll(headerMap))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                 .toEntity(String.class)
-                .retry(3)
+                .retry(Endpoints.RETRY)
                 .timeout(Duration.ofMillis(Endpoints.TIMEOUT))
                 .block();
 
         long endTime = System.currentTimeMillis();
         RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                "", apiCreateUrl, new LinkedMultiValueMap<>(), apiCreateResponse, headerMap, startTime, endTime,
+                Endpoints.PLAYER_CREATE, apiUrl, new LinkedMultiValueMap<>(), apiCreateResponse, headerMap, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try {

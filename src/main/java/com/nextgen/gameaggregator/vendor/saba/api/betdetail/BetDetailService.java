@@ -29,7 +29,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-public class BetDetailService implements SportBetDetail {
+public class BetDetailService implements SportBetDetail<SportBetDetailVo> {
 
     @Autowired
     RequestService requestService;
