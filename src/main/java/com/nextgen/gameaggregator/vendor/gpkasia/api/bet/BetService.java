@@ -97,6 +97,18 @@ public class BetService {
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
+        }catch(InvalidPlayerException |
+               AuthenticationException |
+               DisabledAgentPlayerException |
+               DisabledGameException |
+               DisabledVendorLineException|
+               CredentialNotFoundException|
+               InvalidRequestException|
+               GameNotSupportedException |
+               TransactionStillProcessingException |
+               BetResultIdempotentViolationException e){
+            httpService.logError(httpRequestLog, e);
+            vo.setCodeMsg(ResponseCodes.ERROR);
         }catch(Exception e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
