@@ -105,6 +105,12 @@ public class GameHotTopListService {
         }
         stringBuilder.append("GROUP BY vg.id ");
         stringBuilder.append("ORDER BY vg.code, l.code,  p.code) AS gamelist ");
+        stringBuilder.append("WHERE ");
+        if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+        	stringBuilder.append("gamelist.hotTopGgr > 100000 ");
+        } else {
+        	stringBuilder.append("gamelist.hotTopBetCount > 10000 ");
+        }
         stringBuilder.append("ORDER BY ");
         if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
         	stringBuilder.append("gamelist.hotTopGgr ");
