@@ -71,9 +71,9 @@ public class GeneralAction {
             case Actions.BALANCE:
                 vo = balanceService.balance(httpRequestLog, traceId);
                 break;
-            case Actions.BET_SETTLE:
-                vo = betService.transaction(httpRequestLog, traceId);
-                break;
+//            case Actions.BET_SETTLE:
+//                vo = betService.transaction(httpRequestLog, traceId);
+//                break;
             case Actions.ROLLBACK:
                 vo = rollBackService.rollback(httpRequestLog, traceId);
                 break;

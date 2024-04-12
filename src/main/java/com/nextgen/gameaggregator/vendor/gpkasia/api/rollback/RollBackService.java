@@ -66,7 +66,7 @@ public class RollBackService {
             dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
             dataVo.setDealid(rollBackDto.getDealid());
 
-           vo.setData(dataVo);
+            vo.setData(dataVo);
         }catch(BetNotFoundException e){
             httpService.logError(httpRequestLog, e);
 
