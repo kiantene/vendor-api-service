@@ -32,8 +32,8 @@ public class VendorService extends BaseVendorService {
         return hashMap;
     }
 
-    @Override
-    public boolean shouldRejectCancelRequest() {
-        return false;
-    }
+//    @Override
+//    public boolean shouldRejectCancelRequest() {
+//        return false;
+//    }
 }

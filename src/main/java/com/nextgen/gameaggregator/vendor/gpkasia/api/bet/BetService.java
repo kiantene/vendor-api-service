@@ -79,7 +79,7 @@ public class BetService {
                 // last round with win status or win in the middle of round
                 if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
                     ResultType resultType = ResultType.WIN;
-//                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
             }
 
@@ -94,11 +94,6 @@ public class BetService {
             betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
 
             vo.setData(betDataVo);
-
-            if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
-                vo = null;
-                vo.setCodeMsg(ResponseCodes.ERROR);
-            }
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
