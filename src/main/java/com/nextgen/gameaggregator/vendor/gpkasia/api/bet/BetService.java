@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -68,34 +69,31 @@ public class BetService {
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
 
-//                // first round bet with unfinished status mean place bet (it will receive win bet request)
-//                if(betDto.getCode().equals("2") && betDto.getFinished().equals("0")){
-//                    // unsettle
-//                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-//                    balance = betEvent.getLastBalance();
-//                }
-//
-//                // last round with win status or win in the middle of round
-//                if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
-//                    ResultType resultType = ResultType.WIN;;
-//                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-//                }
+                // first round bet with unfinished status mean place bet (it will receive win bet request)
+                if(betDto.getCode().equals("2") && betDto.getFinished().equals("0")){
+                    // unsettle
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    balance = betEvent.getLastBalance();
+                }
+
+                // last round with win status or win in the middle of round
+                if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
+                    ResultType resultType = ResultType.WIN;;
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                }
             }
 
-            if(betDto.getCode().equals("2") && betDto.getFinished().equals("1")) {
-                vo.setCodeMsg(ResponseCodes.SUCCESS);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
 
-                // check the code value to define it is deducted or gain money
-                Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
+            // check the code value to define it is deducted or gain money
+            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
 
-                betDataVo.setDealid(betDto.getDealid());
-                betDataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
-                betDataVo.setMoney(money);
-                betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+            betDataVo.setDealid(betDto.getDealid());
+            betDataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            betDataVo.setMoney(money);
+            betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
 
-                vo.setData(betDataVo);
-
-            }
+            vo.setData(betDataVo);
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
