@@ -65,7 +65,7 @@ public class BetService {
                 // lose game in one round
                 if(betDto.getCode().equals("2") && betDto.getFinished().equals("1")){
                     // settle in one request
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.END, vendorService, httpRequestLog);
                 }
 
                 // first round bet with unfinished status mean place bet (it will receive win bet request)
