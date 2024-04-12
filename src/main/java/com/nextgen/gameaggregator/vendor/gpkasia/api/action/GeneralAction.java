@@ -44,8 +44,6 @@ public class GeneralAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            log.info("gpk: "  + body);
-
             // Construct this vo for action handling purpose
             ActionDto actionDto = httpService.convertQueryStringToDto(body, ActionDto.class);
 
@@ -71,9 +69,9 @@ public class GeneralAction {
             case Actions.BALANCE:
                 vo = balanceService.balance(httpRequestLog, traceId);
                 break;
-//            case Actions.BET_SETTLE:
-//                vo = betService.transaction(httpRequestLog, traceId);
-//                break;
+            case Actions.BET_SETTLE:
+                vo = betService.transaction(httpRequestLog, traceId);
+                break;
             case Actions.ROLLBACK:
                 vo = rollBackService.rollback(httpRequestLog, traceId);
                 break;
