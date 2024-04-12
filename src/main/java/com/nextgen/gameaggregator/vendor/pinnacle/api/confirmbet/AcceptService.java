@@ -43,6 +43,7 @@ public class AcceptService {
             this.updateBetAmount(acceptDto, gameSession);
             // if dto contains "Transaction" , update new bet amount value = (old bet amount - transaction[amount])
             this.updateVendorNewBetAmount(acceptDto, action);
+            acceptDto.setExternalTransactionId(action.getId().toString());
             BetEvent response = sportWalletService.confirmBet(traceId, gameSession, acceptDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 

@@ -15,11 +15,7 @@ import java.util.Optional;
 public class AcceptDto extends ActionsWagerInfoDto implements SportBetResultData {
     private BigDecimal vendorNewBetAmount;
     private BigDecimal betAmount;
-
-    @Override
-    public String getExternalTransactionId() {
-        return this.getWagerId().toString();
-    }
+    private String externalTransactionId;
 
     @Override
     public String getVendorBetId() {

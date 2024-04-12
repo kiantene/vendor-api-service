@@ -52,6 +52,7 @@ public class ConfirmBetParlayAction {
             BetEvent betEvent = null;
 
             for (ConfirmBetParlayTxnsDto txnsDto : dtos.getMessage().getTxns()) {
+                txnsDto.setOperationId(dtos.getMessage().getOperationId());
                 betEvent = sportWalletService.confirmBet(traceId, gameSession, txnsDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
 
