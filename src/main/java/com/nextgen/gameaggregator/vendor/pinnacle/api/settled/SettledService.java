@@ -18,6 +18,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -40,6 +41,7 @@ public class SettledService {
         try {
             SettledDto settledDto = new ModelMapper().map(action.getWagerInfo(), SettledDto.class);
             settledDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
+            settledDto.setTransactionAmount(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getAmount).orElse(BigDecimal.ZERO));
             // check is confirmed bet or (settled bet -> unsettled bet)
             this.checkIsConfirmBetOrIsUnsettledBet(settledDto);
             BetEvent response = sportWalletService.settle(traceId, settledDto, httpRequestLog);
@@ -47,16 +49,6 @@ public class SettledService {
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-
-        // for Testing
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004O")) {
-            commonVo.setSetResponseVoErrorCode(Boolean.TRUE);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004S")) {
-            commonVo.setSetResponseVoErrorCode(Boolean.FALSE);
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
         }
 

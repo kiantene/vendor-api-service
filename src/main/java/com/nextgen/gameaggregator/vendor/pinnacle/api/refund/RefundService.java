@@ -33,6 +33,7 @@ public class RefundService {
         try {
             RefundDto refundDto = new ModelMapper().map(action.getWagerInfo(), RefundDto.class);
             refundDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
+            refundDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
             BetEvent response = sportWalletService.refund(traceId, refundDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 

@@ -3,7 +3,9 @@ package com.nextgen.gameaggregator.vendor.pinnacle.api.bet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 
 import java.math.BigDecimal;
 
@@ -55,17 +57,17 @@ public class BetDto extends ActionsWagerInfoDto implements SportBetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return System.currentTimeMillis();
+        return VendorService.convertDateTimeStringToTimestamp(this.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR, Formats.GMT_MINUS_FOUR);
     }
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override
     public Long getVendorSettleTime() {
-        return System.currentTimeMillis();
+        return null;
     }
 
     @Override

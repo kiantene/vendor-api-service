@@ -1,7 +1,9 @@
 package com.nextgen.gameaggregator.vendor.pinnacle.api.refund;
 
 import com.nextgen.gameaggregator.operator.sport.refund.SportRefundData;
+import com.nextgen.gameaggregator.vendor.pinnacle.constant.Formats;
 import com.nextgen.gameaggregator.vendor.pinnacle.dto.ActionsWagerInfoDto;
+import com.nextgen.gameaggregator.vendor.pinnacle.service.VendorService;
 
 public class RefundDto extends ActionsWagerInfoDto implements SportRefundData {
     @Override
@@ -11,6 +13,6 @@ public class RefundDto extends ActionsWagerInfoDto implements SportRefundData {
 
     @Override
     public Long getTimestamp() {
-        return System.currentTimeMillis();
+        return VendorService.convertDateTimeStringToTimestamp(this.getTransactionDate(), Formats.DATE_TIME_FORMAT_T_SEPARATOR, Formats.GMT_MINUS_FOUR);
     }
 }
