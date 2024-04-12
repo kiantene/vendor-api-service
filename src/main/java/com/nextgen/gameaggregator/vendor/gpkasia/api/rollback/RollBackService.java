@@ -67,6 +67,9 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
+
+            vo = null;
+            vo.setCodeMsg(ResponseCodes.ERROR);
         }catch(BetNotFoundException e){
             httpService.logError(httpRequestLog, e);
 
@@ -80,6 +83,9 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
+
+            vo = null;
+            vo.setCodeMsg(ResponseCodes.ERROR);
         } catch(BetRefundIdempotentViolationException |
                 BetResultIdempotentViolationException |
                 AuthenticationException |
