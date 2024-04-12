@@ -96,6 +96,11 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
+
+        if(this.code.equals("2") && this.finished.equals("1")){
+            return new BigDecimal(this.money * -1.00);
+        }
+
         return null;
     }
 
