@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -42,20 +41,24 @@ public class GameHotTopListService {
         
         ZoneId zone = ZoneId.of("UTC");
         // get or convert time range to filter out unneeded entry in fact_vendor_game_total
-        Long currentTimeStamp = System.currentTimeMillis() / 1000;
-        Long targetTimeStampInSeconds;
+        Long endTimeStampInSeconds;
+        Long initialTimeStampInSeconds;
         Vendor vendor = new Vendor();
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	vendor = vendorService.findVendorByCode(dto.getVendorCode());
         }
         // get timestamp @ start of the month if user intend to get game list from start of the month
         if (dto.getDateRangeType().equals(DateRangeType.MONTHLY.toString().toLowerCase())) {
-        	LocalDate targetTimeStamp = LocalDate.now(zone).withDayOfMonth(1);
-        	targetTimeStampInSeconds = targetTimeStamp.atStartOfDay(zone).toEpochSecond();
+        	LocalDate initialTimeStamp = LocalDate.now(zone).minusMonths(1).withDayOfMonth(1);
+        	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
+        	LocalDate endTimeStamp = LocalDate.now(zone).withDayOfMonth(1);
+        	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
         // get timestamp @ start of the week (Sunday) if user intend to get game list from start of the week
         } else {
-        	LocalDate targetTimeStamp = LocalDate.now(zone).with(DayOfWeek.SUNDAY);
-        	targetTimeStampInSeconds = targetTimeStamp.atStartOfDay(zone).toEpochSecond() - (7 * (DateUtils.MILLIS_PER_DAY / 1000));
+        	LocalDate endTimeStamp = LocalDate.now(zone).minusWeeks(1).with(DayOfWeek.SUNDAY);
+        	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
+        	LocalDate initialTimeStamp = LocalDate.now(zone).minusWeeks(2).with(DayOfWeek.SUNDAY);
+        	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
         }
         
         // generate sql stmt
@@ -100,21 +103,21 @@ public class GameHotTopListService {
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	stringBuilder.append("AND v.id = :vendorId ");
         }
-        stringBuilder.append("GROUP BY  vg.id ");
+        stringBuilder.append("GROUP BY vg.id ");
         stringBuilder.append("ORDER BY vg.code, l.code,  p.code) AS gamelist ");
         stringBuilder.append("ORDER BY ");
         if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-        	stringBuilder.append("ggr ");
+        	stringBuilder.append("gamelist.hotTopGgr ");
         } else {
-        	stringBuilder.append("totalBetCount ");
+        	stringBuilder.append("gamelist.hotTopBetCount ");
         }
         stringBuilder.append("DESC LIMIT 10");
         
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("currencyIds", currencyIds);
         queryParams.put("gameUrl", imageUrl);
-        queryParams.put("startTime", targetTimeStampInSeconds);
-        queryParams.put("endTime", currentTimeStamp);
+        queryParams.put("startTime", initialTimeStampInSeconds);
+        queryParams.put("endTime", endTimeStampInSeconds);
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	queryParams.put("vendorId", vendor.getId());
         }
