@@ -75,7 +75,7 @@ public class BetService {
                     balance = betEvent.getLastBalance();
                 }
 
-                // last round with win status or win in the middle of round
+                // last round with win status
                 if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.WIN, vendorService, httpRequestLog);
                 }
