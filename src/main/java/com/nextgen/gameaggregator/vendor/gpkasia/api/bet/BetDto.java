@@ -140,7 +140,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return null;
+        return System.currentTimeMillis();
     }
 
     @Override
