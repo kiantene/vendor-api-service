@@ -130,7 +130,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //bgaming
         if(this.platform.equals("9")){
-            if(this.finished.equals("0")){
+            if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
                 time = Long.parseLong(this.timestamp) * 1000;
             }
         }
