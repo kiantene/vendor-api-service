@@ -61,13 +61,6 @@ public class BetService {
 
             //bgaming
             if(betDto.getPlatform().equals("9")){
-                // lose game in one round
-                if(betDto.getCode().equals("2") && betDto.getFinished().equals("1")){
-                    // settle in one request
-                    ResultType resultType = ResultType.BET_LOSE;
-
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-                }
 
                 // first round bet with unfinished status mean place bet (it will receive win bet request)
                 if(betDto.getCode().equals("2") && betDto.getFinished().equals("0")){
@@ -79,6 +72,14 @@ public class BetService {
                 // last round with win status or win in the middle of round
                 if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
                     ResultType resultType = ResultType.WIN;
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                }
+
+                // lose game in one round
+                if(betDto.getCode().equals("2") && betDto.getFinished().equals("1")){
+                    // settle in one request
+                    ResultType resultType = ResultType.BET_LOSE;
+
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
             }
