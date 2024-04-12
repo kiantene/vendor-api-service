@@ -67,7 +67,10 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
-        }catch(BetNotFoundException e){
+        }catch(BetNotFoundException |
+               BetRefundIdempotentViolationException |
+               BetResultIdempotentViolationException e){
+            // vendor site already thread this transaction as cancel no matter we return error or success
             httpService.logError(httpRequestLog, e);
 
             balance = getCurrentBalance(traceId, gameSession, httpRequestLog);
@@ -80,15 +83,15 @@ public class RollBackService {
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
-        } catch(BetRefundIdempotentViolationException |
-                BetResultIdempotentViolationException |
-                AuthenticationException |
+        } catch(AuthenticationException |
                 InvalidRequestException |
                 InvalidPlayerException |
                 CredentialNotFoundException e){
+            // this error code is for trigger retry(vendor will thread this transaction as cancel)
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
-        }catch(Exception e){
+        } catch(Exception e){
+            // this error code is for trigger retry(vendor will thread this transaction as cancel)
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.ERROR);
         }
