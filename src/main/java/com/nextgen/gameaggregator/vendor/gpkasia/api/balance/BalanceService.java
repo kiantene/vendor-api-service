@@ -40,7 +40,7 @@ public class BalanceService {
         BalanceDataVo dataVo = new BalanceDataVo();
 
         try{
-            balanceDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
+            balanceDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -58,7 +58,7 @@ public class BalanceService {
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setUser(balanceDto.getUser());
-            dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
 
             vo.setData(dataVo);
 

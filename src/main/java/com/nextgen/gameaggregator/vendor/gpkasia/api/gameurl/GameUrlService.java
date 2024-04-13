@@ -51,7 +51,7 @@ public class GameUrlService implements GameUrl {
         formData.add("user", gameSession.getVendorPlayerUsername());
         formData.add("password", gameSession.getVendorPlayerUsername());
         formData.add("platform", credentials.get(Credentials.platform_id));
-        formData.add("timestamp", String.valueOf(vendorService.getCurrentTime()));
+        formData.add("timestamp", String.valueOf(VendorService.getCurrentTime()));
         formData.add("mode", gameSession.getVendorGameCode());
         formData.add("home_url", gameSession.getLobbyUrl());
         formData.add("lang", gameSession.getVendorLanguageCode());
@@ -71,7 +71,7 @@ public class GameUrlService implements GameUrl {
         Optional.ofNullable(urlScheme).orElseThrow(InvalidVendorLineException::new);
 
         // convert multi value map into hash map for login game
-        Map<String, Object> loginGame = vendorService.convertToHashMap(formData);
+        Map<String, Object> loginGame = VendorService.convertToHashMap(formData);
 
         // convert platform id from string into int
         loginGame.put("platform", Integer.parseInt((String) loginGame.get("platform")));
@@ -89,8 +89,6 @@ public class GameUrlService implements GameUrl {
         createPlayer.put("platform", loginGame.get("platform"));
         createPlayer.put("timestamp", loginGame.get("timestamp"));
 
-        long startTime = System.currentTimeMillis();
-
         // Convert HashMap to JSON string using Gson
         Gson gson = new Gson();
         String jsonString = gson.toJson(createPlayer);
@@ -98,13 +96,7 @@ public class GameUrlService implements GameUrl {
         // Trigger create member function by calling vendor api
         ResponseEntity<String> apiResponse = createMember(urlScheme, jsonString);
 
-        long endTime = System.currentTimeMillis();
-
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.CREATE_PLAYER, urlScheme, jsonString, apiResponse, null, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
-
-        long startTime2 = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
 
         // Convert HashMap to JSON string using Gson
         Gson gson2 = new Gson();
@@ -113,10 +105,11 @@ public class GameUrlService implements GameUrl {
         // request to get game url through vendor api
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
 
-        long endTime2 = System.currentTimeMillis();
+        long endTime = System.currentTimeMillis();
 
+        // only record response from API which is for generate game url
         RequestLogVo requestLogVo2 = requestService.createRequestLogVo(
-                EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime2, endTime2,
+                EndPoints.LAUNCH_GAME, urlScheme, jsonString2, apiResponse2, null, startTime, endTime,
                 this.getClass().getPackage().getName(), profilesActive);
 
         try{
@@ -128,11 +121,9 @@ public class GameUrlService implements GameUrl {
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
             RequestService.validateResponse(responseVo);
 
-//            RequestService.successResponseLog(requestLogVo);
             RequestService.successResponseLog(requestLogVo2);
 
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
-//            RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             RequestService.failResponseLog(requestLogVo2, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
@@ -149,7 +140,7 @@ public class GameUrlService implements GameUrl {
                 .encode()
                 .toUri();
 
-        ResponseEntity<String> apiResponse = WebClient.create()
+        return WebClient.create()
                 .post()
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -161,8 +152,6 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
-
-        return apiResponse;
     }
 
     private ResponseEntity<String> getGameUrl(String urlScheme, String loginGame){
@@ -173,7 +162,7 @@ public class GameUrlService implements GameUrl {
                 .encode()
                 .toUri();
 
-        ResponseEntity<String> apiResponse = WebClient.create()
+        return WebClient.create()
                 .post()
                 .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -185,7 +174,5 @@ public class GameUrlService implements GameUrl {
                 .retry(EndPoints.RETRY)
                 .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
                 .block();
-
-        return apiResponse;
     }
 }

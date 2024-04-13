@@ -45,7 +45,7 @@ public class GeneralAction {
             String body = httpRequestLog.getRequestBody();
 
             // Construct this vo for action handling purpose
-            ActionDto actionDto = httpService.convertQueryStringToDto(body, ActionDto.class);
+            ActionDto actionDto = HttpService.convertQueryStringToDto(body, ActionDto.class);
 
             // Validate the actionDto object
             this.doValidation(actionDto);

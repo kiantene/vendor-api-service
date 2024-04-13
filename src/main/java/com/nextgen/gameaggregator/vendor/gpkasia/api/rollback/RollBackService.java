@@ -45,7 +45,7 @@ public class RollBackService {
 
         try{
             // Retrieve request body in original string format
-            rollBackDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), RollBackDto.class);
+            rollBackDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), RollBackDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollBackDto);
@@ -63,7 +63,7 @@ public class RollBackService {
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setMoney(rollBackDto.getMoney());
-            dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
@@ -79,7 +79,7 @@ public class RollBackService {
 
             dataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
             dataVo.setMoney(rollBackDto.getMoney());
-            dataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            dataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
             dataVo.setDealid(rollBackDto.getDealid());
 
             vo.setData(dataVo);
@@ -120,7 +120,7 @@ public class RollBackService {
         try {
             balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-        } catch (Exception exception) {
+        } catch (Exception ignored) {
 
         }
 

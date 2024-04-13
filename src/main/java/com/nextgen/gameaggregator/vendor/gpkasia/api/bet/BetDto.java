@@ -5,14 +5,19 @@ import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
+import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import jakarta.validation.constraints.*;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class BetDto extends ActionDto implements BetResultData {
+    @Autowired
+    VendorService vendorService;
+
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String api_token;
@@ -78,7 +83,7 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getBetAmount() {
         // 1 is increase, 2 is decrease
         if(this.code.equals("2")){
-            return new BigDecimal(this.money);
+            return BigDecimal.valueOf(this.money);
         }
 
         return null;
@@ -88,7 +93,7 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getWinAmount() {
         // 1 is increase, 2 is decrease
         if(this.code.equals("1")){
-            return new BigDecimal(this.money);
+            return BigDecimal.valueOf(this.money);
         }
 
         return null;
@@ -98,7 +103,7 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getWinLoss() {
 
         if(this.code.equals("2") && this.finished.equals("1")){
-            return new BigDecimal(this.money * -1.00);
+            return BigDecimal.valueOf(this.money * -1.00);
         }
 
         return null;
@@ -112,12 +117,12 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals("9")){
             // end round with decrease code is lose
             if(this.code.equals("2") && this.finished.equals("1")){
-                turnover = new BigDecimal(this.money);
+                turnover = BigDecimal.valueOf(this.money);
             }
 
             // first round is place bet
             if(this.code.equals("2") && this.finished.equals("0")){
-                turnover = new BigDecimal(this.money);
+                turnover = BigDecimal.valueOf(this.money);
             }
         }
 
@@ -140,7 +145,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getResultTime() {
-        return System.currentTimeMillis();
+        return VendorService.getMilSec();
     }
 
     @Override

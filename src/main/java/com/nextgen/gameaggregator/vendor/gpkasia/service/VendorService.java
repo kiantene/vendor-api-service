@@ -32,6 +32,10 @@ public class VendorService extends BaseVendorService {
         return hashMap;
     }
 
+    public static long getMilSec(){
+        return System.currentTimeMillis();
+    }
+
     //apply for bgaming platform
     @Override
     public boolean shouldRejectCancelRequest() {
