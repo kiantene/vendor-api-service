@@ -42,7 +42,8 @@ public class BetAction {
     @Autowired
     private ValidationService validationService;
 
-    @PostMapping(path = EndPoints.BET)
+//    @PostMapping(path = EndPoints.BET)
+    @PostMapping(path = "lala")
     public CommonVo bet(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         String traceId = httpRequestLog.getId();
