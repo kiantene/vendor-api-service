@@ -64,7 +64,7 @@ public class SportUnsettledBetService {
         if (sportUnsettledBetCouchbase != null) {
             Long betTimingDifferenceInMillieSeconds = this.compareWithExistingTimingDifference(sportUnsettledBetCouchbase.getVendorBetTime());
 
-            if (sportUnsettledBetCouchbase.getExternalTransactionId() == externalTransactionId) {
+            if (sportUnsettledBetCouchbase.getExternalTransactionId().equals(externalTransactionId)) {
                 if (sportUnsettledBetCouchbase.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
                     throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
 

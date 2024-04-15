@@ -157,7 +157,7 @@ public class SportWalletService {
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(gameSession.getVendorPlayerUsername(), sportBetResultData.getRoundId(), sportBetResultData.getExternalTransactionId());
 
         // if idempotent check is passed then set internalTransactionId as new traceId
-        if (sportUnsettledBetCouchbase.getStatus() == ResponseCodes.Status.SC_OK.code) {
+        if (sportUnsettledBetCouchbase.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
             sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
         }
 
@@ -176,7 +176,7 @@ public class SportWalletService {
             BigDecimal balance = balanceVo.getData().getBalance();
 
             // Update record in sport_unsettled_bet (Couchbase)
-            sportUnsettledBetCouchbase.setStatus(ResponseCodes.Status.SC_OK.code);
+            sportUnsettledBetCouchbase.setStatus(0);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balance);
             sportUnsettledBetCouchbase.setIsConfirmBet(1);
@@ -230,8 +230,8 @@ public class SportWalletService {
             SportSettledBet sportSettledBet = sportSettledBetService.getByRoundId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getRoundId());
 
             //check is idempotent when externalTransactionId is matched
-            if (sportSettledBet.getExternalTransactionId() == sportBetResultData.getExternalTransactionId()) {
-                if (sportSettledBet.getStatus() == ResponseCodes.Status.SC_OK.code) {
+            if (sportSettledBet.getExternalTransactionId().equals(sportBetResultData.getExternalTransactionId())) {
+                if (sportSettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
                     throw new BetResultIdempotentViolationException("Process settle idempotent: " + sportBetResultData.getVendorPlayerUsername() + '_' + sportBetResultData.getExternalTransactionId());
                 } else {
                     sportUnsettledBetCouchbase.setInternalTransactionId(sportSettledBet.getInternalTransactionId());
@@ -268,6 +268,7 @@ public class SportWalletService {
             // Insert record bet_history (MariaDB)
             BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
             betHistory.setResettleNum(resettle_num);
+            betHistory.setExternalTransactionId(Objects.requireNonNullElse(sportBetResultData.getExternalTransactionId(), betHistory.getExternalTransactionId()));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
             // Update status in sport_unsettled_bet (MariaDB)
@@ -311,8 +312,12 @@ public class SportWalletService {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(sportRefundData.getVendorPlayerUsername(), sportRefundData.getRoundId(), sportRefundData.getExternalTransactionId());
 
+        if (sportUnsettledBetCouchbase == null) {
+            throw new BetNotFoundException();
+        }
+
         // if idempotent check is passed then set internalTransactionId as new traceId
-        if (sportUnsettledBetCouchbase.getStatus() == ResponseCodes.Status.SC_OK.code) {
+        if (sportUnsettledBetCouchbase.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
             sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
         }
 
@@ -352,6 +357,7 @@ public class SportWalletService {
 
         // Insert record bet_history (MariaDB)
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, BetResultType.BET.code);
+        betHistory.setExternalTransactionId(Objects.requireNonNullElse(sportRefundData.getExternalTransactionId(), betHistory.getExternalTransactionId()));
         kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
         // Insert record into sport_settled_bet (Couchbase)
@@ -375,8 +381,8 @@ public class SportWalletService {
         SportSettledBet sportSettledBet = sportSettledBetService.getByRoundId(sportUnsettleData.getVendorPlayerUsername(), sportUnsettleData.getRoundId());
 
         //check is idempotent when externalTransactionId is matched
-        if (sportSettledBet.getExternalTransactionId() == sportUnsettleData.getExternalTransactionId()) {
-            if (sportSettledBet.getStatus() == ResponseCodes.Status.SC_OK.code) {
+        if (sportSettledBet.getExternalTransactionId().equals(sportUnsettleData.getExternalTransactionId())) {
+            if (sportSettledBet.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
                 throw new BetResultIdempotentViolationException("Process unsettle idempotent: " + sportUnsettleData.getVendorPlayerUsername() + '_' + sportUnsettleData.getExternalTransactionId());
             } else {
                 internalTransactionId = sportSettledBet.getInternalTransactionId();
@@ -410,6 +416,7 @@ public class SportWalletService {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
+            betHistory.setExternalTransactionId(Objects.requireNonNullElse(sportUnsettleData.getExternalTransactionId(), betHistory.getExternalTransactionId()));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
             // update data from couchbase settled bet
@@ -497,6 +504,7 @@ public class SportWalletService {
             betHistory.setWinAmount(diffWinAmount);
             betHistory.setWinLoss(diffWinAmount);
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
+            betHistory.setExternalTransactionId(Objects.requireNonNullElse(sportResettleData.getExternalTransactionId(), betHistory.getExternalTransactionId()));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
         } catch (Exception e) {
