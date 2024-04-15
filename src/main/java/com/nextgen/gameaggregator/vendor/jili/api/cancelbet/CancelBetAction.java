@@ -105,7 +105,7 @@ public class CancelBetAction {
             } else {
                 //If other operator errors set code -1 error
                 cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
-                // cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+                //cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
