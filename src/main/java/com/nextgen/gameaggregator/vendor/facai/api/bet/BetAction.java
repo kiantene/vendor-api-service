@@ -78,6 +78,10 @@ public class BetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
+            if(gameSession.getAgentPlayerUsername().equals("fcinsuffc")){
+                Thread.sleep(10000);
+            }
+
             //Process full bet data
             ResultType resultType = this.getResultType(betDto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
