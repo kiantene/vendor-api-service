@@ -45,7 +45,7 @@ public class BetService {
         BigDecimal balance = null;
 
         try{
-            betDto = httpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
+            betDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
@@ -87,7 +87,7 @@ public class BetService {
             Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
-            betDataVo.setTimestamp(String.valueOf(vendorService.getCurrentTime()));
+            betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
             betDataVo.setMoney(money);
             betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
 
