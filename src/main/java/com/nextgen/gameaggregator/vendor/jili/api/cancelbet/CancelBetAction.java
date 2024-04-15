@@ -6,17 +6,21 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
 import com.nextgen.gameaggregator.vendor.jili.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.jili.constant.ResponseCode;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -100,8 +104,8 @@ public class CancelBetAction {
 
             } else {
                 //If other operator errors set code -1 error
-                // cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
-                cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
+                cancelBetVo.setResponseCode(ResponseCode.OTHER_ERROR);
+                // cancelBetVo.setResponseCode(ResponseCode.ALREADY_ACCEPTED);
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
