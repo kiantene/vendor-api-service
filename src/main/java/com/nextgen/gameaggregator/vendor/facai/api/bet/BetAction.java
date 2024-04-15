@@ -78,7 +78,7 @@ public class BetAction {
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, betDto, gameSession, jsonParam);
 
-            if(gameSession.getAgentPlayerUsername().equals("fcinsuffc")){
+            if(gameSession.getVendorPlayerUsername().equals("yqlc17b")){
                 Thread.sleep(10000);
             }
 
