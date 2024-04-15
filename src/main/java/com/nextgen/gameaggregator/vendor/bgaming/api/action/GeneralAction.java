@@ -156,10 +156,12 @@ public class GeneralAction {
                         }
                     case "win":
                         // If this is last action then settled true. else will still unsettled
+                        /*
                         commonDto.setIsSettled(false);
                         if ((commonDto.getFinished() && (commonDto.getActions().indexOf(actionDto) == (commonDto.getActions().size() - 1)))) {
                             commonDto.setIsSettled(true);
                         }
+                        */
                         endRoundService.endRound(commonDto, actionDto, request, responseVo, gameSession);
                         break;
                     default:
