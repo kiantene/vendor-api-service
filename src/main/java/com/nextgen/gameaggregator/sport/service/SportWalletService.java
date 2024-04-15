@@ -312,12 +312,13 @@ public class SportWalletService {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(sportRefundData.getVendorPlayerUsername(), sportRefundData.getRoundId(), sportRefundData.getExternalTransactionId());
 
+
         if (sportUnsettledBetCouchbase == null) {
             throw new BetNotFoundException();
         }
 
-        // if idempotent check is passed then set internalTransactionId as new traceId
-        if (sportUnsettledBetCouchbase.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
+        // if externalTransactionId is not matched then will be using new internalTransactionId
+        if (!sportUnsettledBetCouchbase.getExternalTransactionId().equals(sportRefundData.getExternalTransactionId())) {
             sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
         }
 
@@ -348,6 +349,7 @@ public class SportWalletService {
 
         } catch (Exception e) {
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
+            sportUnsettledBetCouchbase.setExternalTransactionId(Objects.requireNonNullElse(sportRefundData.getExternalTransactionId(), sportUnsettledBetCouchbase.getExternalTransactionId()));
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
             throw new InvalidOperatorResponseException();
 
