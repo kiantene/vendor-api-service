@@ -306,7 +306,7 @@ public class SportWalletService {
     }
 
     public BetEvent refund(String traceId, SportRefundData sportRefundData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
-            InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, BetRefundIdempotentViolationException, BetResultIdempotentViolationException, TransactionStillProcessingException {
+            InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(SportRefundAction.class.getSimpleName());
@@ -315,9 +315,29 @@ public class SportWalletService {
 
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.idempotentCheck(sportRefundData.getVendorPlayerUsername(), sportRefundData.getRoundId(), sportRefundData.getExternalTransactionId());
 
-
         if (sportUnsettledBetCouchbase == null) {
-            throw new BetNotFoundException();
+            //throw new BetNotFoundException();
+
+            try {
+                //idempotent checking on couchbase sport_settled_bet collection
+                SportSettledBet sportSettledBet = sportSettledBetService.getByRoundId(sportRefundData.getVendorPlayerUsername(), sportRefundData.getRoundId());
+                String sportSettledBetId = sportRefundData.getVendorPlayerUsername() + '_' + sportRefundData.getExternalTransactionId();
+
+                //check is idempotent when externalTransactionId is matched
+                if (sportSettledBet.getExternalTransactionId().equals(sportRefundData.getExternalTransactionId())) {
+                    throw new BetResultIdempotentViolationException("Process refund idempotent: " + sportSettledBetId);
+
+                } else {
+                    //if settledBet is found but externalTransactionId is not matched, then is considered bet not found for refund
+                    throw new BetNotFoundException("Process refund - settledBet is found with same round, but different externalTransactionId : " + sportSettledBetId);
+
+                }
+
+            } catch (BetNotFoundException e) {
+                //If the bet is not found in sportSettledBet, which mean bet is totally not exists
+                throw new BetNotFoundException(e.getMessage());
+
+            }
         }
 
         // if externalTransactionId is not matched then will be using new internalTransactionId
