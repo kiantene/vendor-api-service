@@ -64,11 +64,6 @@ public class CancelBetAction {
             // 3. get Bet History for checking
             this.doVerification(cancelBetDto, gameSession);
 
-            // testing throw InvalidOperatorResponseException (Invalidsignature)
-            if (cancelBetDto.getUserId().equals("1t369y1plg")) {
-                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_SIGNATURE.code);
-            }
-
             // 4. Send refund to Operator
             BigDecimal balance = walletService.processRollback(traceId, cancelBetDto, gameSession, vendorService, httpRequestLog);
 
