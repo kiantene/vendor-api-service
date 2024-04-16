@@ -111,8 +111,7 @@ public class CancelBetAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus() == 11) {
                 //insufficient balance
-                commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
-                commonVo.setMainPoints(0d);
+                commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
 
             } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
                 //Operator Bet not found
