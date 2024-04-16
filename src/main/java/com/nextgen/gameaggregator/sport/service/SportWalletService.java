@@ -111,7 +111,7 @@ public class SportWalletService {
             sportUnsettledBetService.save(sportUnsettledBetCouchbase);
 
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
-            sportUnsettledBetCouchbase.setStatus(0);
+            sportUnsettledBetMariaDB.setStatus(0);
             kafkaService.produceUnsettledBet(sportUnsettledBetMariaDB, vendorCurrency.getFromVendorRate());
 
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
