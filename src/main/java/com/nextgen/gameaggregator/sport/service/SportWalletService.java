@@ -432,6 +432,7 @@ public class SportWalletService {
             sportUnsettledBetCouchbase.setResultType(BetResultType.ADJUSTMENT.code);
             sportUnsettledBetCouchbase.setStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setResettleNum((sportUnsettledBetCouchbase.getResettleNum() != null && sportUnsettledBetCouchbase.getResettleNum() >= 0) ? sportUnsettledBetCouchbase.getResettleNum() + 1 : 0);
+            sportUnsettledBetCouchbase.setExternalTransactionId(Objects.requireNonNullElse(sportUnsettleData.getExternalTransactionId(), sportUnsettledBetCouchbase.getExternalTransactionId()));
 
             // Update status in (MariaDB) sport_unsettled_bet
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
@@ -440,7 +441,6 @@ public class SportWalletService {
 
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
-            betHistory.setExternalTransactionId(Objects.requireNonNullElse(sportUnsettleData.getExternalTransactionId(), betHistory.getExternalTransactionId()));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
             // update data from couchbase settled bet
@@ -504,6 +504,7 @@ public class SportWalletService {
 
         sportSettledBet.setStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
         sportSettledBet.setInternalTransactionId(internalTransactionId);
+        sportSettledBet.setExternalTransactionId(Objects.requireNonNullElse(sportResettleData.getExternalTransactionId(), sportSettledBet.getExternalTransactionId()));
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
@@ -528,7 +529,6 @@ public class SportWalletService {
             betHistory.setWinAmount(diffWinAmount);
             betHistory.setWinLoss(diffWinAmount);
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
-            betHistory.setExternalTransactionId(Objects.requireNonNullElse(sportResettleData.getExternalTransactionId(), betHistory.getExternalTransactionId()));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
         } catch (Exception e) {
