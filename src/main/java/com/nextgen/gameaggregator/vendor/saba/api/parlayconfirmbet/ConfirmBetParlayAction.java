@@ -60,7 +60,8 @@ public class ConfirmBetParlayAction {
             vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
 
         } catch (BetResultIdempotentViolationException e) {
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            vo.setResponseCode(ResponseCode.SUCCESS);
+            vo.setBalance(BigDecimal.ZERO);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
