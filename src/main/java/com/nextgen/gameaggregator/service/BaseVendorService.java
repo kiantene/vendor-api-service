@@ -1,28 +1,25 @@
 package com.nextgen.gameaggregator.service;
+
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.entity.ga.custom.BetPreprocess;
-import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public abstract class BaseVendorService {
+    @Getter
+    private final BetPreprocess betPreprocess = new BetPreprocess();
     @Autowired
     private VendorGameService vendorGameService;
     @Autowired
     private GameSessionService gameSessionService;
-
-    @Getter
-    private final BetPreprocess betPreprocess = new BetPreprocess();
 
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
@@ -91,12 +88,9 @@ public abstract class BaseVendorService {
 
     public void verifyIsPreProcessingVendorGame(Integer vendorGameId) throws GameNotSupportedException {
         VendorGame vendorGame = vendorGameService.getByGameId(vendorGameId);
-        if(vendorGame.getBetDataPreprocessing()==1){
+        if (vendorGame.getBetDataPreprocessing() == 1) {
             betPreprocess.setIsPreProcessBet(true);
         }
     }
 
-    public List<UnsettledBet> getVendorClassFileUnsettledBetList() {
-        return Collections.emptyList();
-    }
 }
