@@ -96,6 +96,8 @@ public class GameUrlService implements GameUrl {
         // Trigger create member function by calling vendor api
         ResponseEntity<String> apiResponse = createMember(urlScheme, jsonString);
 
+        log.info("gpk create player: " + apiResponse.toString());
+
         long startTime = System.currentTimeMillis();
 
         // Convert HashMap to JSON string using Gson
@@ -104,6 +106,8 @@ public class GameUrlService implements GameUrl {
 
         // request to get game url through vendor api
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
+
+        log.info("gpk generate game url: " + apiResponse2.toString());
 
         long endTime = System.currentTimeMillis();
 
