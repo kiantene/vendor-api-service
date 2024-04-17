@@ -179,12 +179,11 @@ public class UpdateBalanceAction {
                     throw new BetResultIdempotentViolationException(settledBetOptional.get());
                 }
             } catch (BetNotFoundException betNotFoundException) {
-                message.append("MG Class File Exception Cannot find unsettled and settled bets with round Id: " + winDataDto.getRoundId());
+                message.append("MG Class File Exception Cannot find unsettled and settled bets with round Id: ").append(winDataDto.getRoundId());
                 throw betNotFoundException;
             }
         } else {
-            vendorService.setVendorClassFileUnsettledBetList(unsettledBetList);
-            unsettledBetList.stream().forEach(data -> message.append("unsettledBet : " + data.getInternalTransactionId() + " "));
+            unsettledBetList.forEach(data -> message.append("unsettledBet : ").append(data.getInternalTransactionId()).append(" "));
         }
     }
 }
