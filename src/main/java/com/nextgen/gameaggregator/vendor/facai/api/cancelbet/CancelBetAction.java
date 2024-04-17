@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.facai.api.cancelbet;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
@@ -54,6 +55,9 @@ public class CancelBetAction {
         // Construct VO
         CommonVo commonVo = new CommonVo();
 
+        // using for check the operatorStatus of transaction through the couchbase
+        SettledBet settledBet = null;
+
         try {
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
@@ -81,6 +85,9 @@ public class CancelBetAction {
 
             //Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, cancelbetDto, gameSession, jsonParam);
+
+            // get the operatorStatus before process rollback(it will update the value once it go through the rollback function)
+            settledBet = vendorService.couchBaseCheckSettledRecord(gameSession.getVendorPlayerId(), cancelbetDto.getBankID());
 
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
 
@@ -113,6 +120,12 @@ public class CancelBetAction {
                 //insufficient balance
                 commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
                 commonVo.setMainPoints(0d);
+
+                // check the previous value before go through rollback function to decide keep or cancel transaction from vendor side
+                if(settledBet.getOperatorStatus() == 2){ // 2 mean SC_UNKNOWN_ERROR
+                    commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
+                    commonVo.setMainPoints(0d);
+                }
 
             } else if (invalidOperatorResponseException.getOperatorStatus() == 15) {
                 //Operator Bet not found
