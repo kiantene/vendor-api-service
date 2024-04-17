@@ -36,6 +36,7 @@ public class BetService {
             BetDto betDto = new ModelMapper().map(action.getWagerInfo(), BetDto.class);
             betDto.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
             betDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
+            betDto.setExternalTransactionId(action.getId().toString());
             BetEvent response = sportWalletService.placeBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 

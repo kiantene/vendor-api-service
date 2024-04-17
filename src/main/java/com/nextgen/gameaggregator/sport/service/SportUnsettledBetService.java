@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.sport.service;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.repository.ga.writer.UnsettledBetMariaDBRepository;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
@@ -43,24 +44,36 @@ public class SportUnsettledBetService {
         return sportUnsettledBetCouchbase;
     }
 
-    public SportUnsettledBetCouchbase idempotentCheck(String vendorPlayerUsername, String externalTransactionId, Integer isConfirmBet) throws BetResultIdempotentViolationException {
-        String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
+    public SportUnsettledBetCouchbase getByVendorPlayerUsernameAndRoundId(String vendorPlayerUsername, String roundId) throws BetNotFoundException {
+        String mergeId = vendorPlayerUsername + '_' + roundId;
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
 
         sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
-        if (sportUnsettledBetCouchbase != null) { // No matching bet record
-            Integer operatorStatus = sportUnsettledBetCouchbase.getOperatorStatus();
-            //TODO TO BE CHANGED TO CREATE_TIME
+        if (sportUnsettledBetCouchbase == null) { // No matching bet record
+            throw new BetNotFoundException("Cannot find Id from SportUnsettledBetCouchbase getByVendorPlayerUsernameAndRoundId: " + mergeId);
+        }
+
+        return sportUnsettledBetCouchbase;
+    }
+
+    public SportUnsettledBetCouchbase idempotentCheck(String vendorPlayerUsername, String roundId, String externalTransactionId) throws BetResultIdempotentViolationException, TransactionStillProcessingException {
+        String mergeId = vendorPlayerUsername + '_' + roundId;
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = null;
+
+        sportUnsettledBetCouchbase = unsettledBetCouchbaseRepository.findById(mergeId).orElse(null);
+        if (sportUnsettledBetCouchbase != null) {
             Long betTimingDifferenceInMillieSeconds = this.compareWithExistingTimingDifference(sportUnsettledBetCouchbase.getVendorBetTime());
 
-            if (!operatorStatus.equals(ResponseCodes.Status.SC_OK.code) && betTimingDifferenceInMillieSeconds < this.getTimingDifferenceForStillProcessing()) {
-                throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+            if (sportUnsettledBetCouchbase.getExternalTransactionId().equals(externalTransactionId)) {
+                if (sportUnsettledBetCouchbase.getStatus().equals(ResponseCodes.Status.SC_OK.code)) {
+                    throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
 
-            } else if (operatorStatus.equals(ResponseCodes.Status.SC_OK.code) && sportUnsettledBetCouchbase.getIsConfirmBet() == isConfirmBet) {
-                throw new BetResultIdempotentViolationException(sportUnsettledBetCouchbase);
+                } else if (betTimingDifferenceInMillieSeconds < this.getTimingDifferenceForStillProcessing()) {
+                    throw new TransactionStillProcessingException("SportUnsettledBetCouchbase idempotentCheck : " + betTimingDifferenceInMillieSeconds + " seconds.");
 
-            } else {
-                // do nothing
+                } else {
+                    //do nothing when externalTransactionId is matched, but status is not OK, we will resend the request to operator
+                }
             }
         }
 

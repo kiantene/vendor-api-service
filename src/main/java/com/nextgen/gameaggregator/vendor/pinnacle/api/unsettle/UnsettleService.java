@@ -35,6 +35,7 @@ public class UnsettleService {
             UnsettleDto unsettleDto = new ModelMapper().map(action.getWagerInfo(), UnsettleDto.class);
             unsettleDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
             unsettleDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
+            unsettleDto.setExternalTransactionId(action.getId().toString());
             BetEvent response = sportWalletService.unsettle(traceId, unsettleDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 
