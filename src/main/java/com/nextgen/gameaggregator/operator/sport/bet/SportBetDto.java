@@ -16,4 +16,5 @@ public class SportBetDto {
     private String currency;
     private Long timestamp;
     private BigDecimal betAmount;
+    private Integer betType;
 }

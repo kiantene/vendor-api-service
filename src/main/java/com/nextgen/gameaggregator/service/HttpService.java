@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -191,6 +192,24 @@ public class HttpService {
 
         try {
             httpRequestLog.setUrl("Internal Consumer For RawSettledBet");
+            httpRequestLog.setId(UUID.randomUUID().toString());
+            httpRequestLog.setStatus(PROCESSING);
+            httpRequestLog.setStartTime(System.currentTimeMillis());
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            exception.printStackTrace();
+        }
+
+        return httpRequestLog;
+    }
+    
+    public HttpRequestLog startRetryRequestToOperator(RawBetResultRetryLog rawBetResultRetryLogItem) {
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+
+        try {
+            httpRequestLog.setUrl("Retry Request - " + rawBetResultRetryLogItem.getAction());
             httpRequestLog.setId(UUID.randomUUID().toString());
             httpRequestLog.setStatus(PROCESSING);
             httpRequestLog.setStartTime(System.currentTimeMillis());

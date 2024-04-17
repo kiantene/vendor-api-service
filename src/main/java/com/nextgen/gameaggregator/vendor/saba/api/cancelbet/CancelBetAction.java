@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetRefundIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
@@ -86,7 +86,7 @@ public class CancelBetAction {
             vo.setResponseCode(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY);
             httpService.logError(httpRequestLog, e);
 
-        } catch (BetRefundIdempotentViolationException e) {
+        } catch (BetResultIdempotentViolationException e) {
             vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
             httpService.logError(httpRequestLog, e);
 

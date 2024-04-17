@@ -88,7 +88,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
     }
 
     public String generateId() {
-        return this.getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
+        return this.getVendorPlayerUsername() + '_' + this.getRoundId();
     }
 
     public BetHistory toBetHistory(Integer betStatus, Integer resultType) {

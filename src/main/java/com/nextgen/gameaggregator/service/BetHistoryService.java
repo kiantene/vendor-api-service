@@ -192,13 +192,18 @@ public class BetHistoryService {
 
         try {
             String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
-            SportBetDetail sportBetDetail = (SportBetDetail) Class.forName(className).getConstructor().newInstance();
+            SportBetDetail<?> sportBetDetail = (SportBetDetail<?>) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(sportBetDetail);
             MultiValueMap<String, String> formData = sportBetDetail.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
 
-            SportBetDetailVo sportBetDetailVo = sportBetDetail.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
-            transactionDetailData.setDetailUrl("");
-            transactionDetailData.setSportBetDetail(new SportBetDetailData(sportBetDetailVo));
+            Object vo = sportBetDetail.call(formData, credentials, iBetDetailUrlInfo, vendorLanguageCode);
+
+            if (vo instanceof BetDetailUrlVo betDetailUrlVo) {
+                transactionDetailData.setDetailUrl(betDetailUrlVo.getBetDetailUrl());
+            } else {
+                transactionDetailData.setDetailUrl("");
+                transactionDetailData.setSportBetDetail(new SportBetDetailData((SportBetDetailVo) vo));
+            }
 
             return transactionDetailData;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |

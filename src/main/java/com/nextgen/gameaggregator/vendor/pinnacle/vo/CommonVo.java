@@ -24,8 +24,6 @@ public class CommonVo {
     private Integer responseCode = ResponseCode.SUCCESS.code;
     @JsonIgnore
     private BigDecimal balance;
-    @JsonIgnore
-    private Boolean setResponseVoErrorCode = Boolean.FALSE;
 
     public CommonVo(Long id, Long transactionId, Long wagerId) {
         this.id = id;

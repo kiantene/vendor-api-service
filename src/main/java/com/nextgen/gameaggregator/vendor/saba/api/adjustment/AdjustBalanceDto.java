@@ -41,7 +41,7 @@ public class AdjustBalanceDto extends GeneralDto implements SportAdjustmentData 
 
     @Override
     public String getExternalTransactionId() {
-        return refId;
+        return operationId;
     }
 
     @Override
