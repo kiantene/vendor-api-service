@@ -166,8 +166,8 @@ public class SportWalletService {
         sportUnsettledBetCouchbase.setEffectiveTurnover(Objects.requireNonNullElse(sportBetResultData.getEffectiveTurnover(), newBetAmount));
         sportUnsettledBetCouchbase.setVendorBetId(sportBetResultData.getVendorBetId());
         sportUnsettledBetCouchbase.setExternalTransactionId(sportBetResultData.getExternalTransactionId());
-        Optional.ofNullable(sportBetResultData.getVendorBetTime()).ifPresent(sportUnsettledBetCouchbase::setVendorBetTime);
         sportUnsettledBetCouchbase.setStatus(ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code);
+        //vendorBetTime will always refer to the placeBet time to handle the partition issue.
         BetEvent betEvent = null;
 
         try {
