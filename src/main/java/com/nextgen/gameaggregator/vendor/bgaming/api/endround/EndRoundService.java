@@ -53,6 +53,9 @@ public class EndRoundService {
                 }
             }
 
+            //testing
+            Thread.sleep(10000);
+
             // process settled bet
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, endRoundDto, resultType, vendorService, httpRequestLog);
 
@@ -67,6 +70,8 @@ public class EndRoundService {
             responseVo.setBalance(balance.intValue());
             responseVo.setGameId(commonDto.getVendorRoundId());
 
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
