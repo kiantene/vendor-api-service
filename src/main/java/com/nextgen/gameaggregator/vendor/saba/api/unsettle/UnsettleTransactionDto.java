@@ -14,9 +14,15 @@ public class UnsettleTransactionDto implements SportUnsettleData {
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
+    private String operationId;
 
     @Override
     public String getExternalTransactionId() {
+        return operationId;
+    }
+
+    @Override
+    public String getRoundId() {
         return this.refId;
     }
 
@@ -27,6 +33,6 @@ public class UnsettleTransactionDto implements SportUnsettleData {
 
     @Override
     public Long getTimestamp() {
-       return System.currentTimeMillis();
+        return System.currentTimeMillis();
     }
 }

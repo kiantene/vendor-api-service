@@ -31,6 +31,18 @@ public class SportSettledBetService {
         return sportSettledBet;
     }
 
+    public SportSettledBet getByRoundId(String vendorPlayerUsername, String roundId) throws BetNotFoundException {
+        String mergeId = vendorPlayerUsername + '_' + roundId;
+        SportSettledBet sportSettledBet = null;
+
+        sportSettledBet = settledBetCouchbaseRepository.findById(mergeId).orElse(null);
+        if (sportSettledBet == null) { // No matching bet record
+            throw new BetNotFoundException("Cannot find sportSettledBet couchbase Id: " + mergeId);
+        }
+
+        return sportSettledBet;
+    }
+
     public void delete(SportSettledBet sportSettledBet) {
         settledBetCouchbaseRepository.delete(sportSettledBet);
     }

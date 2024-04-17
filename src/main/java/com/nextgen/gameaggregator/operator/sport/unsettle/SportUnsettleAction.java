@@ -75,7 +75,7 @@ public class SportUnsettleAction {
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
-            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_BET);
+            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_UNSETTLE);
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_UNSETTLE)

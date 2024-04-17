@@ -78,7 +78,7 @@ public class SportRefundAction {
 
             String jsonApiResponse = new Gson().toJson(dto);
             httpRequestLog.setOperatorData(jsonApiResponse);
-            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_SETTLE);
+            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_REFUND);
         }
 
         ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_REFUND)

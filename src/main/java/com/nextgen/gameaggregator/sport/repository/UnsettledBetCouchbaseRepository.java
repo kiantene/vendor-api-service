@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 @Collection("sport_unsettled_bet")
 public interface UnsettledBetCouchbaseRepository extends CouchbaseRepository<SportUnsettledBetCouchbase, String> {
+
+    SportUnsettledBetCouchbase findTop1ByRoundId(String roundId);
 }

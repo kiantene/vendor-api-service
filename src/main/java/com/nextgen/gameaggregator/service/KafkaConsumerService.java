@@ -45,6 +45,7 @@ public class KafkaConsumerService {
     private SportWalletService sportWalletService;
     @Autowired
     private GeneralVendorClass generalVendorClass;
+    @Autowired
     private HttpService httpService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
@@ -118,10 +119,10 @@ public class KafkaConsumerService {
 
                 //8. send to process bet history kafka topic
                 loggingService.logStart();
-                if(!vendorService.getBetPreprocess().getIsPreProcessBet()){
+                if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                     // process bet as normal bet and send to kafka topic_bet_history topic
                     kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
-                }else{
+                } else {
                     // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                     kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
                 }

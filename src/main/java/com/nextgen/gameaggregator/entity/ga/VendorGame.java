@@ -41,8 +41,7 @@ public class VendorGame extends BaseEntity {
     private String imageLandscape;
     private Integer status;
 
-
-
+    
     @Document
     @Scope("raw")
     @Collection("pinnacle_vendor_username")
@@ -125,6 +124,9 @@ public class VendorGame extends BaseEntity {
 
         @JsonProperty("create_date")
         private Long createDate = System.currentTimeMillis();
+
+        @JsonProperty("resettle_num")
+        private Integer resettleNum = 0;
 
         public SportUnsettledBetMariaDB(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
             ModelMapper modelMapper = new ModelMapper();

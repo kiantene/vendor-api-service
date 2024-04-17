@@ -21,7 +21,7 @@ public class ConfirmBetDto implements SportBetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.getTxns().get(0).getRefId();
+        return operationId;
     }
 
     @Override
@@ -31,7 +31,7 @@ public class ConfirmBetDto implements SportBetResultData {
 
     @Override
     public String getRoundId() {
-        return this.getTxns().get(0).getTxId().toString();
+        return this.getTxns().get(0).getRefId();
     }
 
     @Override

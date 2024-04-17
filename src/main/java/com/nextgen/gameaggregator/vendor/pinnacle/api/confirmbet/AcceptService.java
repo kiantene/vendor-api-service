@@ -43,21 +43,12 @@ public class AcceptService {
             this.updateBetAmount(acceptDto, gameSession);
             // if dto contains "Transaction" , update new bet amount value = (old bet amount - transaction[amount])
             this.updateVendorNewBetAmount(acceptDto, action);
+            acceptDto.setExternalTransactionId(action.getId().toString());
             BetEvent response = sportWalletService.confirmBet(traceId, gameSession, acceptDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-
-        // for Testing
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004N")) {
-            commonVo.setSetResponseVoErrorCode(Boolean.TRUE);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004R")) {
-            commonVo.setSetResponseVoErrorCode(Boolean.FALSE);
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
         }
 

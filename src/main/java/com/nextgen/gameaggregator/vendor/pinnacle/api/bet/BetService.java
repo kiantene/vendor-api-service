@@ -35,6 +35,8 @@ public class BetService {
         try {
             BetDto betDto = new ModelMapper().map(action.getWagerInfo(), BetDto.class);
             betDto.setVendorPlayerUsername(gameSession.getVendorPlayerUsername());
+            betDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
+            betDto.setExternalTransactionId(action.getId().toString());
             BetEvent response = sportWalletService.placeBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 
@@ -44,11 +46,6 @@ public class BetService {
 
         } catch (Exception e) {
             httpService.logError(httpRequestLog, e);
-            commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
-        }
-
-        // for Testing
-        if (action.getPlayerInfo().getUserCode().equalsIgnoreCase("PX1420004M")) {
             commonVo.setResponseCode(ResponseCode.UNKNOWN_ERROR.code);
         }
 

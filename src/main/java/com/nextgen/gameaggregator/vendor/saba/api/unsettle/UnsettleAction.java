@@ -51,6 +51,7 @@ public class UnsettleAction {
 
             for (UnsettleTransactionDto txnsDto : dtos.getMessage().getTxns()) {
                 String traceId = UUID.randomUUID().toString();
+                txnsDto.setOperationId(dtos.getMessage().getOperationId());
                 sportWalletService.unsettle(traceId, txnsDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
 
