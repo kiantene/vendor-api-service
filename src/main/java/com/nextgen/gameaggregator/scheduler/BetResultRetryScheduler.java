@@ -6,6 +6,8 @@ import com.nextgen.gameaggregator.enums.RetryStatus;
 import com.nextgen.gameaggregator.repository.ga.writer.RawBetResultRetryLogRepository;
 import com.nextgen.gameaggregator.service.BetResultRetryLogService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
+import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,11 +32,10 @@ public class BetResultRetryScheduler {
     @Scheduled(fixedDelay = 3000, initialDelay = 3000)
     public void processBetResultRetryLog() {
 
-        HttpRequestLog httpRequestLog;
         Long currentTime = System.currentTimeMillis() + 1;
         Integer maxRetryCounter = 7;
         Integer status = RetryStatus.FAILED.code;
-        //useScheduler = false;
+        GeneralVo vo = new GeneralVo();
 
         if (!useScheduler) {
             //Do nothing
@@ -45,12 +46,17 @@ public class BetResultRetryScheduler {
 
             if (!rawBetResultRetryLogList.isEmpty()) {
                 for (RawBetResultRetryLog rawBetResultRetryLogItem : rawBetResultRetryLogList) {
+                    HttpRequestLog httpRequestLog = httpService.startRetryRequestToOperator(rawBetResultRetryLogItem);
+
                     try {
                         betResultRetryLogService.call(rawBetResultRetryLogItem.getOperatorData(), rawBetResultRetryLogItem.getAction(), rawBetResultRetryLogItem.getAgentId());
                         rawBetResultRetryLogItem.setStatus(RetryStatus.SUCCESS.code);
+                        vo.setResponseCode(ResponseCode.SUCCESS);
 
                     } catch (Exception e) {
-                        //TODO HANDLE INTERNAL ERROR InvalidFormatException
+                        httpService.logError(httpRequestLog, e);
+                        vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+
                         rawBetResultRetryLogItem.setStatus(RetryStatus.FAILED.code);
                         rawBetResultRetryLogItem.setRetryCounter(rawBetResultRetryLogItem.getRetryCounter() + 1);
                         rawBetResultRetryLogItem.setNextRetryTime(betResultRetryLogService.calculateNextRetryTime(rawBetResultRetryLogItem.getRetryCounter(), currentTime));
@@ -59,8 +65,12 @@ public class BetResultRetryScheduler {
                             rawBetResultRetryLogItem.setStatus(RetryStatus.TIMEOUT.code);
                         }
 
+                    } finally {
+                        httpService.end(httpRequestLog, vo);
+
                     }
                     rawBetResultRetryLogRepository.save(rawBetResultRetryLogItem);
+
                 }
             }
         }

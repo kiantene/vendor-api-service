@@ -21,7 +21,6 @@ import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleAction;
 import com.nextgen.gameaggregator.operator.sport.unsettle.SportUnsettleData;
 import com.nextgen.gameaggregator.operator.sport.updatebet.SportUpdateBetAction;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.operator.wallet.bet.WalletBetAction;
 import com.nextgen.gameaggregator.repository.ga.writer.BetHistoryRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
@@ -80,7 +79,7 @@ public class SportWalletService {
     public BetEvent placeBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws InsufficientBalanceException, InvalidOperatorResponseException, BetResultIdempotentViolationException, TransactionStillProcessingException {
 
         if (httpRequestLog != null) {
-            httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
+            httpRequestLog.setRequestType(SportBetAction.class.getSimpleName());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             httpRequestLog.setVendorId(gameSession.getVendorId());
             httpRequestLog.setVendorBetId(sportBetResultData.getVendorBetId());
@@ -144,7 +143,7 @@ public class SportWalletService {
     public BetEvent confirmBet(String traceId, GameSession gameSession, SportBetResultData sportBetResultData, String rawData, HttpRequestLog httpRequestLog) throws BetNotFoundException, BetResultIdempotentViolationException, InvalidOperatorResponseException, InsufficientBalanceException, TransactionStillProcessingException {
 
         if (httpRequestLog != null) {
-            httpRequestLog.setRequestType(WalletBetAction.class.getSimpleName());
+            httpRequestLog.setRequestType(SportUpdateBetAction.class.getSimpleName());
             httpRequestLog.setOperatorUsername(gameSession.getAgentPlayerUsername());
             httpRequestLog.setVendorId(gameSession.getVendorId());
             httpRequestLog.setVendorBetId(sportBetResultData.getVendorBetId());
@@ -223,10 +222,20 @@ public class SportWalletService {
 
     public BetEvent settle(String traceId, SportBetResultData sportBetResultData, HttpRequestLog httpRequestLog) throws BetNotFoundException, InvalidAgentApiCredentialException, RecordNotFoundException, InvalidOperatorResponseException, BetResultIdempotentViolationException {
 
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(SportSettleAction.class.getSimpleName());
+            httpRequestLog.setVendorBetId(sportBetResultData.getVendorBetId());
+            httpRequestLog.setRoundId(sportBetResultData.getRoundId());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+        }
+
         SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.getByVendorPlayerUsernameAndRoundId(sportBetResultData.getVendorPlayerUsername(), sportBetResultData.getRoundId());
         sportUnsettledBetCouchbase.setInternalTransactionId(traceId);
         BetEvent betEvent = null;
         Integer resettle_num = 0;
+
+        httpRequestLog.setVendorId(sportUnsettledBetCouchbase.getVendorId());
+        httpRequestLog.setVendorUsername(sportUnsettledBetCouchbase.getVendorPlayerUsername());
 
         try {
             //idempotent checking on couchbase sport_settled_bet collection
@@ -293,6 +302,8 @@ public class SportWalletService {
             throw new InvalidOperatorResponseException();
 
         }
+
+        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return betEvent;
     }
@@ -400,6 +411,11 @@ public class SportWalletService {
     public BetEvent unsettle(String traceId, SportUnsettleData sportUnsettleData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
             InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, InvalidPlayerException, BetResultIdempotentViolationException {
 
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(SportUnsettleAction.class.getSimpleName());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+        }
+
         BetEvent betEvent = null;
         String internalTransactionId = traceId;
         SportSettledBet sportSettledBet = sportSettledBetService.getByRoundId(sportUnsettleData.getVendorPlayerUsername(), sportUnsettleData.getRoundId());
@@ -482,10 +498,18 @@ public class SportWalletService {
 
         }
 
+        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
+
         return betEvent;
     }
 
     public BetEvent resettle(String traceId, SportResettleData sportResettleData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, BetResultIdempotentViolationException {
+
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(SportResettleAction.class.getSimpleName());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+        }
+
         BetEvent betEvent = null;
         String internalTransactionId = traceId;
         SportSettledBet sportSettledBet = sportSettledBetService.getByRoundId(sportResettleData.getVendorPlayerUsername(), sportResettleData.getRoundId());
@@ -538,10 +562,17 @@ public class SportWalletService {
 
         }
 
+        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
+
         return betEvent;
     }
 
     public BetEvent adjustment(String traceId, SportAdjustmentData sportAdjustmentData, HttpRequestLog httpRequestLog) throws InvalidOperatorResponseException, BetNotFoundException, TransactionStillProcessingException, BetAdjustmentIdempotentViolationException, InvalidPlayerException, RecordNotFoundException, VendorCurrencyNotSupportException, InsufficientBalanceException {
+
+        if (httpRequestLog != null) {
+            httpRequestLog.setRequestType(SportAdjustmentAction.class.getSimpleName());
+            httpRequestLog.setBetStart(System.currentTimeMillis());
+        }
 
         BetEvent betEvent = null;
 
@@ -590,6 +621,8 @@ public class SportWalletService {
             throw new InvalidOperatorResponseException();
 
         }
+
+        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return betEvent;
     }
