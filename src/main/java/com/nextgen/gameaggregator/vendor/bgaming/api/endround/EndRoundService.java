@@ -66,9 +66,6 @@ public class EndRoundService {
 
             responseVo.setBalance(balance.intValue());
             responseVo.setGameId(commonDto.getVendorRoundId());
-
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } finally {
             httpService.end(httpRequestLog, responseVo);
         }
