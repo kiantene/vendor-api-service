@@ -97,6 +97,7 @@ public class GameUrlService implements GameUrl {
         ResponseEntity<String> apiResponse = createMember(urlScheme, jsonString);
 
         log.info("gpk create player: " + apiResponse.toString());
+        log.info("gpk create player request: " + jsonString);
 
         long startTime = System.currentTimeMillis();
 
@@ -106,8 +107,6 @@ public class GameUrlService implements GameUrl {
 
         // request to get game url through vendor api
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
-
-        log.info("gpk generate game url: " + apiResponse2.toString());
 
         long endTime = System.currentTimeMillis();
 
