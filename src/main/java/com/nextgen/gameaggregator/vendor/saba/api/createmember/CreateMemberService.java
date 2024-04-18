@@ -39,16 +39,19 @@ public class CreateMemberService {
         String vendorId = credentials.get(Credentials.VENDOR_ID);
         String operatorId = credentials.get(Credentials.OPERATOR_ID);
         String apiUrl = credentials.get(Credentials.API_URL);
+        String oddsType = credentials.get(Credentials.ODDS_TYPE);
+        String minTransfer = credentials.get(Credentials.MIN_TRANSFER);
+        String maxTransfer = credentials.get(Credentials.MAX_TRANSFER);
 
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("vendor_id", vendorId);
         formData.add("vendor_member_id", gameSession.getVendorPlayerUsername());
         formData.add("operatorid", operatorId);
         formData.add("username", gameSession.getVendorPlayerUsername());
-        formData.add("oddstype", "1");
-        formData.add("currency", "20");
-        formData.add("maxtransfer", "1000");
-        formData.add("mintransfer", "1");
+        formData.add("oddstype", oddsType);
+        formData.add("currency", gameSession.getVendorCurrencyCode());
+        formData.add("mintransfer", minTransfer);
+        formData.add("maxtransfer", maxTransfer);
 
         CreateMemberVo responseVo = null;
         MultiValueMap<String, String> headers = new LinkedMultiValueMap<String, String>();
@@ -76,7 +79,7 @@ public class CreateMemberService {
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
-            
+
             if (responseVo.getErrorCode().equals(0) || responseVo.getErrorCode().equals(6)) {
                 //0 is create new member
                 //6 is duplicate vendor_member_id
