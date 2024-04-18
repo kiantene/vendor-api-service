@@ -125,9 +125,10 @@ public class CancelBetAction {
                 commonVo.setErrorResponseCode(ResponseCodes.REVERT_CANCEL_BET);
                 commonVo.setMainPoints(0d);
 
+                log.info("fc insufficient balance");
                 // check the previous value before go through rollback function to decide keep or cancel transaction from vendor side
                 if(!settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)){
-                    log.info("FC: GA-5061");
+                    log.info("fc must rollback");
                     commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
                     commonVo.setMainPoints(0d);
                 }
