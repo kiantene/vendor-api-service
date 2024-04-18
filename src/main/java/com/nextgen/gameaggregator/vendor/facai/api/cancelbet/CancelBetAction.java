@@ -90,7 +90,7 @@ public class CancelBetAction {
             settledBet = vendorService.couchBaseCheckSettledRecord(gameSession.getVendorPlayerId(), cancelbetDto.getBankID());
 
             if(gameSession.getVendorPlayerUsername().equals("yqlc32b")){
-                new InvalidOperatorResponseException(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+               throw new InvalidOperatorResponseException(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
             }
 
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
