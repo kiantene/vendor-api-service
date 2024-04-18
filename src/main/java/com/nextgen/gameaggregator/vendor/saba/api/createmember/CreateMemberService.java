@@ -34,7 +34,7 @@ public class CreateMemberService {
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
-    public void call(GameSession gameSession , Map<String, String> credentials) throws InvalidVendorResponseException {
+    public void call(GameSession gameSession, Map<String, String> credentials) throws InvalidVendorResponseException {
 
         String vendorId = credentials.get(Credentials.VENDOR_ID);
         String operatorId = credentials.get(Credentials.OPERATOR_ID);
@@ -76,10 +76,19 @@ public class CreateMemberService {
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
+            
+            if (responseVo.getErrorCode().equals(0) || responseVo.getErrorCode().equals(6)) {
+                //0 is create new member
+                //6 is duplicate vendor_member_id
+            } else {
+                throw new InvalidVendorResponseException();
+            }
+
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
+        } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException |
+                 InvalidVendorResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
