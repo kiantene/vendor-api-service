@@ -89,6 +89,10 @@ public class CancelBetAction {
             // get the operatorStatus before process rollback(it will update the value once it go through the rollback function)
             settledBet = vendorService.couchBaseCheckSettledRecord(gameSession.getVendorPlayerId(), cancelbetDto.getBankID());
 
+            if(gameSession.getVendorPlayerUsername().equalsIgnoreCase("yqlc32b")){
+                throw new InvalidOperatorResponseException(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code);
+            }
+
             BigDecimal balance = walletService.processRollback(traceId, cancelbetDto, gameSession, vendorService, httpRequestLog);
 
             commonVo.setSuccessResponseCode(ResponseCodes.SUCCESS);
