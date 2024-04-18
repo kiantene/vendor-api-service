@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
@@ -130,5 +131,10 @@ public class BetService {
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
         ValidationUtils.isEquals(token, dto.getApi_token(), InvalidRequestException::new);
+
+        // check platform id
+        if(!PlatformType.PlatformTypeList.contains(dto.getPlatform())){
+            throw new InvalidRequestException();
+        }
     }
 }
