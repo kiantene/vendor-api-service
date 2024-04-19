@@ -36,7 +36,7 @@ public class GameHotTopListService {
     @Autowired
     private VendorService vendorService;
 
-    public List<GameHotTopData> getHotTopGameList(GameHotTopListDto dto, List<Integer> currencyIds) throws InvalidVendorException {
+    public List<GameHotTopData> getHotTopGameList(GameHotTopListDto dto, Integer currencyId, Boolean isTestEnvironment) throws InvalidVendorException {
         List<GameHotTopData> gameHotTopListData = new ArrayList<>();
         
         ZoneId zone = ZoneId.of("UTC");
@@ -47,39 +47,48 @@ public class GameHotTopListService {
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	vendor = vendorService.findVendorByCode(dto.getVendorCode());
         }
-        // get timestamp @ start of the month if user intend to get game list from start of the month
-        if (dto.getDateRangeType().equals(DateRangeType.MONTHLY.toString().toLowerCase())) {
-        	LocalDate initialTimeStamp = LocalDate.now(zone).minusMonths(1).withDayOfMonth(1);
-        	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
-        	LocalDate endTimeStamp = LocalDate.now(zone).withDayOfMonth(1);
+        // check if its in test environment to allow & get timestamp @ start of the yesterday for QA env testing
+        if (isTestEnvironment) {
+        	LocalDate endTimeStamp = LocalDate.now(zone);
         	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
-        // get timestamp @ start of the week (Sunday) if user intend to get game list from start of the week
+        	LocalDate initialTimeStamp = LocalDate.now(zone).minusDays(1);
+        	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
         } else {
-        	LocalDate endTimeStamp = LocalDate.now(zone).minusWeeks(1).with(DayOfWeek.SUNDAY);
-        	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
-        	LocalDate initialTimeStamp = LocalDate.now(zone).minusWeeks(2).with(DayOfWeek.SUNDAY);
-        	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
+        	// get timestamp @ start of the month if user intend to get game list from start of the month
+            if (dto.getDateRangeType().equals(DateRangeType.MONTHLY.toString().toLowerCase())) {
+            	LocalDate initialTimeStamp = LocalDate.now(zone).minusMonths(1).withDayOfMonth(1);
+            	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
+            	LocalDate endTimeStamp = LocalDate.now(zone).withDayOfMonth(1);
+            	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
+            // get timestamp @ start of the week (Sunday) if user intend to get game list from start of the week
+            } else {
+            	LocalDate endTimeStamp = LocalDate.now(zone).minusWeeks(1).with(DayOfWeek.SUNDAY);
+            	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
+            	LocalDate initialTimeStamp = LocalDate.now(zone).minusWeeks(2).with(DayOfWeek.SUNDAY);
+            	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
+            }
         }
         
         // generate sql stmt
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("SELECT ");
-        stringBuilder.append("gamelist.hotTopBetCount AS totalBetCount, ");
-        stringBuilder.append("gamelist.hotTopGgr AS ggr, ");
         stringBuilder.append("gamelist.vendorName AS name, ");
         stringBuilder.append("gamelist.vendorCode AS code, ");
         stringBuilder.append("gamelist.gameCode, ");
         stringBuilder.append("gamelist.GameName AS gameName, ");
         stringBuilder.append("gamelist.categoryCode, ");
         stringBuilder.append("IFNULL( concat(:gameUrl, (gamelist.defaultImageSquare)), null) AS imageSquare, ");
-		stringBuilder.append("IFNULL( concat( :gameUrl, (gamelist.defaultImageLanscape)), null) AS imageLanscape, ");
+		stringBuilder.append("IFNULL( concat(:gameUrl, (gamelist.defaultImageLanscape)), null) AS imageLanscape, ");
 		stringBuilder.append("gamelist.languageCode, ");
 		stringBuilder.append("gamelist.platformCode, ");
 		stringBuilder.append("gamelist.currencyCode ");
 		stringBuilder.append("FROM ");
 		stringBuilder.append("(SELECT ");
-		stringBuilder.append("fvgt.total_bet_count AS hotTopBetCount, ");
-		stringBuilder.append("fvgt.ggr AS hotTopGgr, ");
+		if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+        	stringBuilder.append("fvgt.total_win_loss AS hotTopWinLoss, ");
+        } else {
+        	stringBuilder.append("fvgt.total_bet_count AS hotTopBetCount, ");
+        }
 		stringBuilder.append("vg.id AS gameID, ");
 		stringBuilder.append("vg.code AS gameCode, vg.name as GameName, ");
 		stringBuilder.append("vg.image_square AS defaultImageSquare, vg.image_landscape AS defaultImageLanscape, ");
@@ -91,42 +100,67 @@ public class GameHotTopListService {
 		stringBuilder.append("FROM vendor_game_codes AS vgc ");
 		stringBuilder.append("INNER JOIN vendor_games vg ON vgc.vendor_game_id = vg.id ");
 		stringBuilder.append("INNER JOIN fact_vendor_game_total fvgt ON fvgt.vendor_game_id = vg.id ");
-		stringBuilder.append("INNER JOIN languages l on l.id = vgc.language_id  ");
+		stringBuilder.append("INNER JOIN languages l on l.id = vgc.language_id ");
 		stringBuilder.append("INNER JOIN platforms p on p.id = vgc.platform_id ");
 		stringBuilder.append("INNER JOIN game_categories gc on vg.game_category_id = gc.id ");
 		stringBuilder.append("INNER JOIN vendors v on vg.vendor_id = v.id ");
 		stringBuilder.append("INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id ");
 		stringBuilder.append("INNER JOIN currencies c on c.id = vgcurrency.currency_id ");
 		stringBuilder.append("WHERE vg.id IN ");
-		stringBuilder.append("(SELECT fvgt.vendor_game_id FROM fact_vendor_game_total fvgt WHERE `day` BETWEEN :startTime AND :endTime) ");
-        stringBuilder.append("AND vgcurrency.currency_id IN (:currencyIds) ");
-        if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
-        	stringBuilder.append("AND v.id = :vendorId ");
-        }
-        stringBuilder.append("GROUP BY vg.id ");
-        stringBuilder.append("ORDER BY vg.code, l.code,  p.code) AS gamelist ");
-        stringBuilder.append("WHERE ");
-        if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-        	stringBuilder.append("gamelist.hotTopGgr > 100000 ");
+		stringBuilder.append("(SELECT hotTopCriteria.selectedVendorGameId FROM ");
+		stringBuilder.append("(SELECT fvgt.vendor_game_id AS selectedVendorGameId, ");
+		if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+        	stringBuilder.append("SUM(fvgt.total_win_loss) AS totalWinLossSum ");
         } else {
-        	stringBuilder.append("gamelist.hotTopBetCount > 10000 ");
+        	stringBuilder.append("SUM(fvgt.total_bet_count) AS totalBetCountSum ");
         }
+		stringBuilder.append("FROM fact_vendor_game_total fvgt ");
+		stringBuilder.append("WHERE `day` BETWEEN :startTime AND :endTime ");
+        stringBuilder.append("AND currency_id = :currencyId ");
+        if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
+        	stringBuilder.append("AND vendor_id = :vendorId ");
+        }
+        stringBuilder.append("GROUP BY vendor_game_id ");
+        if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+        	stringBuilder.append("ORDER BY totalWinLossSum DESC ");
+        } else {
+        	stringBuilder.append("ORDER BY totalBetCountSum DESC ");
+        }
+        stringBuilder.append(") ");
+        stringBuilder.append("AS hotTopCriteria WHERE ");
+        if (isTestEnvironment) {
+        	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+            	stringBuilder.append("hotTopCriteria.totalWinLossSum > 1000 ");
+            } else {
+            	stringBuilder.append("hotTopCriteria.totalBetCountSum > 100 ");
+            }
+        } else {
+        	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+            	stringBuilder.append("hotTopCriteria.totalWinLossSum > 100000 ");
+            } else {
+            	stringBuilder.append("hotTopCriteria.totalBetCountSum > 10000 ");
+            }
+        }
+        stringBuilder.append(") ");
+        stringBuilder.append("GROUP BY vg.id ");
         stringBuilder.append("ORDER BY ");
         if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-        	stringBuilder.append("gamelist.hotTopGgr ");
+        	stringBuilder.append("hotTopWinLoss ");
         } else {
-        	stringBuilder.append("gamelist.hotTopBetCount ");
+        	stringBuilder.append("hotTopBetCount ");
         }
-        stringBuilder.append("DESC LIMIT 10");
+        stringBuilder.append("DESC LIMIT 10) ");
+        stringBuilder.append("AS gamelist ");
         
         Map<String, Object> queryParams = new LinkedHashMap<>();
-        queryParams.put("currencyIds", currencyIds);
+        queryParams.put("currencyId", currencyId);
         queryParams.put("gameUrl", imageUrl);
         queryParams.put("startTime", initialTimeStampInSeconds);
         queryParams.put("endTime", endTimeStampInSeconds);
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	queryParams.put("vendorId", vendor.getId());
         }
+        
         TypedQuery<Tuple> query = (TypedQuery<Tuple>) entityManager.createNativeQuery(stringBuilder.toString(), Tuple.class);
         //Execute query
         for (Map.Entry<String, Object> entry : queryParams.entrySet()) {

@@ -1,16 +1,15 @@
 package com.nextgen.gameaggregator.operator.game.hottoplist;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
 import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.enums.DateRangeType;
@@ -26,9 +25,9 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.service.GameHotTopListService;
 import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
@@ -40,6 +39,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GameHotTopListAction {
 	
+	@Autowired
+    private RequestService requestService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -48,14 +49,15 @@ public class GameHotTopListAction {
     private GameHotTopListService gameHotTopListService;
     @Autowired
     private GameUrlService gameUrlService;
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     @PostMapping(path = "hotTopList")
     public OperatorResponseVo<List<GameHotTopData>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
         OperatorResponseVo<List<GameHotTopData>> responseVo = new OperatorResponseVo<>();
         try {
+        	
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
             GameHotTopListDto dto = HttpService.convertJsonToDto(body, GameHotTopListDto.class);
@@ -85,18 +87,14 @@ public class GameHotTopListAction {
             validationService.validateSignature(body, apiCredential.getApiSecret(), signature);
 
             // 4. Get Agent Supported Currency
-            List<Integer> currencyIds = new ArrayList<>();
-            if(dto.getCurrency()==null){
-                List<AgentCurrency> agentCurrencies = agentApiCredentialService.getAgentSupportedCurrency(apiCredential.getAgent().getId());
-                for (AgentCurrency agentCurrency : agentCurrencies) {
-                    currencyIds.add(agentCurrency.getCurrency().getId());
-                }
-            }else{
-                Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
-                currencyIds.add(currency.getId());
-            }
+            Integer currencyIds;
+            Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
+            currencyIds = currency.getId();
+            
+            // 5. Get active environment to decide criteria to be fulfilled as hot / top games
+            Boolean isTestEnvironment = requestService.isTestEnvironment(profilesActive);
 
-            List<GameHotTopData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds);
+            List<GameHotTopData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds, isTestEnvironment);
  
             responseVo.setData(gameDataList);
 
