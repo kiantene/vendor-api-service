@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import jakarta.validation.constraints.*;
@@ -114,7 +115,7 @@ public class BetDto extends ActionDto implements BetResultData {
         BigDecimal turnover = null;
 
         //bgaming
-        if(this.platform.equals("9")){
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             // end round with decrease code is lose
             if(this.code.equals("2") && this.finished.equals("1")){
                 turnover = BigDecimal.valueOf(this.money);
@@ -134,7 +135,7 @@ public class BetDto extends ActionDto implements BetResultData {
         Long time = null;
 
         //bgaming
-        if(this.platform.equals("9")){
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
                 time = Long.parseLong(this.timestamp) * 1000;
             }
@@ -153,7 +154,7 @@ public class BetDto extends ActionDto implements BetResultData {
         Long time = null;
 
         //bgaming
-        if(this.platform.equals("9")){
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             // end round
             if(this.finished.equals("1")){
                 time = Long.parseLong(this.timestamp) * 1000;
@@ -179,7 +180,7 @@ public class BetDto extends ActionDto implements BetResultData {
         BetStatus status = null;
 
         //bgaming
-        if(this.platform.equals("9")){
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             // not yet finish
             if(this.finished.equals("0")){
                 status = BetStatus.UNSETTLED;
