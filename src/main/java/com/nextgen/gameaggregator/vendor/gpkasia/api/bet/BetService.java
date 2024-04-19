@@ -61,7 +61,7 @@ public class BetService {
             this.doVerification(betDto, gameSession);
 
             //bgaming
-            if(betDto.getPlatform().equals("9") || betDto.getPlatform().equals("12")){
+            if(betDto.getPlatform().equals(PlatformType.BGAMINGASIA) || betDto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
 
                 // lose game in one round
                 if(betDto.getCode().equals("2") && betDto.getFinished().equals("1")){
