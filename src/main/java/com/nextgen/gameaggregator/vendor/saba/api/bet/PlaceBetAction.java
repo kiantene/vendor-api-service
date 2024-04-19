@@ -51,7 +51,7 @@ public class PlaceBetAction {
             betEvent = sportWalletService.placeBet(traceId, gameSession, dto.getMessage(), httpRequestLog.getRequestBody(), httpRequestLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
-            vo.setRefId(betEvent.getBetInformation().getExternalTransactionId());
+            vo.setRefId(betEvent.getBetInformation().getRoundId());
             vo.setLicenseeTxId(traceId);
 
         } catch (BetResultIdempotentViolationException e) {

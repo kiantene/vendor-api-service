@@ -1,0 +1,32 @@
+package com.nextgen.gameaggregator.vendor.bombay.vo;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.nextgen.gameaggregator.service.HttpResponse;
+import lombok.Data;
+
+@Data
+public class ResponseVo implements HttpResponse {
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String user;
+
+    private String status;
+
+    private String request_uuid;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String currency;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Integer balance;
+
+    @Override
+    public boolean hasError() {
+
+        if(!this.getStatus().equals("RS_OK")){
+            return true;
+        }
+
+        return false;
+    }
+}

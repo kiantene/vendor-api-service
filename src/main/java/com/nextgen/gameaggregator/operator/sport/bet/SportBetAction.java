@@ -43,21 +43,16 @@ public class SportBetAction {
     @Autowired
     private VendorService vendorService;
 
-    public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, GameSession gameSession, BetInformation betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
         Integer agentId = gameSession.getAgentId();
 
-        VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, traceId);
-        BigDecimal fromVendorConversionRate = vendorCurrency.getFromVendorRate();
-        BigDecimal toVendorConversionRate = vendorCurrency.getToVendorRate();
-
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        SportBetDto dto = this.newSportBetDto(traceId, gameSession, betInformation);
-        dto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(dto.getBetAmount(), fromVendorConversionRate));
+        SportBetDto dto = this.newSportBetDto(traceId, gameSession, betInformation, vendorCurrency);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -119,7 +114,7 @@ public class SportBetAction {
             requestService.operatorStatusException(responseVo.getStatus());
 
             // 5. add conversion rate when returning the balance to vendor
-            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, vendorCurrency.getToVendorRate());
 
             BigDecimal balance = responseVo.getData().getBalance();
 
@@ -147,7 +142,7 @@ public class SportBetAction {
         return responseVo;
     }
 
-    private SportBetDto newSportBetDto(String traceId, GameSession gameSession, BetInformation betInformation) {
+    private SportBetDto newSportBetDto(String traceId, GameSession gameSession, BetInformation betInformation, VendorCurrency vendorCurrency) {
         BigDecimal betAmount = new BigDecimal(betInformation.getBetAmount().stripTrailingZeros().toPlainString());
 
         SportBetDto sportBetDto = new SportBetDto();
@@ -157,10 +152,11 @@ public class SportBetAction {
         sportBetDto.setUsername(gameSession.getAgentPlayerUsername());
         sportBetDto.setCurrency(gameSession.getCurrencyCode());
         sportBetDto.setExternalTransactionId(betInformation.getVendorBetId());
-        sportBetDto.setBetAmount(betAmount);
         sportBetDto.setRoundId(betInformation.getRoundId());
         sportBetDto.setTimestamp(betInformation.getVendorBetTime());
         sportBetDto.setGameCode(gameSession.getGameCode());
+        sportBetDto.setBetType(betInformation.getBetType());
+        sportBetDto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(betAmount, vendorCurrency.getFromVendorRate()));
 
         return sportBetDto;
     }

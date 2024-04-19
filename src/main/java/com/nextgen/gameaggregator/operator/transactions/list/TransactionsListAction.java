@@ -64,6 +64,10 @@ public class TransactionsListAction {
             // 5. Validate date range not more than one day
             transactionListService.isDateRangeValid(dto.getFromTime(), dto.getToTime());
 
+            if(dto.getPageSize()<2000){
+                dto.setPageSize(2000);
+            }
+
             TransactionsListData transactionsListData =  transactionListService.getTransactionsList(dto, apiCredential.getAgent().getId());
             responseVo.setData(transactionsListData);
 

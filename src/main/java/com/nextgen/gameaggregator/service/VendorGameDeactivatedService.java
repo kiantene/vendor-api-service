@@ -12,11 +12,12 @@ public class VendorGameDeactivatedService {
 
     @Autowired
     private VendorGameDeactivatedRepository vendorGameDeactivatedRepository;
+
     public boolean checkGameSupported(Agent agent, Integer vendorGameId) throws DisabledGameException {
         Integer gameNotDeletedFromVendorGameDeactivated = 0;
         Integer sasEntityHierarchyId = 1;
         VendorGameDeactivated vendorGameDeactivated = vendorGameDeactivatedRepository.findByVendorGameIdAndAgentIdAndAgentMasterIdAndHouseIdAndSasEntityHierarchyIdAndIsDeleted(vendorGameId, agent.getId(),
-                agent.getMasterAgentId(), agent.getHouseId(), gameNotDeletedFromVendorGameDeactivated, sasEntityHierarchyId);
+                agent.getMasterAgentId(), agent.getHouseId(), gameNotDeletedFromVendorGameDeactivated);
 
         if (vendorGameDeactivated != null) {
             throw new DisabledGameException();

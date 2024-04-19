@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.saba.api.adjustment;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.exception.BetAdjustmentIdempotentViolationException;
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
@@ -49,9 +50,13 @@ public class AdjustBalanceAction {
         } catch (InsufficientBalanceException e) {
             vo.setResponseCode(ResponseCode.INSUFFICIENT_BALANCE);
 
+        } catch (BetAdjustmentIdempotentViolationException e) {
+            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            httpService.logError(httpRequestLog, e);
+
         } catch (Exception e) {
-            vo.setStatus("999");
-            vo.setMsg("System Error");
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
+            vo.setMsg(ResponseCode.SYSTEM_ERROR_RETRY.message);
             httpService.logError(httpRequestLog, e);
 
         } finally {

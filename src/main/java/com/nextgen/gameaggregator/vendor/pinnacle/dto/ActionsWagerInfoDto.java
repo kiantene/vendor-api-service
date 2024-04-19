@@ -11,6 +11,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ActionsWagerInfoDto {
     private String vendorPlayerUsername;
+    private String transactionDate;
 
     @JsonProperty("WagerId")
     private Long wagerId;
@@ -36,6 +37,9 @@ public class ActionsWagerInfoDto {
     @JsonProperty("Stake")
     private BigDecimal stake;
 
+    @JsonProperty("ProfitAndLoss")
+    private BigDecimal profitAndLoss;
+
     @JsonProperty("Period")
     private Long period;
 
@@ -50,6 +54,12 @@ public class ActionsWagerInfoDto {
 
     @JsonProperty("EventDateFm")
     private String eventDateFm;
+
+    @JsonProperty("SettlementTime")
+    private String settlementTime;
+
+    @JsonProperty("ResettlementTime")
+    private String resettlementTime;
 
     @JsonProperty("LeagueId")
     private Long leagueId;

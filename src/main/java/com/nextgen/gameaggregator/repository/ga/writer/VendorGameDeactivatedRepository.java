@@ -12,14 +12,17 @@ public interface VendorGameDeactivatedRepository extends JpaRepository<VendorGam
     @Cacheable(value = "VendorGameDeactivated", key = "{#vendorGameId, #agentId}", cacheManager = "cacheManager")
     @Query(value = "SELECT * FROM vendor_game_deactivated " +
             "WHERE " +
-            "(agent_id = :agentId OR master_agent_id = :masterAgentId OR house_id = :houseId OR sas_entity_hierarchy_id = :sasEntityHierarchyId) " +
+            "((sas_entity_hierarchy_id = 1) OR " +
+            "(sas_entity_hierarchy_id = 2 AND house_id = :houseId) OR " +
+            "(sas_entity_hierarchy_id = 3 AND master_agent_id = :masterAgentId) OR " +
+            "(sas_entity_hierarchy_id = 4 AND agent_id = :agentId)) " +
             "AND " +
             "vendor_game_id = :vendorGameId " +
             "AND " +
             "is_deleted = :isDeleted " +
             "Limit 0,1", nativeQuery = true)
     VendorGameDeactivated findByVendorGameIdAndAgentIdAndAgentMasterIdAndHouseIdAndSasEntityHierarchyIdAndIsDeleted(@Param("vendorGameId") Integer vendorGameId, @Param("agentId") Integer agentId,
-                                                                   @Param("masterAgentId") Integer masterAgentId, @Param("houseId") Integer houseId,
-                                                                   @Param("isDeleted") Integer isDeleted, @Param("sasEntityHierarchyId") Integer sasEntityHierarchyId);
+                                                                                                                    @Param("masterAgentId") Integer masterAgentId, @Param("houseId") Integer houseId,
+                                                                                                                    @Param("isDeleted") Integer isDeleted);
 
 }

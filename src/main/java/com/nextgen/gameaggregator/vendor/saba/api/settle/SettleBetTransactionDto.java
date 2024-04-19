@@ -2,7 +2,6 @@ package com.nextgen.gameaggregator.vendor.saba.api.settle;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 
@@ -16,15 +15,16 @@ public class SettleBetTransactionDto implements SportBetResultData {
     private Long txId;
     private String updateTime;
     private String winlostDate;
-//    private String status;
+    //    private String status;
     private BigDecimal payout;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
+    private String operationId;
 
     @Override
     public String getExternalTransactionId() {
-        return this.getRefId();
+        return operationId;
     }
 
     @Override
@@ -34,7 +34,7 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public String getRoundId() {
-        return this.getTxId().toString();
+        return this.getRefId();
     }
 
     @Override

@@ -311,7 +311,14 @@ public class WalletService {
             BetHistory betHistory = new BetHistory(settledBet);
 
             loggingService.logStart();
-            kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
+            if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                // process bet as normal bet and send to kafka topic_bet_history topic
+                kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
+            } else {
+                // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                kafkaService.producePreprocessingBetHistory(betHistory, settledBet, fromVendorConversionRate);
+            }
+
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
 
             loggingService.logStart();

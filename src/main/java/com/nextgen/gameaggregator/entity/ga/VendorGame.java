@@ -26,6 +26,8 @@ public class VendorGame extends BaseEntity {
     private String code;
     private String vendorGameCode;
     private String name;
+
+    private Integer betDataPreprocessing;
     //    private Integer gameCategoryId;
     @ManyToOne
     private GameCategory gameCategory;
@@ -38,6 +40,7 @@ public class VendorGame extends BaseEntity {
     private String imageSquare;
     private String imageLandscape;
     private Integer status;
+
 
     @Document
     @Scope("raw")
@@ -121,6 +124,9 @@ public class VendorGame extends BaseEntity {
 
         @JsonProperty("create_date")
         private Long createDate = System.currentTimeMillis();
+
+        @JsonProperty("resettle_num")
+        private Integer resettleNum = 0;
 
         public SportUnsettledBetMariaDB(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
             ModelMapper modelMapper = new ModelMapper();

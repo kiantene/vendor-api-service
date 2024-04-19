@@ -54,4 +54,5 @@ public class ResponseCodes {
         public final Integer code;
         public final String description;
     }
+
 }
