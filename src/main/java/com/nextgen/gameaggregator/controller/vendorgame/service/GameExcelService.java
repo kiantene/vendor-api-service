@@ -1,10 +1,10 @@
 package com.nextgen.gameaggregator.controller.vendorgame.service;
 
+import com.nextgen.gameaggregator.controller.vendorgame.enums.HeaderName;
 import com.nextgen.gameaggregator.controller.vendorgame.vo.GameDataEntity;
 import com.nextgen.gameaggregator.controller.vendorgame.vo.ImportResponse;
-import com.nextgen.gameaggregator.controller.vendorgame.enums.HeaderName;
-import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.Currency;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCurrencyRepository;
@@ -25,22 +25,17 @@ import java.util.*;
 @Service
 public class GameExcelService {
 
+    private static final String USERTYPE = "vendor-api-service";
     public static String TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-
     static String SHEET = "games";
-
     @Autowired
     GameExcelValidatorService gameExcelValidatorService;
     @Autowired
     VendorGameRepository vendorGameRepository;
-
     @Autowired
     VendorGameCodeRepository vendorGameCodeRepository;
-
     @Autowired
     VendorGameCurrencyRepository vendorGameCurrencyRepository;
-
-    private static final String USERTYPE = "vendor-api-service";
 
     public static boolean hasExcelFormat(MultipartFile file) {
 
@@ -137,6 +132,7 @@ public class GameExcelService {
         gameDataEntity.getVendorGame().setGameCategory(gameCategory);
         gameDataEntity.getVendorGame().setStatus(1);
         gameDataEntity.getVendorGame().setIsByCurrency(0);
+        gameDataEntity.getVendorGame().setBetDataPreprocessing(0);
         gameDataEntity.getVendorGame().prepareSave(0, USERTYPE);
 
         VendorGame vendorGameExist = vendorGameRepository.findByCode(gameDataEntity.getVendorGame().getCode());
