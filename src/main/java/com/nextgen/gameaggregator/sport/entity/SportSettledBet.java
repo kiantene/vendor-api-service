@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 public class SportSettledBet extends BetInformation {
     private BigDecimal newBetAmount;
     private String vendorPlayerUsername;
+    private Integer unsettledResettleNum;
 
     public SportSettledBet(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
         ModelMapper modelMapper = new ModelMapper();

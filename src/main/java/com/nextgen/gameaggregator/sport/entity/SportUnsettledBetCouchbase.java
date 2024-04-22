@@ -27,6 +27,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
     private String vendorPlayerUsername;
     private Integer isConfirmBet;
     private Integer isUnsettledBet;
+    private Integer unsettledResettleNum = 0;
 
     public SportUnsettledBetCouchbase(GameSession gameSession, String rawData, SportBetResultData sportBetResultData, String traceId, Integer resultType) {
         super(sportBetResultData);
