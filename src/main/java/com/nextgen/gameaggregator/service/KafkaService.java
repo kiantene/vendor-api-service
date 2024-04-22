@@ -44,7 +44,7 @@ public class KafkaService {
 
     public void producePreprocessingBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
         try {
-            System.err.println("SEND TO "+ KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING);
+            System.err.println("SEND TO " + KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING);
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
