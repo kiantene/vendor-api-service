@@ -122,7 +122,7 @@ public class CancelBetAction {
                 commonVo.setMainPoints(0d);
                 
                 // check the previous value before go through rollback function to decide keep or cancel transaction from vendor side
-                if(!settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)){
+                if(settledBet != null && !settledBet.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_OK.code)){
                     commonVo.setErrorResponseCode(ResponseCodes.SUCCESS);
                     commonVo.setMainPoints(0d);
                 }
