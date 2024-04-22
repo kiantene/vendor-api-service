@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.endround;
 
-import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnore;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.vendor.bgaming.dto.CommonDto;
@@ -11,12 +10,11 @@ import java.math.BigDecimal;
 
 @Data
 public class EndRoundDto extends CommonDto implements BetResultData {
-    @JsonIgnore
-    private Boolean isSettled;
+
 
     @Override
     public String getExternalTransactionId() {
-        if (this.isSettled) {
+        if (this.getIsSettled()) {
             return this.getVendorRoundId();
         }
         return this.getActionDto().getActionId();

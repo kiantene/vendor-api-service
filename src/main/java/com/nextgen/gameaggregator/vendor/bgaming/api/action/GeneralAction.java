@@ -140,9 +140,11 @@ public class GeneralAction {
     private void serviceHandling(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request, ResponseVo responseVo, GameSession gameSession) throws InvalidRequestException, InvalidAgentApiCredentialException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException, DisabledAgentPlayerException, DisabledGameException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, DisabledVendorLineException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
 
         if (!commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
-            // No action , Get balance
+            // No action, Get balance
             balanceService.balance(commonDto, httpRequestLog, request, responseVo);
         } else if (commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
+            // No action and finished true will settled
+            commonDto.setIsSettled(true);
             endRoundService.endRound(commonDto, null, request, responseVo, gameSession);
         } else {
             for (ActionDto actionDto : commonDto.getActions()) {
@@ -155,7 +157,7 @@ public class GeneralAction {
                             break;
                         }
                     case "win":
-                        // If this is last action then settled true. else will still unsettled
+                        // If this is last action and finished true then settled true. else will still unsettled
                         commonDto.setIsSettled(false);
                         if ((commonDto.getFinished() && (commonDto.getActions().indexOf(actionDto) == (commonDto.getActions().size() - 1)))) {
                             commonDto.setIsSettled(true);
