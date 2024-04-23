@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.endround;
 
+import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -41,6 +42,10 @@ public class EndRoundService {
         try {
             EndRoundDto endRoundDto = new ModelMapper().map(commonDto, EndRoundDto.class);
 
+            //Insert Request Body
+            Gson gson = new Gson();
+            httpRequestLog.setRequestBody(gson.toJson(commonDto));
+            
             // Verify remaining parameters (Verify against database values)
             this.doVerification(commonDto, gameSession, httpRequestLog, request);
 

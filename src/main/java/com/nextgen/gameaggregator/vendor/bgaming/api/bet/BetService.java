@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.bgaming.api.bet;
 
+import com.couchbase.client.core.deps.com.google.gson.Gson;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
@@ -42,6 +43,10 @@ public class BetService {
 
         try {
             BetDto betDto = new ModelMapper().map(commonDto, BetDto.class);
+
+            //Insert Request Body
+            Gson gson = new Gson();
+            httpRequestLog.setRequestBody(gson.toJson(commonDto));
 
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
