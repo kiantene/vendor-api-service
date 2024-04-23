@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bgaming.api.balance;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -75,6 +76,7 @@ public class BalanceService {
 
         // Verify Signature key from vendor given
         String authToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AUTH_TOKEN);
-        VendorService.verifySign(authToken, new Gson().toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
+        Gson gson = new GsonBuilder().serializeNulls().create();
+        VendorService.verifySign(authToken, gson.toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
     }
 }

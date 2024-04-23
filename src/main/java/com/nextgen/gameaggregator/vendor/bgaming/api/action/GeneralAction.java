@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.bgaming.api.action;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -132,15 +133,18 @@ public class GeneralAction {
 
         // Verify Signature key from vendor given
         String authToken = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.AUTH_TOKEN);
-        VendorService.verifySign(authToken, new Gson().toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
+        Gson gson = new GsonBuilder().serializeNulls().create();
+        VendorService.verifySign(authToken, gson.toJson(bodyObj), request.getHeader("X-REQUEST-SIGN"));
     }
 
     private void serviceHandling(CommonDto commonDto, HttpRequestLog httpRequestLog, HttpServletRequest request, ResponseVo responseVo, GameSession gameSession) throws InvalidRequestException, InvalidAgentApiCredentialException, InvalidPlayerException, AuthenticationException, BetResultIdempotentViolationException, DisabledAgentPlayerException, DisabledGameException, InsufficientBalanceException, TransactionStillProcessingException, InvalidOperatorResponseException, CouchbaseDataIntegrityException, DisabledVendorLineException, MergedBetDataIntegrityException, BetNotFoundException, InvalidSignatureException, CredentialNotFoundException, JsonProcessingException, CurrencyNotSupportedException, GameNotSupportedException, VendorCurrencyNotSupportException {
 
         if (!commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
-            // No action , Get balance
+            // No action, Get balance
             balanceService.balance(commonDto, httpRequestLog, request, responseVo);
         } else if (commonDto.getFinished() && (commonDto.getActions() == null || commonDto.getActions().isEmpty())) {
+            // No action and finished true will settled
+            commonDto.setIsSettled(true);
             endRoundService.endRound(commonDto, null, request, responseVo, gameSession);
         } else {
             for (ActionDto actionDto : commonDto.getActions()) {
@@ -153,6 +157,11 @@ public class GeneralAction {
                             break;
                         }
                     case "win":
+                        // If this is last action and finished true then settled true. else will still unsettled
+                        commonDto.setIsSettled(false);
+                        if ((commonDto.getFinished() && (commonDto.getActions().indexOf(actionDto) == (commonDto.getActions().size() - 1)))) {
+                            commonDto.setIsSettled(true);
+                        }
                         endRoundService.endRound(commonDto, actionDto, request, responseVo, gameSession);
                         break;
                     default:
