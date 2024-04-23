@@ -1,7 +1,12 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.service;
 
+import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.VendorGameCodeService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
 
@@ -13,6 +18,9 @@ import java.util.Map;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
+
     public static long getCurrentTime(){
         return Instant.now().getEpochSecond();
     }
@@ -36,7 +44,13 @@ public class VendorService extends BaseVendorService {
         return System.currentTimeMillis();
     }
 
-    //apply for bgaming platform
+    public void verifyVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
+        VendorGameCode vendorGameCode = vendorGameCodeService.getByVendorGameIdAndPlatformIdAndLanguageId(gameSession.getVendorGameId(), gameSession.getPlatformId(), gameSession.getLanguageId());
+        if (!vendorGameCode.getBetGameCode().equals(gameId)) {
+            throw new GameNotSupportedException();
+        }
+    }
+
     @Override
     public boolean shouldRejectCancelRequest() {
         return false;

@@ -48,7 +48,6 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String roundid;
 
-    @NotBlank
     @Pattern(regexp = "[01]")
     private String finished;
 
@@ -59,6 +58,9 @@ public class BetDto extends ActionDto implements BetResultData {
     @NotBlank
     @Pattern(regexp = "\\d+")
     private String platform;
+
+    @Pattern(regexp = "[01]")
+    private String istips;
 
     @Override
     public String getExternalTransactionId() {

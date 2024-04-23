@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -54,6 +55,17 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
+            // check for 7mojo game code and force player cannot switch to official game while login with demo game (only 7mojo have demo game)
+            if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
+                // check game code from session
+                if(gameSession.getVendorGameCode().toLowerCase().contains("-demo") || gameSession.getVendorGameCode().equalsIgnoreCase("rlg-galaxy")){
+                    // check vendor request
+                    if(!betDto.getGameinfo().toLowerCase().contains("-demo") || !betDto.getGameinfo().equalsIgnoreCase("rlg-galaxy")){
+                        throw new GameNotSupportedException();
+                    }
+                }
+            }
+
             // update game code from session
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameinfo(), gameSession);
 
@@ -63,23 +75,27 @@ public class BetService {
             //bgaming
             if(betDto.getPlatform().equals(PlatformType.BGAMINGASIA) || betDto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
 
-                // lose game in one round
-                if(betDto.getCode().equals("2") && betDto.getFinished().equals("1")){
-                    // settle in one request
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
-                }
+                if(betDto.getFinished().equals("1")){
+                    // if end-round
 
-                // first round bet with unfinished status mean place bet (it will receive win bet request)
-                if(betDto.getCode().equals("2") && betDto.getFinished().equals("0")){
-                    // unsettle
+                    if(betDto.getCode().equals("2")){
+                        // if place bet status mean lose
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                    }else{
+                        // if win game(settled)
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.WIN, vendorService, httpRequestLog);
+                    }
+                }else{
+                    // not yet end(unsettled)
+
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
                     balance = betEvent.getLastBalance();
                 }
+            }
 
-                // last round with win status
-                if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.WIN, vendorService, httpRequestLog);
-                }
+            //7mojo
+            if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
+
             }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS);
@@ -119,6 +135,16 @@ public class BetService {
     private void doValidation(BetDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        // if bgaming platform will check finished param
+        if(dto.getPlatform().equals(PlatformType.BGAMINGASIA) || dto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
+            Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
+        }
+
+        // if 7mojo platform will check istips param
+        if(dto.getPlatform().equals(PlatformType.SEVENMOJO) || dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
+            Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
+        }
     }
 
     private void doVerification(BetDto dto, GameSession gameSession) throws InvalidPlayerException, AuthenticationException, DisabledAgentPlayerException, DisabledGameException, DisabledVendorLineException, CredentialNotFoundException, InvalidRequestException, GameNotSupportedException {
