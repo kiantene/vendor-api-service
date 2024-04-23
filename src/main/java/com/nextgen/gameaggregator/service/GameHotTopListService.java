@@ -130,13 +130,13 @@ public class GameHotTopListService {
         stringBuilder.append("AS hotTopCriteria WHERE ");
         if (isTestEnvironment) {
         	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-            	stringBuilder.append("hotTopCriteria.totalWinLossSum > 1000 ");
+            	stringBuilder.append("hotTopCriteria.totalWinLossSum < -1000 ");
             } else {
             	stringBuilder.append("hotTopCriteria.totalBetCountSum > 100 ");
             }
         } else {
         	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-            	stringBuilder.append("hotTopCriteria.totalWinLossSum > 100000 ");
+            	stringBuilder.append("hotTopCriteria.totalWinLossSum < -100000 ");
             } else {
             	stringBuilder.append("hotTopCriteria.totalBetCountSum > 10000 ");
             }
