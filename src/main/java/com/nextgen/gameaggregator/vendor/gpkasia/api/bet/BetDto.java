@@ -130,9 +130,11 @@ public class BetDto extends ActionDto implements BetResultData {
     @Override
     public BigDecimal getWinLoss() {
 
-        if(this.code.equals("2") && this.finished.equals("1")){
-            return BigDecimal.valueOf(this.money * -1.00);
-        }
+//        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+//            if(this.code.equals("2") && this.finished.equals("1")){
+//                return BigDecimal.valueOf(this.money * -1.00);
+//            }
+//        }
 
         return null;
     }
@@ -154,6 +156,13 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            // place bet or tips
+            if(this.code.equals("2")){
+                turnover = BigDecimal.valueOf(this.money);
+            }
+        }
+
         return turnover;
     }
 
@@ -165,6 +174,19 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
                 time = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            // tips
+            if(this.istips.equals("1")){
+                time = Long.parseLong(this.timestamp) * 1000;
+            }else{
+                //place bet
+                if(this.code.equals("2")){
+                    time = Long.parseLong(this.timestamp) * 1000;
+                }
             }
         }
 
@@ -185,6 +207,19 @@ public class BetDto extends ActionDto implements BetResultData {
             // end round
             if(this.finished.equals("1")){
                 time = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            // if tips
+            if(this.istips.equals("1")){
+                time = Long.parseLong(this.timestamp) * 1000;
+            }else{
+                // if win game
+                if(this.code.equals("1")){
+                    time = Long.parseLong(this.timestamp) * 1000;
+                }
             }
         }
 
