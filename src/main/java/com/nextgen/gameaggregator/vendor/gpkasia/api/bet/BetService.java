@@ -46,13 +46,15 @@ public class BetService {
 
         BigDecimal balance = null;
 
+        String gameCode = null;
+
         try{
             betDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
-            System.out.println(betDto);
-
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
+
+            gameCode = betDto.getGameinfo();
 
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
@@ -60,16 +62,19 @@ public class BetService {
             // check for 7mojo game code and force player cannot switch to official game while login with demo game (only 7mojo have demo game)
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
                 // check game code from session
-                if(gameSession.getVendorGameCode().toLowerCase().contains("-demo") || gameSession.getVendorGameCode().equalsIgnoreCase("rlg-galaxy")){
-                    // check vendor request
-                    if(!betDto.getGameinfo().toLowerCase().contains("-demo") || !betDto.getGameinfo().equalsIgnoreCase("rlg-galaxy")){
-                        throw new GameNotSupportedException();
-                    }
+//                if(gameSession.getVendorGameCode().toLowerCase().contains("-demo") || gameSession.getVendorGameCode().equalsIgnoreCase("rlg-galaxy")){
+//                    // check vendor request
+//                    if(!betDto.getGameinfo().toLowerCase().contains("-demo") || !betDto.getGameinfo().equalsIgnoreCase("rlg-galaxy")){
+//                        throw new GameNotSupportedException();
+//                    }
+//                }
+                if(betDto.getGameinfo().equals("45")){
+                    gameCode = "ubsp-demo";
                 }
             }
 
             // update game code from session
-            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(betDto.getGameinfo(), gameSession);
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(betDto, gameSession);
