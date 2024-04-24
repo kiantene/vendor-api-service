@@ -78,7 +78,17 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-        return this.dealid;
+        String vendorBetId = this.dealid;
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if(this.dealid == null){
+                vendorBetId = this.roundid;
+            }
+        }
+
+        return vendorBetId;
     }
 
     @Override
