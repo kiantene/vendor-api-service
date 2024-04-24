@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.vendor.facai.service;
 
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.InvalidDecryptionException;
 import com.nextgen.gameaggregator.exception.InvalidEncryptionException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
+import com.nextgen.gameaggregator.service.SettledBetService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -17,6 +21,9 @@ import java.util.Date;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+    @Autowired
+    SettledBetService settledBetService;
+
     public String aesEncrypt(String dataString, String appKey) throws InvalidEncryptionException {
         try {
             Base64.Encoder encoder = Base64.getEncoder();
@@ -62,4 +69,15 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public SettledBet couchBaseCheckSettledRecord(Long vendorPlayerId, String externalBetId) {
+        SettledBet checkRecord = null;
+
+        try {
+            checkRecord = settledBetService.getByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalBetId);
+        } catch (BetNotFoundException e) {
+            return null; //if record not found then return null;
+        }
+
+        return checkRecord;
+    }
 }
