@@ -216,6 +216,19 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            if(this.istips.equals(1)){
+                status = BetStatus.SETTLED;
+            }else{
+                if(this.getCode().equals("2")){
+                    status = BetStatus.UNSETTLED;
+                }else{
+                    status = BetStatus.SETTLED;
+                }
+            }
+        }
+
         return status;
     }
 }
