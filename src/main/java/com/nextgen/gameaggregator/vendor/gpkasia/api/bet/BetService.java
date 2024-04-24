@@ -59,20 +59,6 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
-            // check for 7mojo game code and force player cannot switch to official game while login with demo game (only 7mojo have demo game)
-            if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
-                // check game code from session
-//                if(gameSession.getVendorGameCode().toLowerCase().contains("-demo") || gameSession.getVendorGameCode().equalsIgnoreCase("rlg-galaxy")){
-//                    // check vendor request
-//                    if(!betDto.getGameinfo().toLowerCase().contains("-demo") || !betDto.getGameinfo().equalsIgnoreCase("rlg-galaxy")){
-//                        throw new GameNotSupportedException();
-//                    }
-//                }
-                if(betDto.getGameinfo().equals("45")){
-                    gameCode = "ubsp-demo";
-                }
-            }
-
             // update game code from session
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
 
@@ -105,22 +91,7 @@ public class BetService {
 
             //7mojo
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
-                if(betDto.getIstips().equals("1")){
-                    // it is tips
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
-                }else{
-                    // it is bet transaction
-                    if(betDto.getCode().equals("2")){
-                        // place bet
 
-                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                        balance = betEvent.getLastBalance();
-                    }else{
-                        // settle bet
-                        
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.WIN, vendorService, httpRequestLog);
-                    }
-                }
             }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS);
@@ -182,7 +153,7 @@ public class BetService {
         validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
-//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
+        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
