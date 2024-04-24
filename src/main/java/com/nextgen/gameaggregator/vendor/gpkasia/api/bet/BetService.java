@@ -76,7 +76,6 @@ public class BetService {
 
             //bgaming
             if(betDto.getPlatform().equals(PlatformType.BGAMINGASIA) || betDto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
-
                 if(betDto.getFinished().equals("1")){
                     // if end-round
 
@@ -101,7 +100,22 @@ public class BetService {
 
             //7mojo
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
+                if(betDto.getIstips().equals("1")){
+                    // it is tips
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                }else{
+                    // it is bet transaction
+                    if(betDto.getCode().equals("2")){
+                        // place bet
 
+                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                        balance = betEvent.getLastBalance();
+                    }else{
+                        // settle bet
+                        
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.WIN, vendorService, httpRequestLog);
+                    }
+                }
             }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS);

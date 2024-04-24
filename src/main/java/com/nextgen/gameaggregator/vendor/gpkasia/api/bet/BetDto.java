@@ -98,7 +98,13 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        return this.gameinfo;
+        String gameId = this.gameinfo;
+
+        if(this.gameinfo.equals("45")){
+            gameId = "ubsp-demo";
+        }
+
+        return gameId;
     }
 
     @Override
