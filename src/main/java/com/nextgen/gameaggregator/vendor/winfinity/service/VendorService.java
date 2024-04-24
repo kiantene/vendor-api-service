@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.vendor.winfinity.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.CredentialNotFoundException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
@@ -17,13 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -42,20 +44,22 @@ public class VendorService extends BaseVendorService {
             String tokenUrl = vendorLineService.getCredentialValueByName(vendorLineId, Credentials.API_URL)
                     + EndPoints.TOKEN;
 
-            String requestBody = "client_id=" + clientId +
-                    "&client_secret=" + clientSecret +
-                    "&grant_type=client_credentials";
+            Map<String, Object> formDataMap = new HashMap<>();
+            formDataMap.put("client_id", clientId);
+            formDataMap.put("client_secret", clientSecret);
+            formDataMap.put("grant_type", "client_credentials");
+            formDataMap.put("scope", new String[]{"partner_client.call"});
 
             // Set headers for the POST request
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
             // Make the POST request and get the response
             String responseBody = WebClient.create()
                     .post()
                     .uri(tokenUrl)
                     .headers(httpHeaders -> httpHeaders.addAll(headers))
-                    .body(BodyInserters.fromValue(requestBody))
+                    .bodyValue(new Gson().toJson(formDataMap))
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
@@ -75,7 +79,7 @@ public class VendorService extends BaseVendorService {
     }
 
     public String decodeRequestBody(Integer vendorLineId, String requestBody, String qa,
-            HttpRequestLog httpRequestLog) {
+                                    HttpRequestLog httpRequestLog) {
         String publicKey = "";
         String decodedString = "";
 
