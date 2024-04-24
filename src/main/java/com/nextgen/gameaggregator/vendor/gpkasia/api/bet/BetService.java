@@ -182,7 +182,7 @@ public class BetService {
         validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
+//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
