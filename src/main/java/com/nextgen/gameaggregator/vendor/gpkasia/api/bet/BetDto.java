@@ -156,6 +156,14 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            if(this.istips.equals("1")){
+                // tips
+                turnover = BigDecimal.valueOf(this.money);
+            }
+        }
+
         return turnover;
     }
 
@@ -166,6 +174,15 @@ public class BetDto extends ActionDto implements BetResultData {
         //bgaming
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
+                time = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            if(this.istips.equals("1")){
+                // tips
+
                 time = Long.parseLong(this.timestamp) * 1000;
             }
         }
@@ -186,6 +203,15 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             // end round
             if(this.finished.equals("1")){
+                time = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            if(this.istips.equals("1")){
+                // tips
+
                 time = Long.parseLong(this.timestamp) * 1000;
             }
         }
@@ -214,6 +240,14 @@ public class BetDto extends ActionDto implements BetResultData {
             if(this.finished.equals("0")){
                 status = BetStatus.UNSETTLED;
             }else{
+                status = BetStatus.SETTLED;
+            }
+        }
+
+        //7mojo
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            if(this.istips.equals("1")){
+                // tips
                 status = BetStatus.SETTLED;
             }
         }

@@ -59,6 +59,14 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
+            gameCode = betDto.getGameinfo();
+
+            if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
+                if(betDto.getGameinfo().equals("45")){
+                    gameCode = "ubsp-demo";
+                }
+            }
+
             // update game code from session
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(gameCode, gameSession);
 
@@ -91,7 +99,10 @@ public class BetService {
 
             //7mojo
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
-
+                if(betDto.getIstips().equals("1")){
+                    // tips
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                }
             }
 
             vo.setCodeMsg(ResponseCodes.SUCCESS);
@@ -153,7 +164,7 @@ public class BetService {
         validationService.validateEligibleBet(gameSession, dto.getUser());
 
         // Verify vendor gameCode
-        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
+//        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
