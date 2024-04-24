@@ -28,7 +28,7 @@ public class BetDto extends ActionDto implements BetResultData {
     private String user;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private Double money;
 
     @NotBlank
@@ -36,7 +36,6 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "\\d+")
     private String timestamp;
 
-    @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String dealid;
 
@@ -64,7 +63,17 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.dealid;
+        String exTransId = this.dealid;
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if(this.dealid == null){
+                exTransId = this.roundid;
+            }
+        }
+
+        return exTransId;
     }
 
     @Override

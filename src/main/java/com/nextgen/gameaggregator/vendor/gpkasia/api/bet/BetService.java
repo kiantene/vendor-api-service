@@ -49,6 +49,8 @@ public class BetService {
         try{
             betDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
+            System.out.println(betDto);
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
@@ -82,8 +84,12 @@ public class BetService {
                         // if place bet status mean lose
                         balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     }else{
-                        // if win game(settled)
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.WIN, vendorService, httpRequestLog);
+                        // settled with win amount status(will happen zero amount when buy bonus game)
+
+                        ResultType resultType = getResultType(betDto);
+
+                        // settle transaction
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 }else{
                     // not yet end(unsettled)
@@ -139,6 +145,11 @@ public class BetService {
         // if bgaming platform will check finished param
         if(dto.getPlatform().equals(PlatformType.BGAMINGASIA) || dto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
             Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
+
+            // check the dealid if it is not lose game in buy finish game
+            if(!(dto.getMoney() == 0.0 && dto.getCode().equals("1") && dto.getFinished().equals("1"))){
+                Optional.ofNullable(dto.getDealid()).orElseThrow(InvalidRequestException::new);
+            }
         }
 
         // if 7mojo platform will check istips param
@@ -162,5 +173,16 @@ public class BetService {
         if(!PlatformType.PlatformTypeList.contains(dto.getPlatform())){
             throw new InvalidRequestException();
         }
+    }
+
+    private ResultType getResultType(BetDto dto){
+        ResultType resultType = ResultType.WIN; // Default value is win
+
+        // this situation may happen when bought bonus game but lose without get any amount
+        if(dto.getMoney() == 0.0 && dto.getDealid() == null){
+            resultType = ResultType.END;
+        }
+
+        return resultType;
     }
 }
