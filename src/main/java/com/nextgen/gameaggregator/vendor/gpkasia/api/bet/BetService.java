@@ -83,7 +83,6 @@ public class BetService {
                         balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     }else{
                         // settled with win amount status(will happen zero amount when buy bonus game)
-
                         ResultType resultType = getResultType(betDto);
 
                         // settle transaction
@@ -91,7 +90,6 @@ public class BetService {
                     }
                 }else{
                     // not yet end(unsettled)
-
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
                     balance = betEvent.getLastBalance();
                 }
@@ -102,6 +100,19 @@ public class BetService {
                 if(betDto.getIstips().equals("1")){
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                }else{
+                    // bet transaction
+                    if(betDto.getCode().equals("2")){
+                        // place bet(unsettled)
+                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                        balance = betEvent.getLastBalance();
+                    }else{
+                        // settled
+                        ResultType resultType = getResultType(betDto);
+
+                        // settle transaction
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
                 }
             }
 
@@ -179,7 +190,7 @@ public class BetService {
     private ResultType getResultType(BetDto dto){
         ResultType resultType = ResultType.WIN; // Default value is win
 
-        // this situation may happen when bought bonus game but lose without get any amount
+        // bgaming may happen lose in buy bonus game
         if(dto.getMoney() == 0.0 && dto.getDealid() == null){
             resultType = ResultType.END;
         }

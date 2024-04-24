@@ -129,42 +129,17 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-
-//        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-//            if(this.code.equals("2") && this.finished.equals("1")){
-//                return BigDecimal.valueOf(this.money * -1.00);
-//            }
-//        }
-
         return null;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        BigDecimal turnover = null;
-
-        //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            // end round with decrease code is lose
-            if(this.code.equals("2") && this.finished.equals("1")){
-                turnover = BigDecimal.valueOf(this.money);
-            }
-
-            // first round is place bet
-            if(this.code.equals("2") && this.finished.equals("0")){
-                turnover = BigDecimal.valueOf(this.money);
-            }
+        // 1 is increase, 2 is decrease
+        if(this.code.equals("2")){
+            return BigDecimal.valueOf(this.money);
         }
 
-        //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals("1")){
-                // tips
-                turnover = BigDecimal.valueOf(this.money);
-            }
-        }
-
-        return turnover;
+        return null;
     }
 
     @Override
@@ -182,8 +157,12 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
             if(this.istips.equals("1")){
                 // tips
-
                 time = Long.parseLong(this.timestamp) * 1000;
+            }else{
+                // place bet
+                if(this.code.equals("2")){
+                    time = Long.parseLong(this.timestamp) * 1000;
+                }
             }
         }
 
@@ -211,8 +190,12 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
             if(this.istips.equals("1")){
                 // tips
-
                 time = Long.parseLong(this.timestamp) * 1000;
+            }else{
+                // win bet
+                if(this.code.equals("1")){
+                    time = Long.parseLong(this.timestamp) * 1000;
+                }
             }
         }
 
@@ -249,6 +232,15 @@ public class BetDto extends ActionDto implements BetResultData {
             if(this.istips.equals("1")){
                 // tips
                 status = BetStatus.SETTLED;
+            }else{
+                // bet transaction
+                if(this.code.equals("2")){
+                    // place bet
+                    status = BetStatus.UNSETTLED;
+                }else{
+                    // settle bet
+                    status = BetStatus.SETTLED;
+                }
             }
         }
 
