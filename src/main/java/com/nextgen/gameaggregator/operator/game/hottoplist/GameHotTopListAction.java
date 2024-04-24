@@ -3,7 +3,6 @@ package com.nextgen.gameaggregator.operator.game.hottoplist;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -49,8 +48,6 @@ public class GameHotTopListAction {
     private GameHotTopListService gameHotTopListService;
     @Autowired
     private GameUrlService gameUrlService;
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
 
     @PostMapping(path = "hotTopList")
     public OperatorResponseVo<List<GameHotTopData>> list(HttpServletRequest request) {
@@ -90,11 +87,8 @@ public class GameHotTopListAction {
             Integer currencyIds;
             Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
             currencyIds = currency.getId();
-            
-            // 5. Get active environment to decide criteria to be fulfilled as hot / top games
-            Boolean isTestEnvironment = requestService.isTestEnvironment(profilesActive);
 
-            List<GameHotTopData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds, isTestEnvironment);
+            List<GameHotTopData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds);
  
             responseVo.setData(gameDataList);
 

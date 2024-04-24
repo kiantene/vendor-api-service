@@ -36,7 +36,7 @@ public class GameHotTopListService {
     @Autowired
     private VendorService vendorService;
 
-    public List<GameHotTopData> getHotTopGameList(GameHotTopListDto dto, Integer currencyId, Boolean isTestEnvironment) throws InvalidVendorException {
+    public List<GameHotTopData> getHotTopGameList(GameHotTopListDto dto, Integer currencyId) throws InvalidVendorException {
         List<GameHotTopData> gameHotTopListData = new ArrayList<>();
         
         ZoneId zone = ZoneId.of("UTC");
@@ -47,26 +47,18 @@ public class GameHotTopListService {
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	vendor = vendorService.findVendorByCode(dto.getVendorCode());
         }
-        // check if its in test environment to allow & get timestamp @ start of the yesterday for QA env testing
-        if (isTestEnvironment) {
-        	LocalDate endTimeStamp = LocalDate.now(zone);
-        	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
-        	LocalDate initialTimeStamp = LocalDate.now(zone).minusDays(1);
+    	// get timestamp @ start of the month if user intend to get game list from start of the month
+        if (dto.getDateRangeType().equals(DateRangeType.MONTHLY.toString().toLowerCase())) {
+        	LocalDate initialTimeStamp = LocalDate.now(zone).minusMonths(1).withDayOfMonth(1);
         	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
+        	LocalDate endTimeStamp = LocalDate.now(zone).withDayOfMonth(1);
+        	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
+        // get timestamp @ start of the week (Sunday) if user intend to get game list from start of the week
         } else {
-        	// get timestamp @ start of the month if user intend to get game list from start of the month
-            if (dto.getDateRangeType().equals(DateRangeType.MONTHLY.toString().toLowerCase())) {
-            	LocalDate initialTimeStamp = LocalDate.now(zone).minusMonths(1).withDayOfMonth(1);
-            	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
-            	LocalDate endTimeStamp = LocalDate.now(zone).withDayOfMonth(1);
-            	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
-            // get timestamp @ start of the week (Sunday) if user intend to get game list from start of the week
-            } else {
-            	LocalDate endTimeStamp = LocalDate.now(zone).minusWeeks(1).with(DayOfWeek.SUNDAY);
-            	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
-            	LocalDate initialTimeStamp = LocalDate.now(zone).minusWeeks(2).with(DayOfWeek.SUNDAY);
-            	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
-            }
+        	LocalDate endTimeStamp = LocalDate.now(zone).minusWeeks(1).with(DayOfWeek.SUNDAY);
+        	endTimeStampInSeconds = endTimeStamp.atStartOfDay(zone).toEpochSecond();
+        	LocalDate initialTimeStamp = LocalDate.now(zone).minusWeeks(2).with(DayOfWeek.SUNDAY);
+        	initialTimeStampInSeconds = initialTimeStamp.atStartOfDay(zone).toEpochSecond();
         }
         
         // generate sql stmt
@@ -128,18 +120,10 @@ public class GameHotTopListService {
         }
         stringBuilder.append(") ");
         stringBuilder.append("AS hotTopCriteria WHERE ");
-        if (isTestEnvironment) {
-        	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-            	stringBuilder.append("hotTopCriteria.totalWinLossSum < -1000 ");
-            } else {
-            	stringBuilder.append("hotTopCriteria.totalBetCountSum > 100 ");
-            }
+    	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
+        	stringBuilder.append("hotTopCriteria.totalWinLossSum < -100000 ");
         } else {
-        	if (dto.getType().equals(HotTopGameType.TOP.toString().toLowerCase())) {
-            	stringBuilder.append("hotTopCriteria.totalWinLossSum < -100000 ");
-            } else {
-            	stringBuilder.append("hotTopCriteria.totalBetCountSum > 10000 ");
-            }
+        	stringBuilder.append("hotTopCriteria.totalBetCountSum > 10000 ");
         }
         stringBuilder.append(") ");
         stringBuilder.append("GROUP BY vg.id ");
