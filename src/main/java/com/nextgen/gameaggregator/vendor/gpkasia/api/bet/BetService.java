@@ -101,18 +101,10 @@ public class BetService {
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                 }else{
-                    // bet transaction
-                    if(betDto.getCode().equals("2")){
-                        // place bet(unsettled)
-                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                        balance = betEvent.getLastBalance();
-                    }else{
-                        // settled
-                        ResultType resultType = getResultType(betDto);
+                    // testing
+                    ResultType resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
-                        // settle transaction
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-                    }
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
             }
 

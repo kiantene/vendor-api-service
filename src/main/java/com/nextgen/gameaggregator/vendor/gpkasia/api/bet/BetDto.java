@@ -153,10 +153,8 @@ public class BetDto extends ActionDto implements BetResultData {
                 // tips
                 time = Long.parseLong(this.timestamp) * 1000;
             }else{
-                // place bet
-                if(this.code.equals("2")){
-                    time = Long.parseLong(this.timestamp) * 1000;
-                }
+                //testing
+                time = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
@@ -186,10 +184,8 @@ public class BetDto extends ActionDto implements BetResultData {
                 // tips
                 time = Long.parseLong(this.timestamp) * 1000;
             }else{
-                // win bet
-                if(this.code.equals("1")){
-                    time = Long.parseLong(this.timestamp) * 1000;
-                }
+                //testing
+                time = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
@@ -227,14 +223,8 @@ public class BetDto extends ActionDto implements BetResultData {
                 // tips
                 status = BetStatus.SETTLED;
             }else{
-                // bet transaction
-                if(this.code.equals("2")){
-                    // place bet
-                    status = BetStatus.UNSETTLED;
-                }else{
-                    // settle bet
-                    status = BetStatus.SETTLED;
-                }
+                //testing
+                status = BetStatus.SETTLED;
             }
         }
 
