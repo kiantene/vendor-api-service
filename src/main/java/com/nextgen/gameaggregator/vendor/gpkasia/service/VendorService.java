@@ -51,6 +51,22 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public static String trimGameCode(String gameCode){
+
+        String trimmedGameCode = null;
+
+        // check if game code contain _stg (ignore case-sensitive)
+        if(gameCode.toLowerCase().contains("_stg")){
+            // Trim value by removing _stg (ignore case-sensitive)
+            trimmedGameCode = gameCode.replaceFirst("(?i)_stg$", "");
+        }else{
+            // let trimmedCode same as gameCode
+            trimmedGameCode = gameCode;
+        }
+
+        return trimmedGameCode;
+    }
+
     @Override
     public boolean shouldRejectCancelRequest() {
         return false;
