@@ -26,7 +26,6 @@ import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.GameHotTopListService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.service.ValidationService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 
@@ -38,8 +37,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GameHotTopListAction {
 	
-	@Autowired
-    private RequestService requestService;
     @Autowired
     private HttpService httpService;
     @Autowired

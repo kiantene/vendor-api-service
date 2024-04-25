@@ -18,6 +18,7 @@ import com.nextgen.gameaggregator.enums.HotTopGameType;
 import com.nextgen.gameaggregator.exception.InvalidVendorException;
 import com.nextgen.gameaggregator.operator.game.hottoplist.GameHotTopData;
 import com.nextgen.gameaggregator.operator.game.hottoplist.GameHotTopListDto;
+import com.nextgen.gameaggregator.util.MysqlUtils;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -35,6 +36,8 @@ public class GameHotTopListService {
     private String imageUrl;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private MysqlUtils mysqlUtils;
 
     public List<GameHotTopData> getHotTopGameList(GameHotTopListDto dto, Integer currencyId) throws InvalidVendorException {
         List<GameHotTopData> gameHotTopListData = new ArrayList<>();
@@ -63,6 +66,7 @@ public class GameHotTopListService {
         
         // generate sql stmt
         StringBuilder stringBuilder = new StringBuilder();
+        List<String> partitionsList = mysqlUtils.convertDateTimeToMonthPartitions(initialTimeStampInSeconds*1000, endTimeStampInSeconds*1000, "fact_vendor_game_total");
         stringBuilder.append("SELECT ");
         stringBuilder.append("gamelist.vendorName AS name, ");
         stringBuilder.append("gamelist.vendorCode AS code, ");
@@ -106,8 +110,11 @@ public class GameHotTopListService {
         } else {
         	stringBuilder.append("SUM(fvgt.total_bet_count) AS totalBetCountSum ");
         }
-		stringBuilder.append("FROM fact_vendor_game_total fvgt ");
-		stringBuilder.append("WHERE `day` BETWEEN :startTime AND :endTime ");
+		stringBuilder.append("FROM fact_vendor_game_total ");
+		if(!partitionsList.isEmpty()) {
+        	stringBuilder.append(" PARTITION (" + String.join(",", partitionsList) + ") ");
+        }
+		stringBuilder.append("fvgt WHERE `day` BETWEEN :startTime AND :endTime ");
         stringBuilder.append("AND currency_id = :currencyId ");
         if (dto.getVendorCode() != null && !dto.getVendorCode().isEmpty()) {
         	stringBuilder.append("AND vendor_id = :vendorId ");
