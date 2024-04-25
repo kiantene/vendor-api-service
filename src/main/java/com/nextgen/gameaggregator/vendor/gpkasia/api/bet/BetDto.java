@@ -98,13 +98,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getGameId() {
-        String gameId = this.gameinfo;
-
-        if(this.gameinfo.equals("45")){
-            gameId = "ubsp-demo";
-        }
-
-        return gameId;
+        return this.gameinfo;
     }
 
     @Override
@@ -160,9 +154,11 @@ public class BetDto extends ActionDto implements BetResultData {
                 time = Long.parseLong(this.timestamp) * 1000;
             }else{
                 // place bet
-                if(this.code.equals("2")){
-                    time = Long.parseLong(this.timestamp) * 1000;
-                }
+//                if(this.code.equals("2")){
+//                    time = Long.parseLong(this.timestamp) * 1000;
+//                }
+
+                time = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
@@ -193,9 +189,10 @@ public class BetDto extends ActionDto implements BetResultData {
                 time = Long.parseLong(this.timestamp) * 1000;
             }else{
                 // win bet
-                if(this.code.equals("1")){
-                    time = Long.parseLong(this.timestamp) * 1000;
-                }
+//                if(this.code.equals("1")){
+//                    time = Long.parseLong(this.timestamp) * 1000;
+//                }
+                time = Long.parseLong(this.timestamp) * 1000;
             }
         }
 
@@ -229,19 +226,21 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals("1")){
-                // tips
-                status = BetStatus.SETTLED;
-            }else{
-                // bet transaction
-                if(this.code.equals("2")){
-                    // place bet
-                    status = BetStatus.UNSETTLED;
-                }else{
-                    // settle bet
-                    status = BetStatus.SETTLED;
-                }
-            }
+//            if(this.istips.equals("1")){
+//                // tips
+//                status = BetStatus.SETTLED;
+//            }else{
+//                // bet transaction
+//                if(this.code.equals("2")){
+//                    // place bet
+//                    status = BetStatus.UNSETTLED;
+//                }else{
+//                    // settle bet
+//                    status = BetStatus.SETTLED;
+//                }
+//            }
+
+            status = BetStatus.SETTLED;
         }
 
         return status;
