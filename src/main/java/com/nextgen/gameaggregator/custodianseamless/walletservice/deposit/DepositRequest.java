@@ -98,7 +98,7 @@ public class DepositRequest {
                                 .body("Error wallet service call to " + apiUrl + WalletServiceEndpoints.WALLET_DEPOSIT
                                         + ", Exception " + e.getMessage()));
                     })
-                    .retry(1)
+                    .retry(3)
                     .timeout(Duration.ofMillis(timeout))
                     .block();
 
