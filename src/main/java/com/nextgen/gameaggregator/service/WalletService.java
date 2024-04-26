@@ -745,7 +745,7 @@ public class WalletService {
             loggingService.logProcessTime("processRollback ｜ walletRollbackAction.call", traceId);
 
             //resettlement with below condition, then resettle_num need increase
-            if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+            if (settledBet.getStatus().equals(BetStatus.SETTLED.code) && settledBet.getOperatorStatus().equals(ResponseCodes.Status.SC_OK)) {
 
                 Integer resettleNum = (settledBet.getResettleNum() == null) ? 0 : settledBet.getResettleNum();
 
