@@ -1,17 +1,10 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.result;
 
-import java.math.BigDecimal;
-import java.util.List;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -21,9 +14,14 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -41,7 +39,7 @@ public class SettleAction {
     private ValidationService validationService;
     @Autowired
     private SettledBetService settledBetService;
-    
+
     @PostMapping(path = Endpoints.DEPOSIT)
     public ResponseVo settle(HttpServletRequest request) {
 
@@ -65,6 +63,7 @@ public class SettleAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -116,8 +115,8 @@ public class SettleAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
-                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) ||
+                    invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
                 data.setOperator_tx_id(traceId);
                 data.setNew_balance(oldBalance);
                 data.setOld_balance(oldBalance);
@@ -137,9 +136,11 @@ public class SettleAction {
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | 
-            DisabledGameException | MergedBetDataIntegrityException | InsufficientBalanceException | TransactionStillProcessingException | GameNotSupportedException | 
-            CurrencyNotSupportedException internalErrorExeption) {
+        } catch (InvalidAgentApiCredentialException | VendorCurrencyNotSupportException | InvalidRequestException |
+                 DisabledVendorLineException | DisabledAgentPlayerException |
+                 DisabledGameException | MergedBetDataIntegrityException | InsufficientBalanceException |
+                 TransactionStillProcessingException | GameNotSupportedException |
+                 CurrencyNotSupportedException internalErrorExeption) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorExeption);
 
@@ -159,8 +160,8 @@ public class SettleAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, 
-        DisabledGameException, AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
+    private void doVerification(HttpRequestLog request, SettleDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException,
+            DisabledGameException, AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
 
         // Check game session status (0 = inactive)
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -175,12 +176,12 @@ public class SettleAction {
         //validate vendor username, agent vendor line, player status, and game status
         validationService.validateEligibleBet(gameSession, dto.getUser_id());
     }
-    
+
     private ResultType getResultType(SettleDto dto) {
         ResultType resultType = ResultType.BET_LOSE;
         BigDecimal zero = BigDecimal.ZERO;
 
-        if (dto.getWinAmount().compareTo(zero) > 0) { 
+        if (dto.getWinAmount().compareTo(zero) > 0) {
             resultType = ResultType.BET_WIN;
         }
 

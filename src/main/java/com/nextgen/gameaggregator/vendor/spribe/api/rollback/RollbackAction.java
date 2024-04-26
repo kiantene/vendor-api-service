@@ -1,12 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -20,13 +13,20 @@ import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 public class RollbackAction {
 
+    @Autowired
+    SettledBetService settledBetService;
     @Autowired
     private HttpService httpService;
     @Autowired
@@ -41,9 +41,7 @@ public class RollbackAction {
     private VendorGameService vendorGameService;
     @Autowired
     private VendorService vendorService;
-    @Autowired
-    SettledBetService settledBetService;
-    
+
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseVo rollback(HttpServletRequest request) {
 
@@ -67,6 +65,7 @@ public class RollbackAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(dto, gameSession);
@@ -106,8 +105,8 @@ public class RollbackAction {
             httpService.logError(httpRequestLog, transactionNotFoundeException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
-                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) ||
+                    invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
                 vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
 
             } else if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
@@ -121,14 +120,17 @@ public class RollbackAction {
 
         } catch (AuthenticationException authenticationException) {
             vo.setErrorCode(ErrorCodes.INVALID_TOKEN);
-            httpService.logError(httpRequestLog, authenticationException); 
+            httpService.logError(httpRequestLog, authenticationException);
 
-        } catch (InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException | DisabledGameException | InvalidAgentApiCredentialException | 
-            TransactionStillProcessingException | VendorCurrencyNotSupportException | GameNotSupportedException internalErrorException) {
+        } catch (InvalidRequestException | DisabledVendorLineException | DisabledAgentPlayerException |
+                 DisabledGameException | InvalidAgentApiCredentialException |
+                 TransactionStillProcessingException | VendorCurrencyNotSupportException |
+                 GameNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
-            httpService.logError(httpRequestLog, internalErrorException);  
+            httpService.logError(httpRequestLog, internalErrorException);
 
-        } catch (BetResultIdempotentViolationException | BetRefundIdempotentViolationException idempotentViolationException) {
+        } catch (BetResultIdempotentViolationException |
+                 BetRefundIdempotentViolationException idempotentViolationException) {
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(oldBalance));
             data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
@@ -139,11 +141,11 @@ public class RollbackAction {
             vo.setErrorCode(ErrorCodes.DUPLICATE_TRANSACTION);
             vo.setData(data);
             httpService.logError(httpRequestLog, idempotentViolationException);
-        
+
         } catch (Exception exception) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, exception);
-        
+
         } finally {
             httpService.end(httpRequestLog, vo);
         }
@@ -156,8 +158,8 @@ public class RollbackAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(RollbackDto dto, GameSession gameSession) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, 
-        DisabledGameException, GameNotSupportedException {
+    private void doVerification(RollbackDto dto, GameSession gameSession) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException,
+            DisabledGameException, GameNotSupportedException {
 
         // Check game session status (0 = inactive)
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
@@ -173,15 +175,15 @@ public class RollbackAction {
 
         // Verify agent player is active
         agentPlayerService.verifyAgentPlayerStatus(gameSession.getAgentPlayerId());
-        
+
         // Verify vendor game is active
         vendorGameService.verifyGameStatus(gameSession.getVendorGameId());
     }
 
     private SettledBet checkSettledBetRequest(RollbackDto dto, GameSession gameSession) throws BetNotFoundException {
         // Check whether if the request is a place bet not result
-        SettledBet rawSettledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getRollback_provider_tx_id(), dto.getAction_id(), gameSession.getVendorId(), 
-                                    gameSession.getVendorPlayerId());
+        SettledBet rawSettledBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(dto.getRollback_provider_tx_id(), dto.getAction_id(), gameSession.getVendorId(),
+                gameSession.getVendorPlayerId());
         return rawSettledBet;
     }
 
