@@ -405,7 +405,6 @@ public class WalletService {
 
             // if status is settled, reset internalTransactionId and send cancel request to operator
             if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                settledBet.setStatus(BetStatus.CANCELLED.code);
                 settledBet.setInternalTransactionId(traceId);
             }
             // else the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
@@ -747,12 +746,16 @@ public class WalletService {
 
             //resettlement with below condition, then resettle_num need increase
             if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                settledBet.setResettleNum(settledBet.getResettleNum() + 1);
+
+                Integer resettleNum = (settledBet.getResettleNum() == null) ? 0 : settledBet.getResettleNum();
+
+                settledBet.setResettleNum(resettleNum + 1);
                 settledBet.setBetAmount(settledBet.getBetAmount().negate());
                 settledBet.setWinAmount(settledBet.getWinAmount().negate());
                 settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
                 settledBet.setWinLoss(settledBet.getWinLoss().negate());
                 settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
+                settledBet.setStatus(BetStatus.CANCELLED.code);
 
             }
 
