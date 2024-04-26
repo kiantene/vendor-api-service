@@ -33,6 +33,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -91,6 +92,7 @@ public class DepositRequest {
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
+                    .retryWhen(Retry.backoff(3, Duration.ofMillis(20)))
                     .onErrorResume(WebClientRequestException.class, e -> {
                         log.error("TraceId {} Failed wallet service call to {}: {}, ",
                                 traceId, apiUrl + WalletServiceEndpoints.WALLET_DEPOSIT, e.getMessage());
@@ -98,7 +100,6 @@ public class DepositRequest {
                                 .body("Error wallet service call to " + apiUrl + WalletServiceEndpoints.WALLET_DEPOSIT
                                         + ", Exception " + e.getMessage()));
                     })
-                    .retry(3)
                     .timeout(Duration.ofMillis(timeout))
                     .block();
 
