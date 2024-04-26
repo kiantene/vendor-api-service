@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -36,6 +38,8 @@ public class BetService {
     private HttpService httpService;
     @Autowired
     private VendorService vendorService;
+    @Autowired
+    private VendorGameCodeService vendorGameCodeService;
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo vo = new CommonVo();
@@ -59,11 +63,26 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
-            gameCode = betDto.getGameinfo();
-
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
-                if(betDto.getGameinfo().equals("45")){
-                    gameCode = "ubsp-demo";
+                List<VendorGameCode> vendorGameCodeList = vendorService.getVendorGameCode(gameSession, gameCode);
+
+                String runEnv = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.env);
+
+                // check is demo game or not
+                for(VendorGameCode resultSet : vendorGameCodeList){
+
+                    if(runEnv.equalsIgnoreCase("stg")){
+                        // if env is stg
+                        if(resultSet.getOpenGameCode().toLowerCase().contains("_stg")) gameCode = resultSet.getOpenGameCode();
+                    }else{
+                        // if env is prod
+                        if(!resultSet.getOpenGameCode().toLowerCase().contains("_stg")) gameCode = resultSet.getOpenGameCode();
+                    }
+                }
+
+                // if env is stg but the game code does not have this value
+                if(runEnv.equalsIgnoreCase("stg") && !gameCode.toLowerCase().contains("_stg")){
+                    gameCode = gameCode + "_stg";
                 }
             }
 
@@ -168,6 +187,7 @@ public class BetService {
 
         // Verify vendor gameCode
 //        ValidationUtils.isEquals(gameSession.getVendorGameCode(), dto.getGameinfo(), GameNotSupportedException::new);
+        vendorService.verifyVendorGameCode(gameSession, dto.getGameId());
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);

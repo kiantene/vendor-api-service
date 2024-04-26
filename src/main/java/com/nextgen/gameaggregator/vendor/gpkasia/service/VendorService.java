@@ -51,6 +51,11 @@ public class VendorService extends BaseVendorService {
         }
     }
 
+    public List<VendorGameCode> getVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
+        List<VendorGameCode> vendorGameCodeList = vendorGameCodeService.getByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(gameId, gameSession.getLanguageId(), gameSession.getPlatformId(), gameSession.getVendorId());
+        return vendorGameCodeList;
+    }
+
     public static String trimGameCode(String gameCode){
 
         String trimmedGameCode = null;
