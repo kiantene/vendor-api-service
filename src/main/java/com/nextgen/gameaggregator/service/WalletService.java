@@ -747,7 +747,10 @@ public class WalletService {
 
             //resettlement with below condition, then resettle_num need increase
             if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                settledBet.setResettleNum(settledBet.getResettleNum() + 1);
+
+                Integer resettleNum = (settledBet.getResettleNum() == null) ? 0 : settledBet.getResettleNum();
+
+                settledBet.setResettleNum(resettleNum + 1);
                 settledBet.setBetAmount(settledBet.getBetAmount().negate());
                 settledBet.setWinAmount(settledBet.getWinAmount().negate());
                 settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
