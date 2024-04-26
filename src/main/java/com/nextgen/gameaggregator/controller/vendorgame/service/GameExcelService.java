@@ -127,31 +127,37 @@ public class GameExcelService {
     }
 
     private Boolean saveGameData(GameDataEntity gameDataEntity, Vendor vendor, GameCategory gameCategory) {
+
         gameDataEntity.getVendorGame().setCode(vendor.getCode() + "_" + gameDataEntity.getVendorGame().getVendorGameCode());
-        gameDataEntity.getVendorGame().setVendor(vendor);
-        gameDataEntity.getVendorGame().setGameCategory(gameCategory);
-        gameDataEntity.getVendorGame().setStatus(1);
-        gameDataEntity.getVendorGame().setIsByCurrency(0);
-        gameDataEntity.getVendorGame().setBetDataPreprocessing(0);
-        gameDataEntity.getVendorGame().prepareSave(0, USERTYPE);
 
         VendorGame vendorGameExist = vendorGameRepository.findByCode(gameDataEntity.getVendorGame().getCode());
 
-        if (vendorGameExist != null) {
-            gameDataEntity.getVendorGame().setId(vendorGameExist.getId());
+        if (Objects.nonNull(vendorGameExist)) {
+            gameDataEntity.setVendorGame(vendorGameExist);
+        } else {
+            gameDataEntity.getVendorGame().setVendor(vendor);
+            gameDataEntity.getVendorGame().setGameCategory(gameCategory);
+            gameDataEntity.getVendorGame().setStatus(1);
+            gameDataEntity.getVendorGame().setIsByCurrency(0);
+            gameDataEntity.getVendorGame().setBetDataPreprocessing(0);
+            gameDataEntity.getVendorGame().prepareSave(0, USERTYPE);
         }
-        VendorGame vendorGame = vendorGameRepository.save(gameDataEntity.getVendorGame());
 
-        List<VendorGameCode> VendorGameCodes = this.generateVendorGameCodeListByPlatform(
-                gameDataEntity.getVendorGameCodes(), gameDataEntity.getPlatformSupported(), vendor, vendorGame,
+        List<VendorGameCode> vendorGameCodes = this.generateVendorGameCodeListByPlatform(
+                gameDataEntity.getVendorGameCodes(), gameDataEntity.getPlatformSupported(), vendor, gameDataEntity.getVendorGame(),
                 gameDataEntity.getDefaultOpenGameCode(), gameDataEntity.getDefaultBetGameCode());
 
-        vendorGameCodeRepository.saveAll(VendorGameCodes);
+        List<VendorGameCurrency> vendorGameCurrencies = this.generateVendorGameCurrencyList(
+                gameDataEntity.getVendorGameCurrencies(), gameDataEntity.getVendorGame());
 
-        List<VendorGameCurrency> VendorGameCurrencies = this.generateVendorGameCurrencyList(
-                gameDataEntity.getVendorGameCurrencies(), vendorGame);
+        if (vendorGameCodes.stream().noneMatch(value -> value.getStatus().equals(1)) && vendorGameCurrencies.stream().noneMatch(value -> value.getStatus().equals(1))) {
+            gameDataEntity.getVendorGame().setStatus(0);
+        }
 
-        vendorGameCurrencyRepository.saveAll(VendorGameCurrencies);
+        vendorGameCodeRepository.saveAll(vendorGameCodes);
+        vendorGameCurrencyRepository.saveAll(vendorGameCurrencies);
+        vendorGameRepository.save(gameDataEntity.getVendorGame());
+
         return true;
     }
 
@@ -169,30 +175,31 @@ public class GameExcelService {
 
                 VendorGameCode vendorGameCodeLang = vendorGameCodeValue.getValue();
 
-                VendorGameCode vendorGameCode = new VendorGameCode();
-                vendorGameCode.setVendorGame(vendorGame);
-                vendorGameCode.setVendor(vendor);
-                vendorGameCode.setName(vendorGameCodeLang.getName());
-                vendorGameCode.setImageSquare(vendorGameCodeLang.getImageSquare());
-
-                vendorGameCode.setOpenGameCode(
-                        (vendorGameCodeLang.getOpenGameCode() == null) ? defaultOpenGameCode : vendorGameCodeLang.getOpenGameCode());
-                vendorGameCode.setBetGameCode(
-                        (vendorGameCodeLang.getBetGameCode() == null) ? defaultBetGameCode : vendorGameCodeLang.getBetGameCode());
-                vendorGameCode.setLanguageId(vendorGameCodeLang.getLanguageId());
-                vendorGameCode.setPlatformId(platform.getId());
-                //default status as false if platform is disable
-                vendorGameCode.setStatus(platform.getStatus().equals(0) ? 0 : vendorGameCodeLang.getStatus());
-
-
                 VendorGameCode vendorGameCodeExist = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageId(
                         vendorGame.getId(), platform.getId(), vendorGameCodeLang.getLanguageId());
 
-                if (vendorGameCodeExist != null) {
-                    vendorGameCode.setId(vendorGameCodeExist.getId());
+                VendorGameCode vendorGameCode = new VendorGameCode();
+
+                if (Objects.nonNull(vendorGameCodeExist)) {
+                    vendorGameCode = vendorGameCodeExist;
+                } else {
+                    vendorGameCode.setVendorGame(vendorGame);
+                    vendorGameCode.setVendor(vendor);
+                    vendorGameCode.setName(vendorGameCodeLang.getName());
+                    vendorGameCode.setImageSquare(vendorGameCodeLang.getImageSquare());
+
+                    vendorGameCode.setOpenGameCode(
+                            (vendorGameCodeLang.getOpenGameCode() == null) ? defaultOpenGameCode : vendorGameCodeLang.getOpenGameCode());
+                    vendorGameCode.setBetGameCode(
+                            (vendorGameCodeLang.getBetGameCode() == null) ? defaultBetGameCode : vendorGameCodeLang.getBetGameCode());
+                    vendorGameCode.setLanguageId(vendorGameCodeLang.getLanguageId());
+                    vendorGameCode.setPlatformId(platform.getId());
+                    //default status as false if platform is disable
+                    vendorGameCode.setStatus(platform.getStatus().equals(0) ? 0 : vendorGameCodeLang.getStatus());
+
+                    vendorGameCode.prepareSave(0, USERTYPE);
                 }
 
-                vendorGameCode.prepareSave(0, USERTYPE);
                 vendorGameCodes.add(vendorGameCode);
 
             }
@@ -203,11 +210,10 @@ public class GameExcelService {
     }
 
 
-    private List<VendorGameCurrency> generateVendorGameCurrencyList(
-            HashMap<String, VendorGameCurrency> VendorGameCurrencyMap, VendorGame vendorGame) {
-        List<VendorGameCurrency> VendorGameCurrencies = new ArrayList<>();
+    private List<VendorGameCurrency> generateVendorGameCurrencyList(HashMap<String, VendorGameCurrency> vendorGameCurrencyHashMap, VendorGame vendorGame) {
+        List<VendorGameCurrency> vendorGameCurrencies = new ArrayList<>();
 
-        for (Map.Entry<String, VendorGameCurrency> vendorGameCurrencyValue : VendorGameCurrencyMap.entrySet()) {
+        for (Map.Entry<String, VendorGameCurrency> vendorGameCurrencyValue : vendorGameCurrencyHashMap.entrySet()) {
             VendorGameCurrency vendorGameCurrency = vendorGameCurrencyValue.getValue();
 
             vendorGameCurrency.setVendorGame(vendorGame);
@@ -215,15 +221,16 @@ public class GameExcelService {
             VendorGameCurrency vendorGameCurrencyExist = vendorGameCurrencyRepository.findByVendorGameIdAndCurrencyId(
                     vendorGame.getId(), vendorGameCurrency.getCurrency().getId());
 
-            if (vendorGameCurrencyExist != null) {
-                vendorGameCurrency.setId(vendorGameCurrencyExist.getId());
+            if (Objects.nonNull(vendorGameCurrencyExist)) {
+                vendorGameCurrency = vendorGameCurrencyExist;
+            } else {
+                vendorGameCurrency.prepareSave(0, USERTYPE);
             }
 
-            vendorGameCurrency.prepareSave(0, USERTYPE);
-            VendorGameCurrencies.add(vendorGameCurrency);
+            vendorGameCurrencies.add(vendorGameCurrency);
         }
 
-        return VendorGameCurrencies;
+        return vendorGameCurrencies;
 
     }
 }

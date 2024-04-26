@@ -395,21 +395,6 @@ public class WalletService {
                     if (!settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
                         throw new BetResultIdempotentViolationException(settledBet);
 
-                    } else {
-                        // proceed with entire cancel flow request.
-                        Integer resettleNum = 0;
-
-                        if (settledBet.getResettleNum() != null) {
-                            resettleNum = settledBet.getResettleNum();
-                        }
-
-                        settledBet.setResettleNum(resettleNum + 1);
-                        settledBet.setBetAmount(settledBet.getBetAmount().negate());
-                        settledBet.setWinAmount(settledBet.getWinAmount().negate());
-                        settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
-                        settledBet.setWinLoss(settledBet.getWinLoss().negate());
-                        settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
-
                     }
                 }
 
@@ -420,7 +405,6 @@ public class WalletService {
 
             // if status is settled, reset internalTransactionId and send cancel request to operator
             if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
-                settledBet.setStatus(BetStatus.CANCELLED.code);
                 settledBet.setInternalTransactionId(traceId);
             }
             // else the betStatus is either refund or cancel (not settled), then will need to send with same txId to operator to cancel this bet
@@ -744,6 +728,7 @@ public class WalletService {
                 }
 
                 settledBetService.save(settledBet, settledBet.getRawData());
+
             }
 
             vendorSettledTime = settledBet.getVendorSettleTime();
@@ -758,6 +743,23 @@ public class WalletService {
             loggingService.logStart();
             WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog);
             loggingService.logProcessTime("processRollback ｜ walletRollbackAction.call", traceId);
+
+            //resettlement with below condition, then resettle_num need increase
+            if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+                settledBet.setStatus(BetStatus.CANCELLED.code);
+
+                if (settledBet.getOperatorStatus().equals(ResponseCodes.Status.SC_OK)) {
+                    Integer resettleNum = (settledBet.getResettleNum() == null) ? 0 : settledBet.getResettleNum();
+
+                    settledBet.setResettleNum(resettleNum + 1);
+                    settledBet.setBetAmount(settledBet.getBetAmount().negate());
+                    settledBet.setWinAmount(settledBet.getWinAmount().negate());
+                    settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
+                    settledBet.setWinLoss(settledBet.getWinLoss().negate());
+                    settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
+
+                }
+            }
 
             balance = balanceVo.getData().getBalance();
             settledBet.setOperatorStatus(operatorStatusSuccess);
