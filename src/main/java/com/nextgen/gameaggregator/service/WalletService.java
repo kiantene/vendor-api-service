@@ -395,21 +395,6 @@ public class WalletService {
                     if (!settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
                         throw new BetResultIdempotentViolationException(settledBet);
 
-                    } else {
-                        // proceed with entire cancel flow request.
-                        Integer resettleNum = 0;
-
-                        if (settledBet.getResettleNum() != null) {
-                            resettleNum = settledBet.getResettleNum();
-                        }
-
-                        settledBet.setResettleNum(resettleNum + 1);
-                        settledBet.setBetAmount(settledBet.getBetAmount().negate());
-                        settledBet.setWinAmount(settledBet.getWinAmount().negate());
-                        settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
-                        settledBet.setWinLoss(settledBet.getWinLoss().negate());
-                        settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
-
                     }
                 }
 
@@ -744,6 +729,7 @@ public class WalletService {
                 }
 
                 settledBetService.save(settledBet, settledBet.getRawData());
+
             }
 
             vendorSettledTime = settledBet.getVendorSettleTime();
@@ -758,6 +744,17 @@ public class WalletService {
             loggingService.logStart();
             WalletBalanceVo balanceVo = walletRollbackAction.call(traceId, agentId, gameSession, betId, roundId, vendorBetId, vendorSettledTime, internalTransactionId, httpRequestLog);
             loggingService.logProcessTime("processRollback ｜ walletRollbackAction.call", traceId);
+
+            //resettlement with below condition, then resettle_num need increase
+            if (settledBet.getStatus().equals(BetStatus.SETTLED.code)) {
+                settledBet.setResettleNum(settledBet.getResettleNum() + 1);
+                settledBet.setBetAmount(settledBet.getBetAmount().negate());
+                settledBet.setWinAmount(settledBet.getWinAmount().negate());
+                settledBet.setEffectiveTurnover(settledBet.getEffectiveTurnover().negate());
+                settledBet.setWinLoss(settledBet.getWinLoss().negate());
+                settledBet.setJackpotAmount(settledBet.getJackpotAmount().negate());
+
+            }
 
             balance = balanceVo.getData().getBalance();
             settledBet.setOperatorStatus(operatorStatusSuccess);
