@@ -111,6 +111,9 @@ public class GameUrlService implements GameUrl {
         // request to get game url through vendor api
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
 
+        log.info("gpk create game url: " + apiResponse2.toString());
+        log.info("gpk create game url request: " + apiResponse2);
+
         long endTime = System.currentTimeMillis();
 
         // only record response from API which is for generate game url
