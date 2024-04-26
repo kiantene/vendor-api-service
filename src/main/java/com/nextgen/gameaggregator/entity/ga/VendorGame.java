@@ -41,7 +41,7 @@ public class VendorGame extends BaseEntity {
     private String imageLandscape;
     private Integer status;
 
-
+    
     @Document
     @Scope("raw")
     @Collection("pinnacle_vendor_username")

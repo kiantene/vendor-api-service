@@ -203,7 +203,7 @@ public class HttpService {
 
         return httpRequestLog;
     }
-
+    
     public HttpRequestLog startRetryRequestToOperator(RawBetResultRetryLog rawBetResultRetryLogItem) {
 
         HttpRequestLog httpRequestLog = new HttpRequestLog();

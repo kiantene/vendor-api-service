@@ -70,7 +70,7 @@ public class BetResultRetryScheduler {
 
                     }
                     rawBetResultRetryLogRepository.save(rawBetResultRetryLogItem);
-
+                    
                 }
             }
         }

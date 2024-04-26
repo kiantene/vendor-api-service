@@ -79,7 +79,6 @@ public class CreateMemberService {
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
-
             if (responseVo.getErrorCode().equals(0) || responseVo.getErrorCode().equals(6)) {
                 //0 is create new member
                 //6 is duplicate vendor_member_id
