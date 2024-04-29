@@ -102,23 +102,19 @@ public class BetService {
                 }else{
                     resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
-                    if(betDto.getCode().equals("2")){
-                        Thread.sleep(5000);
-                    }
-
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
             }
 
             //turbo game
             if(betDto.getPlatform().equals(PlatformType.TURBOGAME) || betDto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
-                if(betDto.getDealid().contains("place")){
+                if(betDto.getDealid().contains("place") && betDto.getFinished() == null){
                     // unsettled
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
                     balance = betEvent.getLastBalance();
                 }else{
                     // settled
-                    if(betDto.getCode().equals("1")){
+                    if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
                         resultType = getTurboGameResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
@@ -167,6 +163,13 @@ public class BetService {
         // if 7mojo platform will check istips param
         if(dto.getPlatform().equals(PlatformType.SEVENMOJO) || dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
             Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
+        }
+
+        // if turbo game platform will check finished param when end-round
+        if(dto.getPlatform().equals(PlatformType.TURBOGAME) || dto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
+            if(dto.getCode().equals("1") && dto.getDealid().contains("settle")){
+                Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
+            }
         }
     }
 

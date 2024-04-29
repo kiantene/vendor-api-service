@@ -47,8 +47,8 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String roundid;
 
-//    @Pattern(regexp = "[01]")
-//    private String finished;
+    @Pattern(regexp = "[01]")
+    private String finished;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -175,7 +175,7 @@ public class BetDto extends ActionDto implements BetResultData {
         }
 
         if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
-            if(this.dealid.contains("place")){
+            if(this.dealid.contains("place") && this.finished == null){
                 status = BetStatus.UNSETTLED;
             }else{
                 status =  BetStatus.SETTLED;
