@@ -102,7 +102,7 @@ public class BetService {
                 }else{
                     resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
-                    if(betDto.getCode().equals("2")){
+                    if(betDto.getCode().equals("1")){
                         throw new GameNotSupportedException();
                     }
 
