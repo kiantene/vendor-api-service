@@ -16,5 +16,7 @@ public class PlatformType {
     // mini game
     public static final String TURBOGAME = "11";
 
-    public static final List<String> PlatformTypeList = Arrays.asList(BGAMINGASIA, BGAMINGLATAM, SEVENMOJO, SEVENMOJOLATAM, TURBOGAME);
+    public static final String TURBOGAMELatam = "14";
+
+    public static final List<String> PlatformTypeList = Arrays.asList(BGAMINGASIA, BGAMINGLATAM, SEVENMOJO, SEVENMOJOLATAM, TURBOGAME, TURBOGAMELatam);
 }
