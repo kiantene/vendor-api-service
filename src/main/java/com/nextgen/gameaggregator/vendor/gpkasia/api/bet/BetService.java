@@ -102,6 +102,10 @@ public class BetService {
                 }else{
                     resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
+                    if(betDto.getCode().equals("2")){
+                        throw new GameNotSupportedException();
+                    }
+
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
             }
