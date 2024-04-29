@@ -112,8 +112,6 @@ public class BetService {
                     // unsettled
                     BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
                     balance = betEvent.getLastBalance();
-
-                    throw new GameNotSupportedException();
                 }else{
                     // settled
                     if(betDto.getCode().equals("1")){
