@@ -47,6 +47,9 @@ public class RollBackDto extends ActionDto implements RollbackData {
     @Pattern(regexp = "\\d+")
     private String platform;
 
+    @Pattern(regexp = "[01]")
+    private String istips;
+
     @Override
     public String getRollbackId() {
         return this.dealid;
