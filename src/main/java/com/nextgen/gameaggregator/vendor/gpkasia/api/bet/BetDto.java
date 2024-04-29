@@ -149,13 +149,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals("1")){
-                // tips
-                time = Long.parseLong(this.timestamp) * 1000;
-            }else{
-                //testing
-                time = Long.parseLong(this.timestamp) * 1000;
-            }
+            time = Long.parseLong(this.timestamp) * 1000;
         }
 
         return time;
@@ -180,13 +174,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals("1")){
-                // tips
-                time = Long.parseLong(this.timestamp) * 1000;
-            }else{
-                //testing
-                time = Long.parseLong(this.timestamp) * 1000;
-            }
+            time = Long.parseLong(this.timestamp) * 1000;
         }
 
         return time;
@@ -219,13 +207,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            if(this.istips.equals("1")){
-                // tips
-                status = BetStatus.SETTLED;
-            }else{
-                //testing
-                status = BetStatus.SETTLED;
-            }
+            status = BetStatus.SETTLED;
         }
 
         return status;

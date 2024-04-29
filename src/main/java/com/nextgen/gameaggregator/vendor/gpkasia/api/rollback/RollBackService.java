@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.CommonVo;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -102,6 +104,10 @@ public class RollBackService {
     private void doValidation(RollBackDto dto) throws InvalidRequestException {
         // General validation
         ValidationUtils.validateRequest(dto);
+
+        if(dto.getPlatform().equals(equals(PlatformType.SEVENMOJO)) || dto.getPlatform().equals(equals(PlatformType.SEVENMOJOLATAM))){
+            Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
+        }
     }
 
     private void doVerification(RollBackDto dto, GameSession gameSession) throws InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
