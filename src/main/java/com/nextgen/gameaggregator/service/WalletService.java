@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -224,7 +225,10 @@ public class WalletService {
 
         SettledBet updateCachingSettledBet = settledBet;
         loggingService.logStart();
-        List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+        List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
+        if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
+            unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+        }
         loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
         if (!retry) {
@@ -478,7 +482,10 @@ public class WalletService {
                 loggingService.logProcessTime("doUnsettledBetResult ｜ betResultLogService.idempotentCheck", traceId);
 
                 loggingService.logStart();
-                List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
+                if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
+                    unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                }
                 loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
 
                 unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
