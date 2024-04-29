@@ -35,7 +35,7 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "\\d+")
     private String timestamp;
 
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String dealid;
 
     @NotBlank
@@ -43,7 +43,7 @@ public class BetDto extends ActionDto implements BetResultData {
     private String code;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String roundid;
 
 //    @Pattern(regexp = "[01]")
