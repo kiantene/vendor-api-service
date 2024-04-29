@@ -119,6 +119,8 @@ public class BetService {
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
+
+                    throw new GameNotSupportedException();
                 }
             }
 

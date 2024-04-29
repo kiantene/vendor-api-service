@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import jakarta.validation.constraints.*;
@@ -67,7 +68,6 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
-
         return this.dealid;
     }
 
@@ -118,7 +118,19 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        return Long.parseLong(this.timestamp) * 1000;
+        Long betTime = null;
+
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            betTime = Long.parseLong(this.timestamp) * 1000;
+        }
+
+        if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
+            if(this.dealid.contains("place")){
+                betTime = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        return betTime;
     }
 
     @Override
@@ -128,7 +140,19 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        return Long.parseLong(this.timestamp) * 1000;
+        Long settledTime = null;
+
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            settledTime = Long.parseLong(this.timestamp) * 1000;
+        }
+
+        if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
+            if(this.dealid.contains("settle")){
+                settledTime = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        return settledTime;
     }
 
     @Override
@@ -143,6 +167,21 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+        BetStatus status = null;
+
+
+        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
+            status = BetStatus.SETTLED;
+        }
+
+        if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
+            if(this.dealid.contains("place")){
+                status = BetStatus.UNSETTLED;
+            }else{
+                status =  BetStatus.SETTLED;
+            }
+        }
+
+        return status;
     }
 }
