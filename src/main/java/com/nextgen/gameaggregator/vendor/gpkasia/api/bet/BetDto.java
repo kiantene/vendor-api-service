@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import com.nextgen.gameaggregator.vendor.gpkasia.service.VendorService;
 import jakarta.validation.constraints.*;
@@ -47,8 +46,8 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String roundid;
 
-    @Pattern(regexp = "[01]")
-    private String finished;
+//    @Pattern(regexp = "[01]")
+//    private String finished;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
@@ -63,32 +62,13 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        String exTransId = this.dealid;
-
-        //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            // dealid equals to null mean did not get any win amount in buy bonus game
-            if(this.dealid == null){
-                exTransId = this.roundid;
-            }
-        }
-
-        return exTransId;
+        return this.dealid;
     }
 
     @Override
     public String getVendorBetId() {
-        String vendorBetId = this.dealid;
 
-        //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            // dealid equals to null mean did not get any win amount in buy bonus game
-            if(this.dealid == null){
-                vendorBetId = this.roundid;
-            }
-        }
-
-        return vendorBetId;
+        return this.dealid;
     }
 
     @Override
@@ -138,21 +118,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorBetTime() {
-        Long time = null;
-
-        //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
-                time = Long.parseLong(this.timestamp) * 1000;
-            }
-        }
-
-        //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            time = Long.parseLong(this.timestamp) * 1000;
-        }
-
-        return time;
+        return Long.parseLong(this.timestamp) * 1000;
     }
 
     @Override
@@ -162,22 +128,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Long getVendorSettleTime() {
-        Long time = null;
-
-        //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            // end round
-            if(this.finished.equals("1")){
-                time = Long.parseLong(this.timestamp) * 1000;
-            }
-        }
-
-        //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            time = Long.parseLong(this.timestamp) * 1000;
-        }
-
-        return time;
+        return Long.parseLong(this.timestamp) * 1000;
     }
 
     @Override
@@ -192,24 +143,6 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-
-        BetStatus status = null;
-
-        //bgaming
-        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
-            // not yet finish
-            if(this.finished.equals("0")){
-                status = BetStatus.UNSETTLED;
-            }else{
-                status = BetStatus.SETTLED;
-            }
-        }
-
-        //7mojo
-        if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            status = BetStatus.SETTLED;
-        }
-
-        return status;
+        return BetStatus.SETTLED;
     }
 }
