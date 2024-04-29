@@ -55,6 +55,10 @@ public class BetService {
         try{
             betDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
 
+            if(betDto.getPlatform().equals(PlatformType.TURBOGAME) || betDto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
+                throw new GameNotSupportedException();
+            }
+
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
 
