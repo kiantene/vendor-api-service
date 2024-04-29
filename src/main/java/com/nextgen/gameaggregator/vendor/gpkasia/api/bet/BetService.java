@@ -99,10 +99,6 @@ public class BetService {
                 }else{
                     ResultType resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
-                    if(betDto.getCode().equals("1")){
-                        throw new GameNotSupportedException();
-                    }
-
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
             }
@@ -111,24 +107,39 @@ public class BetService {
             if(betDto.getPlatform().equals(PlatformType.TURBOGAME) || betDto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
                 ResultType resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
-                if(betDto.getCode().equals("1")){
-                    throw new GameNotSupportedException();
-                }
+//                balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
 
-                balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                if(betDto.getCode().equals("2")){
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+
+                    vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+                    // check the code value to define it is deducted or gain money
+                    Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
+
+                    betDataVo.setDealid(betDto.getDealid());
+                    betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
+                    betDataVo.setMoney(money);
+                    betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+
+                    vo.setData(betDataVo);
+                }else{
+                    vo.setCodeMsg(ResponseCodes.ERROR);
+                    vo.setCodeMsg(ResponseCodes.ERROR);
+                }
             }
 
-            vo.setCodeMsg(ResponseCodes.SUCCESS);
-
-            // check the code value to define it is deducted or gain money
-            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
-
-            betDataVo.setDealid(betDto.getDealid());
-            betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
-            betDataVo.setMoney(money);
-            betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
-
-            vo.setData(betDataVo);
+//            vo.setCodeMsg(ResponseCodes.SUCCESS);
+//
+//            // check the code value to define it is deducted or gain money
+//            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
+//
+//            betDataVo.setDealid(betDto.getDealid());
+//            betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
+//            betDataVo.setMoney(money);
+//            betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+//
+//            vo.setData(betDataVo);
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
