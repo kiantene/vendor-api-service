@@ -28,7 +28,7 @@ public class RollBackDto extends ActionDto implements RollbackData {
     private String timestamp;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String dealid;
 
     @NotBlank
@@ -36,7 +36,7 @@ public class RollBackDto extends ActionDto implements RollbackData {
     private String code;
 
     @NotBlank
-    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String roundid;
 
     @NotBlank
