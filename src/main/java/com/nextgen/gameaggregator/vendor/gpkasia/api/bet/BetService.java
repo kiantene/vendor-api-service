@@ -82,7 +82,7 @@ public class BetService {
 
                 // if env is stg but the game code does not have this value
                 if(runEnv.equalsIgnoreCase("stg") && !gameCode.toLowerCase().contains("_stg")){
-                    gameCode = gameCode + "_stg";
+                    throw new GameNotSupportedException();
                 }
             }
 
