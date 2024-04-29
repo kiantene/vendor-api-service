@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
+import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
@@ -48,6 +49,8 @@ public class BetService {
         BetDataVo betDataVo = new BetDataVo();
 
         BigDecimal balance = null;
+
+        ResultType resultType = null;
 
         String gameCode = null;
 
@@ -97,7 +100,7 @@ public class BetService {
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                 }else{
-                    ResultType resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
+                    resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
 
                     balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }
@@ -105,41 +108,31 @@ public class BetService {
 
             //turbo game
             if(betDto.getPlatform().equals(PlatformType.TURBOGAME) || betDto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
-                ResultType resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
-
-//                balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-
-                if(betDto.getCode().equals("2")){
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-
-                    vo.setCodeMsg(ResponseCodes.SUCCESS);
-
-                    // check the code value to define it is deducted or gain money
-                    Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
-
-                    betDataVo.setDealid(betDto.getDealid());
-                    betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
-                    betDataVo.setMoney(money);
-                    betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
-
-                    vo.setData(betDataVo);
+                if(betDto.getDealid().contains("place")){
+                    // unsettled
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    balance = betEvent.getLastBalance();
                 }else{
-                    vo.setCodeMsg(ResponseCodes.ERROR);
-                    vo.setCodeMsg(ResponseCodes.ERROR);
+                    // settled
+                    if(betDto.getCode().equals("1")){
+                        resultType = getTurboGameResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
                 }
             }
 
-//            vo.setCodeMsg(ResponseCodes.SUCCESS);
-//
-//            // check the code value to define it is deducted or gain money
-//            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
-//
-//            betDataVo.setDealid(betDto.getDealid());
-//            betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
-//            betDataVo.setMoney(money);
-//            betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
-//
-//            vo.setData(betDataVo);
+            vo.setCodeMsg(ResponseCodes.SUCCESS);
+
+            // check the code value to define it is deducted or gain money
+            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
+
+            betDataVo.setDealid(betDto.getDealid());
+            betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
+            betDataVo.setMoney(money);
+            betDataVo.setCash(balance.setScale(2, RoundingMode.DOWN).toString());
+
+            vo.setData(betDataVo);
         }catch(InsufficientBalanceException e){
             httpService.logError(httpRequestLog, e);
             vo.setCodeMsg(ResponseCodes.INSUFFICIENT_BALANCE);
@@ -189,5 +182,15 @@ public class BetService {
         if(!PlatformType.PlatformTypeList.contains(dto.getPlatform())){
             throw new InvalidRequestException();
         }
+    }
+
+    private ResultType getTurboGameResultType(BetDto dto){
+        ResultType resultType = ResultType.WIN; // Default value is win
+
+        if(dto.getMoney() == 0.0 && dto.getCode().equals("1")){
+            resultType = ResultType.END;
+        }
+
+        return resultType;
     }
 }
