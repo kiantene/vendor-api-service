@@ -70,6 +70,9 @@ public class BetService {
 
                 String runEnv = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.env);
 
+                // clear this value & assign again through db
+                gameCode = null;
+
                 // check is demo game or not
                 for(VendorGameCode resultSet : vendorGameCodeList){
 
@@ -82,8 +85,8 @@ public class BetService {
                     }
                 }
 
-                // if env is stg but the game code does not have this value
-                if(runEnv.equalsIgnoreCase("stg") && !gameCode.toLowerCase().contains("_stg")){
+                // if gameCode null mean db does not have the game info
+                if(gameCode == null){
                     throw new GameNotSupportedException();
                 }
             }
