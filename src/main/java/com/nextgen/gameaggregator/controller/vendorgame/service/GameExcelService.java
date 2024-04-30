@@ -50,8 +50,8 @@ public class GameExcelService {
         Workbook workbook = new XSSFWorkbook(is);
 
         Sheet sheet = workbook.getSheet(SHEET);
-        Optional.ofNullable(sheet).orElseThrow(() -> new InvalidRequestException("Sheet :" + SHEET + " not found!"));
-        return sheet.iterator();
+
+        return Objects.requireNonNull(sheet, "Sheet :" + SHEET + " not found!").iterator();
     }
 
     public ImportResponse saveRows(Iterator<Row> rows, HashMap<Integer, HashMap<String, String>> columnTypes,
@@ -154,9 +154,9 @@ public class GameExcelService {
             gameDataEntity.getVendorGame().setStatus(0);
         }
 
+        vendorGameRepository.save(gameDataEntity.getVendorGame());
         vendorGameCodeRepository.saveAll(vendorGameCodes);
         vendorGameCurrencyRepository.saveAll(vendorGameCurrencies);
-        vendorGameRepository.save(gameDataEntity.getVendorGame());
 
         return true;
     }

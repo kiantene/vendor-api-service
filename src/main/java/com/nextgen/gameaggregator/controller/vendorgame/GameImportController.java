@@ -27,24 +27,20 @@ import java.util.Iterator;
 @RestController
 @RequestMapping(path = "vendorGame/")
 public class GameImportController {
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
-
     @Autowired
     RequestService requestService;
-
     @Autowired
     VendorGameRepository vendorGameRepository;
-
     @Autowired
     GameExcelService gameExcelService;
-
     @Autowired
     GameExcelValidatorService gameExcelValidatorService;
     @Autowired
     VendorService vendorService;
     @Autowired
     GameCategoryService gameCategoryService;
+    @Value("${spring.profiles.active}")
+    private String profilesActive;
 
     @PostMapping(value = "upload", consumes = {"multipart/form-data"})
     public ResponseEntity<ImportResponse> uploadFile(@RequestParam(value = "file") MultipartFile file) {
@@ -98,12 +94,9 @@ public class GameImportController {
                 responseVo.setMessage("Not Language supported by vendor");
             } catch (CurrencyNotSupportedException currencyNotSupportedException) {
                 responseVo.setMessage("Not currency supported by vendor");
+            } catch (Exception exception) {
+                responseVo.setMessage(exception.getMessage());
             }
-
-
-//        catch (Exception exception) {
-//            responseVo.setMessage(exception.getMessage());
-//        }
         } else {
             responseVo.setMessage("Invalid environment, only support staging and qa");
         }

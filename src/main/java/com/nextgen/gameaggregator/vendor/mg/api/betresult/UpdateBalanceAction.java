@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.vendor.mg.constant.Headers;
 import com.nextgen.gameaggregator.vendor.mg.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,14 +40,17 @@ public class UpdateBalanceAction {
     @Autowired
     private ValidationService validationService;
     @Autowired
-    private VendorService vendorService;
-    @Autowired
     private UnsettledBetService unsettledBetService;
     @Autowired
     private SettledBetService settledBetService;
+    @Autowired
+    private AutowireCapableBeanFactory autowireCapableBeanFactory;
 
     @PostMapping(path = Endpoints.UPDATE_BALANCE)
     public ResponseEntity<UpdateBalanceVo> updateBalance(HttpServletRequest request) {
+        // Autowire the VendorService bean
+        VendorService vendorService = new VendorService();
+        autowireCapableBeanFactory.autowireBean(vendorService);
         // Start the HTTP request logging
         HttpRequestLog httpRequestLog = httpService.start(request);
 
@@ -80,7 +84,7 @@ public class UpdateBalanceAction {
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message);
+                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
                     ResultType resultType = determineResultType(dto);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
@@ -170,7 +174,7 @@ public class UpdateBalanceAction {
         return dto.getAmount().compareTo(BigDecimal.ZERO) > 0 ? ResultType.WIN : dto.getCompleted() ? ResultType.END : ResultType.LOSE;
     }
 
-    private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message) throws BetNotFoundException, BetResultIdempotentViolationException {
+    private void checkUnsettleAndSettleBet(WinDataDto winDataDto, GameSession gameSession, StringBuilder message, VendorService vendorService) throws BetNotFoundException, BetResultIdempotentViolationException {
         List<UnsettledBet> unsettledBetList = unsettledBetService.getByRoundIdRetry(winDataDto.getRoundId(), gameSession.getVendorGameId(), gameSession.getVendorPlayerId());
         if (unsettledBetList.isEmpty()) {
             try {
@@ -183,6 +187,7 @@ public class UpdateBalanceAction {
                 throw betNotFoundException;
             }
         } else {
+            vendorService.setVendorClassFileUnsettledBetList(unsettledBetList);
             unsettledBetList.forEach(data -> message.append("unsettledBet : ").append(data.getInternalTransactionId()).append(" "));
         }
     }
