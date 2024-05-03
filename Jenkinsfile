@@ -3,6 +3,13 @@
 def getECSConfig(String branchName) {
     def config = []
     switch (branchName) {
+        case 'staging':
+            config = [
+                'AWS_ECS_CLUSTER=ga-staging-cluster',
+                'AWS_ECS_SERVICE=ga-vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=staging-ga_vendor_api-td'
+            ]
+            break
         case 'stg':
             config = [
                 'AWS_ECS_CLUSTER=stg',
@@ -38,7 +45,7 @@ pipeline {
 
     environment {
         // Set environment variables used in the pipeline
-        JENKINS_CREDENTIALS = 'ga_aws'
+        JENKINS_CREDENTIALS = 'temp_ga_aws'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
         AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
 
@@ -256,6 +263,9 @@ String getRepoTag(String branchName) {
         case 'main':
             packageVersion = 'latest'
             break
+        case 'staging':
+            packageVersion = 'staging'
+            break
         case 'stg':
             packageVersion = 'stg'
             break
@@ -274,16 +284,11 @@ String getRepoTag(String branchName) {
 }
 
 String getCouchbaseCertId(String branchName) {
-    String file = ''
+    String file = 'couchbase_cert_file'
 
     switch (branchName) {
         case 'main':
             file = 'prd_couchbase_cert_file'
-            break
-        case 'stg':
-        case 'qa':
-        case 'pt':
-            file = 'couchbase_cert_file'
             break
     }
 
@@ -295,14 +300,10 @@ String getVersionTag(String branchName) {
 
     configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
         String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+        versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
         switch (branchName) {
             case 'main':
                 versionTag = "$VERSION_NUMBER"
-                break
-            case 'stg':
-            case 'qa':
-            case 'pt':
-                versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
                 break
         }
     }
