@@ -47,14 +47,14 @@ pipeline {
         // Set environment variables used in the pipeline
         JENKINS_CREDENTIALS = 'temp_ga_aws'
         AWS_ECR_REGION = 'ap-east-1' // Hong Kong
-        AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
+        AWS_ECR_URL = '381492256733.dkr.ecr.ap-northeast-1.amazonaws.com/ga-vendor-api-service'
 
         AWS_ECS_REGION = 'ap-east-1' // Hong Kong
         AWS_ECS_COMPATIBILITY = 'FARGATE'
         AWS_ECS_NETWORK_MODE = 'awsvpc'
         AWS_ECS_CPU = '2048'
         AWS_ECS_MEMORY = '4096'
-        AWS_ECS_EXECUTION_ROL = 'arn:aws:iam::634937900606:role/devops_ecs_cicd'
+        AWS_ECS_EXECUTION_ROL = 'arn:aws:iam::381492256733:role/ecsTaskExecutionRole'
         AWS_ECS_TASK_DEFINITION = ''
         AWS_ECS_CLUSTER = ''
         AWS_ECS_SERVICE = ''
