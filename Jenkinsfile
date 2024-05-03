@@ -231,7 +231,7 @@ pipeline {
             script {
                 switch (env.BRANCH_NAME) {
                 case 'main':
-                case 'staging'
+                case 'staging':
                 case 'qa':
                 case 'pt':
                 case 'devops':
