@@ -125,6 +125,28 @@ public class BetService {
                 }
             }
 
+            //bgaming
+            if(betDto.getPlatform().equals(PlatformType.BGAMINGASIA) || betDto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
+                if(betDto.getFinished().equals("1")){
+                    // if end-round
+
+                    if(betDto.getCode().equals("2")){
+                        // if place bet status mean lose
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
+                    }else{
+                        // settled with win amount status(will happen zero amount when buy bonus game)
+                        resultType = getBgamingResultType(betDto);
+
+                        // settle transaction
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
+                }else{
+                    // not yet end(unsettled)
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    balance = betEvent.getLastBalance();
+                }
+            }
+
             vo.setCodeMsg(ResponseCodes.SUCCESS);
 
             // check the code value to define it is deducted or gain money
@@ -166,12 +188,25 @@ public class BetService {
         // if 7mojo platform will check istips param
         if(dto.getPlatform().equals(PlatformType.SEVENMOJO) || dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
             Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
+            Optional.ofNullable(dto.getDealid()).orElseThrow(InvalidRequestException::new);
         }
 
         // if turbo game platform will check finished param when end-round
         if(dto.getPlatform().equals(PlatformType.TURBOGAME) || dto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
+            Optional.ofNullable(dto.getDealid()).orElseThrow(InvalidRequestException::new);
+
             if(dto.getCode().equals("1") && dto.getDealid().contains("settle")){
                 Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
+            }
+        }
+
+        // if bgaming platform will check finished param
+        if(dto.getPlatform().equals(PlatformType.BGAMINGASIA) || dto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
+            Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
+
+            // check the dealid if it is not lose game in buy finish game
+            if(!(dto.getMoney() == 0.0 && dto.getCode().equals("1") && dto.getFinished().equals("1"))){
+                Optional.ofNullable(dto.getDealid()).orElseThrow(InvalidRequestException::new);
             }
         }
     }
@@ -198,6 +233,17 @@ public class BetService {
         ResultType resultType = ResultType.WIN; // Default value is win
 
         if(dto.getMoney() == 0.0 && dto.getCode().equals("1")){
+            resultType = ResultType.END;
+        }
+
+        return resultType;
+    }
+
+    private ResultType getBgamingResultType(BetDto dto){
+        ResultType resultType = ResultType.WIN; // Default value is win
+
+        // bgaming may happen lose in buy bonus game
+        if(dto.getMoney() == 0.0 && dto.getDealid() == null){
             resultType = ResultType.END;
         }
 

@@ -63,12 +63,32 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.dealid;
+        String exTransId = this.dealid;
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if(this.dealid == null){
+                exTransId = this.roundid;
+            }
+        }
+
+        return exTransId;
     }
 
     @Override
     public String getVendorBetId() {
-        return this.dealid;
+        String vendorBetId = this.dealid;
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if(this.dealid == null){
+                vendorBetId = this.roundid;
+            }
+        }
+
+        return vendorBetId;
     }
 
     @Override
@@ -130,6 +150,13 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
+                betTime = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
         return betTime;
     }
 
@@ -147,7 +174,14 @@ public class BetDto extends ActionDto implements BetResultData {
         }
 
         if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
-            if(this.dealid.contains("settle")){
+            if(this.dealid.contains("settle") && this.finished.equals("1")){
+                settledTime = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            if(this.finished.equals("1")){
                 settledTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
@@ -179,6 +213,15 @@ public class BetDto extends ActionDto implements BetResultData {
                 status = BetStatus.UNSETTLED;
             }else{
                 status =  BetStatus.SETTLED;
+            }
+        }
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            if(this.finished.equals("0")){
+                status = BetStatus.UNSETTLED;
+            }else{
+                status = BetStatus.SETTLED;
             }
         }
 
