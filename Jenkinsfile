@@ -10,13 +10,6 @@ def getECSConfig(String branchName) {
                 'AWS_ECS_TASK_DEFINITION=staging-ga_vendor_api-td'
             ]
             break
-        case 'stg':
-            config = [
-                'AWS_ECS_CLUSTER=stg',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
-            ]
-            break
         case 'pt':
             config = [
                 'AWS_ECS_CLUSTER=pt',
@@ -45,7 +38,7 @@ pipeline {
 
     environment {
         // Set environment variables used in the pipeline
-        JENKINS_CREDENTIALS = 'temp_ga_aws'
+        JENKINS_CREDENTIALS = 'ga_aws'
         AWS_ECR_REGION = 'ap-northeast-1' // Tokyo
         AWS_ECR_URL = '381492256733.dkr.ecr.ap-northeast-1.amazonaws.com/ga-vendor-api-service'
 
@@ -77,7 +70,7 @@ pipeline {
     stages {
         stage('SonarQube') {
             when {
-                branch 'stg'
+                branch 'staging'
             }
             steps {
                 executeMaven('''
@@ -198,7 +191,7 @@ pipeline {
             when {
                 anyOf {
                     branch 'main'
-                    branch 'stg'
+                    branch 'staging'
                 }
             }
             steps {
@@ -238,7 +231,7 @@ pipeline {
             script {
                 switch (env.BRANCH_NAME) {
                 case 'main':
-                case 'stg':
+                case 'staging'
                 case 'qa':
                 case 'pt':
                 case 'devops':
@@ -257,26 +250,11 @@ void updateContainerDefinitionJsonWithImageVersion(String packageVersion, String
 }
 
 String getRepoTag(String branchName) {
-    String packageVersion = 'dev'
+    String packageVersion = branchName
 
     switch (branchName) {
         case 'main':
             packageVersion = 'latest'
-            break
-        case 'staging':
-            packageVersion = 'staging'
-            break
-        case 'stg':
-            packageVersion = 'stg'
-            break
-        case 'qa':
-            packageVersion = 'qa'
-            break
-        case 'pt':
-            packageVersion = 'pt'
-            break
-        case 'devops':
-            packageVersion = 'devo'
             break
     }
 
