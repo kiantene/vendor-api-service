@@ -3,11 +3,11 @@
 def getECSConfig(String branchName) {
     def config = []
     switch (branchName) {
-        case 'stg':
+        case 'staging':
             config = [
-                'AWS_ECS_CLUSTER=stg',
-                'AWS_ECS_SERVICE=vendor-api-service',
-                'AWS_ECS_TASK_DEFINITION=stg-ga_vendor_api-td'
+                'AWS_ECS_CLUSTER=ga-staging-cluster',
+                'AWS_ECS_SERVICE=ga-vendor-api-service',
+                'AWS_ECS_TASK_DEFINITION=staging-ga_vendor_api-td'
             ]
             break
         case 'pt':
@@ -39,15 +39,15 @@ pipeline {
     environment {
         // Set environment variables used in the pipeline
         JENKINS_CREDENTIALS = 'ga_aws'
-        AWS_ECR_REGION = 'ap-east-1' // Hong Kong
-        AWS_ECR_URL = '634937900606.dkr.ecr.ap-east-1.amazonaws.com/ga-vendor-api-service'
+        AWS_ECR_REGION = 'ap-northeast-1' // Tokyo
+        AWS_ECR_URL = '381492256733.dkr.ecr.ap-northeast-1.amazonaws.com/ga-vendor-api-service'
 
-        AWS_ECS_REGION = 'ap-east-1' // Hong Kong
+        AWS_ECS_REGION = 'ap-northeast-1' // Tokyo
         AWS_ECS_COMPATIBILITY = 'FARGATE'
         AWS_ECS_NETWORK_MODE = 'awsvpc'
         AWS_ECS_CPU = '2048'
         AWS_ECS_MEMORY = '4096'
-        AWS_ECS_EXECUTION_ROL = 'arn:aws:iam::634937900606:role/devops_ecs_cicd'
+        AWS_ECS_EXECUTION_ROL = 'arn:aws:iam::381492256733:role/ecsTaskExecutionRole'
         AWS_ECS_TASK_DEFINITION = ''
         AWS_ECS_CLUSTER = ''
         AWS_ECS_SERVICE = ''
@@ -70,7 +70,7 @@ pipeline {
     stages {
         stage('SonarQube') {
             when {
-                branch 'stg'
+                branch 'staging'
             }
             steps {
                 executeMaven('''
@@ -191,7 +191,7 @@ pipeline {
             when {
                 anyOf {
                     branch 'main'
-                    branch 'stg'
+                    branch 'staging'
                 }
             }
             steps {
@@ -231,7 +231,7 @@ pipeline {
             script {
                 switch (env.BRANCH_NAME) {
                 case 'main':
-                case 'stg':
+                case 'staging'
                 case 'qa':
                 case 'pt':
                 case 'devops':
@@ -250,23 +250,11 @@ void updateContainerDefinitionJsonWithImageVersion(String packageVersion, String
 }
 
 String getRepoTag(String branchName) {
-    String packageVersion = 'dev'
+    String packageVersion = branchName
 
     switch (branchName) {
         case 'main':
             packageVersion = 'latest'
-            break
-        case 'stg':
-            packageVersion = 'stg'
-            break
-        case 'qa':
-            packageVersion = 'qa'
-            break
-        case 'pt':
-            packageVersion = 'pt'
-            break
-        case 'devops':
-            packageVersion = 'devo'
             break
     }
 
@@ -274,16 +262,11 @@ String getRepoTag(String branchName) {
 }
 
 String getCouchbaseCertId(String branchName) {
-    String file = ''
+    String file = 'couchbase_cert_file'
 
     switch (branchName) {
         case 'main':
             file = 'prd_couchbase_cert_file'
-            break
-        case 'stg':
-        case 'qa':
-        case 'pt':
-            file = 'couchbase_cert_file'
             break
     }
 
@@ -295,14 +278,10 @@ String getVersionTag(String branchName) {
 
     configFileProvider([configFile(fileId: 'version_num', variable: 'VERSION_NUMBER')]) {
         String VERSION_NUMBER = readFile(VERSION_NUMBER).trim()
+        versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
         switch (branchName) {
             case 'main':
                 versionTag = "$VERSION_NUMBER"
-                break
-            case 'stg':
-            case 'qa':
-            case 'pt':
-                versionTag = "$VERSION_NUMBER.${env.BUILD_NUMBER}"
                 break
         }
     }
