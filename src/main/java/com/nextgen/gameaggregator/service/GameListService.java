@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.entity.ga.Agent;
 import com.nextgen.gameaggregator.entity.ga.AgentVendorLine;
 import com.nextgen.gameaggregator.entity.ga.Language;
 import com.nextgen.gameaggregator.entity.ga.Vendor;
@@ -30,7 +31,9 @@ public class GameListService {
 
 
 
-    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Vendor vendor, List<Integer> currencyIds, Language language) {
+    public GameListData getGameList(GameListDto dto, List<AgentVendorLine> agentVendorLines, Vendor vendor, List<Integer> currencyIds, Language language,
+    Agent agent
+    ) {
         GameListData gameListData = new GameListData();
 
         List<Integer> gameCategoryIds = new ArrayList<>();
@@ -42,7 +45,8 @@ public class GameListService {
         Pageable pagingSort = PageRequest.of(dto.getPageNo() - 1, dto.getPageSize(), Sort.by(orders));
 
         Page<Object> gameList = vendorGameReaderRepository.findByVendorIdAndStatusAndLanguageAndCategoryAndCurrency
-                (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl, pagingSort);
+                (vendor.getId(), Status.ACTIVE.code, gameCategoryIds, currencyIds, language.getId(), imageUrl,
+                        agent.getHouseId(), agent.getMasterAgentId(), agent.getId(), pagingSort);
 
         gameListData.setHeaders(this.getHeaders());
         gameListData.setGames(gameList.getContent());

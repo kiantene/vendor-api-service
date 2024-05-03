@@ -95,7 +95,8 @@ public class GameListAction {
             }
 
 
-            GameListData gameListData = gameListService.getGameList(dto, agentVendorLines, vendor, currencyIds, language);
+            GameListData gameListData = gameListService.getGameList
+                    (dto, agentVendorLines, vendor, currencyIds, language, apiCredential.getAgent() );
             responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {
