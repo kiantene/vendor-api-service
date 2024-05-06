@@ -112,7 +112,8 @@ public class WalletRollbackAction {
                     this.getClass().getPackage().getName(), profilesActive);
 
             // 1. validate HTTP Response Code
-            requestService.validateVendorHttpStatusResponse(apiResponse);
+            // Update remove validate to accept all http code for rollback
+            //requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
@@ -137,8 +138,7 @@ public class WalletRollbackAction {
 
             //RequestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException |
-                 JsonSyntaxException |
+        } catch (JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
