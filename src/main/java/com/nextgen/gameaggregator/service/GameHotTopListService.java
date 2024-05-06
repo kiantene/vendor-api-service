@@ -16,8 +16,8 @@ import com.nextgen.gameaggregator.entity.ga.Vendor;
 import com.nextgen.gameaggregator.enums.DateRangeType;
 import com.nextgen.gameaggregator.enums.HotTopGameType;
 import com.nextgen.gameaggregator.exception.InvalidVendorException;
-import com.nextgen.gameaggregator.operator.game.recommendationlist.GameRecommendationListData;
-import com.nextgen.gameaggregator.operator.game.recommendationlist.GameRecommendationListDto;
+import com.nextgen.gameaggregator.operator.game.recommendation.GameRecommendationData;
+import com.nextgen.gameaggregator.operator.game.recommendation.GameRecommendationDto;
 import com.nextgen.gameaggregator.util.MysqlUtils;
 
 import jakarta.persistence.EntityManager;
@@ -39,8 +39,8 @@ public class GameHotTopListService {
     @Autowired
     private MysqlUtils mysqlUtils;
 
-    public List<GameRecommendationListData> getHotTopGameList(GameRecommendationListDto dto, Integer currencyId) throws InvalidVendorException {
-        List<GameRecommendationListData> gameHotTopListData = new ArrayList<>();
+    public List<GameRecommendationData> getHotTopGameList(GameRecommendationDto dto, Integer currencyId) throws InvalidVendorException {
+        List<GameRecommendationData> gameHotTopListData = new ArrayList<>();
         
         ZoneId zone = ZoneId.of("UTC");
         // get or convert time range to filter out unneeded entry in fact_vendor_game_total
@@ -162,7 +162,7 @@ public class GameHotTopListService {
         if (!resultList.isEmpty()) {
         	for (Tuple result : resultList) {
         		
-        		GameRecommendationListData gameHotTopData = new GameRecommendationListData();
+        		GameRecommendationData gameHotTopData = new GameRecommendationData();
         		gameHotTopData.setName(result.get("name") != null ? result.get("name").toString() : null);
         		gameHotTopData.setCode(result.get("code") != null ? result.get("code").toString() : null);
             	gameHotTopData.setGameName(result.get("gameName") != null ? result.get("gameName").toString() : null);
