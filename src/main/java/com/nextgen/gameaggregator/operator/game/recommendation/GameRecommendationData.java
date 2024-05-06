@@ -1,9 +1,9 @@
-package com.nextgen.gameaggregator.operator.game.hottoplist;
+package com.nextgen.gameaggregator.operator.game.recommendation;
 
 import lombok.Data;
 
 @Data
-public class GameHotTopData {
+public class GameRecommendationData {
 
 	private String gameCode;
 	private String gameName;
