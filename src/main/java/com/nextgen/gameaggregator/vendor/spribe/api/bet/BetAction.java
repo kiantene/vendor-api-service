@@ -1,15 +1,9 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.bet;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -18,9 +12,13 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
-import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
@@ -60,6 +58,7 @@ public class BetAction {
 
             // 3. Verify session token
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
+            gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
             // 4. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
@@ -108,8 +107,8 @@ public class BetAction {
             httpService.logError(httpRequestLog, betResultIdempotentViolationException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) || 
-                invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) ||
+                    invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_TRANSACTION_DUPLICATED.code)) {
                 data.setOperator_tx_id(traceId);
                 data.setNew_balance(oldBalance);
                 data.setOld_balance(oldBalance);
@@ -128,8 +127,10 @@ public class BetAction {
             }
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
-        } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException | DisabledGameException | InvalidRequestException | VendorCurrencyNotSupportException | 
-            InvalidAgentApiCredentialException | TransactionStillProcessingException | GameNotSupportedException | CurrencyNotSupportedException internalErrorException) {
+        } catch (InvalidPlayerException | DisabledAgentPlayerException | DisabledVendorLineException |
+                 DisabledGameException | InvalidRequestException | VendorCurrencyNotSupportException |
+                 InvalidAgentApiCredentialException | TransactionStillProcessingException | GameNotSupportedException |
+                 CurrencyNotSupportedException internalErrorException) {
             vo.setErrorCode(ErrorCodes.INTERNAL_ERROR);
             httpService.logError(httpRequestLog, internalErrorException);
 
@@ -149,8 +150,8 @@ public class BetAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException, 
-        DisabledGameException, AuthenticationException,GameNotSupportedException, CurrencyNotSupportedException {
+    private void doVerification(HttpRequestLog request, BetDto dto, GameSession gameSession) throws InvalidPlayerException, DisabledAgentPlayerException, DisabledVendorLineException,
+            DisabledGameException, AuthenticationException, GameNotSupportedException, CurrencyNotSupportedException {
 
         // Check game session status (0 = inactive)
         if (gameSession.getStatus() == 0) throw new AuthenticationException();
