@@ -10,17 +10,17 @@ public class SportResettleDto {
     private String username;
     private String transactionId;
     private String externalTransactionId;
-    private String roundId;
     private String betId;
-    private String gameCode;
-    private String currency;
+    private String roundId;
     private BigDecimal betAmount;
     private BigDecimal winAmount;
-    private BigDecimal winLoss;
-    private BigDecimal effectiveTurnover;
     private BigDecimal newWinAmount;
-    private BigDecimal creditAmount;
+    private BigDecimal effectiveTurnover;
+    private BigDecimal winLoss;
     private BigDecimal debitAmount;
+    private BigDecimal creditAmount;
+    private String gameCode;
+    private String currency;
     private Long timestamp;
 
 }
