@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.game.hottoplist;
+package com.nextgen.gameaggregator.operator.game.recommendation;
 
 import java.util.List;
 
@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping(path = "game/")
 @Slf4j
-public class GameHotTopListAction {
+public class GameRecommendationAction {
 	
     @Autowired
     private HttpService httpService;
@@ -46,15 +46,15 @@ public class GameHotTopListAction {
     @Autowired
     private GameUrlService gameUrlService;
 
-    @PostMapping(path = "hotTopList")
-    public OperatorResponseVo<List<GameHotTopData>> list(HttpServletRequest request) {
+    @PostMapping(path = "recommendation")
+    public OperatorResponseVo<List<GameRecommendationData>> list(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        OperatorResponseVo<List<GameHotTopData>> responseVo = new OperatorResponseVo<>();
+        OperatorResponseVo<List<GameRecommendationData>> responseVo = new OperatorResponseVo<>();
         try {
         	
             // Retrieve request body in original string format and convert into dto
             String body = httpRequestLog.getRequestBody();
-            GameHotTopListDto dto = HttpService.convertJsonToDto(body, GameHotTopListDto.class);
+            GameRecommendationDto dto = HttpService.convertJsonToDto(body, GameRecommendationDto.class);
 
             responseVo.setTraceId(dto.getTraceId());
             httpRequestLog.setId(dto.getTraceId());
@@ -85,7 +85,7 @@ public class GameHotTopListAction {
             Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
             currencyIds = currency.getId();
 
-            List<GameHotTopData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds);
+            List<GameRecommendationData> gameDataList = gameHotTopListService.getHotTopGameList(dto, currencyIds);
  
             responseVo.setData(gameDataList);
 

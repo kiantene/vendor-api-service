@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.operator.sport.updatebet;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -62,7 +59,7 @@ public class SportUpdateBetAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        String gameCode = vendorGameRepository.findByIdAndStatus(betInformation.getVendorGameId(), 1).getCode();
+        String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
         SportUpdateBetDto dto = this.newSportUpdateBetDto(traceId, gameSession, betInformation, gameCode, vendorCurrency);
 

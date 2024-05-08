@@ -2,10 +2,7 @@ package com.nextgen.gameaggregator.operator.sport.resettle;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
-import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorCurrency;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
@@ -62,7 +59,7 @@ public class SportResettleAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        String gameCode = vendorGameRepository.findByIdAndStatus(sportSettledBet.getVendorGameId(), 1).getCode();
+        String gameCode = vendorGameRepository.findById(sportSettledBet.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
         AgentPlayer agentPlayer = agentPlayerRepository.findById(sportSettledBet.getAgentPlayerId()).orElse(null);
         SportResettleDto dto = this.newSportResettleDto(traceId, agentPlayer.getUsername(), sportSettledBet, sportResettleData, gameCode, vendorCurrency);
@@ -185,22 +182,20 @@ public class SportResettleAction {
 
         SportResettleDto sportResettleDto = new SportResettleDto();
         sportResettleDto.setTraceId(traceId);
-        sportResettleDto.setBetId(sportSettledBet.getBetId());
-        sportResettleDto.setTransactionId(sportSettledBet.getInternalTransactionId());
         sportResettleDto.setUsername(agentPlayerUsername);
-        sportResettleDto.setCurrency(vendorCurrency.getCurrency().getCode());
+        sportResettleDto.setTransactionId(sportSettledBet.getInternalTransactionId());
         sportResettleDto.setExternalTransactionId(sportSettledBet.getVendorBetId());
-        sportResettleDto.setBetAmount(betAmount);
+        sportResettleDto.setBetId(sportSettledBet.getBetId());
         sportResettleDto.setRoundId(sportSettledBet.getRoundId());
-        sportResettleDto.setTimestamp(sportSettledBet.getVendorBetTime());
-        sportResettleDto.setGameCode(gameCode);
-
         sportResettleDto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(betAmount, vendorCurrency.getFromVendorRate()));
         sportResettleDto.setWinAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(winAmount, vendorCurrency.getFromVendorRate()));
         sportResettleDto.setNewWinAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(newWinAmount, vendorCurrency.getFromVendorRate()));
         sportResettleDto.setWinLoss(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(winLoss, vendorCurrency.getFromVendorRate()));
-        sportResettleDto.setCreditAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(creditAmount, vendorCurrency.getFromVendorRate()));
         sportResettleDto.setDebitAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(debitAmount, vendorCurrency.getFromVendorRate()));
+        sportResettleDto.setCreditAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(creditAmount, vendorCurrency.getFromVendorRate()));
+        sportResettleDto.setGameCode(gameCode);
+        sportResettleDto.setCurrency(vendorCurrency.getCurrency().getCode());
+        sportResettleDto.setTimestamp(sportSettledBet.getVendorBetTime());
 
         return sportResettleDto;
     }

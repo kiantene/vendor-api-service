@@ -1,4 +1,4 @@
-package com.nextgen.gameaggregator.operator.game.hottoplist;
+package com.nextgen.gameaggregator.operator.game.recommendation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -11,7 +11,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GameHotTopListDto {
+public class GameRecommendationDto {
 
     @NotBlank(message = "UUID format only")
     @Size(min = 36, max = 36)

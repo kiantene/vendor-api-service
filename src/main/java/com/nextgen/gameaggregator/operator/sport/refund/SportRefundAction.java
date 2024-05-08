@@ -60,8 +60,10 @@ public class SportRefundAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
+        String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
+
         AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
-        SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+        SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
         headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
@@ -168,15 +170,16 @@ public class SportRefundAction {
         return responseVo;
     }
 
-    private SportRefundDto newSportRefundDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase betInformation) {
+    private SportRefundDto newSportRefundDto(String traceId, String agentPlayerUsername, String currencyCode, SportUnsettledBetCouchbase betInformation, String gameCode) {
         SportRefundDto sportRefundDto = new SportRefundDto();
         sportRefundDto.setTraceId(traceId);
-        sportRefundDto.setBetId(betInformation.getBetId());
-        sportRefundDto.setTransactionId(betInformation.getInternalTransactionId());
         sportRefundDto.setUsername(agentPlayerUsername);
-        sportRefundDto.setCurrency(currencyCode);
+        sportRefundDto.setTransactionId(betInformation.getInternalTransactionId());
         sportRefundDto.setExternalTransactionId(betInformation.getVendorBetId());
+        sportRefundDto.setBetId(betInformation.getBetId());
         sportRefundDto.setRoundId(betInformation.getRoundId());
+        sportRefundDto.setGameCode(gameCode);
+        sportRefundDto.setCurrency(currencyCode);
         sportRefundDto.setTimestamp(betInformation.getVendorBetTime());
 
         return sportRefundDto;
