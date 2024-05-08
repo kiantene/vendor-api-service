@@ -10,12 +10,12 @@ public class SportUpdateBetDto {
     private String username;
     private String transactionId;
     private String externalTransactionId;
-    private String roundId;
     private String betId;
-    private String gameCode;
-    private String currency;
-    private Long timestamp;
+    private String roundId;
     private BigDecimal betAmount;
     private BigDecimal newBetAmount;
     private BigDecimal creditAmount;
+    private String gameCode;
+    private String currency;
+    private Long timestamp;
 }
