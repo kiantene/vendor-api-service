@@ -75,7 +75,7 @@ public class CreditAction {
             this.doValidation(creditDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(creditDto.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(creditDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(creditDto,gameSession,body);
