@@ -62,7 +62,7 @@ public class BalanceAction {
             this.doValidation(balanceDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(balanceDto.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(balanceDto, gameSession, body);
