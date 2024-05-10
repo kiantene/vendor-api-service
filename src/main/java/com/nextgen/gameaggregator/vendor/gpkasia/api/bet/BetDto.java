@@ -140,12 +140,23 @@ public class BetDto extends ActionDto implements BetResultData {
     public Long getVendorBetTime() {
         Long betTime = null;
 
+        //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            betTime = Long.parseLong(this.timestamp) * 1000;
+            if(this.istips.equals("1")){
+                // tips
+                betTime = Long.parseLong(this.timestamp) * 1000;
+            }else{
+                // place bet
+                if(this.finished.equals("0")){
+                    betTime = Long.parseLong(this.timestamp) * 1000;
+                }
+            }
         }
 
+        //turbo game
         if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
-            if(this.dealid.contains("place")){
+            if(this.dealid.contains("place") && this.finished == null && this.code.equals("2")){
+                // place bet
                 betTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
@@ -153,6 +164,7 @@ public class BetDto extends ActionDto implements BetResultData {
         //bgaming
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
+                // place bet or straightly lose
                 betTime = Long.parseLong(this.timestamp) * 1000;
             }
         }
@@ -169,10 +181,20 @@ public class BetDto extends ActionDto implements BetResultData {
     public Long getVendorSettleTime() {
         Long settledTime = null;
 
+        //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            settledTime = Long.parseLong(this.timestamp) * 1000;
+            if(this.istips.equals("1")){
+                // tips
+                settledTime = Long.parseLong(this.timestamp) * 1000;
+            }else{
+                // settled
+                if(this.finished.equals("1")){
+                    settledTime = Long.parseLong(this.timestamp) * 1000;
+                }
+            }
         }
 
+        //turbo game
         if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
             if(this.dealid.contains("settle") && this.finished.equals("1")){
                 settledTime = Long.parseLong(this.timestamp) * 1000;
@@ -203,11 +225,24 @@ public class BetDto extends ActionDto implements BetResultData {
     public BetStatus getBetStatus() {
         BetStatus status = null;
 
-
+        //7mojo
         if(this.platform.equals(PlatformType.SEVENMOJO) || this.platform.equals(PlatformType.SEVENMOJOLATAM)){
-            status = BetStatus.SETTLED;
+            if(this.istips.equals("1")){
+                // tips
+                status = BetStatus.SETTLED;
+            }else{
+                //normal bet
+                if(this.finished.equals("0")){
+                    // unsettled
+                    status = BetStatus.UNSETTLED;
+                }else{
+                    // settled
+                    status = BetStatus.SETTLED;
+                }
+            }
         }
 
+        //turbo game
         if(this.platform.equals(PlatformType.TURBOGAME) || this.platform.equals(PlatformType.TURBOGAMELATAM)){
             if(this.dealid.contains("place") && this.finished == null){
                 status = BetStatus.UNSETTLED;

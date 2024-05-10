@@ -70,6 +70,7 @@ public class BetService {
 
                 String runEnv = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.env);
 
+                // reset value for checking credential value then assign again
                 gameCode = null;
 
                 // check is demo game or not
@@ -101,9 +102,20 @@ public class BetService {
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                 }else{
-                    resultType = betDto.getCode().equals("2") ? ResultType.BET_LOSE : ResultType.BET_WIN;
+                    // normal bet
 
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    if(betDto.getFinished().equals("0")){
+                        // unsettled
+
+                        BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                        balance = betEvent.getLastBalance();
+                    }else{
+                        //settled
+
+                        resultType = getTurboGameOr7MojoResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
                 }
             }
 
@@ -116,7 +128,7 @@ public class BetService {
                 }else{
                     // settled
                     if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
-                        resultType = getTurboGameResultType(betDto);
+                        resultType = getTurboGameOr7MojoResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
@@ -186,6 +198,12 @@ public class BetService {
         // if 7mojo platform will check istips param
         if(dto.getPlatform().equals(PlatformType.SEVENMOJO) || dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
             Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
+
+            // check finished param when it is not tips
+            if(dto.getIstips().equals("0")){
+                Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
+            }
+
             Optional.ofNullable(dto.getDealid()).orElseThrow(InvalidRequestException::new);
         }
 
@@ -227,7 +245,7 @@ public class BetService {
         }
     }
 
-    private ResultType getTurboGameResultType(BetDto dto){
+    private ResultType getTurboGameOr7MojoResultType(BetDto dto){
         ResultType resultType = ResultType.WIN; // Default value is win
 
         if(dto.getMoney() == 0.0 && dto.getCode().equals("1")){
