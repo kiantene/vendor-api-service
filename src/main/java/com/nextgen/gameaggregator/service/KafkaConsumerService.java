@@ -10,7 +10,6 @@ import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
-import com.nextgen.gameaggregator.util.GeneralVendorClass;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +40,6 @@ public class KafkaConsumerService {
     @Autowired
     private SportWalletService sportWalletService;
     @Autowired
-    private GeneralVendorClass generalVendorClass;
-    @Autowired
     private HttpService httpService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
@@ -64,8 +61,7 @@ public class KafkaConsumerService {
 
         try {
             //get is bet = sidebet
-            GeneralVendorClass vendorClass = new GeneralVendorClass();
-            vendorClass.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
+            vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
 
             //get vendorCurrencyRate for the vendor
             GameSession gameSession = new GameSession(endRoundSettledBet);
