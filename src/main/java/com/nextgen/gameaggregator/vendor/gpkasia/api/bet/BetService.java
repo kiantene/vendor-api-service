@@ -70,6 +70,8 @@ public class BetService {
 
                 String runEnv = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.env);
 
+                gameCode = null;
+
                 // check is demo game or not
                 for(VendorGameCode resultSet : vendorGameCodeList){
 
@@ -80,6 +82,10 @@ public class BetService {
                         // if env is prod
                         if(!resultSet.getOpenGameCode().toLowerCase().contains("_stg")) gameCode = resultSet.getOpenGameCode();
                     }
+                }
+
+                if(gameCode == null){
+                    throw new GameNotSupportedException();
                 }
             }
 
