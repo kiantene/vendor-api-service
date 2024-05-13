@@ -114,8 +114,8 @@ public class GameListAction {
         } catch (AuthenticationException authenticationException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_AUTHENTICATION_FAILED);
 
-//        } catch (InvalidVendorException | InvalidVendorLineException invalidVendorException) {
-//            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
+        } catch (InvalidVendorException invalidVendorException) {
+            responseVo.setStatus(ResponseCodes.Status.SC_INVALID_VENDOR);
 
         } catch (InvalidCurrencyException invalidCurrencyException) {
             responseVo.setResponseCode(ResponseCodes.Status.SC_WRONG_CURRENCY);
