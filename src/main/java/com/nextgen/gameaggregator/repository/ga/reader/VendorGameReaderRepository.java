@@ -53,11 +53,11 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
             "INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id " +
             "INNER JOIN currencies c on c.id = vgcurrency.currency_id " +
             "WHERE "+
-            " vg.id not IN ( " +
+            " vgc.vendor_game_id not IN ( " +
             "   SELECT vendor_game_id FROM vendor_game_deactivated as game_deactived " +
             "   INNER JOIN vendor_games  on game_deactived.vendor_game_id = vendor_games.id " +
             "   WHERE" +
-            "   vendor_games.vendor_id = 2 AND " +
+            "   vendor_games.vendor_id = :vendorId AND " +
             "   ((game_deactived.sas_entity_hierarchy_id =1) OR " +
             "   (game_deactived.sas_entity_hierarchy_id =2 AND game_deactived.house_id = :houseId) OR " +
             "   (game_deactived.sas_entity_hierarchy_id =3 AND game_deactived.master_agent_id = :masterAgentId ) OR " +
@@ -90,11 +90,11 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
                             "INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id " +
                             "INNER JOIN currencies c on c.id = vgcurrency.currency_id " +
                             "WHERE "+
-                            " vg.id not IN ( " +
+                            " vgc.vendor_game_id not IN ( " +
                             "   SELECT vendor_game_id FROM vendor_game_deactivated as game_deactived " +
                             "   INNER JOIN vendor_games  on game_deactived.vendor_game_id = vendor_games.id " +
                             "   WHERE" +
-                            "   vendor_games.vendor_id = 2 AND " +
+                            "   vendor_games.vendor_id = :vendorId AND " +
                             "   ((game_deactived.sas_entity_hierarchy_id =1) OR " +
                             "   (game_deactived.sas_entity_hierarchy_id =2 AND game_deactived.house_id = :houseId) OR " +
                             "   (game_deactived.sas_entity_hierarchy_id =3 AND game_deactived.master_agent_id = :masterAgentId ) OR " +
