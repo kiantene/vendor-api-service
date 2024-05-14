@@ -286,6 +286,11 @@ public class SportWalletService {
             BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(),  vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+
             // Update status in sport_unsettled_bet (MariaDB)
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
             sportUnsettledBetMariaDB.setStatus(ResponseCodes.Status.SC_OK.code);
@@ -398,6 +403,8 @@ public class SportWalletService {
         // Insert record bet_history (MariaDB)
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, BetResultType.BET.code);
         kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+        kafkaService.produceWarehouseBetHistory
+                (betHistory, httpRequestLog.getOperatorUsername(), httpRequestLog.getVendorUsername(), vendorCurrency.getFromVendorRate());
 
         // Insert record into sport_settled_bet (Couchbase)
         sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
@@ -465,6 +472,11 @@ public class SportWalletService {
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
 
             // update data from couchbase settled bet
             sportSettledBet.setInternalTransactionId(internalTransactionId);
@@ -563,6 +575,12 @@ public class SportWalletService {
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
 
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+
+
         } catch (Exception e) {
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
             sportSettledBetService.save(sportSettledBet);
@@ -614,6 +632,10 @@ public class SportWalletService {
             // Generate new bet history to offset the old records
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+
 
         } catch (InvalidOperatorResponseException e) {
 

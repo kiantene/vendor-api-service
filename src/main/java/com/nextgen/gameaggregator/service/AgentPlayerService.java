@@ -35,4 +35,14 @@ public class AgentPlayerService {
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
         return agentPlayer;
     }
+
+    @Cacheable(value = "AgentPlayers", key = "#agentPlayerId", cacheManager = "cacheManager")
+    public AgentPlayer getByAgentPlayerId(Long agentPlayerId, AgentPlayer agentPlayer) throws RecordNotFoundException {
+        if (agentPlayer == null) {
+            agentPlayer = agentPlayerRepository.findById(agentPlayerId).orElse(null);
+            Optional.ofNullable(agentPlayer).orElseThrow(RecordNotFoundException::new);
+        }
+
+        return agentPlayer;
+    }
 }

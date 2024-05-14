@@ -318,6 +318,8 @@ public class WalletService {
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
                 kafkaService.produceBetHistory(betHistory, settledBet, fromVendorConversionRate);
+                kafkaService.produceWarehouseBetHistory
+                        (betHistory, httpRequestLog.getOperatorUsername(), httpRequestLog.getVendorUsername(), fromVendorConversionRate);
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, settledBet, fromVendorConversionRate);
@@ -772,6 +774,8 @@ public class WalletService {
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, httpRequestLog.getOperatorUsername(), httpRequestLog.getVendorUsername(),  vendorCurrency.getFromVendorRate());
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 
             loggingService.logStart();

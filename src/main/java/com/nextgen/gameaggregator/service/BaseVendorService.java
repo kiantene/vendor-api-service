@@ -86,7 +86,7 @@ public abstract class BaseVendorService {
     }
 
     public void verifyIsPreProcessingVendorGame(Integer vendorGameId) throws GameNotSupportedException {
-        VendorGame vendorGame = vendorGameService.getByGameId(vendorGameId);
+        VendorGame vendorGame = vendorGameService.getByGameId(vendorGameId, null);
         if (vendorGame.getBetDataPreprocessing() == 1) {
             betPreprocess.setIsPreProcessBet(true);
         }

@@ -50,9 +50,12 @@ public class VendorGameService {
     }
 
     @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
-    public VendorGame getByGameId(Integer gameId) throws GameNotSupportedException {
-        VendorGame vendorGame = vendorGameRepository.findById(gameId).orElse(null);
-        Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+    public VendorGame getByGameId(Integer gameId, VendorGame vendorGame) throws GameNotSupportedException {
+        if(vendorGame==null){
+            vendorGame = vendorGameRepository.findById(gameId).orElse(null);
+            Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+        }
+
         return vendorGame;
     }
 

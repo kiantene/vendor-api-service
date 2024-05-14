@@ -48,6 +48,12 @@ public class KafkaConsumerService {
     @Autowired
     private HttpService httpService;
 
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
+
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcess(String message) throws InterruptedException, GameNotSupportedException {
 
@@ -82,6 +88,9 @@ public class KafkaConsumerService {
         try {
             //0. check bet exists
             this.doCheckExistsForSettledBet(endRoundSettledBet);
+
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
 
             //0. check is it time to process, if not then push back to kafkaServices
             if (endRoundSettledBet.getEndRoundProcessTime() > currentTime) {
@@ -122,6 +131,9 @@ public class KafkaConsumerService {
                 if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                     // process bet as normal bet and send to kafka topic_bet_history topic
                     kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                    // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
+                    kafkaService.produceWarehouseBetHistory
+                            (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
                 } else {
                     // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                     kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());

@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.entity.ga.BetHistory;
 import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,8 @@ public class KafkaService {
     private SettledBetService settledBetService;
     @Autowired
     private CurrencyConversionService currencyConversionService;
+    @Autowired
+    private WarehouseBetHistoryService warehouseBetHistoryService;
 
     public void produceBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
         try {
@@ -34,6 +37,37 @@ public class KafkaService {
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, betHistory);
+            //ga-1726 temporary remove delete actions
+            //settledBetService.delete(settledBet);
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
+    public void produceWarehouseBetHistory(BetHistory betHistory, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
+        try {
+            //will do currency conversion before send to kafka
+            currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
+            WarehouseFutureEntity warehouseFutureEntity =
+                    warehouseBetHistoryService.getWarehouseBetHistoryInfoCache(
+                            betHistory.getVendorGameId(), betHistory.getVendorId(),
+                            betHistory.getGameCategoryId(), betHistory.getCurrencyId());
+
+            if( agentPlayerUsername == null || agentPlayerUsername.isEmpty()){
+                throw new Exception("WarehouseBetHistory agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+            }
+
+            if( vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()){
+                throw new Exception("WarehouseBetHistory vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+            }
+
+            com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory
+                    = new com.nextgen.gameaggregator.entity.warehouse.BetHistory
+                    (betHistory, agentPlayerUsername, vendorPlayerUsername, warehouseFutureEntity);
+
+
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, warehouseBetHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
