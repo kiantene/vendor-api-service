@@ -59,6 +59,7 @@ public class GameUrlService implements GameUrl {
         formData.add("home_url", gameSession.getLobbyUrl());
         formData.add("lang", gameSession.getVendorLanguageCode());
         formData.add("client_type", Platforms.checkPlatformCode(gameSession.getVendorPlatformCode()));
+        formData.add("ip", gameSession.getIpAddress());
 
         return formData;
     }
