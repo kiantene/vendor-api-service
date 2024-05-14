@@ -53,6 +53,10 @@ public class KafkaConsumerService {
         processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
         processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
+        //TEST PRINT TO QA
+        log.info("PP TOPIC_END_ROUND_PROCESS = " + KafkaConstant.TOPIC_END_ROUND_PROCESS);
+        log.info("PP TOPIC_END_ROUND_PROCESS GROUP_ID = " + KafkaConstant.GROUP_ID);
+
         //prepare endRound and settleBet info
         EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
         endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
