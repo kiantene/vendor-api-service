@@ -65,6 +65,10 @@ public class BetService {
             // Verify session token
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(betDto.getUser());
 
+            if(betDto.getPlatform().equals(PlatformType.BOOMING)){
+                throw new InvalidSignatureException();
+            }
+
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
                 List<VendorGameCode> vendorGameCodeList = vendorService.getVendorGameCode(gameSession, gameCode);
 
