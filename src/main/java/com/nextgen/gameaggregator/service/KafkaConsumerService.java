@@ -53,10 +53,6 @@ public class KafkaConsumerService {
         processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
         processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
-        //TEST PRINT TO QA
-        log.info("PP TOPIC_END_ROUND_PROCESS = " + KafkaConstant.TOPIC_END_ROUND_PROCESS);
-        log.info("PP TOPIC_END_ROUND_PROCESS GROUP_ID = " + KafkaConstant.GROUP_ID);
-
         //prepare endRound and settleBet info
         EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
         endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
@@ -90,7 +86,7 @@ public class KafkaConsumerService {
 
             //prepare and send endRound to operator
             processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-            walletBetResultAction.callProcessEndRound(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
+            walletBetResultAction.callProcessEndRound(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
             processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
         } catch (GameNotSupportedException e) {

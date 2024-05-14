@@ -205,7 +205,7 @@ public class WalletBetResultAction {
         return responseVo;
     }
 
-    public WalletBalanceVo callProcessEndRound(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+    public WalletBalanceVo callProcessEndRound(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws InvalidAgentApiCredentialException {
 
         // Call stub function instead if config file set to use stub
@@ -227,15 +227,13 @@ public class WalletBetResultAction {
         headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
-        if (httpRequestLog != null) {
-            httpRequestLog.setAgentId(agentId);
-            httpRequestLog.setOperatorStart(startTime);
+        String jsonApiResponse = new Gson().toJson(dto);
 
-            String jsonApiResponse = new Gson().toJson(dto);
-            httpRequestLog.setOperatorData(jsonApiResponse);
-            httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
-
-        }
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        httpRequestLog.setAgentId(agentId);
+        httpRequestLog.setOperatorStart(startTime);
+        httpRequestLog.setOperatorData(jsonApiResponse);
+        httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
 
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
@@ -252,26 +250,26 @@ public class WalletBetResultAction {
                     .block();
 
             long endTime = System.currentTimeMillis();
-            if (httpRequestLog != null) {
-                if (apiResponse != null) {
-                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+            if (apiResponse != null) {
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
 
-                }
-                httpRequestLog.setOperatorEnd(endTime);
             }
+            httpRequestLog.setOperatorEnd(endTime);
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
-            if (httpRequestLog != null) {
+            if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            } else {
                 httpRequestLog.setOperatorResponse(apiResponse.getBody());
                 httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
                 Optional.ofNullable(responseVo.getData()).ifPresent(data -> httpRequestLog.setOperatorTimestamp(data.getTimestamp()));
-
             }
 
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);

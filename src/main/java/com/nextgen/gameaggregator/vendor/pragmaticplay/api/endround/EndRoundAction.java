@@ -60,9 +60,6 @@ public class EndRoundAction {
             // 3. Verify remaining parameters (Verify against database values)
             this.doVerification(httpRequestLog, dto, gameSession);
 
-            //TEST PRINT TO QA
-            log.info("PP ENDROUND = " + dto);
-
             // 4. Retrieve the bet transaction
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, ResultType.END, vendorService, httpRequestLog);
 
