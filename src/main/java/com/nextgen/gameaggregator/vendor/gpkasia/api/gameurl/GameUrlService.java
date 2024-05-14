@@ -112,7 +112,7 @@ public class GameUrlService implements GameUrl {
         ResponseEntity<String> apiResponse2 = getGameUrl(urlScheme, jsonString2);
 
         log.info("gpk create game url: " + apiResponse2.toString());
-        log.info("gpk create game url request: " + apiResponse2);
+        log.info("gpk create game url request: " + jsonString2);
 
         long endTime = System.currentTimeMillis();
 
