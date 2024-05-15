@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.BetType;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.ResponseCodes;
@@ -98,13 +99,13 @@ public class BetService {
 
             //7mojo
             if(betDto.getPlatform().equals(PlatformType.SEVENMOJO) || betDto.getPlatform().equals(PlatformType.SEVENMOJOLATAM)){
-                if(betDto.getIstips().equals("1")){
+                if(betDto.getIstips().equals(BetType.TIPS)){
                     // tips
                     balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                 }else{
                     // normal bet
 
-                    if(betDto.getFinished().equals("0")){
+                    if(betDto.getFinished().equals(BetType.UNFINISHED)){
                         // unsettled
 
                         BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
@@ -127,7 +128,7 @@ public class BetService {
                     balance = betEvent.getLastBalance();
                 }else{
                     // settled
-                    if(betDto.getCode().equals("1") && betDto.getFinished().equals("1")){
+                    if(betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)){
                         resultType = getResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
@@ -137,10 +138,10 @@ public class BetService {
 
             //bgaming
             if(betDto.getPlatform().equals(PlatformType.BGAMINGASIA) || betDto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
-                if(betDto.getFinished().equals("1")){
+                if(betDto.getFinished().equals(BetType.FINISHED)){
                     // if end-round
 
-                    if(betDto.getCode().equals("2")){
+                    if(betDto.getCode().equals(BetType.POINTIN)){
                         // if place bet status mean lose
                         balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     }else{
@@ -159,10 +160,10 @@ public class BetService {
 
             //booming
             if(betDto.getPlatform().equals(PlatformType.BOOMING) || betDto.getPlatform().equals(PlatformType.BOOMINGLATAM)){
-                if(betDto.getFinished().equals("1")){
+                if(betDto.getFinished().equals(BetType.FINISHED)){
                     // if end-round
 
-                    if(betDto.getCode().equals("2")){
+                    if(betDto.getCode().equals(BetType.POINTIN)){
                         // if place bet status mean lose
                         balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     }else{
@@ -182,7 +183,7 @@ public class BetService {
             vo.setCodeMsg(ResponseCodes.SUCCESS);
 
             // check the code value to define it is deducted or gain money
-            Double money = betDto.getCode().equals("2") ? (betDto.getMoney() * -1.00) : betDto.getMoney();
+            Double money = betDto.getCode().equals(BetType.POINTIN) ? (betDto.getMoney() * -1.00) : betDto.getMoney();
 
             betDataVo.setDealid(betDto.getDealid());
             betDataVo.setTimestamp(String.valueOf(VendorService.getCurrentTime()));
