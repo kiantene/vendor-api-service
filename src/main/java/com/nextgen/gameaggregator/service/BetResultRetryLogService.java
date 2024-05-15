@@ -82,7 +82,7 @@ public class BetResultRetryLogService {
         return nextRetryTime;
     }
 
-    public void call(String operatorData, String action, Integer agentId) throws Exception, InvalidFormatException {
+    public void call(String operatorData, String action, Integer agentId, HttpRequestLog httpRequestLog) throws Exception, InvalidFormatException {
 
         try {
             MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -96,13 +96,15 @@ public class BetResultRetryLogService {
 
             headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
             headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
+            httpRequestLog.setOperatorData(updatedOperatorData);
+            httpRequestLog.setOperatorEndPoints(apiUrl + action);
 
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(action)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
                     .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromValue(operatorData))
+                    .body(BodyInserters.fromValue(updatedOperatorData))
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, response -> Mono.empty())
                     .toEntity(String.class)
@@ -112,6 +114,9 @@ public class BetResultRetryLogService {
 
             requestService.validateVendorHttpStatusResponse(apiResponse);
             responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+            httpRequestLog.setOperatorResponse(apiResponse.getBody());
+            httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
 
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
@@ -120,6 +125,9 @@ public class BetResultRetryLogService {
 
         } catch (InvalidFormatException | InvalidAgentApiCredentialException e) {
             throw new InvalidFormatException(e.getMessage());
+
+        } catch (InvalidOperatorResponseException e) {
+            throw new InvalidOperatorResponseException(e.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (Exception e) {
             throw new Exception(e);
