@@ -61,6 +61,12 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "[01]")
     private String istips;
 
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String root_roundid;
+
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String root_dealid;
+
     @Override
     public String getExternalTransactionId() {
         String exTransId = this.dealid;
@@ -169,6 +175,14 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }
 
+        //booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+            if((this.finished.equals("0") && this.code.equals("2")) || (this.finished.equals("1") && this.code.equals("2"))){
+                // place bet or straightly lose
+                betTime = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
         return betTime;
     }
 
@@ -203,6 +217,13 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //bgaming
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            if(this.finished.equals("1")){
+                settledTime = Long.parseLong(this.timestamp) * 1000;
+            }
+        }
+
+        //booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
             if(this.finished.equals("1")){
                 settledTime = Long.parseLong(this.timestamp) * 1000;
             }
@@ -253,6 +274,15 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //bgaming
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            if(this.finished.equals("0")){
+                status = BetStatus.UNSETTLED;
+            }else{
+                status = BetStatus.SETTLED;
+            }
+        }
+
+        //booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
             if(this.finished.equals("0")){
                 status = BetStatus.UNSETTLED;
             }else{
