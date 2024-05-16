@@ -443,7 +443,7 @@ public class WalletService {
         THREAD_POOL.submit(() -> {
             try {
                 List<UnsettledBet> newUnsettledBetList = new ArrayList<>();
-
+                log.info("[" + traceId + "] notifyEndRoundAsync -> check unsettledBetList: " + unsettledBetList);
                 if (unsettledBetList == null) {
                     log.info("[" + traceId + "] notifyEndRoundAsync -> search unsettle bet by roundId: " + settledBet.getRoundId());
                     String roundId = settledBet.getRoundId();
