@@ -149,7 +149,7 @@ public class UnsettledBetService {
         UnsettledBet unsettledBet = rawUnsettledBetRepository.findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(roundId, betResultData.getVendorBetId(), vendorGameId, vendorPlayerId);
 
         if (unsettledBet == null) {
-            unsettledBet = rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
+            unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
 
             if (unsettledBet == null) { // No matching bet record for the given round Id
                 kafkaService.produceBetResultDlq(betResultData, vendorGameId, vendorPlayerId, agentId);
