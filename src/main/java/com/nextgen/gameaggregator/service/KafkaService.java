@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.BetHistory;
@@ -24,6 +25,8 @@ public class KafkaService {
     private KafkaTemplate<String, String> stringKafkaTemplate;
     @Autowired
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
+
+
     @Autowired
     private SettledBetService settledBetService;
     @Autowired
@@ -66,8 +69,11 @@ public class KafkaService {
                     = new com.nextgen.gameaggregator.entity.warehouse.BetHistory
                     (betHistory, agentPlayerUsername, vendorPlayerUsername, warehouseFutureEntity);
 
+            // Using Jackson or any other JSON library to convert UserData object to JSON string
+            ObjectMapper mapper = new ObjectMapper();
+            String jsonString = "{}";
 
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, warehouseBetHistory);
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
