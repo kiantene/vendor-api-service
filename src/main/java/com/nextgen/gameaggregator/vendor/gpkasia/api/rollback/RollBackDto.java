@@ -50,6 +50,12 @@ public class RollBackDto extends ActionDto implements RollbackData {
     @Pattern(regexp = "[01]")
     private String istips;
 
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String root_roundid;
+
+    @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
+    private String root_dealid;
+
     @Override
     public String getRollbackId() {
         return this.dealid;

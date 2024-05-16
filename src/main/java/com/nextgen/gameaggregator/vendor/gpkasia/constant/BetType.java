@@ -7,6 +7,8 @@ public class BetType {
 
     public static final String TIPS = "1";
 
+    public static final String NOTTIPS = "0";
+
     // place bet
     public static final String POINTIN = "2";
 

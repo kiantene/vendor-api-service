@@ -223,7 +223,7 @@ public class BetService {
             Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
 
             // check finished param when it is not tips
-            if(dto.getIstips().equals("0")){
+            if(dto.getIstips().equals(BetType.NOTTIPS)){
                 Optional.ofNullable(dto.getFinished()).orElseThrow(InvalidRequestException::new);
             }
 

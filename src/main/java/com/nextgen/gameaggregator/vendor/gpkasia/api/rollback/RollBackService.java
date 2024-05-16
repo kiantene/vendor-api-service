@@ -108,6 +108,11 @@ public class RollBackService {
         if(dto.getPlatform().equals(equals(PlatformType.SEVENMOJO)) || dto.getPlatform().equals(equals(PlatformType.SEVENMOJOLATAM))){
             Optional.ofNullable(dto.getIstips()).orElseThrow(InvalidRequestException::new);
         }
+
+        if(dto.getPlatform().equals(equals(PlatformType.BOOMING)) || dto.getPlatform().equals(equals(PlatformType.BOOMINGLATAM))){
+            Optional.ofNullable(dto.getRoot_dealid()).orElseThrow(InvalidRequestException::new);
+            Optional.ofNullable(dto.getRoot_roundid()).orElseThrow(InvalidRequestException::new);
+        }
     }
 
     private void doVerification(RollBackDto dto, GameSession gameSession) throws InvalidPlayerException, CredentialNotFoundException, InvalidRequestException {
