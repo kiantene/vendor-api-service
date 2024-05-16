@@ -16,6 +16,7 @@ import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -444,16 +445,14 @@ public class WalletService {
             try {
                 List<UnsettledBet> newUnsettledBetList = new ArrayList<>();
                 log.info("[" + traceId + "] notifyEndRoundAsync -> check unsettledBetList: " + unsettledBetList);
-                if (unsettledBetList == null) {
+                if (CollectionUtils.isEmpty(newUnsettledBetList)) {
                     log.info("[" + traceId + "] notifyEndRoundAsync -> search unsettle bet by roundId: " + settledBet.getRoundId());
                     String roundId = settledBet.getRoundId();
                     Integer vendorGameId = gameSession.getVendorGameId();
                     Long vendorPlayerId = gameSession.getVendorPlayerId();
                     newUnsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
                 } else {
-                    if (!unsettledBetList.isEmpty()) {
-                        newUnsettledBetList = unsettledBetList;
-                    }
+                    newUnsettledBetList = unsettledBetList;
                 }
 
                 // multiple bets within same round
