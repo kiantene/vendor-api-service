@@ -40,19 +40,17 @@ public class KafkaService {
         }
     }
 
-    public void produceBetResultDlq(BetResultData betResultData, String roundId, Integer vendorGameId, Long vendorPlayerId, Integer agentId) {
-        try {
-            BetResultDlq betResultDlq = new BetResultDlq();
-            betResultDlq.setBetResultData(betResultData);
-            betResultDlq.setRoundId(roundId);
-            betResultDlq.setVendorGameId(vendorGameId);
-            betResultDlq.setVendorPlayerId(vendorPlayerId);
-            betResultDlq.setAgentId(agentId);
+    public void produceBetResultDlq(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId, Integer agentId) {
+        BetResultDlq msg = new BetResultDlq(betResultData);
+        msg.setVendorGameId(vendorGameId);
+        msg.setVendorPlayerId(vendorPlayerId);
+        msg.setAgentId(agentId);
 
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, new Gson().toJson(betResultDlq));
+        try {
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, new Gson().toJson(msg));
 
         } catch (Exception e) {
-            log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + roundId + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
+            log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + msg.getRoundId() + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
             e.printStackTrace();
         }
     }
