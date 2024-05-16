@@ -439,13 +439,13 @@ public class WalletService {
     }
 
     private void notifyEndRoundAsync(List<UnsettledBet> unsettledBetList, SettledBet settledBet, BaseVendorService vendorService, GameSession gameSession, String traceId) {
-        log.debug("[" + traceId + "] notifyEndRoundAsync -> start thread (roundId: " + settledBet.getRoundId() + ")");
+        log.info("[" + traceId + "] notifyEndRoundAsync -> start thread (roundId: " + settledBet.getRoundId() + ")");
         THREAD_POOL.submit(() -> {
             try {
                 List<UnsettledBet> newUnsettledBetList = new ArrayList<>();
 
                 if (unsettledBetList == null) {
-                    log.debug("[" + traceId + "] notifyEndRoundAsync -> search unsettle bet by roundId: " + settledBet.getRoundId());
+                    log.info("[" + traceId + "] notifyEndRoundAsync -> search unsettle bet by roundId: " + settledBet.getRoundId());
                     String roundId = settledBet.getRoundId();
                     Integer vendorGameId = gameSession.getVendorGameId();
                     Long vendorPlayerId = gameSession.getVendorPlayerId();
@@ -459,7 +459,7 @@ public class WalletService {
                 // multiple bets within same round
                 for (UnsettledBet betRecord : newUnsettledBetList) {
                     if (!settledBet.getId().equals(betRecord.getId())) { // exclude the current bet record
-                        log.debug("[" + traceId + "] notifyEndRoundAsync -> settle bet: " + betRecord.getBetId());
+                        log.info("[" + traceId + "] notifyEndRoundAsync -> settle bet: " + betRecord.getBetId());
                         final String newTraceId = UUID.randomUUID().toString();
 
                         //if unsettledBet data do have settledTime, then do not update by latest settledTime (PGSOFT CHANGES)
