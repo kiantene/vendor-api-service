@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
-import com.nextgen.gameaggregator.entity.ga.BetHistory;
-import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +36,23 @@ public class KafkaService {
             //settledBetService.delete(settledBet);
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
+            e.printStackTrace();
+        }
+    }
+
+    public void produceBetResultDlq(BetResultData betResultData, String roundId, Integer vendorGameId, Long vendorPlayerId, Integer agentId) {
+        try {
+            BetResultDlq betResultDlq = new BetResultDlq();
+            betResultDlq.setBetResultData(betResultData);
+            betResultDlq.setRoundId(roundId);
+            betResultDlq.setVendorGameId(vendorGameId);
+            betResultDlq.setVendorPlayerId(vendorPlayerId);
+            betResultDlq.setAgentId(agentId);
+
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, new Gson().toJson(betResultDlq));
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + roundId + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
             e.printStackTrace();
         }
     }

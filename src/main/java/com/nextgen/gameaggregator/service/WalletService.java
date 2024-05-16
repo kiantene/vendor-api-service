@@ -224,18 +224,19 @@ public class WalletService {
         }
 
         SettledBet updateCachingSettledBet = settledBet;
-        loggingService.logStart();
+        /*loggingService.logStart();
         List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
         if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
             unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
         }
-        loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
+        loggingService.logProcessTime("doSettledBetResult ｜ unsettledBetService.getByRoundId", traceId);*/
 
         if (!retry) {
             switch (resultType) {
                 case LOSE, END -> { // PP
 
-                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
+                    //unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
+                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, vendorGameId, vendorPlayerId, agentId);
 
                     // handle if settle end/lose resultType having isFreeSpin = 1.
                     unsettledBet.setIsFreespin((betResultData.getIsFreespin() == 1) ? betResultData.getIsFreespin() : unsettledBet.getIsFreespin());
@@ -262,7 +263,9 @@ public class WalletService {
                         internalTransactionId = settledBet.getInternalTransactionId();
                     }
 
-                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
+                    //unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
+                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, vendorGameId, vendorPlayerId, agentId);
+
                     this.mergeResultIntoBetData(unsettledBet, betResultData, resultType, traceId);
                     settledBet = new SettledBet(unsettledBet, vendorService, traceId);
 
@@ -369,6 +372,10 @@ public class WalletService {
         }
 
         loggingService.logStart();
+        List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
+        if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
+            unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+        }
         this.notifyEndRoundAsync(unsettledBetList, settledBet, vendorService, gameSession, traceId);
         loggingService.logProcessTime("doSettledBetResult ｜ walletService.notifyEndRoundAsync", traceId);
 

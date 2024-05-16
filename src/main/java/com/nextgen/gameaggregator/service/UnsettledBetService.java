@@ -32,6 +32,8 @@ public class UnsettledBetService {
     private RawUnsettledBetRepository rawUnsettledBetRepository;
     @Autowired
     private BetIdempotentLogService betIdempotentLogService;
+    @Autowired
+    private KafkaService kafkaService;
 
     /**
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
@@ -135,6 +137,28 @@ public class UnsettledBetService {
 
     public List<UnsettledBet> getByRoundId(String roundId, Integer vendorGameId, Long vendorPlayerId) {
         return rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(roundId, vendorGameId, vendorPlayerId);
+    }
+
+    /**
+     * Creates an unsettled bet record of the given RawUnsettledBet entity object.
+     * This function Get unsettledBet with vendorBetId.
+     * If vendorBetId is not found, then get last unsettledBet by round sort by createTime Desc.
+     */
+    public UnsettledBet getUnsettledBet(BetResultData betResultData, String roundId, Integer vendorGameId, Long vendorPlayerId, Integer agentId) throws BetNotFoundException {
+
+        UnsettledBet unsettledBet = new UnsettledBet();
+        unsettledBet = rawUnsettledBetRepository.findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(roundId, betResultData.getVendorBetId(), vendorGameId, vendorPlayerId);
+
+        if (unsettledBet == null) {
+            unsettledBet = rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
+
+            if (unsettledBet == null) { // No matching bet record for the given round Id
+                kafkaService.produceBetResultDlq(betResultData, roundId, vendorGameId, vendorPlayerId, agentId);
+                throw new BetNotFoundException("Cannot find from rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerId: roundId = " + roundId + ", vendorGameId = " + vendorGameId + ", vendorPlayerId = " + vendorPlayerId);
+            }
+        }
+
+        return unsettledBet;
     }
 
     @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
