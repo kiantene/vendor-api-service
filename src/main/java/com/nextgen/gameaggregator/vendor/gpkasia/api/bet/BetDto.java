@@ -55,6 +55,9 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
     private String gameinfo;
 
+    @PositiveOrZero
+    private Double betinfo;
+
     @NotBlank
     @Pattern(regexp = "\\d+")
     private String platform;
@@ -110,34 +113,60 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getBetAmount() {
-        if(this.code.equals(BetType.POINTIN)){
-            return BigDecimal.valueOf(this.money);
+        BigDecimal betAmount = null;
+
+        // if not booming platform then mean normal bet amount
+        if(!this.platform.equals(PlatformType.BOOMING) || !this.platform.equals(PlatformType.BOOMINGLATAM)){
+            if(this.code.equals(BetType.POINTIN)){
+                betAmount = BigDecimal.valueOf(this.money);
+            }
+        }else{
+            betAmount = BigDecimal.valueOf(this.betinfo);
         }
 
-        return null;
+        return betAmount;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        if(this.code.equals(BetType.POINTOUT)){
-            return BigDecimal.valueOf(this.money);
+        BigDecimal winAmount = null;
+
+        // if not booming platform then mean normal bet amount
+        if(!this.platform.equals(PlatformType.BOOMING) || !this.platform.equals(PlatformType.BOOMINGLATAM)) {
+            if (this.code.equals(BetType.POINTOUT)) {
+                winAmount = BigDecimal.valueOf(this.money);
+            }
         }
 
-        return null;
+        return winAmount;
     }
 
     @Override
     public BigDecimal getWinLoss() {
-        return null;
+        BigDecimal winLoss = null;
+
+        // booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)) {
+            winLoss = new BigDecimal(this.getCode().equals(BetType.POINTIN) ? (this.getMoney() * -1.00) : this.getMoney());
+        }
+
+        return winLoss;
     }
 
     @Override
     public BigDecimal getEffectiveTurnover() {
-        if(this.code.equals(BetType.POINTIN)){
-            return BigDecimal.valueOf(this.money);
+        BigDecimal turnover = null;
+
+        // if not booming platform then mean normal bet amount
+        if(!this.platform.equals(PlatformType.BOOMING) || !this.platform.equals(PlatformType.BOOMINGLATAM)) {
+            if(this.code.equals(BetType.POINTIN)){
+                turnover = BigDecimal.valueOf(this.money);
+            }
+        }else{
+            turnover = BigDecimal.valueOf(this.betinfo);
         }
 
-        return null;
+        return turnover;
     }
 
     @Override
@@ -175,10 +204,8 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            if((this.finished.equals(BetType.UNFINISHED) && this.code.equals(BetType.POINTIN)) || (this.finished.equals(BetType.FINISHED) && this.code.equals(BetType.POINTIN))){
-                // place bet or straightly lose
-                betTime = Long.parseLong(this.timestamp) * 1000;
-            }
+            // only one-time settledment
+            betTime = Long.parseLong(this.timestamp) * 1000;
         }
 
         return betTime;
@@ -222,9 +249,8 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            if(this.finished.equals(BetType.FINISHED)){
-                settledTime = Long.parseLong(this.timestamp) * 1000;
-            }
+            // only one-time settlement
+            settledTime = Long.parseLong(this.timestamp) * 1000;
         }
 
         return settledTime;

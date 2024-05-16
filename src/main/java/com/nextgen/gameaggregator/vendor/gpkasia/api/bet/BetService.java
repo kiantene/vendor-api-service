@@ -163,20 +163,13 @@ public class BetService {
                 if(betDto.getFinished().equals(BetType.FINISHED)){
                     // if end-round
 
-                    if(betDto.getCode().equals(BetType.POINTIN)){
-                        // if place bet status mean lose
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
-                    }else{
-                        // settled with win amount status(will happen zero amount when buy bonus game)
-                        resultType = getResultType(betDto);
+                    // one time settlement
+                    resultType = getResultType(betDto);
 
-                        // settle transaction
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
-                    }
+                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                 }else{
                     // not yet end(unsettled)
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                    balance = betEvent.getLastBalance();
+                    throw new InvalidRequestException();
                 }
             }
 
@@ -249,10 +242,11 @@ public class BetService {
             }
         }
 
-        // if booming platform will check root_dealid & root_roundid
+        // if booming platform will check root_dealid, root_roundid & betinfo
         if(dto.getPlatform().equals(PlatformType.BOOMING) || dto.getPlatform().equals(PlatformType.BOOMINGLATAM)){
             Optional.ofNullable(dto.getRoot_dealid()).orElseThrow(InvalidRequestException::new);
             Optional.ofNullable(dto.getRoot_roundid()).orElseThrow(InvalidRequestException::new);
+            Optional.ofNullable(dto.getBetinfo()).orElseThrow(InvalidRequestException::new);
         }
     }
 
@@ -294,9 +288,17 @@ public class BetService {
 
         //booming
         if(dto.getPlatform().equals(PlatformType.BOOMING) || dto.getPlatform().equals(PlatformType.BOOMINGLATAM)){
-            // booming may happen lose in buy free spin game
-            if(dto.getMoney() == 0.0){
-                resultType = ResultType.END;
+            // only one time settlement
+            if(dto.getCode().equals(BetType.POINTIN)){
+                // money mean win or loss amount
+                if(dto.getBetinfo() - dto.getMoney() != 0.00){
+                    // if bet amount minus win loss still remain more than 0
+                    resultType = ResultType.BET_WIN;
+                }else{
+                    resultType = ResultType.BET_LOSE;
+                }
+            }else{
+                resultType = ResultType.BET_WIN;
             }
         }
 
