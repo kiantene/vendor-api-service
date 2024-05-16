@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLDecoder;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +57,7 @@ public class BetService {
         String gameCode = null;
 
         try{
-            betDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BetDto.class);
+            betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), BetDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(betDto);
