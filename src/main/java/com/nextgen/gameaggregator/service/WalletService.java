@@ -25,12 +25,11 @@ import java.util.concurrent.Executors;
 @Service
 @Slf4j
 public class WalletService {
+    private static final Integer THREAD_SIZE = 64;
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
     private final Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
     private final Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
     private final Integer internalServerError = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
-
-    private static final Integer THREAD_SIZE = 64;
-    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
     @Autowired
     private BetResultLogService betResultLogService;
     @Autowired
@@ -506,11 +505,11 @@ public class WalletService {
                 loggingService.logStart();
                 List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
                 if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
-                    unsettledBetList = unsettledBetService.getByRoundId(roundId, vendorGameId, vendorPlayerId);
+                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, vendorGameId, vendorPlayerId, agentId);
+                } else {
+                    unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
                 }
                 loggingService.logProcessTime("doUnsettledBetResult ｜ unsettledBetService.getByRoundId", traceId);
-
-                unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
 
                 // when betHistoryId is 0, it means this is a new request, so it is not a retry
                 boolean retry = !rawBetResultLog.getBetHistoryId().equals("0");
