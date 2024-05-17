@@ -178,7 +178,7 @@ public class UnsettledBetService {
         return unsettledBet;
     }
 
-    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 100))
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 50))
     public UnsettledBet getTop1UnsettledBet(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
         UnsettledBet unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
         if (unsettledBet == null) {
