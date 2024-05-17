@@ -162,9 +162,12 @@ public class UnsettledBetService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
 
-        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(roundId, betResultData.getVendorBetId(), vendorGameId, vendorPlayerId);
+        UnsettledBet unsettledBet = null;
 
-        if (unsettledBet == null) {
+        try {
+            unsettledBet = this.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
+
+        } catch (BetNotFoundException e) {
             unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
 
             if (unsettledBet == null) { // No matching bet record for the given round Ids
