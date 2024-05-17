@@ -167,7 +167,7 @@ public class UnsettledBetService {
         UnsettledBet unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
         if (unsettledBet == null) {
             try {
-                unsettledBet = this.getTop1UnsettledBet(roundId, vendorGameId, vendorPlayerId);
+                unsettledBet = unsettledBetCachingService.getTop1UnsettledBet(roundId, vendorGameId, vendorPlayerId);
 
             } catch (BetNotFoundException betNotFoundException) {
                 kafkaService.produceBetResultDlq(betResultData, gameSession, httpRequestLog);
@@ -180,15 +180,6 @@ public class UnsettledBetService {
     }
 
     @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
-    public UnsettledBet getTop1UnsettledBet(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
-        UnsettledBet unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
-        if (unsettledBet == null) {
-            throw new BetNotFoundException();
-        }
-        return unsettledBet;
-    }
-
-    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 3, backoff = @Backoff(delay = 200))
     public List<UnsettledBet> getByRoundIdRetry(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
         List<UnsettledBet> unsettledBets = rawUnsettledBetRepository.findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(roundId, vendorGameId, vendorPlayerId);
         if (unsettledBets.isEmpty()) {

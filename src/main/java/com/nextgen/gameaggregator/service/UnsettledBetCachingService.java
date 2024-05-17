@@ -6,6 +6,9 @@ import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -38,6 +41,22 @@ public class UnsettledBetCachingService {
             throw new BetNotFoundException("Cannot find round Id: " + roundId);
         }
 
+        return unsettledBet;
+    }
+
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
+    public UnsettledBet getTop1UnsettledBet(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
+        UnsettledBet unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
+        if (unsettledBet == null) {
+            throw new BetNotFoundException();
+        }
+        return unsettledBet;
+    }
+
+    @Recover
+    public UnsettledBet recoverData(BetNotFoundException ex) {
+        // Handle recovery logic here, such as returning a default value or logging the error
+        UnsettledBet unsettledBet = new UnsettledBet();
         return unsettledBet;
     }
 }
