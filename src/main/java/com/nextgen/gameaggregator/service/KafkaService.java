@@ -50,10 +50,14 @@ public class KafkaService {
         msg.setVendorGameId(vendorGameId);
         msg.setVendorPlayerId(vendorPlayerId);
         msg.setAgentId(agentId);
+        msg.setAgentPlayerId(gameSession.getAgentPlayerId());
+        msg.setGameCategoryId(gameSession.getGameCategoryId());
+        msg.setCurrencyId(gameSession.getCurrencyId());
+        msg.setGameSessionToken(gameSession.getToken());
         msg.setRequestTime(httpRequestLog.getStartTime());
 
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, new Gson().toJson(msg));
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, msg);
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + msg.getRoundId() + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
