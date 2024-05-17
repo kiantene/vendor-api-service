@@ -7,9 +7,6 @@ import org.springframework.data.couchbase.core.mapping.Document;
 import org.springframework.data.couchbase.repository.Collection;
 import org.springframework.data.couchbase.repository.Scope;
 
-@Document
-@Scope("raw")
-@Collection("http_request_logs")
 @Data
 public class HttpRequestLog {
     @Id

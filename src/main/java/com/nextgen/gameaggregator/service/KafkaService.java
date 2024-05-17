@@ -116,4 +116,13 @@ public class KafkaService {
             e.printStackTrace();
         }
     }
+
+    public void produceHttpResponseLog(HttpResponseLog httpResponseLog) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_RESPONSE_LOG, httpResponseLog);
+        } catch (Exception e) {
+            log.error();
+            e.printStackTrace();
+        }
+    }
 }
