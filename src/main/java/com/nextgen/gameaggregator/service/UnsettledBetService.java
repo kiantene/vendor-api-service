@@ -166,13 +166,11 @@ public class UnsettledBetService {
 
         UnsettledBet unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
         if (unsettledBet == null) {
-            try {
-                unsettledBet = unsettledBetCachingService.getTop1UnsettledBet(roundId, vendorGameId, vendorPlayerId);
+            unsettledBet = unsettledBetCachingService.getTop1UnsettledBet(roundId, vendorGameId, vendorPlayerId);
 
-            } catch (BetNotFoundException betNotFoundException) {
+            if (unsettledBet == null) {
                 kafkaService.produceBetResultDlq(betResultData, gameSession, httpRequestLog);
                 throw new BetNotFoundException("Cannot find from rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerId: roundId = " + roundId + ", vendorGameId = " + vendorGameId + ", vendorPlayerId = " + vendorPlayerId);
-
             }
         }
 

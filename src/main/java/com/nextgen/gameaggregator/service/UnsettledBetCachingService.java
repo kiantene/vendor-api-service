@@ -44,7 +44,7 @@ public class UnsettledBetCachingService {
         return unsettledBet;
     }
 
-    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 350))
     public UnsettledBet getTop1UnsettledBet(String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
         UnsettledBet unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
         if (unsettledBet == null) {
@@ -56,7 +56,6 @@ public class UnsettledBetCachingService {
     @Recover
     public UnsettledBet recoverData(BetNotFoundException ex) {
         // Handle recovery logic here, such as returning a default value or logging the error
-        UnsettledBet unsettledBet = new UnsettledBet();
-        return unsettledBet;
+        return null;
     }
 }
