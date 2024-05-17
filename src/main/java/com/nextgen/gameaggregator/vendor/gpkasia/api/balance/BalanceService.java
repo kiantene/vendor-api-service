@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLDecoder;
 
 @Service
 @Slf4j
@@ -40,7 +41,7 @@ public class BalanceService {
         BalanceDataVo dataVo = new BalanceDataVo();
 
         try{
-            balanceDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), BalanceDto.class);
+            balanceDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), BalanceDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);

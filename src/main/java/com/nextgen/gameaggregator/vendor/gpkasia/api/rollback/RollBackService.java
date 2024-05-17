@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLDecoder;
 import java.util.Optional;
 
 @Service
@@ -47,7 +48,7 @@ public class RollBackService {
 
         try{
             // Retrieve request body in original string format
-            rollBackDto = HttpService.convertQueryStringToDto(httpRequestLog.getRequestBody(), RollBackDto.class);
+            rollBackDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), RollBackDto.class);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(rollBackDto);
