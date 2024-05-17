@@ -40,7 +40,7 @@ public class KafkaService {
         }
     }
 
-    public void produceBetResultDlq(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId, Integer agentId) {
+    public void produceBetResultDlq(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId, Integer agentId, GameSession gameSession) {
         BetResultDlq msg = new BetResultDlq(betResultData);
         msg.setVendorGameId(vendorGameId);
         msg.setVendorPlayerId(vendorPlayerId);
@@ -121,7 +121,7 @@ public class KafkaService {
         try {
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_RESPONSE_LOG, httpResponseLog);
         } catch (Exception e) {
-            log.error();
+            log.error(e.getMessage() + " produceHttpResponseLog[" + httpResponseLog.getId() + "]");
             e.printStackTrace();
         }
     }
