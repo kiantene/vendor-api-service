@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -144,7 +145,9 @@ public class UnsettledBetService {
      * This function Get unsettledBet with vendorBetId.
      * If vendorBetId is not found, then get last unsettledBet by round sort by createTime Desc.
      */
-    public UnsettledBet getUnsettledBet(BetResultData betResultData, String roundId, Integer vendorGameId, Long vendorPlayerId, Integer agentId) throws BetNotFoundException {
+    public UnsettledBet getUnsettledBet(BetResultData betResultData, String roundId, GameSession gameSession, HttpRequestLog httpRequestLog) throws BetNotFoundException {
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
 
         UnsettledBet unsettledBet = rawUnsettledBetRepository.findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(roundId, betResultData.getVendorBetId(), vendorGameId, vendorPlayerId);
 
@@ -152,7 +155,7 @@ public class UnsettledBetService {
             unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
 
             if (unsettledBet == null) { // No matching bet record for the given round Ids
-                kafkaService.produceBetResultDlq(betResultData, vendorGameId, vendorPlayerId, agentId);
+                kafkaService.produceBetResultDlq(betResultData, gameSession, httpRequestLog);
                 throw new BetNotFoundException("Cannot find from rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerId: roundId = " + roundId + ", vendorGameId = " + vendorGameId + ", vendorPlayerId = " + vendorPlayerId);
             }
         }

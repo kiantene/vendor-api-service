@@ -40,11 +40,17 @@ public class KafkaService {
         }
     }
 
-    public void produceBetResultDlq(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId, Integer agentId, GameSession gameSession) {
+    public void produceBetResultDlq(BetResultData betResultData, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = gameSession.getAgentId();
+
         BetResultDlq msg = new BetResultDlq(betResultData);
+        msg.setVendorId(gameSession.getVendorId());
         msg.setVendorGameId(vendorGameId);
         msg.setVendorPlayerId(vendorPlayerId);
         msg.setAgentId(agentId);
+        msg.setRequestTime(httpRequestLog.getStartTime());
 
         try {
             stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, new Gson().toJson(msg));

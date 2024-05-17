@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @Data
 @NoArgsConstructor
 public class BetResultDlq {
+    private Integer vendorId;
     private Long vendorPlayerId;
     private Integer agentId;
     private Integer vendorGameId;
@@ -31,6 +32,7 @@ public class BetResultDlq {
     private Long vendorSettleTime;
     private Integer isFreespin;
     private BetStatus betStatus;
+    private Long requestTime;
 
     public BetResultDlq(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();
