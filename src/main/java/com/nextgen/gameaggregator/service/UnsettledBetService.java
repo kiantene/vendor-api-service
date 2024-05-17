@@ -36,6 +36,8 @@ public class UnsettledBetService {
     private BetIdempotentLogService betIdempotentLogService;
     @Autowired
     private KafkaService kafkaService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
 
     /**
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
@@ -46,7 +48,7 @@ public class UnsettledBetService {
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
      */
-    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
     public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
 
         String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
@@ -162,12 +164,8 @@ public class UnsettledBetService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
 
-        UnsettledBet unsettledBet = null;
-
-        try {
-            unsettledBet = this.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
-
-        } catch (BetNotFoundException e) {
+        UnsettledBet unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
+        if (unsettledBet == null) {
             unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
 
             if (unsettledBet == null) { // No matching bet record for the given round Ids
@@ -207,7 +205,7 @@ public class UnsettledBetService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            unsettledBet = this.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+            unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundIdWithErrorResponse(vendorBetId, roundId, vendorGameId, vendorPlayerId);
             Integer operatorStatus = unsettledBet.getOperatorStatus();
             Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(unsettledBet.getCreateTime());
 
