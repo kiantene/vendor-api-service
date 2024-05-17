@@ -125,6 +125,11 @@ public class RollBackService {
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
         ValidationUtils.isEquals(token, dto.getApi_token(), InvalidRequestException::new);
+
+        // check platform id
+        if(!PlatformType.PlatformTypeList.contains(dto.getPlatform())){
+            throw new InvalidRequestException();
+        }
     }
 
     private BigDecimal getCurrentBalance(String traceId, GameSession gameSession, HttpRequestLog httpRequestLog) {
