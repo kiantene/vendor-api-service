@@ -24,7 +24,7 @@ public interface RawUnsettledBetRepository extends CouchbaseRepository<Unsettled
 
     List<UnsettledBet> findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(String roundId, Integer vendorGameId, Long vendorPlayerId);
 
-    //TODO ADD CACHEABLE
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
     UnsettledBet findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(String roundId, String vendorBetId, Integer vendorGameId, Long vendorPlayerId);
 
     //TODO ADD CACHEABLE
