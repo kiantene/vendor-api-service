@@ -13,10 +13,7 @@ import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.CurrencyConversionService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +52,8 @@ public class WalletBetResultAction {
 
     @Autowired
     private CurrencyConversionService currencyConversionService;
+    @Autowired
+    private BetResultRetryLogService betResultRetryLogService;
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -206,6 +205,84 @@ public class WalletBetResultAction {
         return responseVo;
     }
 
+    public WalletBalanceVo callProcessEndRound(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
+            throws InvalidAgentApiCredentialException {
+
+        // Call stub function instead if config file set to use stub
+        if (useStub) {
+            return requestService.responseOperatorSub();
+        }
+
+        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
+        WalletBalanceVo responseVo;
+
+        AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
+
+        WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
+        currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
+
+        String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
+        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
+        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
+
+        long startTime = System.currentTimeMillis();
+        String jsonApiResponse = new Gson().toJson(dto);
+
+        HttpRequestLog httpRequestLog = new HttpRequestLog();
+        httpRequestLog.setAgentId(agentId);
+        httpRequestLog.setOperatorStart(startTime);
+        httpRequestLog.setOperatorData(jsonApiResponse);
+        httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.WALLET_BET_RESULT);
+
+        try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+            if (apiResponse != null) {
+                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
+            }
+            httpRequestLog.setOperatorEnd(endTime);
+
+            // 1. validate HTTP Response Code
+            requestService.validateVendorHttpStatusResponse(apiResponse);
+
+            //2. validate operator response
+            responseVo = new Gson().fromJson(apiResponse.getBody(), WalletBalanceVo.class);
+            if (!responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            } else {
+                httpRequestLog.setOperatorResponse(apiResponse.getBody());
+                httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
+                Optional.ofNullable(responseVo.getData()).ifPresent(data -> httpRequestLog.setOperatorTimestamp(data.getTimestamp()));
+            }
+
+            Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
+            RequestService.validateResponse(responseVo);
+            requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
+            currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
+
+        } catch (Exception exception) {
+            responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+            betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), betInformation.getAgentId(), betInformation, EndPoints.WALLET_BET_RESULT);
+
+        }
+
+        return responseVo;
+    }
+
     private WalletBalanceVo ppEndRoundForceSuccess(GameSession gameSession, WalletBalanceVo responseVo, ResponseEntity<String> apiResponse, String traceId) {
 
         JsonObject originalJson = new JsonObject();
@@ -233,6 +310,7 @@ public class WalletBetResultAction {
 
         return responseVo;
     }
+
 
     private WalletBetResultDto newWalletBetResultDto(String traceId, GameSession gameSession, BetInformation betInformation, ResultType resultType) {
 
