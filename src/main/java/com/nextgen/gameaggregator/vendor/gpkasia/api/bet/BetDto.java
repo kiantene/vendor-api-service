@@ -169,8 +169,10 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getEffectiveTurnover() {
         BigDecimal turnover = null;
 
-        // if not booming platform then mean normal bet amount
-        if(!this.platform.equals(PlatformType.BOOMING) || !this.platform.equals(PlatformType.BOOMINGLATAM)) {
+        List<String> BoomingPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM);
+
+        // not booming platform
+        if(!BoomingPlatform.contains(this.platform)){
             if(this.code.equals(BetType.POINTIN)){
                 turnover = BigDecimal.valueOf(this.money);
             }
