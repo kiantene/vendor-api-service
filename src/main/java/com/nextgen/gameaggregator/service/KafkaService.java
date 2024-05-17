@@ -40,14 +40,24 @@ public class KafkaService {
         }
     }
 
-    public void produceBetResultDlq(BetResultData betResultData, Integer vendorGameId, Long vendorPlayerId, Integer agentId) {
+    public void produceBetResultDlq(BetResultData betResultData, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = gameSession.getAgentId();
+
         BetResultDlq msg = new BetResultDlq(betResultData);
+        msg.setVendorId(gameSession.getVendorId());
         msg.setVendorGameId(vendorGameId);
         msg.setVendorPlayerId(vendorPlayerId);
         msg.setAgentId(agentId);
+        msg.setAgentPlayerId(gameSession.getAgentPlayerId());
+        msg.setGameCategoryId(gameSession.getGameCategoryId());
+        msg.setCurrencyId(gameSession.getCurrencyId());
+        msg.setGameSessionToken(gameSession.getToken());
+        msg.setRequestTime(httpRequestLog.getStartTime());
 
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, new Gson().toJson(msg));
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, msg);
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + msg.getRoundId() + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
@@ -113,6 +123,15 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> referenceId = " + transferHistory.getId() + " data : " + new Gson().toJson(transferHistory));
+            e.printStackTrace();
+        }
+    }
+
+    public void produceHttpResponseLog(HttpResponseLog httpResponseLog) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_RESPONSE_LOG, httpResponseLog);
+        } catch (Exception e) {
+            log.error(e.getMessage() + " produceHttpResponseLog[" + httpResponseLog.getId() + "]");
             e.printStackTrace();
         }
     }

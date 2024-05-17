@@ -15,7 +15,6 @@ public class SportResettleDto {
     private BigDecimal betAmount;
     private BigDecimal winAmount;
     private BigDecimal newWinAmount;
-    private BigDecimal effectiveTurnover;
     private BigDecimal winLoss;
     private BigDecimal debitAmount;
     private BigDecimal creditAmount;

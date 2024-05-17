@@ -16,17 +16,14 @@ public interface RawUnsettledBetRepository extends CouchbaseRepository<Unsettled
 
     void deleteById(String Id);
 
-    @Cacheable(value = "UnsettledBet", key = "{#vendorPlayerId, #externalTransactionId}", cacheManager = "cacheManager")
+    @Cacheable(value = "UnsettledBet", key = "{#vendorPlayerId, #externalTransactionId}", cacheManager = "cacheManager", unless = "#result == null")
     UnsettledBet findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
 
-    @Cacheable(value = "UnsettledBet", key = "{#externalTransactionId, #vendorId}", cacheManager = "cacheManager")
+    @Cacheable(value = "UnsettledBet", key = "{#externalTransactionId, #vendorId}", cacheManager = "cacheManager", unless = "#result == null")
     UnsettledBet findByVendorIdAndExternalTransactionId(Integer vendorId, String externalTransactionId);
 
     List<UnsettledBet> findByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTime(String roundId, Integer vendorGameId, Long vendorPlayerId);
 
-    //TODO ADD CACHEABLE
-    UnsettledBet findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(String roundId, String vendorBetId, Integer vendorGameId, Long vendorPlayerId);
-
-    //TODO ADD CACHEABLE
+    @Cacheable(value = "UnsettledBetTop1", key = "{#roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
     UnsettledBet findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(String roundId, Integer vendorGameId, Long vendorPlayerId);
 }
