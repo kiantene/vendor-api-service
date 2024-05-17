@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -66,7 +67,10 @@ public class UnsettledBetService {
      * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
      * @return RawUnsettledBet entity object after a successful save
      */
-    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public UnsettledBet create(UnsettledBet entity) {
         // Set default values
         entity.setCreateTime(System.currentTimeMillis());
@@ -75,7 +79,10 @@ public class UnsettledBetService {
         return entity;
     }
 
-    @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public UnsettledBet save(UnsettledBet unsettledBet) {
         rawUnsettledBetRepository.save(unsettledBet);
         return unsettledBet;
@@ -87,7 +94,10 @@ public class UnsettledBetService {
      *
      * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
      */
-    @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(evict = {
+            @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CacheEvict(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public void delete(UnsettledBet entity) {
         try {
             rawUnsettledBetRepository.delete(entity);
@@ -96,7 +106,10 @@ public class UnsettledBetService {
         }
     }
 
-    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public void deleteWithoutClearingCache(UnsettledBet entity) {
         try {
             rawUnsettledBetRepository.delete(entity);
