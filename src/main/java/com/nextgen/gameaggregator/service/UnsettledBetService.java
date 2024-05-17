@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
+import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -65,7 +67,10 @@ public class UnsettledBetService {
      * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
      * @return RawUnsettledBet entity object after a successful save
      */
-    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public UnsettledBet create(UnsettledBet entity) {
         // Set default values
         entity.setCreateTime(System.currentTimeMillis());
@@ -74,7 +79,10 @@ public class UnsettledBetService {
         return entity;
     }
 
-    @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public UnsettledBet save(UnsettledBet unsettledBet) {
         rawUnsettledBetRepository.save(unsettledBet);
         return unsettledBet;
@@ -86,7 +94,10 @@ public class UnsettledBetService {
      *
      * @param entity RawUnsettledBet entity object containing information of a single unsettled bet
      */
-    @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(evict = {
+            @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CacheEvict(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public void delete(UnsettledBet entity) {
         try {
             rawUnsettledBetRepository.delete(entity);
@@ -95,7 +106,10 @@ public class UnsettledBetService {
         }
     }
 
-    @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+    })
     public void deleteWithoutClearingCache(UnsettledBet entity) {
         try {
             rawUnsettledBetRepository.delete(entity);
@@ -144,15 +158,20 @@ public class UnsettledBetService {
      * This function Get unsettledBet with vendorBetId.
      * If vendorBetId is not found, then get last unsettledBet by round sort by createTime Desc.
      */
-    public UnsettledBet getUnsettledBet(BetResultData betResultData, String roundId, Integer vendorGameId, Long vendorPlayerId, Integer agentId) throws BetNotFoundException {
+    public UnsettledBet getUnsettledBet(BetResultData betResultData, String roundId, GameSession gameSession, HttpRequestLog httpRequestLog) throws BetNotFoundException {
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
 
-        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByRoundIdAndVendorBetIdAndVendorGameIdAndVendorPlayerId(roundId, betResultData.getVendorBetId(), vendorGameId, vendorPlayerId);
+        UnsettledBet unsettledBet = null;
 
-        if (unsettledBet == null) {
+        try {
+            unsettledBet = this.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
+
+        } catch (BetNotFoundException e) {
             unsettledBet = rawUnsettledBetRepository.findTop1ByRoundIdAndVendorGameIdAndVendorPlayerIdOrderByCreateTimeDesc(roundId, vendorGameId, vendorPlayerId);
 
-            if (unsettledBet == null) { // No matching bet record for the given round Id
-                kafkaService.produceBetResultDlq(betResultData, vendorGameId, vendorPlayerId, agentId);
+            if (unsettledBet == null) { // No matching bet record for the given round Ids
+                kafkaService.produceBetResultDlq(betResultData, gameSession, httpRequestLog);
                 throw new BetNotFoundException("Cannot find from rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerId: roundId = " + roundId + ", vendorGameId = " + vendorGameId + ", vendorPlayerId = " + vendorPlayerId);
             }
         }

@@ -238,7 +238,7 @@ public class WalletService {
                 loggingService.logStart();
                 unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
                 if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
-                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, vendorGameId, vendorPlayerId, agentId);
+                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, gameSession, httpRequestLog);
                 } else {
                     unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
                 }
@@ -507,7 +507,7 @@ public class WalletService {
                 loggingService.logStart();
                 List<UnsettledBet> unsettledBetList = vendorService.getVendorClassFileUnsettledBetList();
                 if (Objects.isNull(unsettledBetList) || unsettledBetList.isEmpty()) {
-                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, vendorGameId, vendorPlayerId, agentId);
+                    unsettledBet = unsettledBetService.getUnsettledBet(betResultData, roundId, gameSession, httpRequestLog);
                 } else {
                     unsettledBet = this.getUnsettledBetFromRound(unsettledBetList, roundId, betResultData);
                 }

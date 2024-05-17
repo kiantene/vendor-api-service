@@ -5,10 +5,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.HttpResponseLog;
 import com.nextgen.gameaggregator.entity.ga.RawBetResultRetryLog;
 import com.nextgen.gameaggregator.exception.InvalidRequestException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,6 +37,13 @@ public class HttpService {
 
     @Value("${logging.http-request:true}")
     private Boolean enableHttpRequestLog;
+
+    private final KafkaService kafkaService;
+
+    @Autowired
+    public HttpService(KafkaService kafkaService) {
+        this.kafkaService = kafkaService;
+    }
 
     public static String getStackTrace(Exception exception) {
         final String NEWLINE = "\r\n";
@@ -244,8 +253,8 @@ public class HttpService {
                     }
 
                     Gson gson = new Gson();
-                    //log.info(gson.toJson(requestLog).replace("\\u003d", ":").replace("\\u0026",",").replace("\\:", "\\\":\\\"").replace("\\,", "\\\",\\\""));
                     log.info(gson.toJson(requestLog));
+                    kafkaService.produceHttpResponseLog(new HttpResponseLog(requestLog));
 
                 } catch (Exception exception) {
                     log.error(exception.getMessage());
