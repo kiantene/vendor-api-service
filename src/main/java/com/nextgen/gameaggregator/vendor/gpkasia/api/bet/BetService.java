@@ -2,10 +2,12 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
+import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
+import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.gpkasia.constant.BetType;
@@ -42,6 +44,8 @@ public class BetService {
     private VendorService vendorService;
     @Autowired
     private VendorGameCodeService vendorGameCodeService;
+    @Autowired
+    private RawUnsettledBetRepository rawUnsettledBetRepository;
 
     public CommonVo transaction(HttpRequestLog httpRequestLog, String traceId) {
         CommonVo vo = new CommonVo();
@@ -55,6 +59,8 @@ public class BetService {
         ResultType resultType = null;
 
         String gameCode = null;
+
+        UnsettledBet unsettledBet = null;
 
         try{
             betDto = HttpService.convertQueryStringToDto(URLDecoder.decode(httpRequestLog.getRequestBody(), "UTF-8"), BetDto.class);
@@ -164,13 +170,40 @@ public class BetService {
                 if(betDto.getFinished().equals(BetType.FINISHED)){
                     // if end-round
 
-                    // one time settlement
-                    resultType = getResultType(betDto);
+                    // Retrieve unsettle data
+                    unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), betDto.getExternalTransactionId());
 
-                    balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    // mean it is one time settlement request(normal bet will not exist in unsettled table)
+                    if(unsettledBet == null){
+                        // one time settlement
+                        betDto.setBAmount(betDto.getBetinfo());
+                        betDto.setWAmount(betDto.getCode().equals(BetType.POINTIN) ? betDto.getBetinfo() - betDto.getMoney() : betDto.getBetinfo() + betDto.getMoney());
+                        betDto.setBTime(betDto.getTimestamp());
+                        betDto.setSTime(betDto.getTimestamp());
+
+                        resultType = getResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }else{
+                        //bonus game(settled)
+                        betDto.setBAmount(null);
+                        betDto.setWAmount(betDto.getCode().equals(BetType.POINTIN) ? betDto.getBetinfo() - betDto.getMoney() : betDto.getBetinfo() + betDto.getMoney());
+                        betDto.setBTime(null);
+                        betDto.setSTime(betDto.getTimestamp());
+
+                        resultType = getResultType(betDto);
+
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }
                 }else{
-                    // not yet end(unsettled)
-                    throw new InvalidRequestException();
+                    // bonus game(unsettled)
+                    betDto.setBAmount(betDto.getBetinfo());
+                    betDto.setWAmount(null);
+                    betDto.setBTime(betDto.getTimestamp());
+                    betDto.setSTime(null);
+
+                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
+                    balance = betEvent.getLastBalance();
                 }
             }
 

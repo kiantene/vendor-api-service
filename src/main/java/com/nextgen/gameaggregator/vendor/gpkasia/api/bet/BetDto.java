@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -72,6 +73,18 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String root_dealid;
+
+    @JsonIgnore
+    private Double bAmount;
+
+    @JsonIgnore
+    private Double wAmount;
+
+    @JsonIgnore
+    private String bTime;
+
+    @JsonIgnore
+    private String sTime;
 
     @Override
     public String getExternalTransactionId() {
@@ -146,15 +159,7 @@ public class BetDto extends ActionDto implements BetResultData {
         }else{
             // booming platform
 
-            if(this.code.equals(BetType.POINTIN)){
-                // if bet amount minus loss amount without greater than zero mean lose
-
-                winAmount = new BigDecimal(this.betinfo - this.money);
-            }else{
-                // total win amount
-
-                winAmount = new BigDecimal(this.betinfo + this.money);
-            }
+            winAmount = new BigDecimal(this.getWAmount());
         }
 
         return winAmount;
@@ -174,10 +179,11 @@ public class BetDto extends ActionDto implements BetResultData {
         // not booming platform
         if(!BoomingPlatform.contains(this.platform)){
             if(this.code.equals(BetType.POINTIN)){
-                turnover = BigDecimal.valueOf(this.money);
+                turnover = new BigDecimal(this.money);
             }
         }else{
-            turnover = BigDecimal.valueOf(this.betinfo);
+            //booming
+            turnover = new BigDecimal(this.getBAmount());
         }
 
         return turnover;
@@ -218,8 +224,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            // only one-time settledment
-            betTime = Long.parseLong(this.timestamp) * 1000;
+            betTime = this.getSTime() != null ? Long.parseLong(this.getBTime()) * 1000 : null;
         }
 
         return betTime;
@@ -263,8 +268,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            // only one-time settlement
-            settledTime = Long.parseLong(this.timestamp) * 1000;
+            settledTime = this.getSTime() != null ? Long.parseLong(this.getSTime()) * 1000 : null;
         }
 
         return settledTime;
