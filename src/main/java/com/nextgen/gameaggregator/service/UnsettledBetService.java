@@ -36,6 +36,8 @@ public class UnsettledBetService {
     private BetIdempotentLogService betIdempotentLogService;
     @Autowired
     private KafkaService kafkaService;
+    @Autowired
+    private UnsettledBetCachingService unsettledBetCachingService;
 
     /**
      * Retrieve an unsettled bet transaction record based on vendor's round Id, game Id, and player Id
@@ -46,7 +48,7 @@ public class UnsettledBetService {
      * @return unsettled bet entity object containing all information of a single unsettled Bet
      * @throws BetNotFoundException If no bet record is found
      */
-    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager")
+    @Cacheable(value = "UnsettledBet", key = "{#vendorBetId, #roundId, #vendorGameId, #vendorPlayerId}", cacheManager = "cacheManager", unless = "#result == null")
     public UnsettledBet getUnsettledBetByRoundId(String vendorBetId, String roundId, Integer vendorGameId, Long vendorPlayerId) throws BetNotFoundException {
 
         String mergeId = vendorBetId + '_' + roundId + '_' + vendorGameId + '_' + vendorPlayerId;
@@ -162,16 +164,15 @@ public class UnsettledBetService {
         Integer vendorGameId = gameSession.getVendorGameId();
         Long vendorPlayerId = gameSession.getVendorPlayerId();
 
-        UnsettledBet unsettledBet = null;
-
-        try {
-            unsettledBet = this.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
-        } catch (BetNotFoundException getUnsettledBetNotFound) {
+        UnsettledBet unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundId(betResultData.getVendorBetId(), roundId, vendorGameId, vendorPlayerId);
+        if (unsettledBet == null) {
             try {
                 unsettledBet = this.getTop1UnsettledBet(roundId, vendorGameId, vendorPlayerId);
-            } catch (BetNotFoundException getTop1UnsettledBetNotFound) {
+
+            } catch (BetNotFoundException betNotFoundException) {
                 kafkaService.produceBetResultDlq(betResultData, gameSession, httpRequestLog);
                 throw new BetNotFoundException("Cannot find from rawUnsettledBetRepository.findTop1RoundIdAndVendorGameIdAndVendorPlayerId: roundId = " + roundId + ", vendorGameId = " + vendorGameId + ", vendorPlayerId = " + vendorPlayerId);
+
             }
         }
 
@@ -215,7 +216,7 @@ public class UnsettledBetService {
         Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
 
         try {
-            unsettledBet = this.getUnsettledBetByRoundId(vendorBetId, roundId, vendorGameId, vendorPlayerId);
+            unsettledBet = unsettledBetCachingService.getUnsettledBetByRoundIdWithErrorResponse(vendorBetId, roundId, vendorGameId, vendorPlayerId);
             Integer operatorStatus = unsettledBet.getOperatorStatus();
             Long betTimingDifferenceInMillieSeconds = betIdempotentLogService.compareWithExistingTimingDifference(unsettledBet.getCreateTime());
 
