@@ -13,6 +13,8 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -115,12 +117,15 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getBetAmount() {
         BigDecimal betAmount = null;
 
-        // if not booming platform then mean normal bet amount
-        if(!this.platform.equals(PlatformType.BOOMING) || !this.platform.equals(PlatformType.BOOMINGLATAM)){
+        List<String> BoomingPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM);
+
+        // not booming platform
+        if(!BoomingPlatform.contains(this.platform)){
             if(this.code.equals(BetType.POINTIN)){
                 betAmount = BigDecimal.valueOf(this.money);
             }
         }else{
+            // booming platform
             betAmount = BigDecimal.valueOf(this.betinfo);
         }
 
@@ -131,10 +136,24 @@ public class BetDto extends ActionDto implements BetResultData {
     public BigDecimal getWinAmount() {
         BigDecimal winAmount = null;
 
-        // if not booming platform then mean normal bet amount
-        if(!this.platform.equals(PlatformType.BOOMING) || !this.platform.equals(PlatformType.BOOMINGLATAM)) {
+        List<String> BoomingPlatform = Arrays.asList(PlatformType.BOOMING, PlatformType.BOOMINGLATAM);
+
+        // not booming platform
+        if(!BoomingPlatform.contains(this.platform)){
             if (this.code.equals(BetType.POINTOUT)) {
                 winAmount = BigDecimal.valueOf(this.money);
+            }
+        }else{
+            // booming platform
+
+            if(this.code.equals(BetType.POINTIN)){
+                // if bet amount minus loss amount without greater than zero mean lose
+
+                winAmount = new BigDecimal(this.betinfo - this.money);
+            }else{
+                // total win amount
+
+                winAmount = new BigDecimal(this.betinfo + this.money);
             }
         }
 
@@ -143,14 +162,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public BigDecimal getWinLoss() {
-        BigDecimal winLoss = null;
-
-        // booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)) {
-            winLoss = new BigDecimal(this.getCode().equals(BetType.POINTIN) ? (this.getMoney() * -1.00) : this.getMoney());
-        }
-
-        return winLoss;
+        return null;
     }
 
     @Override

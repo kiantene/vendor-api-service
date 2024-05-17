@@ -292,13 +292,14 @@ public class BetService {
             // only one time settlement
             if(dto.getCode().equals(BetType.POINTIN)){
                 // money mean win or loss amount
-                if(dto.getBetinfo() - dto.getMoney() != 0.00){
+                if(dto.getBetinfo() - dto.getMoney() > 0.00){
                     // if bet amount minus win loss still remain more than 0
                     resultType = ResultType.BET_WIN;
                 }else{
                     resultType = ResultType.BET_LOSE;
                 }
             }else{
+                // it means exactly win
                 resultType = ResultType.BET_WIN;
             }
         }
