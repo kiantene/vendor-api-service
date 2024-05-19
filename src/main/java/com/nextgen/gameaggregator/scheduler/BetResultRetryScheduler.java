@@ -49,7 +49,7 @@ public class BetResultRetryScheduler {
                     HttpRequestLog httpRequestLog = httpService.startRetryRequestToOperator(rawBetResultRetryLogItem);
 
                     try {
-                        betResultRetryLogService.call(rawBetResultRetryLogItem.getOperatorData(), rawBetResultRetryLogItem.getAction(), rawBetResultRetryLogItem.getAgentId());
+                        betResultRetryLogService.call(rawBetResultRetryLogItem.getOperatorData(), rawBetResultRetryLogItem.getAction(), rawBetResultRetryLogItem.getAgentId(), httpRequestLog);
                         rawBetResultRetryLogItem.setStatus(RetryStatus.SUCCESS.code);
                         vo.setResponseCode(ResponseCode.SUCCESS);
 
@@ -70,7 +70,7 @@ public class BetResultRetryScheduler {
 
                     }
                     rawBetResultRetryLogRepository.save(rawBetResultRetryLogItem);
-                    
+
                 }
             }
         }

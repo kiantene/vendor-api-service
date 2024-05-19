@@ -142,7 +142,9 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("ResultBet", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofMinutes(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("UnsettledBet", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("UnsettledBetTop1", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(5)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("GameSessions", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLines", RedisCacheConfiguration.defaultCacheConfig()

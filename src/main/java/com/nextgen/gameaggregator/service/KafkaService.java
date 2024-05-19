@@ -3,12 +3,10 @@ package com.nextgen.gameaggregator.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
-import com.nextgen.gameaggregator.entity.ga.BetHistory;
-import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +23,6 @@ public class KafkaService {
     private KafkaTemplate<String, String> stringKafkaTemplate;
     @Autowired
     private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
-
-
     @Autowired
     private SettledBetService settledBetService;
     @Autowired
@@ -48,6 +44,31 @@ public class KafkaService {
         }
     }
 
+    public void produceBetResultDlq(BetResultData betResultData, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = gameSession.getAgentId();
+
+        BetResultDlq msg = new BetResultDlq(betResultData);
+        msg.setVendorId(gameSession.getVendorId());
+        msg.setVendorGameId(vendorGameId);
+        msg.setVendorPlayerId(vendorPlayerId);
+        msg.setAgentId(agentId);
+        msg.setAgentPlayerId(gameSession.getAgentPlayerId());
+        msg.setGameCategoryId(gameSession.getGameCategoryId());
+        msg.setCurrencyId(gameSession.getCurrencyId());
+        msg.setGameSessionToken(gameSession.getToken());
+        msg.setRequestTime(httpRequestLog.getStartTime());
+
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, msg);
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + msg.getRoundId() + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
+            e.printStackTrace();
+        }
+    }
+
     public void produceWarehouseBetHistory(BetHistory betHistory, String agentPlayerUsername, String vendorPlayerUsername, BigDecimal conversionRate) {
         try {
             //will do currency conversion before send to kafka
@@ -57,11 +78,11 @@ public class KafkaService {
                             betHistory.getVendorGameId(), betHistory.getVendorId(),
                             betHistory.getGameCategoryId(), betHistory.getCurrencyId());
 
-            if( agentPlayerUsername == null || agentPlayerUsername.isEmpty()){
+            if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
                 throw new Exception("WarehouseBetHistory agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
-            if( vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()){
+            if (vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()) {
                 throw new Exception("WarehouseBetHistory vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
@@ -140,6 +161,15 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> referenceId = " + transferHistory.getId() + " data : " + new Gson().toJson(transferHistory));
+            e.printStackTrace();
+        }
+    }
+
+    public void produceHttpResponseLog(HttpResponseLog httpResponseLog) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_RESPONSE_LOG, httpResponseLog);
+        } catch (Exception e) {
+            log.error(e.getMessage() + " produceHttpResponseLog[" + httpResponseLog.getId() + "]");
             e.printStackTrace();
         }
     }
