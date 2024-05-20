@@ -55,8 +55,6 @@ public class KafkaConsumerService {
         String newTraceId = UUID.randomUUID().toString();
         ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
         processEndRoundLog.setStartTime(System.currentTimeMillis());
-        processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-        processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
 
         //prepare endRound and settleBet info
         EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
@@ -188,10 +186,13 @@ public class KafkaConsumerService {
             try {
                 processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
                 walletBetResultAction.callProcessEndRound(traceId, agentId, gameSession, betInformation, resultType, fromVendorConversionRate, toVendorConversionRate);
+
             } catch (InvalidAgentApiCredentialException e) {
                 exception = e;
+
             } catch (Exception e) {
                 exception = e;
+
             } finally {
                 //prepare and save processEndRoundLog
                 processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
