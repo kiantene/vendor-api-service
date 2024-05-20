@@ -71,7 +71,8 @@ public class UnsettledBetService {
      */
     @Caching(put = {
             @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetByETID", key = "{#entity.vendorPlayerId, #entity.externalTransactionId}", cacheManager = "cacheManager")
     })
     public UnsettledBet create(UnsettledBet entity) {
         // Set default values
@@ -83,7 +84,8 @@ public class UnsettledBetService {
 
     @Caching(put = {
             @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "UnsettledBetTop1", key = "{#unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+            @CachePut(value = "UnsettledBetTop1", key = "{#unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetByETID", key = "{#unsettledBet.vendorPlayerId, #unsettledBet.externalTransactionId}", cacheManager = "cacheManager")
     })
     public UnsettledBet save(UnsettledBet unsettledBet) {
         rawUnsettledBetRepository.save(unsettledBet);
@@ -98,7 +100,8 @@ public class UnsettledBetService {
      */
     @Caching(evict = {
             @CacheEvict(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CacheEvict(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+            @CacheEvict(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CacheEvict(value = "UnsettledBetByETID", key = "{#entity.vendorPlayerId, #entity.externalTransactionId}", cacheManager = "cacheManager")
     })
     public void delete(UnsettledBet entity) {
         try {
@@ -110,7 +113,8 @@ public class UnsettledBetService {
 
     @Caching(put = {
             @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
+            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetByETID", key = "{#entity.vendorPlayerId, #entity.externalTransactionId}", cacheManager = "cacheManager")
     })
     public void deleteWithoutClearingCache(UnsettledBet entity) {
         try {
@@ -123,7 +127,8 @@ public class UnsettledBetService {
     public UnsettledBet findBetsForRollback(Long vendorPlayerId, String externalTransactionId)
             throws BetNotFoundException, TransactionStillProcessingException {
 
-        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        UnsettledBet unsettledBet = unsettledBetCachingService.getUnsettledBetByExternalTransactionId(vendorPlayerId, externalTransactionId);
+
         if (unsettledBet == null) { // No matching bet record for the given round Id
             throw new BetNotFoundException("Cannot find Vendor Player Id: " + vendorPlayerId + ", externalTransactionId: " + externalTransactionId);
         } else {

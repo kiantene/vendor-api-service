@@ -16,7 +16,7 @@ public interface RawUnsettledBetRepository extends CouchbaseRepository<Unsettled
 
     void deleteById(String Id);
 
-    @Cacheable(value = "UnsettledBet", key = "{#vendorPlayerId, #externalTransactionId}", cacheManager = "cacheManager", unless = "#result == null")
+    @Cacheable(value = "UnsettledBetByETID", key = "{#vendorPlayerId, #externalTransactionId}", cacheManager = "cacheManager", unless = "#result == null")
     UnsettledBet findByVendorPlayerIdAndExternalTransactionId(Long vendorPlayerId, String externalTransactionId);
 
     @Cacheable(value = "UnsettledBet", key = "{#externalTransactionId, #vendorId}", cacheManager = "cacheManager", unless = "#result == null")
