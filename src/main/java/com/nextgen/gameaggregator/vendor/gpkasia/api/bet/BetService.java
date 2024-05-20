@@ -307,7 +307,7 @@ public class BetService {
 
         //7mojo & turbo game
         if(dto.getPlatform().equals(PlatformType.SEVENMOJO) || dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM) || dto.getPlatform().equals(PlatformType.TURBOGAME) || dto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
-            if(dto.getMoney() == 0.0 && dto.getCode().equals("1")){
+            if(dto.getMoney() == 0.0 && dto.getCode().equals(BetType.POINTOUT)){
                 resultType = ResultType.END;
             }
         }
