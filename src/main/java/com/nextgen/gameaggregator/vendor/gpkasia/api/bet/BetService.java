@@ -340,15 +340,9 @@ public class BetService {
                 // bonus game
                 if(dto.getCode().equals(BetType.POINTIN)){
                     // money mean win or loss amount
-                    if(dto.getBetinfo() - dto.getMoney() > 0.00){
-                        // if bet amount minus win loss still remain more than 0
-                        resultType = ResultType.WIN;
-                    }else{
-                        resultType = ResultType.END;
+                    if(!(dto.getBetinfo() - dto.getMoney() > 0.00)){
+                        resultType = ResultType.END; // BetType.POINTOUT or BetType.POINTIN result with greater than 0 are consider as ResultType.WIN
                     }
-                }else{
-                    // it means exactly win
-                    resultType = ResultType.WIN;
                 }
             }
         }
