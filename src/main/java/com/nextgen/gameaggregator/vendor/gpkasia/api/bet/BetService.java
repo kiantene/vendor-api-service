@@ -307,7 +307,7 @@ public class BetService {
 
         //7mojo & turbo game
         if(dto.getPlatform().equals(PlatformType.SEVENMOJO) || dto.getPlatform().equals(PlatformType.SEVENMOJOLATAM) || dto.getPlatform().equals(PlatformType.TURBOGAME) || dto.getPlatform().equals(PlatformType.TURBOGAMELATAM)){
-            if(dto.getMoney() == 0.0 && dto.getCode().equals(BetType.POINTOUT)){
+            if(dto.getMoney() == 0.00 && dto.getCode().equals(BetType.POINTOUT)){
                 resultType = ResultType.END;
             }
         }
@@ -315,7 +315,7 @@ public class BetService {
         //bgaming
         if(dto.getPlatform().equals(PlatformType.BGAMINGASIA) || dto.getPlatform().equals(PlatformType.BGAMINGLATAM)){
             // bgaming may happen lose in buy bonus game
-            if(dto.getMoney() == 0.0 && dto.getDealid() == null){
+            if(dto.getMoney() == 0.00 && dto.getDealid() == null){
                 resultType = ResultType.END;
             }
         }
