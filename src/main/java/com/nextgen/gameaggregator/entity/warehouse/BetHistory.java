@@ -42,7 +42,7 @@ public class BetHistory {
     @JsonProperty("vendor_id")
     private Integer vendorId;
 
-    @JsonProperty("vendorCode")
+    @JsonProperty("vendor_code")
     private String vendorCode;
 
     @JsonProperty("vendor_line_id")
