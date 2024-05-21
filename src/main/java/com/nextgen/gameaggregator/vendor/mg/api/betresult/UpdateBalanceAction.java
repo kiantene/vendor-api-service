@@ -84,7 +84,7 @@ public class UpdateBalanceAction {
                 }
                 case CREDIT -> {
                     WinDataDto winDataDto = new ObjectMapper().convertValue(dto, WinDataDto.class);
-                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
+//                    this.checkUnsettleAndSettleBet(winDataDto, gameSession, message, vendorService);
                     ResultType resultType = determineResultType(dto);
                     BigDecimal balance = walletService.processBetResult(traceId, gameSession, winDataDto, resultType, vendorService, httpRequestLog);
                     updateBalanceVo.setCurrency(gameSession.getVendorCurrencyCode());
