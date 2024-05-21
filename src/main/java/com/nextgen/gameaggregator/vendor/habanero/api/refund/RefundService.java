@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.refund;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -37,12 +38,12 @@ public class RefundService {
             InvalidRequestException,
             NoAvailableLineException {
 
+        //Regenerate new trace ID, Set Request Body
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
+        httpRequestLog.setRequestBody(new Gson().toJson(refundDto));
+
         try {
-
-            //Regenerate new trace ID
-            HttpRequestLog httpRequestLog = httpService.start(request);
-            String traceId = httpRequestLog.getId();
-
             //Retrieve request body in original string format
             String body = httpRequestLog.getRequestBody();
 
@@ -69,6 +70,8 @@ public class RefundService {
             //void the game
             responseVo.setResponseCode(ResponseCodes.REFUNDED);
 
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;
