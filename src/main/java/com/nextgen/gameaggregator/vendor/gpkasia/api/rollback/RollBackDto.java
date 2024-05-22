@@ -19,7 +19,7 @@ public class RollBackDto extends ActionDto implements RollbackData {
     private String user;
 
     @NotNull
-    @Positive
+    @PositiveOrZero
     private Double money;
 
     @NotBlank
