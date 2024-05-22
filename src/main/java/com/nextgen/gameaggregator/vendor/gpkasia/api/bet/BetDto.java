@@ -135,11 +135,11 @@ public class BetDto extends ActionDto implements BetResultData {
         // not booming platform
         if(!BoomingPlatform.contains(this.platform)){
             if(this.code.equals(BetType.POINTIN)){
-                betAmount = BigDecimal.valueOf(this.money);
+                betAmount = new BigDecimal(this.money);
             }
         }else{
             // booming platform
-            betAmount = BigDecimal.valueOf(this.betinfo);
+            betAmount = this.getBAmount() != null ? new BigDecimal(this.getBAmount()) : null;
         }
 
         return betAmount;
@@ -154,12 +154,11 @@ public class BetDto extends ActionDto implements BetResultData {
         // not booming platform
         if(!BoomingPlatform.contains(this.platform)){
             if (this.code.equals(BetType.POINTOUT)) {
-                winAmount = BigDecimal.valueOf(this.money);
+                winAmount = new BigDecimal(this.money);
             }
         }else{
             // booming platform
-
-            winAmount = new BigDecimal(this.getWAmount());
+            winAmount = this.getWAmount() != null ? new BigDecimal(this.getWAmount()) : null;
         }
 
         return winAmount;
@@ -183,7 +182,7 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }else{
             //booming
-            turnover = new BigDecimal(this.getBAmount());
+            turnover = this.getBAmount() != null ? new BigDecimal(this.getBAmount()) : null;
         }
 
         return turnover;
