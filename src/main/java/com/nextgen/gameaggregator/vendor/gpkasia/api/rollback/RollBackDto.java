@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.rollback;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.constant.PlatformType;
 import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -58,7 +59,25 @@ public class RollBackDto extends ActionDto implements RollbackData {
 
     @Override
     public String getRollbackId() {
-        return this.dealid;
+        String exTransId = this.dealid;
+
+        //bgaming
+        if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
+            // dealid equals to null mean did not get any win amount in buy bonus game
+            if(this.dealid == null){
+                exTransId = this.roundid;
+            }
+        }
+
+        //booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+            //not same mean it is the middle part or end of the bonus game transaction
+            if(!(this.dealid.equals(this.root_dealid) && !(this.roundid.equals(this.root_roundid)))){
+                exTransId = this.root_dealid;
+            }
+        }
+
+        return exTransId;
     }
 
     @Override
