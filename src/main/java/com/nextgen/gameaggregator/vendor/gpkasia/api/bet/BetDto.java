@@ -113,7 +113,9 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
             //not same mean it is the middle part or end of the bonus game transaction
             if(!(this.dealid.equals(this.root_dealid) && !(this.bRoundid.equals(this.root_roundid)))){
-                roundId = this.root_roundid;
+                roundId = this.root_dealid;
+            }else{
+                roundId = this.dealid;
             }
         }
 
