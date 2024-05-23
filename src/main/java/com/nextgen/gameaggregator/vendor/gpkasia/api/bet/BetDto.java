@@ -223,7 +223,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            betTime = this.getSTime() != null ? Long.parseLong(this.getBTime()) * 1000 : null;
+            betTime = this.getBTime() != null ? Long.parseLong(this.getBTime()) * 1000 : null;
         }
 
         return betTime;
