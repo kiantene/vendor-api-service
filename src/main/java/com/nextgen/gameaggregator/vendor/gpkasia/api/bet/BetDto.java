@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
@@ -76,18 +75,6 @@ public class BetDto extends ActionDto implements BetResultData {
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
     private String root_dealid;
 
-    @JsonIgnore
-    private Double bAmount;
-
-    @JsonIgnore
-    private Double wAmount;
-
-    @JsonIgnore
-    private String bTime;
-
-    @JsonIgnore
-    private String sTime;
-
     @Override
     public String getExternalTransactionId() {
         String exTransId = this.dealid;
@@ -151,7 +138,7 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }else{
             // booming platform
-            betAmount = this.getBAmount() != null ? new BigDecimal(this.getBAmount()) : null;
+            betAmount = new BigDecimal(this.betinfo);
         }
 
         return betAmount;
@@ -170,7 +157,7 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }else{
             // booming platform
-            winAmount = this.getWAmount() != null ? new BigDecimal(this.getWAmount()) : null;
+            winAmount = this.code.equals(BetType.POINTIN) ? new BigDecimal(this.betinfo - this.money) : new BigDecimal(this.betinfo + this.getMoney());
         }
 
         return winAmount;
@@ -194,7 +181,7 @@ public class BetDto extends ActionDto implements BetResultData {
             }
         }else{
             //booming
-            turnover = this.getBAmount() != null ? new BigDecimal(this.getBAmount()) : null;
+            turnover = new BigDecimal(this.betinfo);
         }
 
         return turnover;
@@ -235,7 +222,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            betTime = this.getBTime() != null ? Long.parseLong(this.getBTime()) * 1000 : null;
+            betTime = Long.parseLong(this.timestamp) * 1000;
         }
 
         return betTime;
@@ -279,7 +266,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            settledTime = this.getSTime() != null ? Long.parseLong(this.getSTime()) * 1000 : null;
+            settledTime = Long.parseLong(this.timestamp) * 1000;
         }
 
         return settledTime;
@@ -292,7 +279,16 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public Integer getIsFreespin() {
-        return 0;
+        Integer status = 0;
+
+        //booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+            if(this.betinfo == 0.00){
+                status = 1;
+            }
+        }
+
+        return status;
     }
 
     @Override

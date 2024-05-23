@@ -173,10 +173,6 @@ public class BetService {
                     // end-round with same value of dealid & root_dealid and roundid & root_roundid mean it is one time settlement
                     if(betDto.getBRoundid().equals(betDto.getRoot_roundid()) && betDto.getDealid().equals(betDto.getRoot_dealid())){
                         // one time settlement
-                        betDto.setBAmount(betDto.getBetinfo());
-                        betDto.setWAmount(betDto.getCode().equals(BetType.POINTIN) ? betDto.getBetinfo() - betDto.getMoney() : betDto.getBetinfo() + betDto.getMoney());
-                        betDto.setBTime(betDto.getTimestamp());
-                        betDto.setSTime(betDto.getTimestamp());
 
                         resultType = getResultType(betDto);
 
@@ -188,6 +184,11 @@ public class BetService {
                 }else{
                     // bonus game(unsettled)
 
+                    if(betDto.getBRoundid().equals(betDto.getRoot_roundid()) && betDto.getDealid().equals(betDto.getRoot_dealid())){
+                        //start of bonus game
+
+                        resultType = getResultType(betDto);
+                    }
                 }
             }
 
@@ -345,13 +346,13 @@ public class BetService {
                         // money mean win or loss amount
                         if(dto.getBetinfo() - dto.getMoney() > 0.00){
                             // if bet amount minus win loss still remain more than 0
-                            resultType = ResultType.WIN;
+                            resultType = ResultType.BET_WIN;
                         }else{
-                            resultType = ResultType.LOSE;
+                            resultType = ResultType.BET_LOSE;
                         }
                     }else{
                         // it means exactly win
-                        resultType = ResultType.WIN;
+                        resultType = ResultType.BET_WIN;
                     }
                 }else{
                     //middle of bonus game
@@ -361,10 +362,10 @@ public class BetService {
                         //no bet amount so just use money to define win or lose
                         if(dto.getMoney() > 0.00){
                             //greater than 0 mean win
-                            resultType = ResultType.WIN;
+                            resultType = ResultType.BET_WIN;
                         }else{
                             //same as 0 mean lose
-                            resultType = ResultType.LOSE;
+                            resultType = ResultType.BET_LOSE;
                         }
                     }
                 }
