@@ -332,11 +332,7 @@ public class BetDto extends ActionDto implements BetResultData {
 
         //booming
         if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            if(this.finished.equals(BetType.UNFINISHED)){
-                status = BetStatus.UNSETTLED;
-            }else{
-                status = BetStatus.SETTLED;
-            }
+            status = BetStatus.SETTLED;
         }
 
         return status;

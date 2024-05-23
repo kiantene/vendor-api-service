@@ -180,14 +180,17 @@ public class BetService {
                     }else{
                         // bonus game settled
 
+                        resultType = getResultType(betDto);
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 }else{
                     // bonus game(unsettled)
 
                     if(betDto.getBRoundid().equals(betDto.getRoot_roundid()) && betDto.getDealid().equals(betDto.getRoot_dealid())){
                         //start of bonus game
-
+                        
                         resultType = getResultType(betDto);
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 }
             }
