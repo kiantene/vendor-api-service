@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Credentials;
@@ -131,7 +132,14 @@ public class BetAction {
             httpService.logError(httpRequestLog, disabledGameException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+
+            //operator response with invalid http status checking
+            if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INVALID_RESPONSE.code)) {
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            } else {
+                responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
+            }
+
             httpService.logError(httpRequestLog, invalidOperatorResponseException);
 
         } catch (Exception exception) { // any other exception encountered
