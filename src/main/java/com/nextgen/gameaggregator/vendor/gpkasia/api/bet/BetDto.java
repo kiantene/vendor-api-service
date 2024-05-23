@@ -2,6 +2,7 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.util.ValidationUtils;
@@ -48,8 +49,9 @@ public class BetDto extends ActionDto implements BetResultData {
     private String code;
 
     @NotBlank
+    @JsonProperty("roundid")
     @Pattern(regexp = "^[^\\u4E00-\\u9FFF]*$") // not allow chinese word
-    private String roundid;
+    private String bRoundid;
 
     @Pattern(regexp = "[01]")
     private String finished;
@@ -94,7 +96,7 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             // dealid equals to null mean did not get any win amount in buy bonus game
             if(this.dealid == null){
-                exTransId = this.roundid;
+                exTransId = this.bRoundid;
             }
         }
 
@@ -109,7 +111,7 @@ public class BetDto extends ActionDto implements BetResultData {
         if(this.platform.equals(PlatformType.BGAMINGASIA) || this.platform.equals(PlatformType.BGAMINGLATAM)){
             // dealid equals to null mean did not get any win amount in buy bonus game
             if(this.dealid == null){
-                vendorBetId = this.roundid;
+                vendorBetId = this.bRoundid;
             }
         }
 
@@ -118,7 +120,17 @@ public class BetDto extends ActionDto implements BetResultData {
 
     @Override
     public String getRoundId() {
-        return this.roundid;
+        String roundId = this.bRoundid;
+
+        //booming
+        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
+            //not same mean it is the middle part or end of the bonus game transaction
+            if(!(this.dealid.equals(this.root_dealid) && !(this.bRoundid.equals(this.root_roundid)))){
+                roundId = this.root_roundid;
+            }
+        }
+
+        return roundId;
     }
 
     @Override
