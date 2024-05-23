@@ -69,14 +69,6 @@ public class RollBackDto extends ActionDto implements RollbackData {
             }
         }
 
-        //booming
-        if(this.platform.equals(PlatformType.BOOMING) || this.platform.equals(PlatformType.BOOMINGLATAM)){
-            //not same mean it is the middle part or end of the bonus game transaction
-            if(!(this.dealid.equals(this.root_dealid) && !(this.roundid.equals(this.root_roundid)))){
-                exTransId = this.root_dealid;
-            }
-        }
-
         return exTransId;
     }
 
