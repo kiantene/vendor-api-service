@@ -339,10 +339,10 @@ public class BetService {
                     //no bet amount so just use money to define win or lose
                     if(dto.getMoney() > 0.00){
                         //greater than 0 mean win
-                        resultType = ResultType.WIN;
+                        resultType = ResultType.BET_WIN;
                     }else{
                         //same as 0 mean lose
-                        resultType = ResultType.END;
+                        resultType = ResultType.BET_LOSE;
                     }
                 }
             }else{
