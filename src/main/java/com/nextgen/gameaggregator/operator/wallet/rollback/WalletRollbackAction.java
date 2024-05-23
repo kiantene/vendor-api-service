@@ -1,6 +1,7 @@
 package com.nextgen.gameaggregator.operator.wallet.rollback;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -148,7 +149,18 @@ public class WalletRollbackAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
             httpRequestLog.setOperatorEnd(System.currentTimeMillis());
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
+
+            //only PP for now
+            if (gameSession.getVendorId() == 1) {
+                if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS)) {
+                    responseVo = this.processForceSuccess(gameSession, traceId);
+                } else {
+                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+                }
+            } else {
+                throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+            }
 
         } catch (Exception exception) {
             long endTime = System.currentTimeMillis();
@@ -183,5 +195,29 @@ public class WalletRollbackAction {
         walletRollbackDto.setTimestamp(rollbackTimestamp);
 
         return walletRollbackDto;
+    }
+
+    private WalletBalanceVo processForceSuccess(GameSession gameSession, String traceId) {
+
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+
+        JsonObject originalJson = new JsonObject();
+        JsonObject additionalData = new JsonObject();
+        long operatorResponseTimeStamp = System.currentTimeMillis();
+
+        additionalData.addProperty("username", gameSession.getAgentPlayerUsername());
+        additionalData.addProperty("currency", gameSession.getCurrencyCode());
+        additionalData.addProperty("balance", 0);
+        additionalData.addProperty("timestamp", operatorResponseTimeStamp);
+
+        originalJson.addProperty("traceId", traceId);
+        originalJson.addProperty("status", ResponseCodes.Status.SC_OK.code);
+        originalJson.addProperty("message", ResponseCodes.Status.SC_OK.description);
+
+        originalJson.add("data", additionalData);
+        String updatedJsonString = new Gson().toJson(originalJson);
+        responseVo = new Gson().fromJson(updatedJsonString, WalletBalanceVo.class);
+
+        return responseVo;
     }
 }

@@ -83,33 +83,35 @@ public class WalletBetAction {
 
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
-            }
-            httpRequestLog.setOperatorEnd(endTime);
-        }
-
-        RequestLogVo requestLogVo = requestService.createRequestLogVo(
-                EndPoints.WALLET_BET, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                this.getClass().getPackage().getName(), profilesActive);
+        ResponseEntity<String> apiResponse = null;
 
         try {
+            apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
+            RequestLogVo requestLogVo = requestService.createRequestLogVo(
+                    EndPoints.WALLET_BET, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
+                    this.getClass().getPackage().getName(), profilesActive);
+
             //log.info("Response [" + apiUrl + EndPoints.WALLET_BET + "]: " + apiResponse);
 
             // 1. validate HTTP Response Code
@@ -156,12 +158,16 @@ public class WalletBetAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
-
             Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
             throw new InvalidOperatorResponseException(operatorStatus);
 
         } catch (Exception exception) {
             //RequestService.failResponseLog(requestLogVo, exception);
+            if (apiResponse != null) {
+                if (apiResponse.getStatusCode().isError()) {
+                    throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+                }
+            }
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
         }
         return responseVo;
