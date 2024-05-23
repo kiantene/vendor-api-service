@@ -120,7 +120,7 @@ public class BetService {
                     }else{
                         //settled
 
-                        resultType = getResultType(betDto, unsettledBet);
+                        resultType = getResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
@@ -136,7 +136,7 @@ public class BetService {
                 }else{
                     // settled
                     if(betDto.getCode().equals(BetType.POINTOUT) && betDto.getFinished().equals(BetType.FINISHED)){
-                        resultType = getResultType(betDto, unsettledBet);
+                        resultType = getResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
@@ -153,7 +153,7 @@ public class BetService {
                         balance = walletService.processBetResult(traceId, gameSession, betDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     }else{
                         // settled with win amount status(will happen zero amount when buy bonus game)
-                        resultType = getResultType(betDto, unsettledBet);
+                        resultType = getResultType(betDto);
 
                         // settle transaction
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
@@ -170,40 +170,24 @@ public class BetService {
                 if(betDto.getFinished().equals(BetType.FINISHED)){
                     // if end-round
 
-                    // Retrieve unsettle data
-                    unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(gameSession.getVendorPlayerId(), betDto.getExternalTransactionId());
-
-                    // mean it is one time settlement request(normal bet will not exist in unsettled table)
-                    if(unsettledBet == null){
+                    // end-round with same value of dealid & root_dealid and roundid & root_roundid mean it is one time settlement
+                    if(betDto.getBRoundid().equals(betDto.getRoot_roundid()) && betDto.getDealid().equals(betDto.getRoot_dealid())){
                         // one time settlement
                         betDto.setBAmount(betDto.getBetinfo());
                         betDto.setWAmount(betDto.getCode().equals(BetType.POINTIN) ? betDto.getBetinfo() - betDto.getMoney() : betDto.getBetinfo() + betDto.getMoney());
                         betDto.setBTime(betDto.getTimestamp());
                         betDto.setSTime(betDto.getTimestamp());
 
-                        resultType = getResultType(betDto, unsettledBet);
+                        resultType = getResultType(betDto);
 
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }else{
-                        //bonus game(settled)
-                        betDto.setBAmount(null);
-                        betDto.setWAmount(betDto.getCode().equals(BetType.POINTIN) ? betDto.getBetinfo() - betDto.getMoney() : betDto.getBetinfo() + betDto.getMoney());
-                        betDto.setBTime(null);
-                        betDto.setSTime(betDto.getTimestamp());
+                        // bonus game settled
 
-                        resultType = getResultType(betDto, unsettledBet);
-
-                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 }else{
                     // bonus game(unsettled)
-                    betDto.setBAmount(betDto.getBetinfo());
-                    betDto.setWAmount(null);
-                    betDto.setBTime(betDto.getTimestamp());
-                    betDto.setSTime(null);
 
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, betDto, httpRequestLog.getRequestBody(), httpRequestLog);
-                    balance = betEvent.getLastBalance();
                 }
             }
 
@@ -302,7 +286,7 @@ public class BetService {
         }
     }
 
-    private ResultType getResultType(BetDto dto, UnsettledBet unsettledBet){
+    private ResultType getResultType(BetDto dto){
         ResultType resultType = ResultType.WIN; // Default value is win
 
         //7mojo & turbo game
@@ -322,26 +306,66 @@ public class BetService {
 
         //booming
         if(dto.getPlatform().equals(PlatformType.BOOMING) || dto.getPlatform().equals(PlatformType.BOOMINGLATAM)){
-            if(unsettledBet == null){
-                // not bonus game(one time settlement)
-                if(dto.getCode().equals(BetType.POINTIN)){
-                    // money mean win or loss amount
-                    if(dto.getBetinfo() - dto.getMoney() > 0.00){
-                        // if bet amount minus win loss still remain more than 0
-                        resultType = ResultType.BET_WIN;
+
+            if(dto.getFinished().equals(BetType.FINISHED)){
+                // settled
+                if(dto.getBRoundid().equals(dto.getRoot_roundid()) && dto.getDealid().equals(dto.getRoot_dealid())){
+                    //one time settlement
+                    if(dto.getCode().equals(BetType.POINTIN)){
+                        // money mean win or loss amount
+                        if(dto.getBetinfo() - dto.getMoney() > 0.00){
+                            // if bet amount minus win loss still remain more than 0
+                            resultType = ResultType.BET_WIN;
+                        }else{
+                            resultType = ResultType.BET_LOSE;
+                        }
                     }else{
-                        resultType = ResultType.BET_LOSE;
+                        // it means exactly win
+                        resultType = ResultType.BET_WIN;
                     }
                 }else{
-                    // it means exactly win
-                    resultType = ResultType.BET_WIN;
+                    //end of bonus game
+
+                    //only use pointout(no matter win or lose)
+                    //no bet amount so just use money to define win or lose
+                    if(dto.getMoney() > 0.00){
+                        //greater than 0 mean win
+                        resultType = ResultType.WIN;
+                    }else{
+                        //same as 0 mean lose
+                        resultType = ResultType.END;
+                    }
                 }
             }else{
-                // bonus game
-                if(dto.getCode().equals(BetType.POINTIN)){
-                    // money mean win or loss amount
-                    if(!(dto.getBetinfo() - dto.getMoney() > 0.00)){
-                        resultType = ResultType.END; // BetType.POINTOUT or BetType.POINTIN result with greater than 0 are consider as ResultType.WIN
+                // unsettled
+                if(dto.getBRoundid().equals(dto.getRoot_roundid()) && dto.getDealid().equals(dto.getRoot_dealid())){
+                    //start of bonus game
+
+                    if(dto.getCode().equals(BetType.POINTIN)){
+                        // money mean win or loss amount
+                        if(dto.getBetinfo() - dto.getMoney() > 0.00){
+                            // if bet amount minus win loss still remain more than 0
+                            resultType = ResultType.WIN;
+                        }else{
+                            resultType = ResultType.LOSE;
+                        }
+                    }else{
+                        // it means exactly win
+                        resultType = ResultType.WIN;
+                    }
+                }else{
+                    //middle of bonus game
+                    if(dto.getCode().equals(BetType.POINTOUT)){
+                        //only use pointout(no matter win or lose)
+
+                        //no bet amount so just use money to define win or lose
+                        if(dto.getMoney() > 0.00){
+                            //greater than 0 mean win
+                            resultType = ResultType.WIN;
+                        }else{
+                            //same as 0 mean lose
+                            resultType = ResultType.LOSE;
+                        }
                     }
                 }
             }
