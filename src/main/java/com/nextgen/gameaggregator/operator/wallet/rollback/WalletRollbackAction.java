@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.rollback;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
@@ -153,7 +152,7 @@ public class WalletRollbackAction {
 
             //only PP for now
             if (gameSession.getVendorId() == 1) {
-                if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS)) {
+                if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code)) {
                     responseVo = this.processForceSuccess(gameSession, traceId);
                 } else {
                     throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
@@ -200,23 +199,17 @@ public class WalletRollbackAction {
     private WalletBalanceVo processForceSuccess(GameSession gameSession, String traceId) {
 
         WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
 
-        JsonObject originalJson = new JsonObject();
-        JsonObject additionalData = new JsonObject();
-        long operatorResponseTimeStamp = System.currentTimeMillis();
+        data.setBalance(BigDecimal.ZERO);
+        data.setUsername(gameSession.getAgentPlayerUsername());
+        data.setCurrency(gameSession.getCurrencyCode());
+        data.setTimestamp(System.currentTimeMillis());
 
-        additionalData.addProperty("username", gameSession.getAgentPlayerUsername());
-        additionalData.addProperty("currency", gameSession.getCurrencyCode());
-        additionalData.addProperty("balance", 0);
-        additionalData.addProperty("timestamp", operatorResponseTimeStamp);
-
-        originalJson.addProperty("traceId", traceId);
-        originalJson.addProperty("status", ResponseCodes.Status.SC_OK.code);
-        originalJson.addProperty("message", ResponseCodes.Status.SC_OK.description);
-
-        originalJson.add("data", additionalData);
-        String updatedJsonString = new Gson().toJson(originalJson);
-        responseVo = new Gson().fromJson(updatedJsonString, WalletBalanceVo.class);
+        responseVo.setTraceId(traceId);
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
+        responseVo.setMessage(ResponseCodes.Status.SC_OK.description);
+        responseVo.setData(data);
 
         return responseVo;
     }

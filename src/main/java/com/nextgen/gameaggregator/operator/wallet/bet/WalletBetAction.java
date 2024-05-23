@@ -153,7 +153,7 @@ public class WalletBetAction {
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
+            //success receive responses from OPERATOR, but due to invalid httpStatus responses, throw error.
             throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
@@ -162,8 +162,9 @@ public class WalletBetAction {
             throw new InvalidOperatorResponseException(operatorStatus);
 
         } catch (Exception exception) {
-            //RequestService.failResponseLog(requestLogVo, exception);
+
             if (apiResponse != null) {
+                //fail receive responses from OPERATOR, but due to invalid httpStatus responses / timeout, throw error.
                 if (apiResponse.getStatusCode().isError()) {
                     throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
                 }
