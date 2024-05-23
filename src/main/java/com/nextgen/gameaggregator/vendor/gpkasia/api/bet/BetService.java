@@ -191,6 +191,11 @@ public class BetService {
                         
                         resultType = getResultType(betDto);
                         balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
+                    }else{
+                        //middle of bonus game
+
+                        resultType = getResultType(betDto);
+                        balance = walletService.processBetResult(traceId, gameSession, betDto, resultType, vendorService, httpRequestLog);
                     }
                 }
             }
