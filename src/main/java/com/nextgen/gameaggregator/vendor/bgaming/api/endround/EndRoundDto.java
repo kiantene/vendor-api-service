@@ -11,9 +11,13 @@ import java.math.BigDecimal;
 @Data
 public class EndRoundDto extends CommonDto implements BetResultData {
 
+
     @Override
     public String getExternalTransactionId() {
-        return this.getVendorRoundId();
+        if (this.getIsSettled()) {
+            return this.getVendorRoundId();
+        }
+        return this.getActionDto().getActionId();
     }
 
     @Override
@@ -84,7 +88,7 @@ public class EndRoundDto extends CommonDto implements BetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        if (this.getFinished()) {
+        if (this.getFinished() && this.getIsSettled()) {
             return BetStatus.SETTLED;
         }
         return BetStatus.UNSETTLED;

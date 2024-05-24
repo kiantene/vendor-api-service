@@ -64,7 +64,7 @@ public class RollbackAction {
             this.doValidation(rollbackDto);
 
             // Verify session token
-            gameSession = gameSessionService.verifyToken(rollbackDto.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(rollbackDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
             this.doVerification(rollbackDto,gameSession,body);

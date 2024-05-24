@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.vendor.saba.api.parlayconfirmbet;
 
 import com.nextgen.gameaggregator.enums.BetStatus;
-import com.nextgen.gameaggregator.enums.BetType;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
 import lombok.Data;
 
@@ -20,10 +19,11 @@ public class ConfirmBetParlayTxnsDto implements SportBetResultData {
     private BigDecimal odds;
 
     private String userId;
+    private String operationId;
 
     @Override
     public String getExternalTransactionId() {
-        return this.refId;
+        return operationId;
     }
 
     @Override

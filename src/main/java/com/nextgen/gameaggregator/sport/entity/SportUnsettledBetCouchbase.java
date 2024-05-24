@@ -27,6 +27,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
     private String vendorPlayerUsername;
     private Integer isConfirmBet;
     private Integer isUnsettledBet;
+    private Integer unsettledResettleNum = 0;
 
     public SportUnsettledBetCouchbase(GameSession gameSession, String rawData, SportBetResultData sportBetResultData, String traceId, Integer resultType) {
         super(sportBetResultData);
@@ -88,7 +89,7 @@ public class SportUnsettledBetCouchbase extends BetInformation {
     }
 
     public String generateId() {
-        return this.getVendorPlayerUsername() + '_' + this.getExternalTransactionId();
+        return this.getVendorPlayerUsername() + '_' + this.getRoundId();
     }
 
     public BetHistory toBetHistory(Integer betStatus, Integer resultType) {

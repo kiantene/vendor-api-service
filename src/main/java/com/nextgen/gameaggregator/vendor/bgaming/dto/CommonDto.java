@@ -28,4 +28,6 @@ public class CommonDto {
     private List<ActionDto> actions;
     @JsonIgnore
     private ActionDto actionDto;
+    @JsonIgnore
+    private Boolean isSettled;
 }

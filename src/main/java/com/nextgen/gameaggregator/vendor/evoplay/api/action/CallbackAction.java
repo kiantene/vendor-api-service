@@ -106,16 +106,16 @@ public class CallbackAction {
                     responseVo = balanceIncreaseService.balanceIncrease(callbackDto, gameSession, traceId, httpRequestLog);
                 }
                 // If the header does not match any of the expected values, return an error response
-                default -> {
-                    throw new InvalidRequestException();
-                }
+                default -> throw new InvalidRequestException();
             }
 
         } catch (InsufficientBalanceException e) {
             responseVo.setResponseCode(ResponseCodes.INSUFFICIENT_BALANCE_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (TransactionStillProcessingException e) {
             responseVo.setResponseCode(ResponseCodes.TEMPORARY_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidOperatorResponseException e) {
             if (e.getOperatorStatus().equals(com.nextgen.gameaggregator.operator.constant.ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code) && callbackDto.getName().equalsIgnoreCase("refund")) {
@@ -123,12 +123,14 @@ public class CallbackAction {
             } else {
                 responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
             }
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetNotFoundException e) {
             if (callbackDto.getName().equalsIgnoreCase("refund")) {
                 idempotentSetBalance(traceId, gameSession, responseVo, httpRequestLog);
             } else {
                 responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+                httpService.logError(httpRequestLog, e);
             }
         } catch (AuthenticationException |
                  DisabledGameException |
@@ -136,6 +138,7 @@ public class CallbackAction {
                  DisabledVendorLineException |
                  RecordNotFoundException e) {
             responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (InvalidRequestException |
                  InvalidVendorLineException |
@@ -145,6 +148,7 @@ public class CallbackAction {
                  GameNotSupportedException |
                  CurrencyNotSupportedException e) {
             responseVo.setResponseCode(ResponseCodes.INVALID_REQUEST_ERROR);
+            httpService.logError(httpRequestLog, e);
 
         } catch (BetRefundIdempotentViolationException |
                  BetResultIdempotentViolationException e) {
@@ -169,8 +173,10 @@ public class CallbackAction {
             responseVo.setData(responseDataVo);
         } catch (InvalidOperatorResponseException e) {
             responseVo.setResponseCode(ResponseCodes.PROCESSING_ERROR);
+            httpService.logError(httpRequestLog, e);
         } catch (Exception e) {
             responseVo.setResponseCode(ResponseCodes.UNKNOWN_ERROR);
+            httpService.logError(httpRequestLog, e);
         }
     }
 

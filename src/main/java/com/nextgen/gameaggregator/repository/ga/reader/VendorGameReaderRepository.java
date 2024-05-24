@@ -52,7 +52,20 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
             "INNER JOIN vendors v on vg.vendor_id = v.id " +
             "INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id " +
             "INNER JOIN currencies c on c.id = vgcurrency.currency_id " +
-            "WHERE vgc.status = :status " +
+            "WHERE "+
+            " vgc.vendor_game_id not IN ( " +
+            "   SELECT vendor_game_id FROM vendor_game_deactivated as game_deactived " +
+            "   INNER JOIN vendor_games  on game_deactived.vendor_game_id = vendor_games.id " +
+            "   WHERE" +
+            "   vendor_games.vendor_id = :vendorId AND " +
+            "   ((game_deactived.sas_entity_hierarchy_id =1) OR " +
+            "   (game_deactived.sas_entity_hierarchy_id =2 AND game_deactived.house_id = :houseId) OR " +
+            "   (game_deactived.sas_entity_hierarchy_id =3 AND game_deactived.master_agent_id = :masterAgentId ) OR " +
+			"	(game_deactived.sas_entity_hierarchy_id =4 AND game_deactived.agent_id = :agentId ) ) " +
+            "   AND  game_deactived.is_deleted = 0 " +
+            "   group by game_deactived.vendor_game_id " +
+            ") " +
+            "AND vgc.status = :status " +
             "AND vgcurrency.status = :status " +
             "AND vgc.vendor_id = :vendorId " +
             "AND vgcurrency.currency_id IN (:currencyIds) " +
@@ -76,7 +89,20 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
                             "INNER JOIN vendor_games vg ON vgc.vendor_game_id = vg.id " +
                             "INNER JOIN vendor_game_currencies vgcurrency on vg.id = vgcurrency.vendor_game_id " +
                             "INNER JOIN currencies c on c.id = vgcurrency.currency_id " +
-                            "WHERE vgc.status = :status " +
+                            "WHERE "+
+                            " vgc.vendor_game_id not IN ( " +
+                            "   SELECT vendor_game_id FROM vendor_game_deactivated as game_deactived " +
+                            "   INNER JOIN vendor_games  on game_deactived.vendor_game_id = vendor_games.id " +
+                            "   WHERE" +
+                            "   vendor_games.vendor_id = :vendorId AND " +
+                            "   ((game_deactived.sas_entity_hierarchy_id =1) OR " +
+                            "   (game_deactived.sas_entity_hierarchy_id =2 AND game_deactived.house_id = :houseId) OR " +
+                            "   (game_deactived.sas_entity_hierarchy_id =3 AND game_deactived.master_agent_id = :masterAgentId ) OR " +
+                            "	(game_deactived.sas_entity_hierarchy_id =4 AND game_deactived.agent_id =  :agentId ) ) " +
+                            "   AND  game_deactived.is_deleted = 0 " +
+                            "   group by game_deactived.vendor_game_id " +
+                            ") " +
+                            "AND vgc.status = :status " +
                             "AND vgcurrency.status = :status " +
                             "AND vgc.vendor_id = :vendorId " +
                             "AND vgcurrency.currency_id IN (:currencyIds) " +
@@ -96,6 +122,9 @@ public interface VendorGameReaderRepository extends JpaRepository<VendorGame, In
             @Param("currencyIds") List<Integer> currencyIds,
             @Param("languageId") Integer languageId,
             @Param("gameUrl") String gameUrl,
+            @Param("houseId") Integer houseId,
+            @Param("masterAgentId") Integer masterAgentId,
+            @Param("agentId") Integer agentId,
             Pageable pageable);
 
 }

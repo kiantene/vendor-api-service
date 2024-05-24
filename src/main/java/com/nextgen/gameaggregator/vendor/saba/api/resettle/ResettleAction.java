@@ -49,6 +49,7 @@ public class ResettleAction {
                 throw new BetResultIdempotentViolationException();
 
             for (ResettleTransactionDto txn : dtos.getMessage().getTxns()) {
+                txn.setOperationId(dtos.getMessage().getOperationId());
                 sportWalletService.resettle(traceId, txn, httpRequestLog);
             }
 

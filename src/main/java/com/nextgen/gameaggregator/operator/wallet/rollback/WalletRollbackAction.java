@@ -98,12 +98,13 @@ public class WalletRollbackAction {
                     .block();
 
             long endTime = System.currentTimeMillis();
+            httpRequestLog.setOperatorEnd(endTime);
+
             if (httpRequestLog != null) {
                 if (apiResponse != null) {
                     httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
 
                 }
-                httpRequestLog.setOperatorEnd(endTime);
             }
 
             requestLogVo = requestService.createRequestLogVo(
@@ -111,7 +112,8 @@ public class WalletRollbackAction {
                     this.getClass().getPackage().getName(), profilesActive);
 
             // 1. validate HTTP Response Code
-            requestService.validateVendorHttpStatusResponse(apiResponse);
+            // Update remove validate to accept all http code for rollback
+            //requestService.validateVendorHttpStatusResponse(apiResponse);
 
             //2. validate operator response
             responseVo = new Gson().fromJson((String) apiResponse.getBody(), WalletBalanceVo.class);
@@ -136,20 +138,32 @@ public class WalletRollbackAction {
 
             //RequestService.successResponseLog(requestLogVo);
 
-        } catch (HttpResponseStatusCodeException |
-                 JsonSyntaxException |
+        } catch (JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
 
-            //RequestService.failResponseLog(requestLogVo, invalidResponseException);
-            throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
+            httpRequestLog.setOperatorEnd(System.currentTimeMillis());
+            throw new InvalidOperatorResponseException(invalidResponseException.getMessage(), ResponseCodes.Status.SC_INVALID_RESPONSE.code);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            //RequestService.failResponseLog(requestLogVo, invalidOperatorResponseException);
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
+
+            httpRequestLog.setOperatorEnd(System.currentTimeMillis());
+            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
+
+            //only PP for now
+            if (gameSession.getVendorId() == 1) {
+                if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code)) {
+                    responseVo = this.processForceSuccess(gameSession, traceId);
+                } else {
+                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+                }
+            } else {
+                throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+            }
 
         } catch (Exception exception) {
             long endTime = System.currentTimeMillis();
+            httpRequestLog.setOperatorEnd(endTime);
             Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
 
             requestLogVo = requestService.createRequestLogVo(
@@ -160,7 +174,7 @@ public class WalletRollbackAction {
                 defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
             }
 
-            throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
+            throw new InvalidOperatorResponseException(exception.getMessage(), defaultOperatorErrorResponse);
         }
 
         return responseVo;
@@ -180,5 +194,23 @@ public class WalletRollbackAction {
         walletRollbackDto.setTimestamp(rollbackTimestamp);
 
         return walletRollbackDto;
+    }
+
+    private WalletBalanceVo processForceSuccess(GameSession gameSession, String traceId) {
+
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+
+        data.setBalance(BigDecimal.ZERO);
+        data.setUsername(gameSession.getAgentPlayerUsername());
+        data.setCurrency(gameSession.getCurrencyCode());
+        data.setTimestamp(System.currentTimeMillis());
+
+        responseVo.setTraceId(traceId);
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
+        responseVo.setMessage(ResponseCodes.Status.SC_OK.description);
+        responseVo.setData(data);
+
+        return responseVo;
     }
 }

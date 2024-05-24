@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.VendorGame;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.RawBatchProcessIdempotentLogService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
@@ -55,6 +58,7 @@ public class SettleAction {
                 throw new BetResultIdempotentViolationException();
 
             for (SettleBetTransactionDto txn : dtos.getMessage().getTxns()) {
+                txn.setOperationId(dtos.getMessage().getOperationId());
                 sportWalletService.asyncSettle(txn);
             }
 

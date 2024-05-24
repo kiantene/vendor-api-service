@@ -74,7 +74,7 @@ public class DebitAction {
             this.doValidation(debitDto);
 
             // Verify session token and generate update game session while playing others game
-            gameSession = gameSessionService.verifyToken(debitDto.getUsername());
+            gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(debitDto.getUsername());
 
             // check db game code is stg or not
             if(gameSession.getVendorGameCode().toLowerCase().contains("_stg")){

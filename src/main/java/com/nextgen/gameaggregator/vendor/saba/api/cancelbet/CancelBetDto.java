@@ -21,6 +21,11 @@ public class CancelBetDto extends GeneralDto implements SportRefundData {
 
     @Override
     public String getExternalTransactionId() {
+        return this.operationId;
+    }
+
+    @Override
+    public String getRoundId() {
         return this.refId;
     }
 

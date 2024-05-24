@@ -4,16 +4,12 @@ import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidOperatorResponseException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
-import com.nextgen.gameaggregator.util.GeneralVendorClass;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
@@ -21,11 +17,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
 public class KafkaConsumerService {
+    private static final Integer THREAD_SIZE = 64;
+    private static final ExecutorService THREAD_POOL = Executors.newFixedThreadPool(THREAD_SIZE);
 
     @Autowired
     private WalletBetResultAction walletBetResultAction;
@@ -44,168 +45,165 @@ public class KafkaConsumerService {
     @Autowired
     private SportWalletService sportWalletService;
     @Autowired
-    private GeneralVendorClass generalVendorClass;
-    @Autowired
     private HttpService httpService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
-    public void consumeEndRoundProcess(String message) throws InterruptedException, GameNotSupportedException {
+    public void consumeEndRoundProcess(String message) {
 
-
-        GeneralVendorClass vendorClass = new GeneralVendorClass();
-
-        //0. set default value and start counting the entire process start time
+        //prepare endRoundProcess Log
+        Exception exception = null;
+        String newTraceId = UUID.randomUUID().toString();
         ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
         processEndRoundLog.setStartTime(System.currentTimeMillis());
 
-        Long currentTime = System.currentTimeMillis();
-        Exception exception = null;
-        String newTraceId = UUID.randomUUID().toString();
-        boolean isOperatorFailed = false;
-
+        //prepare endRound and settleBet info
         EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
-        String vendorBetId = endRoundSettledBet.getVendorBetId();
-        String roundId = endRoundSettledBet.getRoundId();
-        processEndRoundLog.setOperatorProcessStartTime(0L);
-        processEndRoundLog.setOperatorProcessEndTime(0L);
-        Integer operatorStatusProcessing = ResponseCodes.Status.SC_TRANSACTION_STILL_PROCESSING.code;
-        Integer operatorStatusSuccess = ResponseCodes.Status.SC_OK.code;
-        Integer operatorStatusExceededNumOfRetries = ResponseCodes.Status.SC_EXCEEDED_NUMBER_OF_RETRIES.code;
-        Integer updatedOperatorStatus = operatorStatusProcessing;
-
-        endRoundSettledBet.getVendorGameId();
-        endRoundSettledBet.getCurrencyId();
-
-        generalVendorClass.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
-
+        endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+        SettledBet settledBet = new SettledBet(endRoundSettledBet);
+        settledBet.setResultType(endRoundSettledBet.getGaResultType());
+        processEndRoundLog.setTraceId(newTraceId);
+        processEndRoundLog.setRoundId(settledBet.getRoundId());
+        processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
+        processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
 
         try {
-            //0. check bet exists
-            this.doCheckExistsForSettledBet(endRoundSettledBet);
+            //get is bet = sidebet
+            vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
 
-            //0. check is it time to process, if not then push back to kafkaServices
-            if (endRoundSettledBet.getEndRoundProcessTime() > currentTime) {
-                this.doSendBackToProcessEndRoundKafka(endRoundSettledBet, newTraceId);
+            //get vendorCurrencyRate for the vendor
+            GameSession gameSession = new GameSession(endRoundSettledBet);
+            VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
+
+            //update settledBet info
+            settledBetService.save(settledBet, settledBet.getRawData());
+
+            //prepare insert new betHistory data
+            BetHistory betHistory = new BetHistory(settledBet);
+            if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                // process bet as normal bet and send to kafka topic_bet_history topic
+                kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             } else {
-                //1. update operator status to processing
-                endRoundSettledBet.setOperatorStatus(operatorStatusProcessing);
-
-                //2. get agentPlayerUsername, currencyCode and gameCode into gameSession for walletBetResultAction.call
-                GameSession gameSession = new GameSession(endRoundSettledBet);
-
-                //3. convert endRoundSettledBet back to settledBet
-                SettledBet settledBet = new SettledBet(endRoundSettledBet);
-
-                VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
-
-                //4. check if not retry >= 10 times, then send the bet data with resultType end to operator
-                if (!this.doCheckExceedThresholdCounter(endRoundSettledBet, newTraceId)) {
-                    processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
-                    walletBetResultAction.call(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, ResultType.END, null, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
-                    processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
-                }
-
-                //5. set the resultType as endRoundSettledBet.getGaResultType() which calculated in processBetResult
-                settledBet.setResultType(endRoundSettledBet.getGaResultType());
-
-                //6. create temp settleBet on couchbase
-                endRoundSettledBet.setOperatorStatus(operatorStatusSuccess);
-                settledBet.setOperatorStatus(operatorStatusSuccess);
-                settledBetService.save(settledBet, settledBet.getRawData());
-
-                //7. log success betHistory before send to kafka
-                BetHistory betHistory = new BetHistory(settledBet);
-                log.info(new Gson().toJson(betHistory));
-
-                //8. send to process bet history kafka topic
-                loggingService.logStart();
-                if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
-                    // process bet as normal bet and send to kafka topic_bet_history topic
-                    kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
-                } else {
-                    // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
-                    kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
-                }
-
-
-                //delete unsettled bet
-                UnsettledBet unsettledBet = new UnsettledBet(settledBet);
-                unsettledBetService.delete(unsettledBet);
+                // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             }
 
-        } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-            exception = invalidOperatorResponseException;
-            updatedOperatorStatus = invalidOperatorResponseException.getOperatorStatus();
-            isOperatorFailed = true;
+            //prepare delete unsettledBet
+            UnsettledBet unsettledBet = new UnsettledBet(settledBet);
+            unsettledBetService.delete(unsettledBet);
 
-        } catch (BetResultIdempotentViolationException betResultIdempotentViolationException) {
-            //do nothing and save the processEndRoundLog only, because the data has been successfully processed
+            //prepare and send endRound to operator
+            this.notifyEndRoundProcess(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), processEndRoundLog, endRoundSettledBet, settledBet);
+
+        } catch (GameNotSupportedException e) {
+            exception = e;
+
+        } catch (VendorCurrencyNotSupportException e) {
+            exception = e;
 
         } catch (Exception e) {
-            //if any other exception, will be sent back to kafka and process again with operatorStatusProcessing status
             exception = e;
-            isOperatorFailed = true;
 
         } finally {
-            if (isOperatorFailed) {
-                //every fail, increase 1 endRoundCounter and increase nextProcessTime by 10 secs
-                Integer endRoundCounter = endRoundSettledBet.getProcessEndRoundCounter() + 1;
-                Long nextProcessTime = (endRoundCounter.longValue() * 10000) + endRoundSettledBet.getEndRoundProcessTime();
-
-                endRoundSettledBet.setProcessEndRoundCounter(endRoundCounter);
-                endRoundSettledBet.setEndRoundProcessTime(nextProcessTime);
-                endRoundSettledBet.setOperatorStatus(updatedOperatorStatus);
-
-                //send back to kafka and update the settle bet operatorStatus for check exists
-                this.doSendBackToProcessEndRoundKafka(endRoundSettledBet, newTraceId);
-                SettledBet updatedSettledBet = new SettledBet(endRoundSettledBet);
-                settledBetService.save(updatedSettledBet, updatedSettledBet.getRawData());
+            if (exception != null) {
+                //prepare and save processEndRoundLog if exception not null;
+                processEndRoundLog.setEndTime(System.currentTimeMillis());
+                RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
             }
-
-            //9. prepare to log process end round details
-            processEndRoundLog.setTraceId(newTraceId);
-            processEndRoundLog.setRoundId(roundId);
-            processEndRoundLog.setVendorBetId(vendorBetId);
-            processEndRoundLog.setEndTime(System.currentTimeMillis());
-            processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
-            requestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
         }
-
     }
 
-    public void doSendBackToProcessEndRoundKafka(EndRoundSettledBet endRoundSettledBet, String traceId) throws InterruptedException {
-        loggingService.logStart();
-        Thread.sleep(10000);
-        loggingService.logProcessTime("doSendBackToProcessEndRoundKafka", traceId);
-        kafkaService.produceEndRoundSettleBet(endRoundSettledBet);
-    }
+    @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
+    public void consumeEndRoundProcessV2(String message) {
 
-    public void doCheckExistsForSettledBet(EndRoundSettledBet endRoundSettledBet) throws BetResultIdempotentViolationException {
+        //prepare endRoundProcess Log
+        Exception exception = null;
+        String newTraceId = UUID.randomUUID().toString();
+        ProcessEndRoundLog processEndRoundLog = new ProcessEndRoundLog();
+        processEndRoundLog.setStartTime(System.currentTimeMillis());
+        processEndRoundLog.setTraceId(newTraceId);
+
+        //prepare endRound and settleBet info
+        EndRoundSettledBet endRoundSettledBet = new Gson().fromJson(message, EndRoundSettledBet.class);
+        endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
+        SettledBet settledBet = new SettledBet(endRoundSettledBet);
+        settledBet.setResultType(endRoundSettledBet.getGaResultType());
+
+        processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
+        processEndRoundLog.setRoundId(settledBet.getRoundId());
+        processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
+
         try {
-            SettledBet idempotentSettleBet = settledBetService.getByVendorBetIdAndRoundIdAndVendorIdAndVendorPlayerId(endRoundSettledBet.getVendorBetId(), endRoundSettledBet.getRoundId(), endRoundSettledBet.getVendorId(), endRoundSettledBet.getVendorPlayerId());
+            //get is bet = sidebet
+            vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
 
-            if (idempotentSettleBet.getOperatorStatus() == 1) {
-                //if it is success processed, then throw idempotent and stop to process again
-                throw new BetResultIdempotentViolationException();
+            //get vendorCurrencyRate for the vendor
+            GameSession gameSession = new GameSession(endRoundSettledBet);
+            VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
+
+            //update settledBet info
+            settledBetService.save(settledBet, settledBet.getRawData());
+
+            //prepare insert new betHistory data
+            BetHistory betHistory = new BetHistory(settledBet);
+            if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
+                // process bet as normal bet and send to kafka topic_bet_history topic
+                kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             } else {
-                // else if it is not success, will send the end to operator
+                // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
+                kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             }
 
-        } catch (BetNotFoundException betNotFoundException) {
-            //betNotFound is correct behavior, so will continue to process the rest of the process
+            //prepare delete unsettledBet
+            UnsettledBet unsettledBet = new UnsettledBet(settledBet);
+            unsettledBetService.delete(unsettledBet);
+
+            //prepare and send endRound to operator
+            this.notifyEndRoundProcess(newTraceId, endRoundSettledBet.getAgentId(), gameSession, settledBet, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate(), processEndRoundLog, endRoundSettledBet, settledBet);
+
+        } catch (GameNotSupportedException e) {
+            exception = e;
+
+        } catch (VendorCurrencyNotSupportException e) {
+            exception = e;
+
+        } catch (Exception e) {
+            exception = e;
+
+        } finally {
+            if (exception != null) {
+                //prepare and save processEndRoundLog if exception not null;
+                processEndRoundLog.setEndTime(System.currentTimeMillis());
+                RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
+            }
         }
     }
 
-    public Boolean doCheckExceedThresholdCounter(EndRoundSettledBet endRoundSettledBet, String newTraceId) {
-        //5 = 2.5 minutes
-        //10 = 9.17 minutes
-        //15 = 20 minutes
-        Integer exceedThresholdCounter = 10;
-        if (endRoundSettledBet.getProcessEndRoundCounter() >= exceedThresholdCounter) {
-            //if retry more than 10 times, return true and not send to operator
-            return true;
-        }
-        return false;
+    private void notifyEndRoundProcess(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate, ProcessEndRoundLog processEndRoundLog, EndRoundSettledBet endRoundSettledBet, SettledBet settledBet) {
+        THREAD_POOL.submit(() -> {
+            Exception exception = null;
+
+            try {
+                processEndRoundLog.setOperatorProcessStartTime(System.currentTimeMillis());
+                processEndRoundLog.setTraceId(traceId);
+                processEndRoundLog.setRoundId(settledBet.getRoundId());
+                processEndRoundLog.setVendorBetId(settledBet.getVendorBetId());
+                processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
+                walletBetResultAction.callProcessEndRound(traceId, agentId, gameSession, betInformation, ResultType.END, fromVendorConversionRate, toVendorConversionRate);
+
+            } catch (InvalidAgentApiCredentialException e) {
+                exception = e;
+
+            } catch (Exception e) {
+                exception = e;
+
+            } finally {
+                //prepare and save processEndRoundLog
+                processEndRoundLog.setOperatorProcessEndTime(System.currentTimeMillis());
+                processEndRoundLog.setEndTime(System.currentTimeMillis());
+                RequestService.processEndRoundLog(processEndRoundLog, exception, endRoundSettledBet);
+
+            }
+        });
     }
 
     @KafkaListener(topics = KafkaConstant.TOPIC_RAW_SETTLED_BET, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")

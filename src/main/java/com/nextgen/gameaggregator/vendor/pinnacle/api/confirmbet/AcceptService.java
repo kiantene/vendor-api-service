@@ -39,6 +39,7 @@ public class AcceptService {
 
         try {
             AcceptDto acceptDto = new ModelMapper().map(action.getWagerInfo(), AcceptDto.class);
+            acceptDto.setExternalTransactionId(action.getId().toString());
             // check if vendor return Bet Amount else get Bet Amount from Couchbase Unsettled Bet
             this.updateBetAmount(acceptDto, gameSession);
             // if dto contains "Transaction" , update new bet amount value = (old bet amount - transaction[amount])
@@ -58,7 +59,7 @@ public class AcceptService {
         if (Objects.nonNull(acceptDto.getStake())) {
             acceptDto.setBetAmount(acceptDto.getStake());
         } else {
-            SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(gameSession.getVendorPlayerUsername(), acceptDto.getExternalTransactionId());
+            SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.getByVendorPlayerUsernameAndRoundId(gameSession.getVendorPlayerUsername(), acceptDto.getRoundId());
             acceptDto.setBetAmount(sportUnsettledBetCouchbase.getBetAmount());
         }
     }

@@ -111,6 +111,14 @@ public class BetDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
+
+        //if handle fish
+        if(this.gameType.equals(1)){
+            // after GMT+0 2024-05-01 will use bankID
+            return (this.getVendorBetTime() < 1714521600000L) ? recordID : bankID;
+        }
+
+        // if handle slot
         return this.recordID;
     }
 

@@ -3,14 +3,17 @@ package com.nextgen.gameaggregator.vendor.saba.api.gameurl;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.HttpResponseStatusCodeException;
+import com.nextgen.gameaggregator.exception.InvalidResponseException;
+import com.nextgen.gameaggregator.exception.InvalidVendorLineException;
+import com.nextgen.gameaggregator.exception.InvalidVendorResponseException;
 import com.nextgen.gameaggregator.operator.game.url.GameUrl;
 import com.nextgen.gameaggregator.service.RequestService;
 import com.nextgen.gameaggregator.util.RequestLogVo;
+import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.saba.api.createmember.CreateMemberService;
 import com.nextgen.gameaggregator.vendor.saba.constant.Credentials;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
-import com.nextgen.gameaggregator.vendor.pragmaticplay.constant.Endpoints;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -27,9 +30,13 @@ import java.util.Optional;
 
 public class GameUrlService implements GameUrl {
 
+    private static final String PLATFORM_WEB = "1";
+    private static final String PLATFORM_H5 = "2";
+    private static final String WEB_SKIN_TYPE = "&WebSkinType=";
+    private static final String SKIN_TYPE = "&skin=";
+    private static final String DEFAULT_SKIN_NEW_ASIA = "7";
     @Value("${spring.profiles.active}")
     private String profilesActive;
-
     @Autowired
     private RequestService requestService;
     @Autowired
@@ -44,10 +51,12 @@ public class GameUrlService implements GameUrl {
         String operatorId = credentials.get(Credentials.OPERATOR_ID);
         Optional.ofNullable(operatorId).orElseThrow(InvalidVendorLineException::new);
 
+        String platform = (gameSession.getPlatformId().equals(1) ? PLATFORM_H5 : PLATFORM_WEB);
+
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("vendor_id", vendorId);
         formData.add("vendor_member_id", gameSession.getVendorPlayerUsername());
-        formData.add("platform", "1");
+        formData.add("platform", platform);
 
         return formData;
     }
@@ -85,14 +94,47 @@ public class GameUrlService implements GameUrl {
 
             //2. validate vendor response
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
+
+            String skinParam = this.getSkinParamForUrl(credentials, gameSession);
+            responseVo.setData(responseVo.getGameUrl() + skinParam);
+
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);
+
         } catch (HttpResponseStatusCodeException | JsonSyntaxException | InvalidResponseException invalidException) {
             RequestService.failResponseLog(requestLogVo, invalidException, gameSession);
             String exceptionMsg = apiResponse != null ? apiResponse.toString() : "";
             throw new InvalidVendorResponseException(exceptionMsg);
+
         }
 
         return responseVo;
+    }
+
+    private String getSkinParamForUrl(Map<String, String> credentials, GameSession gameSession) {
+        String skinParam = (gameSession.getPlatformId().equals(1) ? SKIN_TYPE : WEB_SKIN_TYPE);
+        String customCurrency = credentials.get(Credentials.CUSTOM_CURRENCY);
+        String customSkin = (credentials.get(Credentials.CUSTOM_SKIN) == null) ? DEFAULT_SKIN_NEW_ASIA : credentials.get(Credentials.CUSTOM_SKIN);
+        String defaultSkin = (credentials.get(Credentials.DEFAULT_SKIN) == null) ? DEFAULT_SKIN_NEW_ASIA : credentials.get(Credentials.DEFAULT_SKIN);
+
+        if (customCurrency != null) {
+            if (!customCurrency.contains(",")) {
+                if (customCurrency.equals(gameSession.getVendorCurrencyCode())) {
+                    defaultSkin = customSkin;
+                }
+
+            } else {
+                String[] currency = customCurrency.split(",");
+                for (String c : currency) {
+                    if (c.equals(gameSession.getVendorCurrencyCode())) {
+                        defaultSkin = customSkin;
+                    }
+                }
+            }
+        }
+
+        skinParam = skinParam + defaultSkin;
+
+        return skinParam;
     }
 }

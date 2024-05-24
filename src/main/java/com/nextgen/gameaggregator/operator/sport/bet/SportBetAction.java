@@ -155,6 +155,7 @@ public class SportBetAction {
         sportBetDto.setRoundId(betInformation.getRoundId());
         sportBetDto.setTimestamp(betInformation.getVendorBetTime());
         sportBetDto.setGameCode(gameSession.getGameCode());
+        sportBetDto.setBetType(betInformation.getBetType());
         sportBetDto.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(betAmount, vendorCurrency.getFromVendorRate()));
 
         return sportBetDto;

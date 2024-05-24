@@ -2,11 +2,9 @@ package com.nextgen.gameaggregator.service;
 
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
-import com.nextgen.gameaggregator.entity.ga.BetHistory;
-import com.nextgen.gameaggregator.entity.ga.EndRoundSettledBet;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,9 +40,34 @@ public class KafkaService {
         }
     }
 
+    public void produceBetResultDlq(BetResultData betResultData, GameSession gameSession, HttpRequestLog httpRequestLog) {
+        Integer vendorGameId = gameSession.getVendorGameId();
+        Long vendorPlayerId = gameSession.getVendorPlayerId();
+        Integer agentId = gameSession.getAgentId();
+
+        BetResultDlq msg = new BetResultDlq(betResultData);
+        msg.setVendorId(gameSession.getVendorId());
+        msg.setVendorGameId(vendorGameId);
+        msg.setVendorPlayerId(vendorPlayerId);
+        msg.setAgentId(agentId);
+        msg.setAgentPlayerId(gameSession.getAgentPlayerId());
+        msg.setGameCategoryId(gameSession.getGameCategoryId());
+        msg.setCurrencyId(gameSession.getCurrencyId());
+        msg.setGameSessionToken(gameSession.getToken());
+        msg.setRequestTime(httpRequestLog.getStartTime());
+
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_RESULT_DLQ, msg);
+
+        } catch (Exception e) {
+            log.error(e.getMessage() + " -> BetResultData = " + betResultData + " -> vendorGameId = " + vendorGameId + " -> roundId = " + msg.getRoundId() + " -> vendorPlayerId = " + vendorPlayerId + " -> agentId = " + agentId);
+            e.printStackTrace();
+        }
+    }
+
     public void producePreprocessingBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
         try {
-            System.err.println("SEND TO "+ KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING);
+            System.err.println("SEND TO " + KafkaConstant.TOPIC_BET_HISTORY_PREPROCESSING);
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
@@ -58,7 +81,8 @@ public class KafkaService {
 
     public void produceEndRoundSettleBet(EndRoundSettledBet endRoundSettledBet) {
         try {
-            stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS, new Gson().toJson(endRoundSettledBet));
+            //updated 20 May 2024, from TOPIC_END_ROUND_PROCESS to TOPIC_END_ROUND_PROCESS_V2 for partitioning production data purposes
+            stringKafkaTemplate.send(KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, new Gson().toJson(endRoundSettledBet));
         } catch (Exception e) {
             //log.warn(KafkaConstant.TOPIC_END_ROUND_PROCESS + " | Kafka produceBetHistory.exception -> vendorBetId = " + endRoundBetHistory.getVendorBetId() + "& roundId = " + endRoundBetHistory.getRoundId());
             log.error(e.getMessage());
@@ -100,6 +124,15 @@ public class KafkaService {
 
         } catch (Exception e) {
             log.error(e.getMessage() + " -> referenceId = " + transferHistory.getId() + " data : " + new Gson().toJson(transferHistory));
+            e.printStackTrace();
+        }
+    }
+
+    public void produceHttpResponseLog(HttpResponseLog httpResponseLog) {
+        try {
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_RESPONSE_LOG, httpResponseLog);
+        } catch (Exception e) {
+            log.error(e.getMessage() + " produceHttpResponseLog[" + httpResponseLog.getId() + "]");
             e.printStackTrace();
         }
     }

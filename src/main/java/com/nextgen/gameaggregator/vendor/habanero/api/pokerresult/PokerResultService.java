@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.habanero.api.pokerresult;
 
+import com.google.gson.Gson;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -51,12 +52,12 @@ public class PokerResultService {
             DisabledGameException,
             DisabledVendorLineException {
 
+        //Regenerate new trace ID, Set Request Body
+        HttpRequestLog httpRequestLog = httpService.start(request);
+        String traceId = httpRequestLog.getId();
+        httpRequestLog.setRequestBody(new Gson().toJson(fundInfoDto));
+
         try {
-
-            //Regenerate new trace ID
-            HttpRequestLog httpRequestLog = httpService.start(request);
-            String traceId = httpRequestLog.getId();
-
             //Validate request parameters from vendor (Non-database related)
             this.doValidation(fundInfoDto);
 
@@ -91,6 +92,8 @@ public class PokerResultService {
                 responseVo.getFundTransferResponseVo().getStatusVo().setSuccessCredit(true);
             }
 
+        } finally {
+            httpService.end(httpRequestLog, responseVo);
         }
 
         return responseVo;

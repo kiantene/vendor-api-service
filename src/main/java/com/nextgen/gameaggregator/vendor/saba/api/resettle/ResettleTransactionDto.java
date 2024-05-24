@@ -20,10 +20,11 @@ public class ResettleTransactionDto implements SportResettleData {
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
     private String extraStatus;
+    private String operationId;
 
     @Override
     public String getExternalTransactionId() {
-        return this.refId;
+        return operationId;
     }
 
     @Override

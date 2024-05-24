@@ -42,6 +42,7 @@ public class SettledService {
             SettledDto settledDto = new ModelMapper().map(action.getWagerInfo(), SettledDto.class);
             settledDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
             settledDto.setTransactionAmount(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getAmount).orElse(BigDecimal.ZERO));
+            settledDto.setExternalTransactionId(action.getId().toString());
             // check is confirmed bet or (settled bet -> unsettled bet)
             this.checkIsConfirmBetOrIsUnsettledBet(settledDto);
             BetEvent response = sportWalletService.settle(traceId, settledDto, httpRequestLog);
@@ -56,7 +57,7 @@ public class SettledService {
     }
 
     private void checkIsConfirmBetOrIsUnsettledBet(SettledDto settledDto) throws BetFailedException, BetNotFoundException {
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.couchbaseGetByExternalTransactionId(settledDto.getVendorPlayerUsername(), settledDto.getExternalTransactionId());
+        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.getByVendorPlayerUsernameAndRoundId(settledDto.getVendorPlayerUsername(), settledDto.getRoundId());
         Integer isConfirmBet = Objects.requireNonNullElse(sportUnsettledBetCouchbase.getIsConfirmBet(), 0);
         Integer isUnsettledBet = Objects.requireNonNullElse(sportUnsettledBetCouchbase.getIsUnsettledBet(), 0);
         if (!isConfirmBet.equals(1) && !isUnsettledBet.equals(1))

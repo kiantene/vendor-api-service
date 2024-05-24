@@ -58,7 +58,7 @@ public class ConfirmBetAction {
             httpService.logError(httpRequestLog, e);
 
         } catch (BetResultIdempotentViolationException e) {
-            vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
+            vo.setResponseCode(ResponseCode.SUCCESS);
 
         } catch (Exception e) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
