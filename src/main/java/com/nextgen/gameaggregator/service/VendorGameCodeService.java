@@ -7,6 +7,7 @@ import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -20,5 +21,13 @@ public class VendorGameCodeService {
         Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
 
         return vendorGameCode;
+    }
+
+    public List<VendorGameCode> getByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(String betGameCode, Integer languageId, Integer platformId, Integer vendorId) throws GameNotSupportedException {
+        List<VendorGameCode> vendorGameCodeResultSet = vendorGameCodeRepository.findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(betGameCode, languageId, platformId, vendorId);
+
+        Optional.ofNullable(vendorGameCodeResultSet).orElseThrow(GameNotSupportedException::new);
+
+        return vendorGameCodeResultSet;
     }
 }
