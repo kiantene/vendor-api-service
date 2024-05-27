@@ -151,7 +151,7 @@ public class WalletRollbackAction {
             Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
 
             //only PP for now
-            if (gameSession.getVendorId() == 1) {
+            if (gameSession.getVendorId() == 1 || gameSession.getVendorId() == 36) {
                 if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code)) {
                     responseVo = this.processForceSuccess(gameSession, traceId);
                 } else {
