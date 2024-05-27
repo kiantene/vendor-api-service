@@ -1,0 +1,24 @@
+package com.nextgen.gameaggregator.vendor.gpkasia.api.balance;
+
+import com.nextgen.gameaggregator.util.ValidationUtils;
+import com.nextgen.gameaggregator.vendor.gpkasia.dto.ActionDto;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+
+@Data
+public class BalanceDto extends ActionDto {
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String api_token;
+
+    @NotBlank
+    @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)
+    private String user;
+
+    @NotBlank
+    @Size(min = 10, max = 10)
+    @Pattern(regexp = "\\d+")
+    private String timestamp;
+}
