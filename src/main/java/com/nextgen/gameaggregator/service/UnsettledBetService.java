@@ -5,6 +5,7 @@ import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.UnsettledBet;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.exception.TransactionStillProcessingException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
@@ -111,11 +112,8 @@ public class UnsettledBetService {
         }
     }
 
-    @Caching(put = {
-            @CachePut(value = "UnsettledBet", key = "{#entity.vendorBetId, #entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager"),
-            @CachePut(value = "UnsettledBetByETID", key = "{#entity.vendorPlayerId, #entity.externalTransactionId}", cacheManager = "cacheManager")
-    })
+    //ONLY DELETE FOR TOP1 RECORD ONLY, FOR BLOCKING IDEMPOTENT UNSETTLEDBET
+    @CacheEvict(value = "UnsettledBetTop1", key = "{#entity.roundId, #entity.vendorGameId, #entity.vendorPlayerId}", cacheManager = "cacheManager")
     public void deleteWithoutClearingCache(UnsettledBet entity) {
         try {
             rawUnsettledBetRepository.delete(entity);
@@ -198,7 +196,7 @@ public class UnsettledBetService {
     }
 
     public UnsettledBet idempotentCheck(String traceId, GameSession gameSession, BetResultData betResultData, String rawData, ResultType resultType)
-            throws TransactionStillProcessingException, BetResultIdempotentViolationException {
+            throws TransactionStillProcessingException, BetResultIdempotentViolationException, InsufficientBalanceException {
 
         String transactionId = betResultData.getExternalTransactionId();
         String roundId = betResultData.getRoundId();
@@ -221,13 +219,19 @@ public class UnsettledBetService {
             } else if (operatorStatus.equals(operatorStatusSuccess)) {
                 throw new BetResultIdempotentViolationException(unsettledBet);
 
+            } else if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                //throw new BetResultIdempotentViolationException(unsettledBet);
+                throw new InsufficientBalanceException();
+
             } else { // when bet result found and operator status is error, set status back to processing and resend txn to operator
                 unsettledBet.setOperatorStatus(operatorStatusProcessing);
-                this.save(unsettledBet);
+                unsettledBetCachingService.save(unsettledBet);
             }
         } catch (BetNotFoundException betNotFoundException) {
             unsettledBet = this.newUnsettledBet(gameSession, rawData, betResultData, traceId, resultType.code);
-            this.create(unsettledBet);
+            unsettledBet.setCreateTime(System.currentTimeMillis());
+            unsettledBetCachingService.save(unsettledBet);
+
         }
 
         return unsettledBet;
