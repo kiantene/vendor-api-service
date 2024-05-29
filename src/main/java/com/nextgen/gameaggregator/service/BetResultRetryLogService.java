@@ -92,12 +92,13 @@ public class BetResultRetryLogService {
             String traceId = UUID.randomUUID().toString();
             String updatedOperatorData = this.updateOperatorDataWithNewTraceId(operatorData, traceId);
             String apiUrl = agentApiCredential.getCallbackUrl();
-            String signature = authenticationService.generateSignatureWithJson(updatedOperatorData, agentApiCredential.getApiSecret());
 
-            headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
             headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
             httpRequestLog.setOperatorData(updatedOperatorData);
             httpRequestLog.setOperatorEndPoints(apiUrl + action);
+            
+            String signature = authenticationService.generateSignatureWithJson(updatedOperatorData, agentApiCredential.getApiSecret());
+            headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
 
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(action)
                     .header(EndPoints.HEADER_SIGNATURE, signature)
