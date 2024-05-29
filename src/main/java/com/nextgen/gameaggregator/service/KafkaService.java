@@ -29,6 +29,10 @@ public class KafkaService {
     private CurrencyConversionService currencyConversionService;
     @Autowired
     private WarehouseBetHistoryService warehouseBetHistoryService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
 
     public void produceBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
         try {
@@ -78,12 +82,17 @@ public class KafkaService {
                             betHistory.getVendorGameId(), betHistory.getVendorId(),
                             betHistory.getGameCategoryId(), betHistory.getCurrencyId());
 
+
             if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
-                throw new Exception("WarehouseBetHistory agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+                AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
+                agentPlayerUsername = agentPlayer.getUsername();
+                        log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
             if (vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()) {
-                throw new Exception("WarehouseBetHistory vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+                VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(betHistory.getVendorPlayerId(), null);
+                vendorPlayerUsername = vendorPlayer.getUsername();
+                log.error("WarehouseBetHistory-vendorPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
             com.nextgen.gameaggregator.entity.warehouse.BetHistory warehouseBetHistory

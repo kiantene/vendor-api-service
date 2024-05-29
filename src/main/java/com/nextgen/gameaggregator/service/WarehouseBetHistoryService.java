@@ -13,23 +13,19 @@ import java.util.concurrent.ExecutionException;
 @Service
 @Slf4j
 public class WarehouseBetHistoryService {
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+    private final GameCategoryService gameCategoryService;
+    private final CurrencyService currencyService;
     @Autowired
-    private VendorGameService vendorGameService;
+    public WarehouseBetHistoryService (VendorGameService vendorGameService, VendorService vendorService,
+                                       GameCategoryService gameCategoryService, CurrencyService currencyService){
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+        this.gameCategoryService = gameCategoryService;
+        this.currencyService = currencyService;
 
-    @Autowired
-    private VendorService vendorService;
-
-    @Autowired
-    private GameCategoryService gameCategoryService;
-
-    @Autowired
-    private CurrencyService currencyService;
-
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
+    }
 
     public void setWarehouseBetHistoryInfoCache(
             VendorGame vendorGame, Vendor vendor, GameCategory gameCategory, Currency currency) {
@@ -66,23 +62,6 @@ public class WarehouseBetHistoryService {
                 throw new RuntimeException(e);
             }
         });
-
-//        CompletableFuture<VendorPlayer> futureVendorPlayer = CompletableFuture.supplyAsync(() -> {
-//            try {
-//                return vendorPlayerService.getByVendorPlayerId(vendorPlayer.getId(), vendorPlayer);
-//            } catch (InvalidPlayerException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//
-//        CompletableFuture<AgentPlayer> futureAgentPlayer = CompletableFuture.supplyAsync(() -> {
-//            try {
-//                return agentPlayerService.getByAgentPlayerId(agentPlayer.getId(), agentPlayer);
-//            } catch (RecordNotFoundException e) {
-//                throw new RuntimeException(e);
-//            }
-//        });
-//
 
         CompletableFuture.allOf
                 (futureVendorGame, futureVendor, futureCurrency, futureGameCategory).join(); // Wait for all to complete

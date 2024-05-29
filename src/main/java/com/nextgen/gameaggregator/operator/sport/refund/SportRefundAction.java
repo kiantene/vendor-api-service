@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
@@ -39,18 +38,14 @@ public class SportRefundAction {
     @Autowired
     private RequestService requestService;
     @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
-    @Autowired
     private CurrencyConversionService currencyConversionService;
     @Autowired
     private VendorGameRepository vendorGameRepository;
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException,
-            InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException,
+            InvalidAgentApiCredentialException, InvalidOperatorResponseException, RecordNotFoundException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
@@ -62,7 +57,6 @@ public class SportRefundAction {
 
         String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
-        AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
         SportRefundDto dto = this.newSportRefundDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());

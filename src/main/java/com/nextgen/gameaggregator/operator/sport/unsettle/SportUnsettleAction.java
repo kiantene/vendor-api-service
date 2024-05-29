@@ -48,7 +48,7 @@ public class SportUnsettleAction {
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException,
+    public WalletBalanceVo call(String traceId, BetInformation betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException,
             InvalidAgentApiCredentialException, InvalidOperatorResponseException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -61,7 +61,6 @@ public class SportUnsettleAction {
 
         String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
-        AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
         SportUnsettleDto dto = this.generateSportUnsettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation, gameCode);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());

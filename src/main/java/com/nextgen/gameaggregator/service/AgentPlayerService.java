@@ -12,8 +12,12 @@ import java.util.Optional;
 
 @Service
 public class AgentPlayerService {
+
+    private final AgentPlayerRepository agentPlayerRepository;
     @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
+    public AgentPlayerService(AgentPlayerRepository agentPlayerRepository){
+        this.agentPlayerRepository = agentPlayerRepository;
+    }
 
     /**
      * Retrieve an AgentPlayer record based on given Id

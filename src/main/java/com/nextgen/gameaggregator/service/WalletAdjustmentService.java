@@ -71,7 +71,7 @@ public class WalletAdjustmentService {
             BetHistory betHistory = new BetHistory(settledBet);
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             kafkaService.produceWarehouseBetHistory
-                    (betHistory, httpRequestLog.getOperatorUsername(), httpRequestLog.getVendorUsername(),  vendorCurrency.getFromVendorRate());
+                    (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(),  vendorCurrency.getFromVendorRate());
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             rawBetAdjustmentLog.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());

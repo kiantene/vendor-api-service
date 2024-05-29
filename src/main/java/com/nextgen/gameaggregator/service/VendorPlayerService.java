@@ -14,10 +14,14 @@ import java.util.Optional;
 
 @Service
 public class VendorPlayerService {
+    private final VendorPlayerRepository vendorPlayerRepository;
+    private final GameSessionService gameSessionService;
+
     @Autowired
-    private VendorPlayerRepository vendorPlayerRepository;
-    @Autowired
-    private GameSessionService gameSessionService;
+    public VendorPlayerService(VendorPlayerRepository vendorPlayerRepository, GameSessionService gameSessionService) {
+        this.vendorPlayerRepository = vendorPlayerRepository;
+        this.gameSessionService = gameSessionService;
+    }
 
     public VendorPlayer getVendorPlayerByUsername(String username) throws InvalidPlayerException {
         VendorPlayer vendorPlayer = vendorPlayerRepository.findByUsername(username);

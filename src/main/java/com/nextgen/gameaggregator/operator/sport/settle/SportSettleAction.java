@@ -7,7 +7,6 @@ import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
-import com.nextgen.gameaggregator.repository.ga.writer.AgentPlayerRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
@@ -43,13 +42,13 @@ public class SportSettleAction {
     @Autowired
     private VendorService vendorService;
     @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
+    private AgentPlayerService agentPlayerService;
     @Autowired
     private VendorGameRepository vendorGameRepository;
     @Autowired
     private BetResultRetryLogService betResultRetryLogService;
 
-    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException {
+    public WalletBalanceVo call(String traceId, SportUnsettledBetCouchbase sportUnsettledBetCouchbase, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer) throws VendorCurrencyNotSupportException, InvalidAgentApiCredentialException, InvalidOperatorResponseException, RecordNotFoundException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo = null;
@@ -61,7 +60,6 @@ public class SportSettleAction {
 
         String gameCode = vendorGameRepository.findById(sportUnsettledBetCouchbase.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
-        AgentPlayer agentPlayer = agentPlayerRepository.findById(sportUnsettledBetCouchbase.getAgentPlayerId()).orElse(null);
         SportSettleDto dto = this.newSportSettleDto(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), sportUnsettledBetCouchbase, gameCode, vendorCurrency.getFromVendorRate());
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
