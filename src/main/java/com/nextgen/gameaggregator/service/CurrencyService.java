@@ -11,10 +11,12 @@ import java.util.Optional;
 
 @Service
 public class CurrencyService {
+    private final CurrencyRepository currencyRepository;
 
     @Autowired
-    private CurrencyRepository currencyRepository;
-
+    public CurrencyService(CurrencyRepository currencyRepository) {
+        this.currencyRepository = currencyRepository;
+    }
 
     @Cacheable(value = "Currencies", key = "#currencyId", cacheManager = "cacheManager")
     public Currency getByCurrencyId(Integer currencyId, Currency currency) throws InvalidCurrencyException {
