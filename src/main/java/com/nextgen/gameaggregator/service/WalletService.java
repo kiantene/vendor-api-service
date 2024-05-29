@@ -142,6 +142,7 @@ public class WalletService {
 
             if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                 loggingService.logStart();
+                cachingService.updateUnsettledBetCaching(unsettledBet);
                 unsettledBetService.deleteWithoutClearingCache(unsettledBet);
                 loggingService.logProcessTime("processBet ｜ when invalidOperatorResponseException.SC_INSUFFICIENT_FUNDS, unsettledBetService.deleteWithoutClearingCache", traceId);
                 throw new InsufficientBalanceException();
@@ -486,7 +487,8 @@ public class WalletService {
 
     private WalletBalanceVo doUnsettledBetResult(String traceId, GameSession gameSession, BetResultData betResultData, ResultType resultType, BaseVendorService vendorService, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws BetNotFoundException, InvalidAgentApiCredentialException, InvalidOperatorResponseException,
-            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException {
+            TransactionStillProcessingException, BetResultIdempotentViolationException, VendorCurrencyNotSupportException,
+            InsufficientBalanceException {
 
         String rawData = httpRequestLog.getRequestBody();
         Long vendorPlayerId = gameSession.getVendorPlayerId();

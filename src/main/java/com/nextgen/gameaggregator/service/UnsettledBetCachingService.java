@@ -5,7 +5,9 @@ import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
@@ -57,5 +59,24 @@ public class UnsettledBetCachingService {
     public UnsettledBet recoverData(BetNotFoundException ex) {
         // Handle recovery logic here, such as returning a default value or logging the error
         return null;
+    }
+
+    @Retryable(retryFor = {BetNotFoundException.class}, maxAttempts = 6, backoff = @Backoff(delay = 50))
+    public UnsettledBet getUnsettledBetByExternalTransactionId(Long vendorPlayerId, String externalTransactionId) throws BetNotFoundException {
+        UnsettledBet unsettledBet = rawUnsettledBetRepository.findByVendorPlayerIdAndExternalTransactionId(vendorPlayerId, externalTransactionId);
+        if (unsettledBet == null) {
+            throw new BetNotFoundException();
+        }
+        return unsettledBet;
+    }
+
+    @Caching(put = {
+            @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetTop1", key = "{#unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager"),
+            @CachePut(value = "UnsettledBetByETID", key = "{#unsettledBet.vendorPlayerId, #unsettledBet.externalTransactionId}", cacheManager = "cacheManager")
+    })
+    public UnsettledBet save(UnsettledBet unsettledBet) {
+        rawUnsettledBetRepository.save(unsettledBet);
+        return unsettledBet;
     }
 }

@@ -148,7 +148,18 @@ public class WalletRollbackAction {
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
             httpRequestLog.setOperatorEnd(System.currentTimeMillis());
-            throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+            Integer operatorStatus = invalidOperatorResponseException.getOperatorStatus();
+
+            //only PP for now
+            if (gameSession.getVendorId() == 1 || gameSession.getVendorId() == 36) {
+                if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) || operatorStatus.equals(ResponseCodes.Status.SC_TRANSACTION_NOT_EXISTS.code)) {
+                    responseVo = this.processForceSuccess(gameSession, traceId);
+                } else {
+                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+                }
+            } else {
+                throw new InvalidOperatorResponseException(invalidOperatorResponseException.getMessage(), invalidOperatorResponseException.getOperatorStatus());
+            }
 
         } catch (Exception exception) {
             long endTime = System.currentTimeMillis();
@@ -183,5 +194,23 @@ public class WalletRollbackAction {
         walletRollbackDto.setTimestamp(rollbackTimestamp);
 
         return walletRollbackDto;
+    }
+
+    private WalletBalanceVo processForceSuccess(GameSession gameSession, String traceId) {
+
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+
+        data.setBalance(BigDecimal.ZERO);
+        data.setUsername(gameSession.getAgentPlayerUsername());
+        data.setCurrency(gameSession.getCurrencyCode());
+        data.setTimestamp(System.currentTimeMillis());
+
+        responseVo.setTraceId(traceId);
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
+        responseVo.setMessage(ResponseCodes.Status.SC_OK.description);
+        responseVo.setData(data);
+
+        return responseVo;
     }
 }

@@ -19,7 +19,7 @@ public class CachingService {
         return betHistory;
     }
 
-    @CachePut(value = "UnsettledBet", key = "{#rawUnsettledBet.vendorBetId, #rawUnsettledBet.roundId, #rawUnsettledBet.vendorGameId, #rawUnsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
+    @CachePut(value = "UnsettledBet", key = "{#unsettledBet.vendorBetId, #unsettledBet.roundId, #unsettledBet.vendorGameId, #unsettledBet.vendorPlayerId}", cacheManager = "cacheManager")
     public UnsettledBet updateUnsettledBetCaching(UnsettledBet unsettledBet) {
         return unsettledBet;
     }
