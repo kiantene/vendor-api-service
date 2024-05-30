@@ -357,9 +357,9 @@ public class WalletService {
                 loggingService.logStart();
                 settledBetService.update(invalidOperatorResponseException.getOperatorStatus(), BigDecimal.ZERO, updateCachingSettledBet);
                 loggingService.logProcessTime("doSettledBetResult ｜ when invalidOperatorResponseException, settledBetService.update", traceId);
+
             } else {
                 settledBetService.save(settledBet, rawData);
-
                 if (settledBet.getOperatorStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
                     if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
                         unsettledBetService.deleteWithoutClearingCache(unsettledBet);

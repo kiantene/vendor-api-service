@@ -178,7 +178,8 @@ public class WalletBetResultAction {
                 responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
 
             } else if (resultType.equals(ResultType.WIN) || resultType.equals(ResultType.LOSE) || resultType.equals(ResultType.END)
-                    && invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                    && invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)
+                    && gameSession.getVendorId() == 1) {
                 responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
                 betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
 
