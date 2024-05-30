@@ -47,6 +47,8 @@ public class BetResultRetryScheduler {
             if (!rawBetResultRetryLogList.isEmpty()) {
                 for (RawBetResultRetryLog rawBetResultRetryLogItem : rawBetResultRetryLogList) {
                     HttpRequestLog httpRequestLog = httpService.startRetryRequestToOperator(rawBetResultRetryLogItem);
+                    httpRequestLog.setOperatorData(rawBetResultRetryLogItem.getOperatorData());
+                    httpRequestLog.setAgentId(rawBetResultRetryLogItem.getAgentId());
 
                     try {
                         betResultRetryLogService.call(rawBetResultRetryLogItem.getOperatorData(), rawBetResultRetryLogItem.getAction(), rawBetResultRetryLogItem.getAgentId(), httpRequestLog);

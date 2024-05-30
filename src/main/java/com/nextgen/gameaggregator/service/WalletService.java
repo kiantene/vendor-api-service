@@ -300,6 +300,7 @@ public class WalletService {
 
         // send bet data to Operator
         try {
+            walletBetResultData.setBalance(settledBet.getBalance());
             balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
 
             loggingService.logStart();
@@ -358,9 +359,9 @@ public class WalletService {
                 loggingService.logStart();
                 settledBetService.update(invalidOperatorResponseException.getOperatorStatus(), BigDecimal.ZERO, updateCachingSettledBet);
                 loggingService.logProcessTime("doSettledBetResult ｜ when invalidOperatorResponseException, settledBetService.update", traceId);
+
             } else {
                 settledBetService.save(settledBet, rawData);
-
                 if (settledBet.getOperatorStatus() == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
                     if (resultType == ResultType.LOSE || resultType == ResultType.END || resultType == ResultType.WIN) {
                         unsettledBetService.deleteWithoutClearingCache(unsettledBet);
@@ -531,6 +532,7 @@ public class WalletService {
 
                 try {
                     // record operator processing time
+                    walletBetResultData.setBalance(unsettledBet.getBalance());
                     balanceVo = walletBetResultAction.call(traceId, agentId, gameSession, walletBetResultData, resultType, httpRequestLog, fromVendorConversionRate, toVendorConversionRate);
                     BigDecimal balance = balanceVo.getData().getBalance();
 
@@ -551,9 +553,11 @@ public class WalletService {
 
                     loggingService.logStart();
 
-                    if (operatorStatus == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
-                        unsettledBetService.deleteWithoutClearingCache(unsettledBet);
-
+                    if (resultType.equals(ResultType.BET_WIN) || resultType.equals(ResultType.BET_LOSE)) {
+                        if (operatorStatus == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                            cachingService.updateUnsettledBetCaching(unsettledBet);
+                            unsettledBetService.deleteWithoutClearingCache(unsettledBet);
+                        }
                     } else {
                         betResultLogService.save(rawBetResultLog);
                         unsettledBetService.save(unsettledBet);
