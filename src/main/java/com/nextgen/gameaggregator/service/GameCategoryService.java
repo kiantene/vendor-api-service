@@ -8,6 +8,7 @@ import com.nextgen.gameaggregator.exception.VendorGameCategoryNotSupportedExcept
 import com.nextgen.gameaggregator.repository.ga.writer.GameCategoryRepository;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -15,14 +16,16 @@ import java.util.Optional;
 @Service
 public class GameCategoryService {
 
-    @Autowired
-    private GameCategoryRepository gameCategoryRepository;
+    private final GameCategoryRepository gameCategoryRepository;
+    private final VendorGameCategoryRepository vendorGameCategoryRepository;
 
     @Autowired
-    private VendorGameCategoryRepository vendorGameCategoryRepository;
+    public GameCategoryService(GameCategoryRepository gameCategoryRepository, VendorGameCategoryRepository vendorGameCategoryRepository) {
+        this.gameCategoryRepository = gameCategoryRepository;
+        this.vendorGameCategoryRepository = vendorGameCategoryRepository;
+    }
 
-
-    public GameCategory findGameCategoryByCode(String gameCategoryCode) throws InvalidGameCategoryException{
+    public GameCategory findGameCategoryByCode(String gameCategoryCode) throws InvalidGameCategoryException {
         GameCategory gameCategory = gameCategoryRepository.findByCode(gameCategoryCode);
         Optional.ofNullable(gameCategory).orElseThrow(InvalidGameCategoryException::new);
         return gameCategory;
@@ -33,5 +36,16 @@ public class GameCategoryService {
         VendorGameCategory vendorGameCategory = vendorGameCategoryRepository.findByVendorIdAndGameCategoryId(vendor.getId(), gameCategory.getId());
         Optional.ofNullable(vendorGameCategory).orElseThrow(VendorGameCategoryNotSupportedException::new);
 
+    }
+
+
+    @Cacheable(value = "GameCategories", key = "#gameCategoryId", cacheManager = "cacheManager")
+    public GameCategory getByGameCategoryId(Integer gameCategoryId, GameCategory gameCategory) throws InvalidGameCategoryException {
+        if (gameCategory == null) {
+            gameCategory = gameCategoryRepository.findById(gameCategoryId).orElse(null);
+            Optional.ofNullable(gameCategory).orElseThrow(InvalidGameCategoryException::new);
+        }
+
+        return gameCategory;
     }
 }

@@ -70,6 +70,8 @@ public class WalletAdjustmentService {
             // send settled bet to kafka
             BetHistory betHistory = new BetHistory(settledBet);
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(),  vendorCurrency.getFromVendorRate());
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             rawBetAdjustmentLog.setOperatorStatus(invalidOperatorResponseException.getOperatorStatus());

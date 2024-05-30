@@ -271,7 +271,9 @@ public class SportWalletService {
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
-            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportUnsettledBetCouchbase.getAgentPlayerId(), null);
+
+            WalletBalanceVo balanceVo = sportSettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency, agentPlayer);
             betEvent = new BetEvent(sportUnsettledBetCouchbase, balanceVo.getData().getBalance());
 
             // Insert settled bet into bet_history (MariaDB)
@@ -285,6 +287,9 @@ public class SportWalletService {
             // Insert record bet_history (MariaDB)
             BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, resultType);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(),  sportUnsettledBetCouchbase.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             // Update status in sport_unsettled_bet (MariaDB)
             VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB = new VendorGame.SportUnsettledBetMariaDB(sportUnsettledBetCouchbase);
@@ -321,7 +326,7 @@ public class SportWalletService {
     }
 
     public BetEvent refund(String traceId, SportRefundData sportRefundData, String rawData, HttpRequestLog httpRequestLog) throws VendorCurrencyNotSupportException,
-            InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException {
+            InsufficientBalanceException, InvalidOperatorResponseException, InvalidAgentApiCredentialException, BetNotFoundException, TransactionStillProcessingException, BetResultIdempotentViolationException, RecordNotFoundException {
 
         if (httpRequestLog != null) {
             httpRequestLog.setRequestType(SportRefundAction.class.getSimpleName());
@@ -372,12 +377,14 @@ public class SportWalletService {
         httpRequestLog.setBetStart(System.currentTimeMillis());
         httpRequestLog.setVendorUsername(sportUnsettledBetCouchbase.getVendorPlayerUsername());
 
+
+
         BetEvent betEvent = null;
         Integer betStatus = BetStatus.REFUNDED.code;
         VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
-
+        AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportUnsettledBetCouchbase.getAgentPlayerId(), null);
         try {
-            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
+            WalletBalanceVo balanceVo = sportRefundAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency, agentPlayer);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setStatus(ResponseCodes.Status.SC_OK.code);
@@ -398,6 +405,10 @@ public class SportWalletService {
         // Insert record bet_history (MariaDB)
         BetHistory betHistory = sportUnsettledBetCouchbase.toBetHistory(betStatus, BetResultType.BET.code);
         kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+
+        kafkaService.produceWarehouseBetHistory
+                (betHistory, agentPlayer.getUsername(), sportRefundData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
         // Insert record into sport_settled_bet (Couchbase)
         sportSettledBetService.save(new SportSettledBet(sportUnsettledBetCouchbase));
@@ -447,7 +458,9 @@ public class SportWalletService {
             });
 
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportUnsettledBetCouchbase.getVendorId(), sportUnsettledBetCouchbase.getCurrencyId());
-            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency);
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportUnsettledBetCouchbase.getAgentPlayerId(), null);
+
+            WalletBalanceVo balanceVo = sportUnsettleAction.call(traceId, sportUnsettledBetCouchbase, httpRequestLog, vendorCurrency,  agentPlayer);
             sportUnsettledBetCouchbase.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
             sportUnsettledBetCouchbase.setBalance(balanceVo.getData().getBalance());
             sportUnsettledBetCouchbase.setResultType(BetResultType.ADJUSTMENT.code);
@@ -465,6 +478,11 @@ public class SportWalletService {
             // Generate new bet history to offset the old records
             BetHistory betHistory = this.offsetOldBetHistory(sportUnsettledBetCouchbase.toBetHistory(BetStatus.CANCELLED.code, BetResultType.ADJUSTMENT.code));
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+
+
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(), sportUnsettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
 
             // update data from couchbase settled bet
             sportSettledBet.setInternalTransactionId(internalTransactionId);
@@ -540,7 +558,9 @@ public class SportWalletService {
 
         try {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
-            WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog, vendorCurrency);
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(sportSettledBet.getAgentPlayerId(), null);
+
+            WalletBalanceVo balanceVo = sportResettleAction.call(traceId, sportSettledBet, sportResettleData, httpRequestLog, vendorCurrency, agentPlayer);
             BigDecimal diffWinAmount = sportResettleData.getNewWinAmount().subtract(sportSettledBet.getWinAmount());
             int resultType = diffWinAmount.compareTo(BigDecimal.ZERO) > 0 ? BetResultType.WIN.code : BetResultType.LOSE.code;
 
@@ -562,6 +582,11 @@ public class SportWalletService {
             betHistory.setWinLoss(diffWinAmount);
             betHistory.setEffectiveTurnover(BigDecimal.ZERO);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(), sportResettleData.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
+
 
         } catch (Exception e) {
             sportSettledBet.setStatus(ResponseCodes.Status.SC_UNKNOWN_ERROR.code);
@@ -586,7 +611,7 @@ public class SportWalletService {
 
         // get VendorPlayer
         VendorPlayer vendorPlayer = vendorPlayerService.getVendorPlayerByUsername(sportAdjustmentData.getVendorUsername());
-        AgentPlayer agentPlayer = agentPlayerService.get(vendorPlayer.getAgentPlayerId());
+        AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(vendorPlayer.getAgentPlayerId(), null);
 
         // check idempotent
         sportBetAdjustmentLogService.idempotentCheck(traceId, vendorPlayer.getId().toString(), sportAdjustmentData.getExternalTransactionId());
@@ -596,7 +621,7 @@ public class SportWalletService {
             VendorCurrency vendorCurrency = vendorService.findVendorCurrency(sportSettledBet.getVendorId(), sportSettledBet.getCurrencyId());
 
             // Adjustment Request to Operator
-            WalletBalanceVo balanceVo = sportAdjustmentAction.call(traceId, agentPlayer.getAgentId(), sportSettledBet, httpRequestLog, vendorCurrency);
+            WalletBalanceVo balanceVo = sportAdjustmentAction.call(traceId, agentPlayer.getAgentId(), sportSettledBet, httpRequestLog, vendorCurrency, agentPlayer);
 
             // update operator status after receiving response from operator
             sportSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
@@ -614,6 +639,10 @@ public class SportWalletService {
             // Generate new bet history to offset the old records
             BetHistory betHistory = sportSettledBet.toBetHistory(BetStatus.SETTLED.code, BetResultType.ADJUSTMENT.code);
             kafkaService.produceBetHistory(betHistory, null, vendorCurrency.getFromVendorRate());
+
+            kafkaService.produceWarehouseBetHistory
+                    (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
+
 
         } catch (InvalidOperatorResponseException e) {
 

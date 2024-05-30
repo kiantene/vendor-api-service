@@ -45,7 +45,7 @@ public class SportAdjustmentAction {
     @Value("${spring.profiles.active}")
     private String profilesActive;
 
-    public WalletBalanceVo call(String traceId, Integer agentId, BetInformation betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency)
+    public WalletBalanceVo call(String traceId, Integer agentId, BetInformation betInformation, HttpRequestLog httpRequestLog, VendorCurrency vendorCurrency, AgentPlayer agentPlayer)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, InsufficientBalanceException, VendorCurrencyNotSupportException {
 
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
@@ -54,7 +54,6 @@ public class SportAdjustmentAction {
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredential.getCallbackUrl();
 
-        AgentPlayer agentPlayer = agentPlayerRepository.findById(betInformation.getAgentPlayerId()).orElse(null);
         SportAdjustmentDto dto = this.newSportAdjustmentDto(traceId, betInformation, agentPlayer.getUsername(), vendorCurrency);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());

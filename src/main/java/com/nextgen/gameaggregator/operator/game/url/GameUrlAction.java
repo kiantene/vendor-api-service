@@ -41,6 +41,8 @@ public class GameUrlAction {
     private LoggingService loggingService;
     @Autowired
     private VendorGameDeactivatedService vendorGameDeactivatedService;
+    @Autowired
+    private WarehouseBetHistoryService warehouseBetHistoryService;
 
     @PostMapping(path = "url")
     public OperatorResponseVo<GameUrlData> url(HttpServletRequest request) {
@@ -134,12 +136,22 @@ public class GameUrlAction {
             String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.getVendorPlatformCode", traceId);
 
-            // 15. Check if vendor player account exists
+            // 15. Check if Agent player account exists
             loggingService.logStart();
-            GameSession gameSession = gameUrlService.checkPlayer(apiCredential.getAgent(),
-                    dto.getUsername(), vendorLine, agentCurrency.getCurrency());
-            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkPlayer", traceId);
+            AgentPlayer agentPlayer = gameUrlService.checkAgentPlayer(apiCredential.getAgent(),  dto.getUsername());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentPlayer", traceId);
 
+            // 16. Check if Vendor player account exists
+            loggingService.logStart();
+            VendorPlayer vendorPlayer = gameUrlService.checkVendorPlayer(agentPlayer, vendorLine,  agentCurrency.getCurrency());
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkVendorPlayer", traceId);
+
+            // 17. create game session in cache
+            loggingService.logStart();
+            GameSession gameSession = gameUrlService.createGameSession(agentPlayer, vendorPlayer, vendorLine);
+            loggingService.logProcessTime("gameUrl ｜ gameUrlService.createGameSession", traceId);
+
+            // 18. save game session into DB
             loggingService.logStart();
             gameSession = gameSessionService.createSession(
                     gameSession, dto, vendorGame, vendorGameCode, agentCurrency.getCurrency(),
@@ -159,7 +171,8 @@ public class GameUrlAction {
             loggingService.logStart();
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.getGameUrl (operator generate url)", traceId);
-
+            warehouseBetHistoryService.setWarehouseBetHistoryInfoCache
+                    (vendorGame, vendorGame.getVendor(), vendorGame.getGameCategory(), currency);
             responseVo.setData(gameUrlData);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error(illegalArgumentException.toString());

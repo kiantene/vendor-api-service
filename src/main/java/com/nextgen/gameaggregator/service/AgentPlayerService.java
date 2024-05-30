@@ -12,8 +12,12 @@ import java.util.Optional;
 
 @Service
 public class AgentPlayerService {
+
+    private final AgentPlayerRepository agentPlayerRepository;
     @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
+    public AgentPlayerService(AgentPlayerRepository agentPlayerRepository){
+        this.agentPlayerRepository = agentPlayerRepository;
+    }
 
     /**
      * Retrieve an AgentPlayer record based on given Id
@@ -33,6 +37,16 @@ public class AgentPlayerService {
     public AgentPlayer verifyAgentPlayerStatus(Long id) throws DisabledAgentPlayerException {
         AgentPlayer agentPlayer = agentPlayerRepository.findByIdAndStatus(id, 1);
         Optional.ofNullable(agentPlayer).orElseThrow(DisabledAgentPlayerException::new);
+        return agentPlayer;
+    }
+
+    @Cacheable(value = "AgentPlayers", key = "#agentPlayerId", cacheManager = "cacheManager")
+    public AgentPlayer getByAgentPlayerId(Long agentPlayerId, AgentPlayer agentPlayer) throws RecordNotFoundException {
+        if (agentPlayer == null) {
+            agentPlayer = agentPlayerRepository.findById(agentPlayerId).orElse(null);
+            Optional.ofNullable(agentPlayer).orElseThrow(RecordNotFoundException::new);
+        }
+
         return agentPlayer;
     }
 }
