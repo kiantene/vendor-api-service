@@ -14,14 +14,18 @@ import java.util.Optional;
 @Service
 public class VendorGameService {
 
+    private final VendorGameRepository vendorGameRepository;
+
     @Autowired
-    private VendorGameRepository vendorGameRepository;
+    public VendorGameService(VendorGameRepository vendorGameRepository) {
+        this.vendorGameRepository = vendorGameRepository;
+    }
 
     @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
     public VendorGame verifyGameStatus(Integer gameId) throws DisabledGameException {
         VendorGame vendorGame = vendorGameRepository.findById(gameId).orElse(null);
         Optional.ofNullable(vendorGame).orElseThrow(DisabledGameException::new);
-        if(!vendorGame.getStatus().equals(Status.ACTIVE.code)){
+        if (!vendorGame.getStatus().equals(Status.ACTIVE.code)) {
             throw new DisabledGameException();
         }
         return vendorGame;
@@ -50,9 +54,12 @@ public class VendorGameService {
     }
 
     @Cacheable(value = "VendorGames", key = "#gameId", cacheManager = "cacheManager")
-    public VendorGame getByGameId(Integer gameId) throws GameNotSupportedException {
-        VendorGame vendorGame = vendorGameRepository.findById(gameId).orElse(null);
-        Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+    public VendorGame getByGameId(Integer gameId, VendorGame vendorGame) throws GameNotSupportedException {
+        if (vendorGame == null) {
+            vendorGame = vendorGameRepository.findById(gameId).orElse(null);
+            Optional.ofNullable(vendorGame).orElseThrow(GameNotSupportedException::new);
+        }
+
         return vendorGame;
     }
 

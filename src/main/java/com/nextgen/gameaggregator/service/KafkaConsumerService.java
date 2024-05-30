@@ -46,6 +46,10 @@ public class KafkaConsumerService {
     private SportWalletService sportWalletService;
     @Autowired
     private HttpService httpService;
+    @Autowired
+    private AgentPlayerService agentPlayerService;
+    @Autowired
+    private VendorPlayerService vendorPlayerService;
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
     public void consumeEndRoundProcess(String message) {
@@ -70,6 +74,9 @@ public class KafkaConsumerService {
             //get is bet = sidebet
             vendorService.verifyIsPreProcessingVendorGame(endRoundSettledBet.getVendorGameId());
 
+            AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
+            VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
+
             //get vendorCurrencyRate for the vendor
             GameSession gameSession = new GameSession(endRoundSettledBet);
             VendorCurrency vendorCurrency = vendorService.getCurrencyConversionRate(gameSession, newTraceId);
@@ -82,6 +89,9 @@ public class KafkaConsumerService {
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
                 kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
+                kafkaService.produceWarehouseBetHistory
+                        (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());

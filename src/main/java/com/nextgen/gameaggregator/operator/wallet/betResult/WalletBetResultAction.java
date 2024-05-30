@@ -1,7 +1,6 @@
 package com.nextgen.gameaggregator.operator.wallet.betResult;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.BetInformation;
@@ -138,7 +137,7 @@ public class WalletBetResultAction {
             if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
                 if (responseVo == null || !responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
 
-                    responseVo = this.ppEndRoundForceSuccess(gameSession, responseVo, apiResponse, traceId);
+                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
                     specialCaseForPP = true;
 
                 }
@@ -167,7 +166,7 @@ public class WalletBetResultAction {
                  ResponseNotMatchRequestException invalidResponseException) {
 
             if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
             } else {
                 throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
             }
@@ -175,8 +174,16 @@ public class WalletBetResultAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
-            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+            if (gameSession.getVendorId().equals(1)) {
+                //only apply to PP, if its end, or any result is throwing insufficient_balance, then will always success the request
+                if (resultType.equals(ResultType.END) || invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+                    betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
+                } else {
+                    //other than insufficient error and end, the rest will still responses with invalidOperatorException
+                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
+                }
+
             } else {
                 throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
             }
@@ -184,7 +191,7 @@ public class WalletBetResultAction {
         } catch (Exception exception) {
 
             if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
+                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
             } else {
                 long endTime = System.currentTimeMillis();
                 Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
@@ -275,38 +282,29 @@ public class WalletBetResultAction {
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
 
         } catch (Exception exception) {
-            responseVo = this.ppEndRoundForceSuccess(gameSession, null, null, traceId);
-            betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), betInformation.getAgentId(), betInformation, EndPoints.WALLET_BET_RESULT);
+            responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+            betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
 
         }
 
         return responseVo;
     }
 
-    private WalletBalanceVo ppEndRoundForceSuccess(GameSession gameSession, WalletBalanceVo responseVo, ResponseEntity<String> apiResponse, String traceId) {
+    private WalletBalanceVo processForceSuccess(GameSession gameSession, String traceId, BetInformation betInformation) {
 
-        JsonObject originalJson = new JsonObject();
-        JsonObject additionalData = new JsonObject();
-        long operatorResponseTimeStamp = System.currentTimeMillis();
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        WalletBalanceVo.ResponseData data = new WalletBalanceVo.ResponseData();
+        BigDecimal balance = (betInformation.getBalance() == null) ? BigDecimal.ZERO : betInformation.getBalance();
 
-        additionalData.addProperty("username", gameSession.getAgentPlayerUsername());
-        additionalData.addProperty("currency", gameSession.getCurrencyCode());
-        additionalData.addProperty("balance", 0);
-        additionalData.addProperty("timestamp", operatorResponseTimeStamp);
+        data.setBalance(balance);
+        data.setUsername(gameSession.getAgentPlayerUsername());
+        data.setCurrency(gameSession.getCurrencyCode());
+        data.setTimestamp(System.currentTimeMillis());
 
-        if (responseVo != null) {
-            originalJson = new Gson().fromJson(apiResponse.getBody(), JsonObject.class);
-
-        } else {
-            originalJson.addProperty("traceId", traceId);
-            originalJson.addProperty("status", ResponseCodes.Status.SC_OK.code);
-            originalJson.addProperty("message", ResponseCodes.Status.SC_OK.description);
-
-        }
-
-        originalJson.add("data", additionalData);
-        String updatedJsonString = new Gson().toJson(originalJson);
-        responseVo = new Gson().fromJson(updatedJsonString, WalletBalanceVo.class);
+        responseVo.setTraceId(traceId);
+        responseVo.setStatus(ResponseCodes.Status.SC_OK);
+        responseVo.setMessage(ResponseCodes.Status.SC_OK.description);
+        responseVo.setData(data);
 
         return responseVo;
     }

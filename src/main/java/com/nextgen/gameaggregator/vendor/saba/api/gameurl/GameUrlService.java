@@ -96,7 +96,8 @@ public class GameUrlService implements GameUrl {
             Optional.ofNullable(responseVo).orElseThrow(InvalidVendorResponseException::new);
 
             String skinParam = this.getSkinParamForUrl(credentials, gameSession);
-            responseVo.setData(responseVo.getGameUrl() + skinParam);
+            String langParam = "&lang=" + gameSession.getVendorLanguageCode();
+            responseVo.setData(responseVo.getGameUrl() + skinParam + langParam);
 
             RequestService.validateResponse(responseVo);
             RequestService.successResponseLog(requestLogVo);

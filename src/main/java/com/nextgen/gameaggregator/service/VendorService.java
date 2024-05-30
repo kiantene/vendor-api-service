@@ -139,4 +139,14 @@ public class VendorService extends BaseVendorService {
 
         return vendorCurrency;
     }
+
+    @Cacheable(value = "Vendors", key = "{#vendorId}", cacheManager = "cacheManager")
+    public Vendor getByVendorId(Integer vendorId, Vendor vendor) throws InvalidVendorException {
+        if(vendor==null){
+            vendor = vendorReaderRepository.findById(vendorId).orElse(null);
+            Optional.ofNullable(vendor).orElseThrow(InvalidVendorException::new);
+        }
+
+        return vendor;
+    }
 }

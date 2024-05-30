@@ -81,13 +81,14 @@ public class GameUrlService {
         return gameUrlData;
     }
 
-    @Cacheable(value = "Platforms", key = "#platformCode" , cacheManager = "cacheManager")
+    @Cacheable(value = "Platforms", key = "#platformCode", cacheManager = "cacheManager")
     public Platform checkPlatformCode(String platformCode) throws InvalidPlatformException {
         Platform platform = platformRepository.findByCode(platformCode);
         Optional.ofNullable(platform).orElseThrow(InvalidPlatformException::new);
         return platform;
 
     }
+
     public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
 
@@ -136,7 +137,7 @@ public class GameUrlService {
         return vendorPlatformCode;
     }
 
-    public Currency checkCurrency( String currencyCode) throws InvalidCurrencyException {
+    public Currency checkCurrency(String currencyCode) throws InvalidCurrencyException {
         Currency currency = currencyRepository.findByCode(currencyCode);
         Optional.ofNullable(currency).orElseThrow(InvalidCurrencyException::new);
         return currency;
@@ -157,8 +158,39 @@ public class GameUrlService {
         }
     }
 
-    @CachePut(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}" , cacheManager = "cacheManager")
+    @CachePut(value = "AgentPlayers", key = "{#agent.id, #username}", cacheManager = "cacheManager")
+    public AgentPlayer checkAgentPlayer(Agent agent, String username) throws DisabledAgentPlayerException {
+        AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
+        if (agentPlayer == null) {
+            agentPlayer = this.createAgentPlayer(agent.getId(), username);
+            agentPlayerRepository.save(agentPlayer);
+        } else {
+            if (agentPlayer.getStatus().equals(Status.INACTIVE.code)) {
+                throw new DisabledAgentPlayerException();
+            }
+        }
+        return agentPlayer;
+    }
+
+    @CachePut(value = "VendorPlayers", key = "{#agentPlayer.id, #vendorLine.id, #currency.id}", cacheManager = "cacheManager")
+    public VendorPlayer checkVendorPlayer(AgentPlayer agentPlayer, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
+        VendorPlayer vendorPlayer = vendorPlayerRepository.findByAgentPlayerIdAndVendorLineIdAndCurrencyId(agentPlayer.getId(), vendorLine.getId(),
+                currency.getId());
+
+        if (vendorPlayer == null) {
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorLine.getVendor().getId(), currency.getId());
+            vendorPlayerRepository.save(vendorPlayer);
+        } else {
+            if (vendorPlayer.getStatus().equals(Status.INACTIVE.code)) {
+                throw new DisabledAgentPlayerException();
+            }
+        }
+        return vendorPlayer;
+    }
+
+    @CachePut(value = "GameSessions", key = "{#agent.id, #username, #vendorLine.id, #currency.id}", cacheManager = "cacheManager")
     public GameSession checkPlayer(Agent agent, String username, VendorLine vendorLine, Currency currency) throws DisabledAgentPlayerException {
+
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;
         Integer vendorId = vendorLine.getVendor().getId();
@@ -184,6 +216,7 @@ public class GameUrlService {
         return this.createGameSession(agentPlayer, vendorPlayer, vendorLine);
     }
 
+
     public AgentPlayer createAgentPlayer(Integer agentId, String username) {
         AgentPlayer entity = new AgentPlayer();
         entity.setAgentId(agentId);
@@ -195,7 +228,7 @@ public class GameUrlService {
 
     public VendorPlayer createVendorPlayer(Long agentPlayerId, Integer vendorLineId, Integer vendorId, Integer currencyId) {
 
-        String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId )
+        String vendorPlayerUsername = NameUtils.generateUsername(vendorLineId.longValue(), agentPlayerId)
                 + NameUtils.excelColumnNameFormula(currencyId);
         VendorPlayer entity = new VendorPlayer();
         entity.setAgentPlayerId(agentPlayerId);
@@ -208,7 +241,9 @@ public class GameUrlService {
         return entity;
     }
 
-    private GameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
+    @CachePut(value = "GameSessions",
+            key = "{#agentPlayer.agentId, #agentPlayer.username, #vendorLine.id, #vendorPlayer.currencyId}", cacheManager = "cacheManager")
+    public GameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
         GameSession entity = new GameSession();
 
         entity.setToken(UUID.randomUUID().toString());
@@ -226,7 +261,6 @@ public class GameUrlService {
 
         return entity;
     }
-
 
 
 }

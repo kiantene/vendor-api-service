@@ -111,28 +111,28 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("RawBetIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Vendors", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLanguages", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Languages", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Platforms", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentApiCredentialsByApiKey", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentCurrencies", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Currencies", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
 
         cacheNamesConfigurationMap.put("VendorCurrencies", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentVendorLine", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGameCode", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGameCurrency", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("BetNotFoundLog", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofSeconds(60)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("rawResultLog", RedisCacheConfiguration.defaultCacheConfig()
@@ -156,11 +156,13 @@ public class RedisConfig extends CachingConfigurerSupport {
         cacheNamesConfigurationMap.put("VendorLineCredentials", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentPlayers", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("VendorPlayers", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorGames", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("AgentApiCredentials", RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofHours(1)).serializeValuesWith(pair));
+                .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("promoData", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofDays(1)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("playerBalance", RedisCacheConfiguration.defaultCacheConfig()
