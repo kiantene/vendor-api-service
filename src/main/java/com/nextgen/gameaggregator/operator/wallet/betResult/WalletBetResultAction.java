@@ -174,14 +174,15 @@ public class WalletBetResultAction {
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
 
-            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-
-            } else if (resultType.equals(ResultType.WIN) || resultType.equals(ResultType.LOSE) || resultType.equals(ResultType.END)
-                    && invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)
-                    && gameSession.getVendorId() == 1) {
-                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-                betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
+            if (gameSession.getVendorId().equals(1)) {
+                //only apply to PP, if its end, or any result is throwing insufficient_balance, then will always success the request
+                if (resultType.equals(ResultType.END) || invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
+                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+                    betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
+                } else {
+                    //other than insufficient error and end, the rest will still responses with invalidOperatorException
+                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
+                }
 
             } else {
                 throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());

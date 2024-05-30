@@ -554,7 +554,7 @@ public class WalletService {
                     loggingService.logStart();
 
                     if (resultType.equals(ResultType.BET_WIN) || resultType.equals(ResultType.BET_LOSE)) {
-                        if (operatorStatus == ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code) {
+                        if (operatorStatus.equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
                             cachingService.updateUnsettledBetCaching(unsettledBet);
                             unsettledBetService.deleteWithoutClearingCache(unsettledBet);
                         }
