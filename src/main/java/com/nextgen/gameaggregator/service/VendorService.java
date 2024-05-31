@@ -106,7 +106,7 @@ public class VendorService extends BaseVendorService {
         return vendorLanguageCode;
     }
 
-    @Cacheable(value = "VendorCurrencies", key = "{#vendorId, #currencyId}", cacheManager = "cacheManager")
+
     public VendorCurrency findVendorCurrency(Integer vendorId, Integer currencyId) throws VendorCurrencyNotSupportException {
         VendorCurrency vendorCurrency = vendorCurrencyRepository.findByVendorIdAndCurrencyId(vendorId, currencyId);
 
