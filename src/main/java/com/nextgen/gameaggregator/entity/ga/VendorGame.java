@@ -28,13 +28,9 @@ public class VendorGame extends BaseEntity {
     private String name;
 
     private Integer betDataPreprocessing;
-    //    private Integer gameCategoryId;
-    @ManyToOne
-    private GameCategory gameCategory;
 
-    //    private Integer vendorId;
-    @ManyToOne
-    private Vendor vendor;
+    private Integer gameCategoryId;
+    private Integer vendorId;
 
     private Integer isByCurrency;
     private String imageSquare;

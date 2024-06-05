@@ -225,7 +225,7 @@ public class CashTransferInOutAction {
             gameSession.setVendorGameId(vendorGame.getId());
             gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
             gameSession.setGameCode(vendorGame.getCode());
-            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+            gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
             gameSessionService.updateSession(gameSession);
         }
 

@@ -34,6 +34,8 @@ public class GameUrlAction {
     @Autowired
     private VendorService vendorService;
     @Autowired
+    private GameCategoryService gameCategoryService;
+    @Autowired
     private LanguageService languageService;
     @Autowired
     private VendorGameService vendorGameService;
@@ -99,6 +101,8 @@ public class GameUrlAction {
             // 8. Check if game is supported
             loggingService.logStart();
             VendorGame vendorGame = vendorGameService.checkGameSupported(dto.getGameCode());
+            Vendor vendor = vendorService.getByVendorId(vendorGame.getVendorId(), null);
+            GameCategory gameCategory = gameCategoryService.getByGameCategoryId(vendorGame.getGameCategoryId(), null);
             loggingService.logProcessTime("gameUrl ｜ vendorGameService.checkGameSupported", traceId);
 
             // 9 Check if game details is supported (platform, language, currency)
@@ -115,7 +119,7 @@ public class GameUrlAction {
             // 10. Retrieve vendor line credentials by category
             loggingService.logStart();
             VendorLine vendorLine = vendorLineService.findAgentVendorLine(
-                    apiCredential.getAgent(), vendorGame.getVendor(), agentCurrency.getCurrency(), vendorGame.getGameCategory());
+                    apiCredential.getAgent(), vendor, agentCurrency.getCurrency(), gameCategory);
             loggingService.logProcessTime("gameUrl ｜ vendorLineService.findAgentVendorLine", traceId);
 
             // 11. get vendor line credential
@@ -171,8 +175,7 @@ public class GameUrlAction {
             loggingService.logStart();
             GameUrlData gameUrlData = gameUrlService.getGameUrl(vendorGame, gameSession, lineCredentials, vendorLine);
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.getGameUrl (operator generate url)", traceId);
-            warehouseBetHistoryService.setWarehouseBetHistoryInfoCache
-                    (vendorGame, vendorGame.getVendor(), vendorGame.getGameCategory(), currency);
+            warehouseBetHistoryService.setWarehouseBetHistoryInfoCache(vendorGame, currency);
             responseVo.setData(gameUrlData);
         } catch (IllegalArgumentException illegalArgumentException) {
             log.error(illegalArgumentException.toString());

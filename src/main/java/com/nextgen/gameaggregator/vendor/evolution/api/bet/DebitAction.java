@@ -25,16 +25,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class DebitAction {
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorService vendorService;
+    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo DebitAction(HttpServletRequest request) throws JsonProcessingException {
@@ -52,7 +56,7 @@ public class DebitAction {
             this.doValidation(debitDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(debitDto.getSid());
 
             this.doVerification(debitDto, gameSession);
 
@@ -122,7 +126,7 @@ public class DebitAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), debitDto.getSid(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorToken(), debitDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), debitDto.getUserId(), InvalidPlayerException::new);
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(debitDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
@@ -138,7 +142,7 @@ public class DebitAction {
     private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
         try {
             DebitDto debitDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), DebitDto.class);
-            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(debitDto.getSid());
             responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(debitDto.getUuid());
         } catch (InvalidOperatorResponseException e) {

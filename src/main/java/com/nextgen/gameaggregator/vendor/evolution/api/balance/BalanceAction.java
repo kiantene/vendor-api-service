@@ -9,6 +9,7 @@ import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolution.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolution.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.evolution.dto.BasicDto;
+import com.nextgen.gameaggregator.vendor.evolution.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolution.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -23,18 +24,22 @@ import java.math.BigDecimal;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class BalanceAction {
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+    private final WalletService walletService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
+    public BalanceAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, VendorService vendorService, WalletService walletService) {
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+        this.walletService = walletService;
+    }
 
     @PostMapping(path = EndPoints.BALANCE)
     public ResponseVo BalanceAction(HttpServletRequest request) {
@@ -53,7 +58,7 @@ public class BalanceAction {
             this.doValidation(balanceDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(balanceDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(balanceDto.getSid());
 
             // Check if token status 0 then show invalid sid
             if (gameSession.getStatus() == 0) {
@@ -106,7 +111,7 @@ public class BalanceAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), balanceDto.getSid(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorToken(), balanceDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), balanceDto.getUserId(), InvalidPlayerException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), balanceDto.getCurrency(), CurrencyNotSupportedException::new);
 

@@ -3,6 +3,7 @@ package com.nextgen.gameaggregator.service;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.BetPreprocess;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.InvalidGameCategoryException;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,8 @@ public abstract class BaseVendorService {
     private VendorGameService vendorGameService;
     @Autowired
     private GameSessionService gameSessionService;
+    @Autowired
+    private GameCategoryService gameCategoryService;
 
     public BigDecimal calculateWinLoss(BetInformation betInfo) {
         BigDecimal betAmount = betInfo.getBetAmount();
@@ -73,12 +76,12 @@ public abstract class BaseVendorService {
     public GameSession verifyAndRegenerateNewVendorGameCodeForGameSession(String vendorGameCode, GameSession gameSession) throws GameNotSupportedException {
 
         //if vendorGameCode is not matched with gameSession vendorGameCode, then regenerate the new vendorGameCode details
-        if (vendorGameCode != gameSession.getVendorGameCode()) {
+        if (!vendorGameCode.equals(gameSession.getVendorGameCode())) {
             VendorGame vendorGame = vendorGameService.getByVendorGameCodeAndVendorId(vendorGameCode, gameSession.getVendorId());
             gameSession.setGameCode(vendorGame.getCode());
             gameSession.setVendorGameId(vendorGame.getId());
             gameSession.setVendorGameCode(vendorGame.getVendorGameCode());
-            gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+            gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
             gameSessionService.updateSession(gameSession);
         }
 

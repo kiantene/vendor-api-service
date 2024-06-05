@@ -4,7 +4,6 @@ import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.ga.writer.*;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,26 +23,28 @@ import java.util.UUID;
 @Slf4j
 public class GameUrlService {
 
-    @Autowired
-    private AutowireCapableBeanFactory autowireCapableBeanFactory;
-    @Autowired
-    private RawGameSessionRepository rawGameSessionRepository;
-    @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
-    @Autowired
-    private VendorPlayerRepository vendorPlayerRepository;
-    @Autowired
-    private VendorGameCodeRepository vendorGameCodeRepository;
-    @Autowired
-    private PlatformRepository platformRepository;
-    @Autowired
+    private final AutowireCapableBeanFactory autowireCapableBeanFactory;
+    private final RawGameSessionRepository rawGameSessionRepository;
+    private final AgentPlayerRepository agentPlayerRepository;
+    private final VendorPlayerRepository vendorPlayerRepository;
+    private final VendorGameCodeRepository vendorGameCodeRepository;
+    private final PlatformRepository platformRepository;
     VendorGameCurrencyRepository vendorGameCurrencyRepository;
-    @Autowired
     CurrencyRepository currencyRepository;
-    @Autowired
     AgentCurrencyRepository agentCurrencyRepository;
+
     @Autowired
-    AgentApiCredentialService agentApiCredentialService;
+    public GameUrlService(AutowireCapableBeanFactory autowireCapableBeanFactory, RawGameSessionRepository rawGameSessionRepository, AgentPlayerRepository agentPlayerRepository, VendorPlayerRepository vendorPlayerRepository, VendorGameCodeRepository vendorGameCodeRepository, PlatformRepository platformRepository, VendorGameCurrencyRepository vendorGameCurrencyRepository, CurrencyRepository currencyRepository, AgentCurrencyRepository agentCurrencyRepository) {
+        this.autowireCapableBeanFactory = autowireCapableBeanFactory;
+        this.rawGameSessionRepository = rawGameSessionRepository;
+        this.agentPlayerRepository = agentPlayerRepository;
+        this.vendorPlayerRepository = vendorPlayerRepository;
+        this.vendorGameCodeRepository = vendorGameCodeRepository;
+        this.platformRepository = platformRepository;
+        this.vendorGameCurrencyRepository = vendorGameCurrencyRepository;
+        this.currencyRepository = currencyRepository;
+        this.agentCurrencyRepository = agentCurrencyRepository;
+    }
 
     private static final String USERTYPE = "operator-api-service";
 
@@ -89,11 +90,12 @@ public class GameUrlService {
 
     }
 
-    public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform, Currency currency)
+    public VendorGameCode checkGameDetailSupported(VendorGame vendorGame, Language language, Platform platform,
+                                                   Currency currency)
             throws GameNotSupportedException, GameLanguageNotSupportException, GamePlatformNotSupportException, GameCurrencyNotSupportException {
 
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByOpenGameCodeAndPlatformIdAndLanguageIdAndStatusAndVendorId(vendorGame.getVendorGameCode(),
-                platform.getId(), language.getId(), Status.ACTIVE.code, vendorGame.getVendor().getId());
+                platform.getId(), language.getId(), Status.ACTIVE.code, vendorGame.getVendorId());
 
         Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
 
@@ -246,7 +248,8 @@ public class GameUrlService {
     public GameSession createGameSession(AgentPlayer agentPlayer, VendorPlayer vendorPlayer, VendorLine vendorLine) {
         GameSession entity = new GameSession();
 
-        entity.setToken(UUID.randomUUID().toString());
+        entity.setToken(UUID.randomUUID().toString()); // used for operator
+        entity.setVendorToken(entity.getToken()); // used for vendor
         entity.setId(entity.getToken());
         entity.setAgentId(agentPlayer.getAgentId());
         entity.setAgentPlayerId(agentPlayer.getId());

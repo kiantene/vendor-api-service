@@ -22,18 +22,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class DebitAction {
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final ValidationService validationService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private VendorGameService vendorGameService;
+    public DebitAction(HttpService httpService, GameSessionService gameSessionService, WalletService walletService, ValidationService validationService, VendorService vendorService) {
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.validationService = validationService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.DEBIT)
     public ResponseVo debitAction(HttpServletRequest request) {
@@ -51,7 +53,7 @@ public class DebitAction {
             this.doValidation(debitDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(debitDto.getSid());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(debitDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(debitDto, gameSession);
@@ -131,7 +133,7 @@ public class DebitAction {
     private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
         try {
             DebitDto debitDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), DebitDto.class);
-            GameSession gameSession = gameSessionService.verifyToken(debitDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(debitDto.getSid());
             responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(debitDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
