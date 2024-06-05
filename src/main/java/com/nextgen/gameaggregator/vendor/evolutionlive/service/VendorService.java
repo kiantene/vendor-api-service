@@ -5,22 +5,28 @@ import com.google.gson.JsonParseException;
 import com.nextgen.gameaggregator.entity.ga.BetNotFoundLog;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
+import com.nextgen.gameaggregator.exception.AuthenticationException;
 import com.nextgen.gameaggregator.exception.DuplicateExternalTransactionIdException;
 import com.nextgen.gameaggregator.service.BaseVendorService;
 import com.nextgen.gameaggregator.service.BetNotFoundLogService;
+import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.endround.CreditDto;
 import com.nextgen.gameaggregator.vendor.evolutionlive.api.gameurl.*;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Objects;
 
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
     @Autowired
     private BetNotFoundLogService betNotFoundLogService;
+    @Autowired
+    private GameSessionService gameSessionService;
 
     public static Long getTimestamp() {
         return Instant.now().toEpochMilli();
@@ -28,7 +34,7 @@ public class VendorService extends BaseVendorService {
 
     public PlayerSessionDto setPlayerSessionDto(GameSession gameSession) {
         PlayerSessionDto playerSessionDto = new PlayerSessionDto();
-        playerSessionDto.setId(gameSession.getToken());
+        playerSessionDto.setId(gameSession.getVendorToken());
         playerSessionDto.setIp(gameSession.getIpAddress());
         return playerSessionDto;
     }
@@ -106,5 +112,21 @@ public class VendorService extends BaseVendorService {
         }
 
         return settledBet;
+    }
+
+    public GameSession preCheckGameSessionToken(String token) throws AuthenticationException {
+        GameSession gameSession = null;
+        try {
+            gameSession = gameSessionService.verifyVendorToken(token);
+        } catch (AuthenticationException authenticationException) {
+            gameSession = gameSessionService.verifyToken(token);
+        }
+
+        if(Objects.isNull(gameSession.getVendorToken())){
+            gameSession.setVendorToken(gameSession.getToken());
+            gameSessionService.updateSession(gameSession);
+        }
+
+        return gameSession;
     }
 }

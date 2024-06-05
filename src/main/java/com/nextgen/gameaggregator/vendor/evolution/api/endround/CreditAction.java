@@ -26,14 +26,16 @@ import java.math.BigDecimal;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CreditAction {
+    private final HttpService httpService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    public CreditAction(HttpService httpService, WalletService walletService, VendorService vendorService) {
+        this.httpService = httpService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.CREDIT)
     public ResponseVo CreditAction(HttpServletRequest request) {
@@ -52,7 +54,7 @@ public class CreditAction {
             this.doValidation(creditDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
 
             this.doVerification(creditDto, gameSession);
 
@@ -124,7 +126,7 @@ public class CreditAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), creditDto.getSid(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorToken(), creditDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), creditDto.getUserId(), InvalidPlayerException::new);
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(creditDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
@@ -135,7 +137,7 @@ public class CreditAction {
     private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
         try {
             CreditDto creditDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CreditDto.class);
-            GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
             responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(creditDto.getUuid());
         } catch (InvalidOperatorResponseException e) {

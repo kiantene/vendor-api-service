@@ -5,17 +5,17 @@ import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
-import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
+import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,14 +26,18 @@ import java.math.BigDecimal;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CreditAction {
+    private final HttpService httpService;
+    private final WalletService walletService;
+    private final AutowireCapableBeanFactory autowireCapableBeanFactory;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    public CreditAction(HttpService httpService, WalletService walletService, AutowireCapableBeanFactory autowireCapableBeanFactory, VendorService vendorService) {
+        this.httpService = httpService;
+        this.walletService = walletService;
+        this.autowireCapableBeanFactory = autowireCapableBeanFactory;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.CREDIT)
     public ResponseVo creditAction(HttpServletRequest request) {
@@ -51,8 +55,11 @@ public class CreditAction {
             // 1. Validate request parameters (Non-database calls)
             this.doValidation(creditDto);
 
+            VendorService vendorService = new VendorService();
+            autowireCapableBeanFactory.autowireBean(vendorService);
+
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(creditDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(creditDto, gameSession);
@@ -128,7 +135,7 @@ public class CreditAction {
     private void idempotentSetBalance(HttpRequestLog httpRequestLog, ResponseVo responseVo) {
         try {
             CreditDto creditDto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), CreditDto.class);
-            GameSession gameSession = gameSessionService.verifyToken(creditDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(creditDto.getSid());
             responseVo.setBalance(walletService.getBalance(httpRequestLog.getId(), gameSession, httpRequestLog));
             responseVo.setUuid(creditDto.getUuid());
         } catch (InvalidOperatorResponseException e) {
@@ -140,3 +147,4 @@ public class CreditAction {
         }
     }
 }
+

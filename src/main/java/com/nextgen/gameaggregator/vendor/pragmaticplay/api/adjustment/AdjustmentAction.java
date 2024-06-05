@@ -28,10 +28,6 @@ public class AdjustmentAction {
     @Autowired
     private GameSessionService gameSessionService;
     @Autowired
-    private VendorPlayerService vendorPlayerService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
     private VendorLineService vendorLineService;
     @Autowired
     private VendorService vendorService;
@@ -129,6 +125,10 @@ public class AdjustmentAction {
 
         } catch (GameNotSupportedException e) {
             responseVo.setResponseCode(ResponseCode.AUTHENTICATION_ERROR);
+            httpService.logError(httpRequestLog, e);
+
+        } catch (Exception e) {
+            responseVo.setResponseCode(ResponseCode.INTERNAL_SERVER_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
 
         } finally {

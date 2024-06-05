@@ -10,6 +10,7 @@ import com.nextgen.gameaggregator.vendor.evolution.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolution.constant.Platforms;
 import com.nextgen.gameaggregator.vendor.evolution.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.evolution.dto.BasicDto;
+import com.nextgen.gameaggregator.vendor.evolution.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolution.vo.ResponseVo;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -18,22 +19,30 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CheckAction {
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final GameSessionService gameSessionService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private GameSessionService gameSessionService;
+    public CheckAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, GameSessionService gameSessionService, VendorService vendorService) {
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.gameSessionService = gameSessionService;
+        this.vendorService = vendorService;
+
+    }
 
     @PostMapping(path = {EndPoints.CHECK, EndPoints.SID})
     public ResponseVo CheckAction(HttpServletRequest request) {
@@ -57,8 +66,12 @@ public class CheckAction {
                     throw new InvalidRequestException();
                 }
                 gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(checkDto.getUserId());
+                if(Objects.isNull(gameSession.getVendorToken())){
+                    gameSession.setVendorToken(gameSession.getToken());
+                    gameSessionService.updateSession(gameSession);
+                }
             } else {
-                gameSession = gameSessionService.verifyToken(checkDto.getSid());
+                gameSession = vendorService.preCheckGameSessionToken(checkDto.getSid());
             }
 
             if (httpRequestLog.getUrl().contains("check") && !checkDto.getSid().isBlank() || httpRequestLog.getUrl().contains("sid") && checkDto.getSid().isBlank()) {
@@ -66,13 +79,13 @@ public class CheckAction {
                 if ((checkDto.getChannel().getType().equals("M") && gameSession.getVendorPlatformCode().equals(Platforms.H5.toString())) ||
                         (checkDto.getChannel().getType().equals("P") && gameSession.getVendorPlatformCode().equals(Platforms.WEB.toString()))) {
                     String newToken = UUID.randomUUID().toString();
-                    gameSession = gameSessionService.regenerateGameSessionToken(gameSession, newToken);
+                    gameSession = gameSessionService.regenerateVendorToken(gameSession, newToken);
                 }
             }
 
             this.doVerification(checkDto, gameSession);
 
-            responseVo.setSid(gameSession.getToken());
+            responseVo.setSid(gameSession.getVendorToken());
             responseVo.setUuid(checkDto.getUuid());
 
         } catch (AuthenticationException e) {

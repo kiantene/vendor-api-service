@@ -15,10 +15,15 @@ public interface RawGameSessionRepository extends CouchbaseRepository<GameSessio
     GameSession findByAgentIdAndTraceId(Integer agentId, String traceId);
 
     GameSession findByToken(String token);
+    GameSession findByVendorToken(String vendorToken);
 
     GameSession findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(String vendorPlayerUsername);
 
     GameSession findTop1ByVendorPlayerUsernameAndVendorGameCodeOrderByCreateTimeDesc(String vendorPlayerUsername, String vendorGameCode);
+
+    GameSession findTop1ByVendorPlayerIdOrderByCreateTimeDesc(Long vendorPlayerId);
+
+    GameSession findTop1ByVendorPlayerIdAndVendorGameCodeOrderByCreateTimeDesc(Long vendorPlayerId, String vendorGameCode);
 
     List<GameSession> findByAgentPlayerUsernameAndStatus(String userName, Integer status);
 }

@@ -16,6 +16,7 @@ public class GameSession {
     @Id
     private String id;
     private String token;
+    private String vendorToken;
     private Integer agentId;
     private Long agentPlayerId;
     private String agentPlayerUsername;

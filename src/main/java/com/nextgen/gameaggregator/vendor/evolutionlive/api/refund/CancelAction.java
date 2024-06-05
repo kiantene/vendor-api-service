@@ -4,10 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
-import com.nextgen.gameaggregator.repository.ga.writer.RawUnsettledBetRepository;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
-import com.nextgen.gameaggregator.vendor.cq9.service.VendorService;
+import com.nextgen.gameaggregator.vendor.evolutionlive.service.VendorService;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.evolutionlive.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.evolutionlive.vo.ResponseVo;
@@ -24,22 +23,24 @@ import java.math.BigDecimal;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CancelAction {
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private RawUnsettledBetRepository rawUnsettledBetRepository;
+    public CancelAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, GameSessionService gameSessionService, WalletService walletService, VendorService vendorService) {
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.CANCEL)
     public ResponseVo cancelAction(HttpServletRequest request) {
@@ -58,7 +59,7 @@ public class CancelAction {
             this.doValidation(cancelDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(cancelDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), gameSession);
 
             this.doVerification(cancelDto, gameSession);
@@ -131,7 +132,7 @@ public class CancelAction {
             InvalidPlayerException {
 
         // 1. Verify Username, GameCode, CurrencyCode
-        ValidationUtils.isEquals(gameSession.getToken(), cancelDto.getSid(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorToken(), cancelDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
         //ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), cancelDto.getCurrency(), CurrencyNotSupportedException::new);

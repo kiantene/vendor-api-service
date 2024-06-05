@@ -27,22 +27,12 @@ public class WarehouseBetHistoryService {
 
     }
 
-    public void setWarehouseBetHistoryInfoCache(
-            VendorGame vendorGame, Vendor vendor, GameCategory gameCategory, Currency currency) {
+    public void setWarehouseBetHistoryInfoCache(VendorGame vendorGame, Currency currency) {
 
         CompletableFuture<VendorGame> futureVendorGame = CompletableFuture.supplyAsync(() -> {
             try {
                 return vendorGameService.getByGameId(vendorGame.getId(), vendorGame);
             } catch (GameNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-
-        CompletableFuture<Vendor> futureVendor = CompletableFuture.supplyAsync(() -> {
-            try {
-                return vendorService.getByVendorId(vendor.getId(), vendor);
-            } catch (InvalidVendorException e) {
                 throw new RuntimeException(e);
             }
         });
@@ -55,16 +45,8 @@ public class WarehouseBetHistoryService {
             }
         });
 
-        CompletableFuture<GameCategory> futureGameCategory = CompletableFuture.supplyAsync(() -> {
-            try {
-                return gameCategoryService.getByGameCategoryId(gameCategory.getId(), gameCategory);
-            } catch (InvalidGameCategoryException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
         CompletableFuture.allOf
-                (futureVendorGame, futureVendor, futureCurrency, futureGameCategory).join(); // Wait for all to complete
+                (futureVendorGame, futureCurrency).join(); // Wait for all to complete
     }
 
     public WarehouseFutureEntity getWarehouseBetHistoryInfoCache(Integer vendorGameId, Integer vendorId, Integer gameCategoryId, Integer currencyId) {

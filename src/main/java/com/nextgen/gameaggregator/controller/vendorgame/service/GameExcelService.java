@@ -135,8 +135,8 @@ public class GameExcelService {
         if (Objects.nonNull(vendorGameExist)) {
             gameDataEntity.setVendorGame(vendorGameExist);
         } else {
-            gameDataEntity.getVendorGame().setVendor(vendor);
-            gameDataEntity.getVendorGame().setGameCategory(gameCategory);
+            gameDataEntity.getVendorGame().setVendorId(vendor.getId());
+            gameDataEntity.getVendorGame().setGameCategoryId(gameCategory.getId());
             gameDataEntity.getVendorGame().setStatus(1);
             gameDataEntity.getVendorGame().setIsByCurrency(0);
             gameDataEntity.getVendorGame().setBetDataPreprocessing(0);

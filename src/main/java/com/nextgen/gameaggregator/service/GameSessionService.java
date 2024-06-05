@@ -22,11 +22,17 @@ import java.util.Optional;
 @Slf4j
 @ComponentScan(basePackages = "com.nextgen.gameaggregator.redis.config")
 public class GameSessionService {
-    @Autowired
-    private RawGameSessionRepository rawGameSessionRepository;
+
+    private final RawGameSessionRepository rawGameSessionRepository;
+    private final CacheManager cacheManager;
 
     @Autowired
-    private CacheManager cacheManager;
+    public GameSessionService(RawGameSessionRepository rawGameSessionRepository,
+                              CacheManager cacheManager) {
+
+        this.rawGameSessionRepository = rawGameSessionRepository;
+        this.cacheManager = cacheManager;
+    }
 
     @Cacheable(value = "GameSessions", key = "#token", cacheManager = "cacheManager")
     public GameSession verifyToken(String token) throws AuthenticationException {
@@ -37,11 +43,23 @@ public class GameSessionService {
         return session;
     }
 
+    @Cacheable(value = "GameSessions", key = "#vendorToken", cacheManager = "cacheManager")
+    public GameSession verifyVendorToken(String vendorToken) throws AuthenticationException {
+
+        GameSession session = rawGameSessionRepository.findByVendorToken(vendorToken);
+        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
+
+        return session;
+    }
+
     @Caching(put = {
             @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorToken", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerId", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession updateSession(GameSession gameSession) {
         rawGameSessionRepository.save(gameSession);
@@ -55,6 +73,8 @@ public class GameSessionService {
             @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerId", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #vendorGameCode.openGameCode}", cacheManager = "cacheManager"),
     })
     public GameSession createSession(GameSession gameSession, GameUrlDto dto, VendorGame vendorGame, VendorGameCode vendorGameCode,
                                      Currency currency, VendorCurrency vendorCurrency, VendorLanguageCode vendorLanguageCode,
@@ -62,10 +82,10 @@ public class GameSessionService {
 
         gameSession.setTraceId(dto.getTraceId());
         gameSession.setLanguage(dto.getLanguage());
-        gameSession.setVendorId(vendorGame.getVendor().getId());
+        gameSession.setVendorId(vendorGame.getVendorId());
         gameSession.setVendorGameId(vendorGame.getId());
         gameSession.setVendorGameCode(vendorGameCode.getOpenGameCode());
-        gameSession.setGameCategoryId(vendorGame.getGameCategory().getId());
+        gameSession.setGameCategoryId(vendorGame.getGameCategoryId());
         gameSession.setCurrencyId(currency.getId());
         gameSession.setCurrencyCode(currency.getCode());
         gameSession.setGameCode(vendorGame.getCode());
@@ -97,12 +117,30 @@ public class GameSessionService {
         return session;
     }
 
+    @CachePut(value = "GameSessions", key = "#vendorPlayerId", cacheManager = "cacheManager")
+    public GameSession getGameSessionByVendorPlayerId(Long vendorPlayerId) throws AuthenticationException {
+        GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerIdOrderByCreateTimeDesc(vendorPlayerId);
+        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
+
+        return session;
+    }
+
+    @Cacheable(value = "GameSessions", key = "{#vendorPlayerId, #vendorGameCode}", cacheManager = "cacheManager")
+    public GameSession getGameSessionByVendorPlayerIdAndVendorGameCode(Long vendorPlayerId, String vendorGameCode) throws AuthenticationException {
+        GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerIdAndVendorGameCodeOrderByCreateTimeDesc(vendorPlayerId, vendorGameCode);
+        Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
+        return session;
+    }
+
     public void clearGameSession(GameSession gameSession, String username, String vendorGameCode) {
         cacheManager.getCache("GameSessions").evict(gameSession.getAgentId() + "," + username + "," + gameSession.getVendorLineId() + "," + gameSession.getCurrencyId());
         cacheManager.getCache("GameSessions").evict(gameSession.getToken());
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorToken());
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername());
         cacheManager.getCache("GameSessions").evict(username);
         cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerUsername() + "," + gameSession.getVendorGameCode());
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerId());
+        cacheManager.getCache("GameSessions").evict(gameSession.getVendorPlayerId() + "," + gameSession.getVendorGameCode());
         gameSession.setStatus(0);
         gameSession.setTerminateTime(System.currentTimeMillis());
         rawGameSessionRepository.save(gameSession);
@@ -120,8 +158,12 @@ public class GameSessionService {
 
     @Caching(put = {
             @CachePut(value = "GameSessions", key = "#newToken", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorToken", cacheManager = "cacheManager"),
             @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
-            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager")
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerId", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
     })
     public GameSession regenerateGameSessionToken(GameSession gameSession, String newToken) {
 
@@ -139,5 +181,22 @@ public class GameSessionService {
 
         rawGameSessionRepository.save(newGameSession);
         return newGameSession;
+    }
+
+    @Caching(put = {
+            @CachePut(value = "GameSessions", key = "#newToken", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.token", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerUsername", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerUsername, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "#gameSession.vendorPlayerId", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.vendorPlayerId, #gameSession.vendorGameCode}", cacheManager = "cacheManager"),
+            @CachePut(value = "GameSessions", key = "{#gameSession.agentId, #gameSession.agentPlayerUsername, #gameSession.vendorLineId, #gameSession.currencyId}", cacheManager = "cacheManager"),
+    })
+    public GameSession regenerateVendorToken(GameSession gameSession, String newToken) {
+
+        gameSession.setVendorToken(newToken);
+        rawGameSessionRepository.save(gameSession);
+
+        return gameSession;
     }
 }

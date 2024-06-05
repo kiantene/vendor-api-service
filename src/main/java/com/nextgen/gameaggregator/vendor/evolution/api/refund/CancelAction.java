@@ -23,20 +23,22 @@ import java.math.BigDecimal;
 @RequestMapping(path = EndPoints.PATH)
 @Slf4j
 public class CancelAction {
+    private final HttpService httpService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
+    public CancelAction(HttpService httpService, VendorLineService vendorLineService, AgentPlayerService agentPlayerService, VendorGameService vendorGameService, WalletService walletService, VendorService vendorService) {
+        this.httpService = httpService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = EndPoints.CANCEL)
     public ResponseVo CancelAction(HttpServletRequest request) {
@@ -55,7 +57,7 @@ public class CancelAction {
             this.doValidation(cancelDto);
 
             // 2. Verify session token
-            GameSession gameSession = gameSessionService.verifyToken(cancelDto.getSid());
+            GameSession gameSession = vendorService.preCheckGameSessionToken(cancelDto.getSid());
 
             this.doVerification(cancelDto, gameSession);
 
@@ -124,7 +126,7 @@ public class CancelAction {
 
         // 1. Verify received token is the same from game session
         // comparison for game session value will always be using  AuthenticationException
-        ValidationUtils.isEquals(gameSession.getToken(), cancelDto.getSid(), AuthenticationException::new);
+        ValidationUtils.isEquals(gameSession.getVendorToken(), cancelDto.getSid(), AuthenticationException::new);
         ValidationUtils.isEquals(gameSession.getVendorPlayerUsername(), cancelDto.getUserId(), InvalidPlayerException::new);
         // Verify vendor gameCode and currency
         ValidationUtils.isEquals(gameSession.getVendorGameCode(), String.valueOf(cancelDto.getGame().getDetails().getTable().getId()), GameNotSupportedException::new);
