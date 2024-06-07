@@ -12,4 +12,6 @@ public interface AgentCurrencyRepository extends JpaRepository<AgentCurrency, In
 
 
     List<AgentCurrency> findAgentCurrencyByAgentIdAndStatus(Integer agentId,Integer status);
+
+    AgentCurrency findTop1ByAgentIdAndStatus(Integer agentId,Integer status);
 }

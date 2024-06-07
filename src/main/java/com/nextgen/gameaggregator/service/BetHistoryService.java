@@ -45,6 +45,8 @@ public class BetHistoryService {
 
     @Autowired
     private VendorLineService vendorLineService;
+    @Autowired
+    private VendorService vendorService;
 
     public Long getVendorSettleTime(BetResultData betResultData, UnsettledBet unsettledBet) {
         long settledTime = System.currentTimeMillis();
@@ -163,7 +165,9 @@ public class BetHistoryService {
 
 
         try {
-            String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
+            String vendorClassName = vendorService.getByVendorId(vendorLine.getVendorId(), null).getClassName();
+
+            String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.betdetail.BetDetailService";
             BetDetailUrl betDetailUrl = (BetDetailUrl) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(betDetailUrl);
             MultiValueMap<String, String> formData = betDetailUrl.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
@@ -174,7 +178,7 @@ public class BetHistoryService {
             return transactionDetailData;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException | InvalidVendorLineException |
-                 InvalidFormatException | RecordNotFoundException
+                 InvalidFormatException | RecordNotFoundException | InvalidVendorException
                 gameClassException) {
             gameClassException.printStackTrace();
             log.error("GAME CLASS ERROR :" + gameClassException.getStackTrace().toString());
@@ -191,7 +195,9 @@ public class BetHistoryService {
 
 
         try {
-            String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.betdetail.BetDetailService";
+            String vendorClassName = vendorService.getByVendorId(vendorLine.getVendorId(), null).getClassName();
+
+            String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.betdetail.BetDetailService";
             SportBetDetail<?> sportBetDetail = (SportBetDetail<?>) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(sportBetDetail);
             MultiValueMap<String, String> formData = sportBetDetail.formDataBuilder(credentials, iBetDetailUrlInfo, vendorLanguageCode);
@@ -208,7 +214,7 @@ public class BetHistoryService {
             return transactionDetailData;
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
                  IllegalAccessException | InvalidVendorLineException |
-                 InvalidFormatException | RecordNotFoundException
+                 InvalidFormatException | RecordNotFoundException | InvalidVendorException
                 gameClassException) {
             gameClassException.printStackTrace();
             log.error("GAME CLASS ERROR :" + gameClassException.getStackTrace().toString());

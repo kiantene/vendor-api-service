@@ -2,9 +2,11 @@ package com.nextgen.gameaggregator.service;
 
 import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
 import com.nextgen.gameaggregator.entity.ga.AgentCurrency;
+import com.nextgen.gameaggregator.entity.ga.Currency;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.CurrencyNotSupportedException;
 import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.InvalidCurrencyException;
 import com.nextgen.gameaggregator.exception.InvalidUrlException;
 import com.nextgen.gameaggregator.operator.apiverification.agentinfo.AgentInfoVo;
 import com.nextgen.gameaggregator.repository.ga.writer.AgentApiCredentialRepository;
@@ -29,48 +31,54 @@ public class AgentApiCredentialService {
     @Autowired
     private AgentCurrencyRepository agentCurrencyRepository;
 
+    @Autowired
+    private CurrencyService currencyService;
+
     @Cacheable(value = "AgentApiCredentials", key = "#agentId", cacheManager = "cacheManager")
     public AgentApiCredential getAgentApiCredential(Integer agentId) throws InvalidAgentApiCredentialException {
 
         AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
         Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
 
-        try{
+        try {
             //ignore validation check callback url if the wallet type is custodial wallet
-            if(credential.getAgent().getSeamlessType().equals(1)){
+            if (credential.getAgent().getSeamlessType().equals(1)) {
                 //UPDATE PG : TEMP WHITELIST LOCALHOST
-                if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
+                if (!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")) {
                     ValidationUtils.isValidUrl(credential.getCallbackUrl());
                 }
             }
-        }catch (InvalidUrlException invalidUrlException){
+        } catch (InvalidUrlException invalidUrlException) {
             throw new InvalidAgentApiCredentialException();
         }
 
         return credential;
     }
 
-    public AgentInfoVo getAgentApiCredentialForIntegrationTest(Integer agentId, AgentInfoVo agentInfoVo) throws InvalidAgentApiCredentialException {
+    public AgentInfoVo getAgentApiCredentialForIntegrationTest(Integer agentId, AgentInfoVo agentInfoVo) throws InvalidAgentApiCredentialException, InvalidCurrencyException {
 
         AgentApiCredential credential = agentApiCredentialRepository.findByAgentIdAndStatus(agentId, Status.ACTIVE.code);
         Optional.ofNullable(credential).orElseThrow(InvalidAgentApiCredentialException::new);
         //UPDATE PG : TEMP WHITELIST LOCALHOST
-        try{
-            if(!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")){
+        try {
+            if (!credential.getCallbackUrl().equals("http://localhost:8087/api/v2")) {
                 ValidationUtils.isValidUrl(credential.getCallbackUrl());
             }
-        }catch (InvalidUrlException invalidUrlException){
+        } catch (InvalidUrlException invalidUrlException) {
             throw new InvalidAgentApiCredentialException();
         }
 
         agentInfoVo.setApiSecret(credential.getApiSecret());
         agentInfoVo.setApiKey(credential.getApiKey());
-        agentInfoVo.setCurrency(credential.getAgent().getCurrency().getCode());
+
+        AgentCurrency agentCurrency = agentCurrencyRepository.findTop1ByAgentIdAndStatus(agentId, 1);
+        Currency currency = currencyService.getByCurrencyId(agentCurrency.getCurrencyId(), null);
+        agentInfoVo.setCurrency(currency.getCode());
         return agentInfoVo;
     }
 
-    public List<AgentCurrency> getAgentSupportedCurrency(Integer agentId)  throws CurrencyNotSupportedException {
-        List<AgentCurrency> agentCurrencies = agentCurrencyRepository.findAgentCurrencyByAgentIdAndStatus(agentId, Status.ACTIVE.code );
+    public List<AgentCurrency> getAgentSupportedCurrency(Integer agentId) throws CurrencyNotSupportedException {
+        List<AgentCurrency> agentCurrencies = agentCurrencyRepository.findAgentCurrencyByAgentIdAndStatus(agentId, Status.ACTIVE.code);
 
         if (agentCurrencies.isEmpty()) {
             throw new CurrencyNotSupportedException();
@@ -80,10 +88,10 @@ public class AgentApiCredentialService {
 
     }
 
-    public String getAgentCallbackUrlBySeamlessType(AgentApiCredential agentApiCredential){
-        if(agentApiCredential.getAgent().getSeamlessType().equals(2)){
-            return walletServiceUrl+"/seamless";
-        }else{
+    public String getAgentCallbackUrlBySeamlessType(AgentApiCredential agentApiCredential) {
+        if (agentApiCredential.getAgent().getSeamlessType().equals(2)) {
+            return walletServiceUrl + "/seamless";
+        } else {
             return agentApiCredential.getCallbackUrl();
         }
     }

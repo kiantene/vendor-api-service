@@ -73,7 +73,7 @@ public class TransactionDetailAction {
             VendorLine vendorLine = vendorLineService.getVendorLineById(iBetDetailUrlInfo.getVendorLineId(), iBetDetailUrlInfo.getVendorId());
 
             //7. check if vendor language supported
-            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendor(), language);
+            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendorId(), language);
 
             TransactionDetailData transactionDetailData = new TransactionDetailData();
             transactionDetailData.setBetDetail(iBetDetailUrlInfo);

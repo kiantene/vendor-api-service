@@ -16,12 +16,10 @@ public class AgentVendorLine {
     @ManyToOne
     private Agent agent;
     @ManyToOne
-    private Vendor vendor;
-    @ManyToOne
     private VendorLine vendorLine;
     @ManyToOne
     private Currency currency;
-    @ManyToOne
-    private GameCategory gameCategory;
+    private Integer gameCategoryId;
+    private Integer vendorId;
     private Integer status;
 }

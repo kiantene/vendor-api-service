@@ -1,8 +1,8 @@
 package com.nextgen.gameaggregator.entity.ga;
 
+import jakarta.persistence.*;
 import lombok.Data;
 
-import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
@@ -12,12 +12,7 @@ public class VendorLine {
     @Id
     private Integer id;
     private String name;
-    @ManyToOne
-    private Vendor vendor;
-//    private Boolean isMultiCurrency;
-//    @ManyToOne
-//    private Currency currency;
-//    private String vendorCurrencyCode;
+    private Integer vendorId;
     private Integer houseId;
     private Integer status;
     @OneToMany(mappedBy = "vendorLineId", fetch = FetchType.EAGER)

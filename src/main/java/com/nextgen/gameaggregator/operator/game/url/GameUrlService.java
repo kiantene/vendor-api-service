@@ -4,6 +4,7 @@ import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.ga.writer.*;
+import com.nextgen.gameaggregator.service.VendorService;
 import com.nextgen.gameaggregator.util.NameUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,19 +23,30 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class GameUrlService {
-
+    private static final String USERTYPE = "operator-api-service";
     private final AutowireCapableBeanFactory autowireCapableBeanFactory;
     private final RawGameSessionRepository rawGameSessionRepository;
     private final AgentPlayerRepository agentPlayerRepository;
     private final VendorPlayerRepository vendorPlayerRepository;
     private final VendorGameCodeRepository vendorGameCodeRepository;
     private final PlatformRepository platformRepository;
-    VendorGameCurrencyRepository vendorGameCurrencyRepository;
-    CurrencyRepository currencyRepository;
-    AgentCurrencyRepository agentCurrencyRepository;
+    private final VendorService vendorService;
+    private final VendorGameCurrencyRepository vendorGameCurrencyRepository;
+    private final CurrencyRepository currencyRepository;
+    private final AgentCurrencyRepository agentCurrencyRepository;
 
     @Autowired
-    public GameUrlService(AutowireCapableBeanFactory autowireCapableBeanFactory, RawGameSessionRepository rawGameSessionRepository, AgentPlayerRepository agentPlayerRepository, VendorPlayerRepository vendorPlayerRepository, VendorGameCodeRepository vendorGameCodeRepository, PlatformRepository platformRepository, VendorGameCurrencyRepository vendorGameCurrencyRepository, CurrencyRepository currencyRepository, AgentCurrencyRepository agentCurrencyRepository) {
+    public GameUrlService(AutowireCapableBeanFactory autowireCapableBeanFactory,
+                          RawGameSessionRepository rawGameSessionRepository,
+                          AgentPlayerRepository agentPlayerRepository,
+                          VendorPlayerRepository vendorPlayerRepository,
+                          VendorGameCodeRepository vendorGameCodeRepository,
+                          PlatformRepository platformRepository,
+                          VendorGameCurrencyRepository vendorGameCurrencyRepository,
+                          CurrencyRepository currencyRepository,
+                          AgentCurrencyRepository agentCurrencyRepository,
+                          VendorService vendorService) {
+
         this.autowireCapableBeanFactory = autowireCapableBeanFactory;
         this.rawGameSessionRepository = rawGameSessionRepository;
         this.agentPlayerRepository = agentPlayerRepository;
@@ -44,9 +56,8 @@ public class GameUrlService {
         this.vendorGameCurrencyRepository = vendorGameCurrencyRepository;
         this.currencyRepository = currencyRepository;
         this.agentCurrencyRepository = agentCurrencyRepository;
+        this.vendorService = vendorService;
     }
-
-    private static final String USERTYPE = "operator-api-service";
 
     public GameUrlData getGameUrl(VendorGame vendorGame, GameSession gameSession, Map<String, String> credentials,
                                   VendorLine vendorLine)
@@ -54,8 +65,11 @@ public class GameUrlService {
 
         GameUrlData gameUrlData = new GameUrlData();
         gameUrlData.setToken(gameSession.getToken());
+
         try {
-            String className = "com.nextgen.gameaggregator.vendor." + vendorLine.getVendor().getClassName() + ".api.gameurl.GameUrlService";
+            String vendorClassName = vendorService.getByVendorId(vendorLine.getVendorId(), null).getClassName();
+
+            String className = "com.nextgen.gameaggregator.vendor." + vendorClassName + ".api.gameurl.GameUrlService";
             GameUrl gameUrl = (GameUrl) Class.forName(className).getConstructor().newInstance();
             autowireCapableBeanFactory.autowireBean(gameUrl);
             MultiValueMap<String, String> formData = gameUrl.formDataBuilder(vendorGame.getVendorGameCode(), gameSession, credentials);
@@ -70,7 +84,7 @@ public class GameUrlService {
 
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException |
                  InstantiationException | IllegalAccessException | InvalidVendorLineException |
-                 InvalidVendorResponseException | InvalidFormatException
+                 InvalidVendorResponseException | InvalidFormatException | InvalidVendorException
                 gameClassException) {
             //gameClassException.printStackTrace();
 
@@ -180,7 +194,7 @@ public class GameUrlService {
                 currency.getId());
 
         if (vendorPlayer == null) {
-            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorLine.getVendor().getId(), currency.getId());
+            vendorPlayer = this.createVendorPlayer(agentPlayer.getId(), vendorLine.getId(), vendorLine.getVendorId(), currency.getId());
             vendorPlayerRepository.save(vendorPlayer);
         } else {
             if (vendorPlayer.getStatus().equals(Status.INACTIVE.code)) {
@@ -195,7 +209,7 @@ public class GameUrlService {
 
         AgentPlayer agentPlayer = agentPlayerRepository.findByAgentIdAndUsername(agent.getId(), username);
         VendorPlayer vendorPlayer = null;
-        Integer vendorId = vendorLine.getVendor().getId();
+        Integer vendorId = vendorLine.getVendorId();
 
         if (agentPlayer == null) {
             agentPlayer = this.createAgentPlayer(agent.getId(), username);

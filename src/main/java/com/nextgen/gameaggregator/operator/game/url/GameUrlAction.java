@@ -8,13 +8,13 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 @RestController
@@ -82,7 +82,7 @@ public class GameUrlAction {
 
             // 5.1 Check if Currency exist
             loggingService.logStart();
-            Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
+            Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
             // 5.2 Check if Agent Currency supported
             AgentCurrency agentCurrency =
                     gameUrlService.checkAgentCurrencySupported(apiCredential.getAgent(), currency);
@@ -127,27 +127,27 @@ public class GameUrlAction {
 
             // 12. check if vendor language supported
             loggingService.logStart();
-            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendor(), language);
+            VendorLanguageCode vendorLanguageCode = vendorService.findVendorLanguageCode(vendorLine.getVendorId(), language);
             loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorLanguageCode", traceId);
 
             // 13. check if vendor currency supported
             loggingService.logStart();
-            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendor().getId(), agentCurrency.getCurrency().getId());
+            VendorCurrency vendorCurrency = vendorService.findVendorCurrency(vendorLine.getVendorId(), agentCurrency.getCurrency().getId());
             loggingService.logProcessTime("gameUrl ｜ vendorService.findVendorCurrency", traceId);
 
             // 14. check if vendor platform supported
             loggingService.logStart();
-            String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendorLine.getVendor().getClassName(), vendorGameCode.getPlatformId());
+            String vendorPlatformCode = gameUrlService.getVendorPlatformCode(vendor.getClassName(), vendorGameCode.getPlatformId());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.getVendorPlatformCode", traceId);
 
             // 15. Check if Agent player account exists
             loggingService.logStart();
-            AgentPlayer agentPlayer = gameUrlService.checkAgentPlayer(apiCredential.getAgent(),  dto.getUsername());
+            AgentPlayer agentPlayer = gameUrlService.checkAgentPlayer(apiCredential.getAgent(), dto.getUsername());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkAgentPlayer", traceId);
 
             // 16. Check if Vendor player account exists
             loggingService.logStart();
-            VendorPlayer vendorPlayer = gameUrlService.checkVendorPlayer(agentPlayer, vendorLine,  agentCurrency.getCurrency());
+            VendorPlayer vendorPlayer = gameUrlService.checkVendorPlayer(agentPlayer, vendorLine, agentCurrency.getCurrency());
             loggingService.logProcessTime("gameUrl ｜ gameUrlService.checkVendorPlayer", traceId);
 
             // 17. create game session in cache
@@ -252,7 +252,7 @@ public class GameUrlAction {
             httpService.logError(httpRequestLog, exception);
             exception.printStackTrace();
 
-        }finally {
+        } finally {
             responseVo.setMessage(responseVo.getStatus().description);
             httpRequestLog.setOperatorResponseStatus(responseVo.getStatus());
 

@@ -34,8 +34,9 @@ public class RoundPayoutTransactionDto {
     @Size(max = 24)
     public String id;
 
-    @Size(max = 50)
-    @Pattern(regexp = "^[a-zA-Z0-9_-]*$")
+    //should not validate this param as it wont impact the overall calculation to generate this bet
+    //@Size(max = 50)
+    //@Pattern(regexp = "^[a-zA-Z0-9_-]*$")
     public String info;
 
     @NotNull

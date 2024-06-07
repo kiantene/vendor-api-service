@@ -1,20 +1,14 @@
 package com.nextgen.gameaggregator.operator.sport.settle;
 
 import com.google.gson.Gson;
-import com.nextgen.gameaggregator.entity.ga.Agent;
-import com.nextgen.gameaggregator.entity.ga.AgentApiCredential;
-import com.nextgen.gameaggregator.entity.ga.AgentPlayer;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.EndPoints;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultDto;
-import com.nextgen.gameaggregator.service.AgentApiCredentialService;
-import com.nextgen.gameaggregator.service.AgentPlayerService;
-import com.nextgen.gameaggregator.service.AuthenticationService;
-import com.nextgen.gameaggregator.service.RequestService;
+import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.util.RequestLogVo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +39,10 @@ public class SportWalletSettleAction {
     @Autowired
     private RequestService requestService;
 
-    public WalletBalanceVo call(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException {
+    @Autowired
+    private CurrencyService currencyService;
+
+    public WalletBalanceVo call(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException, InvalidCurrencyException {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
 
@@ -103,7 +100,7 @@ public class SportWalletSettleAction {
         return null;
     }
 
-    private SportWalletSettleDto newSportWalletSettleDto(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) {
+    private SportWalletSettleDto newSportWalletSettleDto(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) throws InvalidCurrencyException {
 
         // add conversion rate when sending all the figures to operator
         BigDecimal betAmount = (ObjectUtils.isEmpty(unsettledBet.getBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());
@@ -129,7 +126,10 @@ public class SportWalletSettleAction {
         sportWalletSettleDto.setResultType(resultType);
         sportWalletSettleDto.setIsFreespin(0);
         sportWalletSettleDto.setIsEndRound(1);
-        sportWalletSettleDto.setCurrency(agent.getCurrency().getCode());
+
+        //Update
+        Currency currency = currencyService.getByCurrencyId(unsettledBet.getCurrencyId(), null);
+        sportWalletSettleDto.setCurrency(currency.getCode());
         sportWalletSettleDto.setToken("-");
         sportWalletSettleDto.setGameCode(unsettledBet.getVendorGameId().toString());
         sportWalletSettleDto.setBetTime(unsettledBet.getVendorBetTime());
