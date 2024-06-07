@@ -184,7 +184,7 @@ public class GameExcelService {
                     vendorGameCode = vendorGameCodeExist;
                 } else {
                     vendorGameCode.setVendorGame(vendorGame);
-                    vendorGameCode.setVendor(vendor);
+                    vendorGameCode.setVendorId(vendor.getId());
                     vendorGameCode.setName(vendorGameCodeLang.getName());
                     vendorGameCode.setImageSquare(vendorGameCodeLang.getImageSquare());
 

@@ -55,6 +55,9 @@ public class DebitAction {
         DebitDto debitDto = new DebitDto();
         GameSession gameSession = null;
 
+        BigDecimal balance = BigDecimal.ZERO;
+        BetEvent betEvent = null;
+
         try {
             String body = httpRequestLog.getRequestBody();
             debitDto = HttpService.convertJsonToDto(body, DebitDto.class);
@@ -69,14 +72,12 @@ public class DebitAction {
             // Verify remaining parameters (Verify against database values)
             this.doVerification(debitDto, gameSession, httpRequestLog, request);
 
-            // Get walletBalance
-            BigDecimal balance = BigDecimal.ZERO;
             switch (debitDto.getBetTypeID()) {
                 case BetTypeID.DEBIT_TIP:
                     balance = walletService.processBetResult(traceId, gameSession, debitDto, ResultType.BET_LOSE, vendorService, httpRequestLog);
                     break;
                 default:
-                    BetEvent betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
+                    betEvent = walletService.processBet(traceId, gameSession, debitDto, body, httpRequestLog);
                     balance = betEvent.getLastBalance();
                     break;
             }
@@ -157,13 +158,16 @@ public class DebitAction {
             debitVo.setUid(debitDto.getUid());
             debitVo.setRoundId(debitDto.getVendorRoundId());
             debitVo.setTransactionId(debitDto.getTransactionId());
-            if (debitVo.getBalance() == null) {
-                if (debitVo.getErrorCode().equals(ResponseCodes.USER_NOT_FOUND)) {
-                    debitVo.setBalance(BigDecimal.ZERO.setScale(2, RoundingMode.DOWN));
-                } else {
-                    debitVo.setBalance(vendorService.getCurrentBalance(traceId, debitDto.getToken(), httpRequestLog).setScale(2, RoundingMode.DOWN));
-                }
+
+            if (betEvent != null) {
+                balance = betEvent.getLastBalance();
             }
+
+            if (balance == null) {
+                balance = BigDecimal.ZERO;
+            }
+
+            debitVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             debitVo.setCurrency(debitDto.getCurrency());
             debitVo.setTimestamp(VendorService.getOperatorTimestamp(httpRequestLog));
             httpService.end(httpRequestLog, debitVo);

@@ -38,7 +38,7 @@ public class GameListService {
 
         List<Integer> gameCategoryIds = new ArrayList<>();
         for (AgentVendorLine agentVendorLine : agentVendorLines) {
-            gameCategoryIds.add(agentVendorLine.getGameCategory().getId());
+            gameCategoryIds.add(agentVendorLine.getGameCategoryId());
         }
 
         List<Sort.Order> orders = this.generateOrder();

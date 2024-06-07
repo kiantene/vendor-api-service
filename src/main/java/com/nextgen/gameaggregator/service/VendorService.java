@@ -1,7 +1,7 @@
 package com.nextgen.gameaggregator.service;
 
-import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.entity.ga.custom.IGameVendor;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.repository.ga.reader.VendorReaderRepository;
@@ -92,11 +92,11 @@ public class VendorService extends BaseVendorService {
                 agent.getId(), currency.getId(), language.getId(), Status.ACTIVE.code);
     }
 
-    @Cacheable(value = "VendorLanguages", key = "{#language.id, #vendor.id}", cacheManager = "cacheManager")
-    public VendorLanguageCode findVendorLanguageCode(Vendor vendor, Language language) throws VendorLanguageNotSupportedException {
+    @Cacheable(value = "VendorLanguages", key = "{#language.id, #vendorId}", cacheManager = "cacheManager")
+    public VendorLanguageCode findVendorLanguageCode(Integer vendorId, Language language) throws VendorLanguageNotSupportedException {
 
         VendorLanguageCode vendorLanguageCode =
-                vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendor.getId(), language.getId());
+                vendorLanguageCodeRepository.findByVendorIdAndLanguageId(vendorId, language.getId());
         Optional.ofNullable(vendorLanguageCode).orElseThrow(VendorLanguageNotSupportedException::new);
 
         if (vendorLanguageCode.getStatus() == 0) {
@@ -140,9 +140,9 @@ public class VendorService extends BaseVendorService {
         return vendorCurrency;
     }
 
-    @Cacheable(value = "Vendors", key = "{#vendorId}", cacheManager = "cacheManager")
+    @Cacheable(value = "Vendors", key = "{#vendorId}", cacheManager = "cacheManager", unless = "#result == null")
     public Vendor getByVendorId(Integer vendorId, Vendor vendor) throws InvalidVendorException {
-        if(vendor==null){
+        if (vendor == null) {
             vendor = vendorReaderRepository.findById(vendorId).orElse(null);
             Optional.ofNullable(vendor).orElseThrow(InvalidVendorException::new);
         }

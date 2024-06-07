@@ -21,6 +21,5 @@ public class VendorGameCode extends BaseEntity {
 
     @ManyToOne
     private VendorGame vendorGame;
-    @ManyToOne
-    private Vendor vendor;
+    private Integer vendorId;
 }
