@@ -72,9 +72,6 @@ public class BalanceAction {
             // 4. Get walletBalance
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            // 5. Get vendor line supported currency
-            VendorLine vendorLine = vendorLineService.getVendorLineById(vendorPlayer.getVendorLineId(), vendorPlayer.getVendorId());
-
             // Construct VO
             commonVo.setBalance(balance);
             commonVo.setCurrency(gameSession.getVendorCurrencyCode());

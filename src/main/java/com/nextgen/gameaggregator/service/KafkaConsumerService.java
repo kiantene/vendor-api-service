@@ -3,13 +3,17 @@ package com.nextgen.gameaggregator.service;
 import com.google.gson.Gson;
 import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
+import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.*;
+import com.nextgen.gameaggregator.exception.GameNotSupportedException;
+import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
+import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.vendor.saba.api.cancelbet.CancelBetDto;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import lombok.extern.slf4j.Slf4j;
@@ -224,7 +228,21 @@ public class KafkaConsumerService {
 
         try {
             SportRawSettledBet sportRawSettledBet = new Gson().fromJson(message, SportRawSettledBet.class);
-            BetEvent responseVo = sportWalletService.settle(traceId, sportRawSettledBet, httpRequestLog);
+            BetEvent responseVo = null;
+
+            //to handle saba send results in bulk consists of refund bet.
+            if (sportRawSettledBet.getBetStatus().equals(BetStatus.REFUNDED)) {
+                CancelBetDto cancelBetDto = new CancelBetDto();
+                cancelBetDto.setRefId(sportRawSettledBet.getRoundId());
+                cancelBetDto.setOperationId(sportRawSettledBet.getExternalTransactionId());
+                cancelBetDto.setUserId(sportRawSettledBet.getVendorPlayerUsername());
+                responseVo = sportWalletService.refund(traceId, cancelBetDto, httpRequestLog);
+                responseVo.setLastBalance(responseVo == null ? BigDecimal.ZERO : responseVo.getLastBalance());
+
+            } else {
+                responseVo = sportWalletService.settle(traceId, sportRawSettledBet, httpRequestLog);
+            }
+
             vo.setBalance(responseVo.getLastBalance());
             vo.setResponseCode(ResponseCode.SUCCESS);
 

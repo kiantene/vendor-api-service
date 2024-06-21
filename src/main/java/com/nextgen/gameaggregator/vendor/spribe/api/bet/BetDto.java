@@ -28,7 +28,7 @@ public class BetDto implements BetResultData {
 
     @NotNull
     @PositiveOrZero
-    private Integer amount;
+    private BigDecimal amount;
 
     @NotBlank
     @Pattern(regexp = ValidationUtils.ALPHANUMERIC_DASH_REGEX)

@@ -73,9 +73,6 @@ public class SettleAction {
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
 
-            // 5. Reject the request if there's no place bet and it's not a free bet
-            this.checkRoundExists(dto, gameSession);
-
             // 6. Retrieve the latest wallet balance from Operator
             oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
@@ -186,11 +183,5 @@ public class SettleAction {
         }
 
         return resultType;
-    }
-
-    private void checkRoundExists(SettleDto dto, GameSession gameSession) throws BetNotFoundException {
-        List<SettledBet> settledBetList = settledBetService.getByVendorPlayerIdAndRoundId(gameSession.getVendorPlayerId(), dto.getRoundId());
-
-        if (settledBetList.isEmpty() && !FreeBetAction.list.contains(dto.getAction())) throw new BetNotFoundException();
     }
 }

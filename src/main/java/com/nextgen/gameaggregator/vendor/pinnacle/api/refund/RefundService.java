@@ -36,7 +36,7 @@ public class RefundService {
             refundDto.setTransactionDate(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getTransactionDate).orElse(null));
             refundDto.setExternalTransactionId(action.getId().toString());
 
-            BetEvent response = sportWalletService.refund(traceId, refundDto, httpRequestLog.getRequestBody(), httpRequestLog);
+            BetEvent response = sportWalletService.refund(traceId, refundDto, httpRequestLog);
             commonVo.setBalance(response.getLastBalance());
 
         } catch (Exception e) {

@@ -78,11 +78,11 @@ public class WalletService {
             balanceVo = walletBalanceAction.call(traceId, gameSession, httpRequestLog);
             // TODO: to handle balance returned with more than 4 decimals
             // TODO: implement error handling
-            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         } catch (VendorCurrencyNotSupportException vendorCurrencyNotSupportException) {
-            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
             throw new VendorCurrencyNotSupportException();
+        } finally {
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
 
         return balanceVo.getData().getBalance();
@@ -161,9 +161,9 @@ public class WalletService {
             log.warn("walletBetAction.call.vendorCurrencyNotSupportException traceId [" + traceId + "]: externalTransactionId (" + unsettledBet.getExternalTransactionId() + ") vendorPlayerId (" + unsettledBet.getVendorPlayerId() + ")");
             throw new VendorCurrencyNotSupportException();
 
+        } finally {
+            if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
-
-        if (httpRequestLog != null) httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return betEvent;
     }
@@ -377,6 +377,8 @@ public class WalletService {
 
             log.warn("walletBetResultAction.call.vendorCurrencyNotSupportException traceId [" + traceId + "]: externalTransactionId (" + settledBet.getExternalTransactionId() + ") vendorPlayerId (" + settledBet.getVendorPlayerId() + ")");
             throw new VendorCurrencyNotSupportException();
+        } finally {
+            httpRequestLog.setBetEnd(System.currentTimeMillis());
         }
 
         loggingService.logStart();
@@ -575,6 +577,8 @@ public class WalletService {
 
                     throw new VendorCurrencyNotSupportException();
 
+                } finally {
+                    httpRequestLog.setBetEnd(System.currentTimeMillis());
                 }
             }
             case BET_WIN, BET_LOSE -> { // data contains bet and result
@@ -608,6 +612,8 @@ public class WalletService {
                     log.warn("walletBetResultAction.call.vendorCurrencyNotSupportException traceId [" + traceId + "]: externalTransactionId (" + unsettledBet.getExternalTransactionId() + ") vendorPlayerId (" + unsettledBet.getVendorPlayerId() + ")");
                     throw new VendorCurrencyNotSupportException();
 
+                } finally {
+                    httpRequestLog.setBetEnd(System.currentTimeMillis());
                 }
             }
         }
@@ -652,7 +658,6 @@ public class WalletService {
         } else { // bets not settled yet
             balanceVo = this.doUnsettledBetResult(traceId, gameSession, betResultData, resultType, vendorService, httpRequestLog, vendorCurrency.getFromVendorRate(), vendorCurrency.getToVendorRate());
         }
-        httpRequestLog.setBetEnd(System.currentTimeMillis());
 
         return balanceVo.getData().getBalance();
     }

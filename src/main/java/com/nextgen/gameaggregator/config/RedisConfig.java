@@ -110,6 +110,8 @@ public class RedisConfig extends CachingConfigurerSupport {
                 .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("RawBetIdempotentLog", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(3)).serializeValuesWith(pair));
+        cacheNamesConfigurationMap.put("Agent", RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofHours(6)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("Vendors", RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(2)).serializeValuesWith(pair));
         cacheNamesConfigurationMap.put("VendorLanguages", RedisCacheConfiguration.defaultCacheConfig()

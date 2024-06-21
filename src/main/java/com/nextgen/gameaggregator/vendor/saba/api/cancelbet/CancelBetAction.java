@@ -77,7 +77,7 @@ public class CancelBetAction {
 
         try {
             String traceId = UUID.randomUUID().toString();
-            betEvent = sportWalletService.refund(traceId, txn, httpRequestLog.getRequestBody(), httpRequestLog);
+            betEvent = sportWalletService.refund(traceId, txn, httpRequestLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);
             vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
