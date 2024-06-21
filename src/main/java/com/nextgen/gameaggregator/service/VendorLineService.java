@@ -125,10 +125,10 @@ public class VendorLineService {
     }
 
     @Cacheable(value = "VendorLines", key = "#vendorLineId", cacheManager = "cacheManager", unless = "#result == null")
-    public Integer verifyVendorLineStatus(Integer vendorLineId) throws DisabledVendorLineException {
+    public VendorLine verifyVendorLineStatus(Integer vendorLineId) throws DisabledVendorLineException {
         VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, Status.ACTIVE.code);
 
-        return Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new).getId();
+        return Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {
@@ -137,7 +137,7 @@ public class VendorLineService {
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
-    @Cacheable(value = "VendorLines", key = "{#vendorLineId}", cacheManager = "cacheManager")
+    @Cacheable(value = "VendorLines", key = "#vendorLineId", cacheManager = "cacheManager")
     public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException, DisabledVendorLineException {
         VendorLine vendorLine = vendorLineRepository.findById(vendorLineId)
                 .orElseThrow(InvalidVendorLineException::new);
