@@ -16,20 +16,35 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class ValidationService {
+    private final AgentService agentService;
+    private final AgentApiCredentialRepository agentApiCredentialRepository;
+    private final AgentPlayerRepository agentPlayerRepository;
+    private final VendorGameCodeRepository vendorGameCodeRepository;
+    private final VendorGameCurrencyRepository vendorGameCurrencyRepository;
+    private final AgentVendorLineRepository agentVendorLineRepository;
+    private final VendorGameDeactivatedService vendorGameDeactivatedService;
+    private final LoggingService loggingService;
+
     @Autowired
-    private AgentApiCredentialRepository agentApiCredentialRepository;
-    @Autowired
-    private AgentPlayerRepository agentPlayerRepository;
-    @Autowired
-    private VendorGameCodeRepository vendorGameCodeRepository;
-    @Autowired
-    private VendorGameCurrencyRepository vendorGameCurrencyRepository;
-    @Autowired
-    private AgentVendorLineRepository agentVendorLineRepository;
-    @Autowired
-    private LoggingService loggingService;
-    @Autowired
-    private VendorGameDeactivatedService vendorGameDeactivatedService;
+    public ValidationService(AgentService agentService,
+                             AgentApiCredentialRepository agentApiCredentialRepository,
+                             AgentPlayerRepository agentPlayerRepository,
+                             VendorGameCodeRepository vendorGameCodeRepository,
+                             VendorGameCurrencyRepository vendorGameCurrencyRepository,
+                             AgentVendorLineRepository agentVendorLineRepository,
+                             VendorGameDeactivatedService vendorGameDeactivatedService,
+                             LoggingService loggingService) {
+
+        this.agentService = agentService;
+        this.agentApiCredentialRepository = agentApiCredentialRepository;
+        this.agentPlayerRepository = agentPlayerRepository;
+        this.vendorGameCodeRepository = vendorGameCodeRepository;
+        this.vendorGameCurrencyRepository = vendorGameCurrencyRepository;
+        this.agentVendorLineRepository = agentVendorLineRepository;
+        this.vendorGameDeactivatedService = vendorGameDeactivatedService;
+        this.loggingService = loggingService;
+    }
+
 
     @Cacheable(value = "AgentApiCredentialsByApiKey", key = "#apiKey", cacheManager = "cacheManager")
     public AgentApiCredential validateApiKey(String apiKey) throws AuthenticationException {
@@ -52,10 +67,10 @@ public class ValidationService {
         }
     }
 
-    public void validateIsCustodianSeamlessAgentWalletType(Agent agent) throws InvalidWalletTypeException{
-        if(!agent.getWalletType().equals(1)){
+    public void validateIsCustodianSeamlessAgentWalletType(Agent agent) throws InvalidWalletTypeException {
+        if (!agent.getWalletType().equals(1)) {
             throw new InvalidWalletTypeException();
-        }else if(!agent.getSeamlessType().equals(2)){
+        } else if (!agent.getSeamlessType().equals(2)) {
             throw new InvalidWalletTypeException();
         }
     }
@@ -121,9 +136,14 @@ public class ValidationService {
         Optional.ofNullable(vendorGameCurrency).orElseThrow(DisabledGameException::new);
 
         //7.  verify game deactivated status for agent, master agent and house level
-        loggingService.logStart();
-        vendorGameDeactivatedService.checkGameSupported(agentVendorLines.getAgent(), gameSession.getVendorGameId());
-        loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameDeactivatedService.checkGameSupported(" + agentVendorLines.getAgent() + ","
-                + vendorGameCode.getId() + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
+        try {
+            loggingService.logStart();
+            Agent agent = agentService.get(agentVendorLines.getAgentId());
+            vendorGameDeactivatedService.checkGameSupported(agent, gameSession.getVendorGameId());
+            loggingService.logProcessTimeTempLog("PROCESS 1 SECOND LOG ｜ vendorGameDeactivatedService.checkGameSupported(" + agent + ","
+                    + vendorGameCode.getId() + ")", gameSession.getVendorPlayerUsername(), "Eligible Bet No RoundId");
+        } catch (AgentNotFoundException agentNotFoundException) {
+            throw new AuthenticationException("Agent Id (" + agentVendorLines.getAgentId() + ") cannot be found");
+        }
     }
 }

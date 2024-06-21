@@ -20,18 +20,26 @@ import java.util.stream.Collectors;
 
 @Service
 public class VendorLineService {
-    @Autowired
-    private VendorLineRepository vendorLineRepository;
-    @Autowired
-    private VendorLineCredentialRepository vendorLineCredentialRepository;
-    @Autowired
-    private AgentVendorLineRepository agentVendorLineRepository;
 
-    @Cacheable(value = "VendorLines", key = "{#agent.id, #vendor.id, #currency.id, #gameCategory.id}" , cacheManager = "cacheManager")
+    private final VendorLineRepository vendorLineRepository;
+    private final VendorLineCredentialRepository vendorLineCredentialRepository;
+    private final AgentVendorLineRepository agentVendorLineRepository;
+
+    @Autowired
+    public VendorLineService(VendorLineRepository vendorLineRepository,
+                             VendorLineCredentialRepository vendorLineCredentialRepository,
+                             AgentVendorLineRepository agentVendorLineRepository) {
+
+        this.vendorLineRepository = vendorLineRepository;
+        this.vendorLineCredentialRepository = vendorLineCredentialRepository;
+        this.agentVendorLineRepository = agentVendorLineRepository;
+    }
+
+    @Cacheable(value = "VendorLines", key = "{#agent.id, #vendor.id, #currency.id, #gameCategory.id}", cacheManager = "cacheManager")
     public VendorLine findAgentVendorLine(Agent agent, Vendor vendor, Currency currency, GameCategory gameCategory)
             throws InvalidVendorLineException, DisabledVendorLineException {
 
-        List<AgentVendorLine>  agentVendorLines = agentVendorLineRepository.
+        List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
                 findByAgentIdAndVendorIdAndCurrencyIdAndGameCategoryId(
                         agent.getId(), vendor.getId(), currency.getId(), gameCategory.getId());
         //vendor line not found
@@ -41,25 +49,21 @@ public class VendorLineService {
         AgentVendorLine activeAgentVendorLine = null;
 
         for (AgentVendorLine agentVendorLine : agentVendorLines) {
-            if(agentVendorLine.getStatus().equals(Status.ACTIVE.code)){
+            if (agentVendorLine.getStatus().equals(Status.ACTIVE.code)) {
                 activeAgentVendorLine = agentVendorLine;
                 break;
             }
         }
 
         //not active vendor line found
-        Optional.ofNullable(activeAgentVendorLine).orElseThrow(DisabledVendorLineException::new);
+        if (activeAgentVendorLine == null) throw new DisabledVendorLineException();
 
-        if(activeAgentVendorLine.getVendorLine().getStatus().equals(Status.INACTIVE.code)){
-            throw new DisabledVendorLineException();
-        }
-
-        return activeAgentVendorLine.getVendorLine();
+        Integer vendorLineId = activeAgentVendorLine.getVendorLineId();
+        return this.getVendorLineById(vendorLineId);
     }
 
 
-
-    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, List<Integer> currencyIds ) throws InvalidVendorLineException, DisabledVendorLineException {
+    public List<AgentVendorLine> getVendorLineByAgent(Agent agent, Vendor vendor, List<Integer> currencyIds) throws InvalidVendorLineException, DisabledVendorLineException {
 
         List<AgentVendorLine> agentVendorLines = agentVendorLineRepository.
                 findByAgentIdAndVendorIdAndCurrencyIdIn(agent.getId(), vendor.getId(), currencyIds);
@@ -69,10 +73,10 @@ public class VendorLineService {
             throw new InvalidVendorLineException();
         }
 
-        List<AgentVendorLine> activeAgentVendorLines  = new ArrayList<>();
+        List<AgentVendorLine> activeAgentVendorLines = new ArrayList<>();
 
         for (AgentVendorLine agentVendorLine : agentVendorLines) {
-            if(agentVendorLine.getStatus().equals(Status.ACTIVE.code)){
+            if (agentVendorLine.getStatus().equals(Status.ACTIVE.code)) {
                 activeAgentVendorLines.add(agentVendorLine);
             }
         }
@@ -120,12 +124,11 @@ public class VendorLineService {
         return vendorLineIdList.get(0);
     }
 
-    @Cacheable(value = "VendorLines", key = "#vendorLineId", cacheManager = "cacheManager")
+    @Cacheable(value = "VendorLines", key = "#vendorLineId", cacheManager = "cacheManager", unless = "#result == null")
     public Integer verifyVendorLineStatus(Integer vendorLineId) throws DisabledVendorLineException {
         VendorLine vendorLine = vendorLineRepository.findByIdAndStatus(vendorLineId, Status.ACTIVE.code);
-        Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new);
 
-        return vendorLine.getId();
+        return Optional.ofNullable(vendorLine).orElseThrow(DisabledVendorLineException::new).getId();
     }
 
     public Map<String, String> toCredentialMap(VendorLine vendorLine) {
@@ -134,12 +137,10 @@ public class VendorLineService {
                 .collect(Collectors.toMap(VendorLineCredential::getName, VendorLineCredential::getValue));
     }
 
-    @Cacheable(value = "VendorLines", key = "{#vendorLineId, #vendorId}", cacheManager = "cacheManager")
-    public VendorLine getVendorLineById(Integer vendorLineId, Integer vendorId) throws InvalidVendorLineException, DisabledVendorLineException {
-
-        //1. get vendor line
-        VendorLine vendorLine = vendorLineRepository.findById(vendorLineId).orElse(null);
-        Optional.ofNullable(vendorLine).orElseThrow(InvalidVendorLineException::new);
+    @Cacheable(value = "VendorLines", key = "{#vendorLineId}", cacheManager = "cacheManager")
+    public VendorLine getVendorLineById(Integer vendorLineId) throws InvalidVendorLineException, DisabledVendorLineException {
+        VendorLine vendorLine = vendorLineRepository.findById(vendorLineId)
+                .orElseThrow(InvalidVendorLineException::new);
 
         if (vendorLine.getStatus().equals(Status.INACTIVE.code)) {
             throw new DisabledVendorLineException();

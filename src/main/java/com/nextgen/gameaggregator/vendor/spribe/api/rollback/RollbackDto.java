@@ -9,6 +9,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class RollbackDto implements RollbackData {
     @NotBlank
@@ -17,7 +19,7 @@ public class RollbackDto implements RollbackData {
 
     @NotNull
     @Positive
-    private Integer amount;
+    private BigDecimal amount;
 
     @NotBlank
     private String provider;

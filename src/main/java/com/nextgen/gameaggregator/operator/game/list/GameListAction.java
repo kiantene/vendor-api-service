@@ -10,13 +10,12 @@ import com.nextgen.gameaggregator.operator.game.url.GameUrlService;
 import com.nextgen.gameaggregator.operator.vo.OperatorResponseVo;
 import com.nextgen.gameaggregator.service.*;
 import com.nextgen.gameaggregator.util.ValidationUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,24 +24,34 @@ import java.util.List;
 @RequestMapping(path = "game/")
 @Slf4j
 public class GameListAction {
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private VendorLineService vendorLineService;
+    private final HttpService httpService;
+    private final ValidationService validationService;
+    private final VendorLineService vendorLineService;
+    private final VendorService vendorService;
+    private final LanguageService languageService;
+    private final GameListService gameListService;
+    private final GameUrlService gameUrlService;
+    private final AgentApiCredentialService agentApiCredentialService;
 
     @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private LanguageService languageService;
-    @Autowired
-    private GameListService gameListService;
-    @Autowired
-    private GameUrlService gameUrlService;
+    public GameListAction(HttpService httpService,
+                          ValidationService validationService,
+                          VendorLineService vendorLineService,
+                          VendorService vendorService,
+                          LanguageService languageService,
+                          GameListService gameListService,
+                          GameUrlService gameUrlService,
+                          AgentApiCredentialService agentApiCredentialService) {
 
-    @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
+        this.httpService = httpService;
+        this.validationService = validationService;
+        this.vendorLineService = vendorLineService;
+        this.vendorService = vendorService;
+        this.languageService = languageService;
+        this.gameListService = gameListService;
+        this.gameUrlService = gameUrlService;
+        this.agentApiCredentialService = agentApiCredentialService;
+    }
 
     @PostMapping(path = "list")
     public OperatorResponseVo<GameListData> list(HttpServletRequest request) {
@@ -73,13 +82,13 @@ public class GameListAction {
 
             // 5. Get Agent Supported Currency
             List<Integer> currencyIds = new ArrayList<>();
-            if(dto.getCurrency()==null){
+            if (dto.getCurrency() == null) {
                 List<AgentCurrency> agentCurrencies = agentApiCredentialService.getAgentSupportedCurrency(apiCredential.getAgent().getId());
                 for (AgentCurrency agentCurrency : agentCurrencies) {
                     currencyIds.add(agentCurrency.getCurrency().getId());
                 }
-            }else{
-                Currency currency =  gameUrlService.checkCurrency(dto.getCurrency());
+            } else {
+                Currency currency = gameUrlService.checkCurrency(dto.getCurrency());
                 currencyIds.add(currency.getId());
             }
 
@@ -91,12 +100,12 @@ public class GameListAction {
                     vendorLineService.getVendorLineByAgent(apiCredential.getAgent(), vendor, currencyIds);
             currencyIds.clear();
             for (AgentVendorLine agentVendorLine : agentVendorLines) {
-                currencyIds.add(agentVendorLine.getCurrency().getId());
+                currencyIds.add(agentVendorLine.getCurrencyId());
             }
 
 
             GameListData gameListData = gameListService.getGameList
-                    (dto, agentVendorLines, vendor, currencyIds, language, apiCredential.getAgent() );
+                    (dto, agentVendorLines, vendor, currencyIds, language, apiCredential.getAgent());
             responseVo.setData(gameListData);
 
         } catch (IllegalArgumentException illegalArgumentException) {

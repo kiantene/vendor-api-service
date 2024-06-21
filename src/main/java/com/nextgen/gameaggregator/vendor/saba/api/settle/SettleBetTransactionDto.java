@@ -15,7 +15,7 @@ public class SettleBetTransactionDto implements SportBetResultData {
     private Long txId;
     private String updateTime;
     private String winlostDate;
-    //    private String status;
+    private String status;
     private BigDecimal payout;
     private BigDecimal creditAmount;
     private BigDecimal debitAmount;
@@ -79,7 +79,14 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public BetStatus getBetStatus() {
-        return BetStatus.SETTLED;
+
+        BetStatus betStatus = BetStatus.SETTLED;
+        if (status != null && status.equals("refund")) {
+            betStatus = BetStatus.REFUNDED;
+        }
+
+        return betStatus;
+
     }
 
     @Override
