@@ -2,12 +2,14 @@ package com.nextgen.gameaggregator.vendor.mg.api.rollback;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.operator.wallet.rollback.RollbackData;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RollbackDto implements RollbackData {
     @NotBlank
     @Size(max = 50)
