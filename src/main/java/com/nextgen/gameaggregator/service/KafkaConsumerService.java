@@ -5,9 +5,7 @@ import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.GameNotSupportedException;
-import com.nextgen.gameaggregator.exception.InvalidAgentApiCredentialException;
-import com.nextgen.gameaggregator.exception.VendorCurrencyNotSupportException;
+import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.betResult.WalletBetResultAction;
@@ -127,7 +125,7 @@ public class KafkaConsumerService {
     }
 
     @KafkaListener(topics = KafkaConstant.TOPIC_END_ROUND_PROCESS_V2, groupId = KafkaConstant.GROUP_ID, containerFactory = "customKafkaListenerContainerFactory")
-    public void consumeEndRoundProcessV2(String message) {
+    public void consumeEndRoundProcessV2(String message) throws RecordNotFoundException, InvalidPlayerException {
 
         //prepare endRoundProcess Log
         Exception exception = null;
@@ -141,6 +139,9 @@ public class KafkaConsumerService {
         endRoundSettledBet.setOperatorStatus(ResponseCodes.Status.SC_OK.code);
         SettledBet settledBet = new SettledBet(endRoundSettledBet);
         settledBet.setResultType(endRoundSettledBet.getGaResultType());
+
+        AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(endRoundSettledBet.getAgentPlayerId(), null);
+        VendorPlayer vendorPlayer = vendorPlayerService.getByVendorPlayerId(endRoundSettledBet.getVendorPlayerId(), null);
 
         processEndRoundLog.setRawBody(endRoundSettledBet.getRawData());
         processEndRoundLog.setRoundId(settledBet.getRoundId());
@@ -162,6 +163,9 @@ public class KafkaConsumerService {
             if (!vendorService.getBetPreprocess().getIsPreProcessBet()) {
                 // process bet as normal bet and send to kafka topic_bet_history topic
                 kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
+                // process bet as normal bet and send to kafka topic_warehouse_bet_history topic
+                kafkaService.produceWarehouseBetHistory
+                        (betHistory, agentPlayer.getUsername(), vendorPlayer.getUsername(), vendorCurrency.getFromVendorRate());
             } else {
                 // process bet as preprocessing bet and send to kafka topic_bet_history_preprocessing topic
                 kafkaService.producePreprocessingBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
