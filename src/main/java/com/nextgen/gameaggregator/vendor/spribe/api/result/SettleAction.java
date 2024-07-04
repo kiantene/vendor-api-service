@@ -2,15 +2,17 @@ package com.nextgen.gameaggregator.vendor.spribe.api.result;
 
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.SettledBet;
 import com.nextgen.gameaggregator.exception.*;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
-import com.nextgen.gameaggregator.service.*;
+import com.nextgen.gameaggregator.service.GameSessionService;
+import com.nextgen.gameaggregator.service.HttpService;
+import com.nextgen.gameaggregator.service.ValidationService;
+import com.nextgen.gameaggregator.service.WalletService;
 import com.nextgen.gameaggregator.util.ValidationUtils;
 import com.nextgen.gameaggregator.vendor.spribe.constant.Endpoints;
 import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
-import com.nextgen.gameaggregator.vendor.spribe.constant.FreeBetAction;
+import com.nextgen.gameaggregator.vendor.spribe.service.VendorService;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
@@ -21,24 +23,30 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 public class SettleAction {
 
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorService vendorService;
+    private final ValidationService validationService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorService vendorService;
-    @Autowired
-    private ValidationService validationService;
-    @Autowired
-    private SettledBetService settledBetService;
+    public SettleAction(HttpService httpService,
+                        GameSessionService gameSessionService,
+                        WalletService walletService,
+                        VendorService vendorService,
+                        ValidationService validationService) {
+
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorService = vendorService;
+        this.validationService = validationService;
+    }
 
     @PostMapping(path = Endpoints.DEPOSIT)
     public ResponseVo settle(HttpServletRequest request) {
@@ -65,25 +73,22 @@ public class SettleAction {
             GameSession gameSession = gameSessionService.verifyToken(dto.getSession_token());
             gameSession = vendorService.verifyAndRegenerateNewVendorGameCodeForGameSession(dto.getGame(), gameSession);
 
-            // 4. Verify remaining parameters (Verify against database values)
-            this.doVerification(httpRequestLog, dto, gameSession);
-
             userId = gameSession.getVendorPlayerUsername();
             currency = gameSession.getVendorCurrencyCode();
             provider = dto.getProvider();
             providerTxId = dto.getProvider_tx_id();
+            
+            // 4. Verify remaining parameters (Verify against database values)
+            this.doVerification(httpRequestLog, dto, gameSession);
 
-            // 6. Retrieve the latest wallet balance from Operator
-            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
-
-            // 7. Send bet request to Operator
+            // 5. Send bet request to Operator
             ResultType resultType = getResultType(dto);
             BigDecimal balance = walletService.processBetResult(traceId, gameSession, dto, resultType, vendorService, httpRequestLog);
 
-            // 8. Set response data
+            // 6. Set response data
             data.setOperator_tx_id(traceId);
             data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
-            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(balance.subtract(dto.getWinAmount())));
             data.setUser_id(userId);
             data.setCurrency(currency);
             data.setProvider(provider);

@@ -57,7 +57,7 @@ public class SportUnsettleAction {
         Integer agentId = betInformation.getAgentId();
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         String gameCode = vendorGameRepository.findById(betInformation.getVendorGameId()).map(VendorGame::getCode).orElse(null);
 
@@ -77,31 +77,31 @@ public class SportUnsettleAction {
             httpRequestLog.setOperatorEndPoints(apiUrl + EndPoints.SPORT_UNSETTLE);
         }
 
-        ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_UNSETTLE)
-                .header(EndPoints.HEADER_SIGNATURE, signature)
-                .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(dto))
-                .retrieve()
-                .onStatus(HttpStatusCode::isError, response -> Mono.empty())
-                .toEntity(String.class)
-                .retry(3)
-                .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
-                .block();
-
-        long endTime = System.currentTimeMillis();
-
-        if (httpRequestLog != null) {
-            if (apiResponse != null) {
-                httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-            }
-            httpRequestLog.setOperatorEnd(endTime);
-        }
-
-        requestService.createRequestLogVo(EndPoints.SPORT_UNSETTLE, apiUrl, dto, apiResponse, headerMap, startTime, endTime, this.getClass().getPackage().getName(), profilesActive);
-
         try {
+            ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.SPORT_UNSETTLE)
+                    .header(EndPoints.HEADER_SIGNATURE, signature)
+                    .header(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(dto))
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, response -> Mono.empty())
+                    .toEntity(String.class)
+                    .retry(3)
+                    .timeout(Duration.ofMillis(EndPoints.SPORTBOOK_TIMEOUT))
+                    .block();
+
+            long endTime = System.currentTimeMillis();
+
+            if (httpRequestLog != null) {
+                if (apiResponse != null) {
+                    httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
+                }
+                httpRequestLog.setOperatorEnd(endTime);
+            }
+
+            requestService.createRequestLogVo(EndPoints.SPORT_UNSETTLE, apiUrl, dto, apiResponse, headerMap, startTime, endTime, this.getClass().getPackage().getName(), profilesActive);
+
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
 
@@ -142,6 +142,9 @@ public class SportUnsettleAction {
             defaultResponses = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (Exception exception) {
+            if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
+                httpRequestLog.setErrorMessage(exception.getMessage());
+            }
             defaultResponses = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         } finally {
@@ -149,13 +152,8 @@ public class SportUnsettleAction {
                 //do nothing if success
 
             } else {
-                WalletBalanceVo.ResponseData responseData = new WalletBalanceVo.ResponseData();
-                //create betResultRetryLog info for retry send to operator
-                responseVo.setData(responseData);
-                responseVo.getData().setBalance(BigDecimal.ZERO);
-                responseVo.setStatus(defaultResponses);
-                responseVo.setTraceId(traceId);
-                betResultRetryLogService.create(httpRequestLog, vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation, EndPoints.SPORT_UNSETTLE);
+                responseVo = betResultRetryLogService.processForceSuccess(traceId, agentPlayer.getUsername(), vendorCurrency.getCurrency().getCode(), betInformation);
+                betResultRetryLogService.create(httpRequestLog.getOperatorData(), vendorCurrency.getVendorId(), agentPlayer.getAgentId(), betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.SPORT_UNSETTLE);
             }
         }
 

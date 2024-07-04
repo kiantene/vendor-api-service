@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -33,6 +34,11 @@ public class VendorService {
                 .collect(Collectors.toMap(LangNameDto::getLang, LangNameDto::getName));
         return languageMap.getOrDefault(vendorLanguageCode.getLanguageCode(), list.get(0).getLang());
 
+    }
+
+    public static String generateMultipleBetRoundId(List<String> refIdList) {
+        Collections.sort(refIdList);
+        return DigestUtils.md5Hex(String.join("&", refIdList));
     }
 
     public String convertDateTimeFormat(Long UnixTimestamp) {
@@ -60,5 +66,9 @@ public class VendorService {
         idempotentId = DigestUtils.md5Hex(idempotentId).toUpperCase();
 
         return idempotentId;
+    }
+
+    public static String generateExtTxnId(String operationId, String refId) {
+        return operationId + "-" + refId;
     }
 }

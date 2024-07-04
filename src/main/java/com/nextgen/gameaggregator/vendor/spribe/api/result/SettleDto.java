@@ -64,6 +64,7 @@ public class SettleDto implements BetResultData {
 
     @Override
     public String getVendorBetId() {
+        //vendorService updateSettleBetDataBeforeInsertToKafka function will always overwrite withdraw_provider_tx_id
         return provider_tx_id;
     }
 

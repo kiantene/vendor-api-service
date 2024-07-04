@@ -3,9 +3,11 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.rollback;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.DataVo;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class RollBackDataVo extends DataVo {
-    private Double money;
+    private BigDecimal money;
 
     private String timestamp;
 

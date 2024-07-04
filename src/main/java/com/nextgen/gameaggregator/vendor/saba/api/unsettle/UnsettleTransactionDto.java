@@ -18,7 +18,12 @@ public class UnsettleTransactionDto implements SportUnsettleData {
 
     @Override
     public String getExternalTransactionId() {
-        return operationId;
+        return this.operationId + "-" + this.refId;
+    }
+
+    @Override
+    public String getVendorBetId() {
+        return this.txId.toString();
     }
 
     @Override

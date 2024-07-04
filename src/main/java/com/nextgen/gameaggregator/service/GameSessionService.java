@@ -104,7 +104,10 @@ public class GameSessionService {
 
     @CachePut(value = "GameSessions", key = "#username", cacheManager = "cacheManager")
     public GameSession getGameSessionByVendorPlayerUsername(String username) throws AuthenticationException {
+
         GameSession session = rawGameSessionRepository.findTop1ByVendorPlayerUsernameOrderByCreateTimeDesc(username);
+        // use rawGameSessionRepository.findByVendorPlayerUsername()
+
         Optional.ofNullable(session).orElseThrow(AuthenticationException::new);
 
         return session;

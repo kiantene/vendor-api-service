@@ -1,6 +1,5 @@
 package com.nextgen.gameaggregator.vendor.ambslot.api.credit;
 
-import com.couchbase.client.core.deps.com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
@@ -43,11 +42,11 @@ public class CreditDto implements BetResultData {
 
     @NotNull
     @DecimalMin(value = "0")
-    private Double amount;
+    private BigDecimal amount;
 
     @NotNull
     @DecimalMin(value = "0")
-    private Double turnover;
+    private BigDecimal turnover;
 
     @NotBlank
     @Pattern(regexp = "^[a-zA-Z]*$")
@@ -58,7 +57,7 @@ public class CreditDto implements BetResultData {
     private String timestamp;
 
     @NotBlank
-    @Pattern(regexp = "^slot$")
+    @Pattern(regexp = "^(slot|arcade|fishing)$")
     private String type;
 
     @NotNull
@@ -71,7 +70,6 @@ public class CreditDto implements BetResultData {
     @DecimalMin(value = "0")
     private Double roundAmount;
 
-    @NotNull
     private Boolean isGamble;
 
     @NotNull
@@ -91,25 +89,13 @@ public class CreditDto implements BetResultData {
     }
 
     @Override
-    @JsonIgnore
-    public String getRoundId() {
-        return this.getTransactionId();
-    }
-
-    @Override
-    @JsonIgnore
-    public String getGameId() {
-        return this.gameId;
-    }
-
-    @Override
     public BigDecimal getBetAmount() {
         return null;
     }
 
     @Override
     public BigDecimal getWinAmount() {
-        return new BigDecimal(this.getAmount());
+        return this.getAmount();
     }
 
     @Override

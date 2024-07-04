@@ -1,11 +1,15 @@
 package com.nextgen.gameaggregator.entity.ga;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import jakarta.persistence.Id;
 import lombok.Data;
-import org.springframework.data.couchbase.core.mapping.Document;
-import org.springframework.data.couchbase.repository.Collection;
-import org.springframework.data.couchbase.repository.Scope;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
+
+import java.util.Optional;
+import java.util.UUID;
 
 @Data
 public class HttpRequestLog {
@@ -21,7 +25,6 @@ public class HttpRequestLog {
     private String vendorGameCode;
     private String gameToken;
     private String method;
-    private String header;
     private String host;
     private String apiKey;
     private String signature;
@@ -48,4 +51,42 @@ public class HttpRequestLog {
     private Long betEnd;
     private Long betTimeTaken;
     private Long operatorTimestamp;
+
+    @JsonIgnore
+    private WalletRequest walletRequest;
+
+    public HttpRequestLog() {
+        this.id = UUID.randomUUID().toString();
+        this.startTime = System.currentTimeMillis();
+        walletRequest = new WalletRequest(this.id);
+    }
+
+    public HttpRequestLog(HttpRequestLog httpRequestLog) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
+        modelMapper.map(httpRequestLog, this);
+    }
+
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
+        this.timeTaken = this.endTime - this.startTime;
+    }
+
+    public void setOperatorEnd(Long operatorEnd) {
+        this.operatorEnd = operatorEnd;
+
+        if (operatorEnd != null && this.operatorStart != null) {
+            this.operatorTimeTaken = operatorEnd - this.operatorStart;
+        }
+    }
+
+    public void setBetEnd(Long betEnd) {
+        this.betEnd = betEnd;
+
+        if (betEnd != null && this.betStart != null) {
+            long operatorTime = Optional.ofNullable(this.operatorTimeTaken).orElse(0L);
+            this.betTimeTaken = betEnd - this.betStart - operatorTime;
+        }
+    }
 }

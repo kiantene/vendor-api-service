@@ -3,9 +3,11 @@ package com.nextgen.gameaggregator.vendor.gpkasia.api.bet;
 import com.nextgen.gameaggregator.vendor.gpkasia.vo.DataVo;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class BetDataVo extends DataVo {
-    private Double money;
+    private BigDecimal money;
 
     private String timestamp;
 

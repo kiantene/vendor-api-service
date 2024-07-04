@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.rollback;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.entity.ga.SettledBet;
@@ -25,22 +26,34 @@ import java.math.BigDecimal;
 @RequestMapping(path = Endpoints.PATH)
 public class RollbackAction {
 
+    private final HttpService httpService;
+    private final SettledBetService settledBetService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+    private final VendorService vendorService;
+
     @Autowired
-    SettledBetService settledBetService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
+    public RollbackAction(HttpService httpService,
+                          SettledBetService settledBetService,
+                          GameSessionService gameSessionService,
+                          WalletService walletService,
+                          VendorLineService vendorLineService,
+                          AgentPlayerService agentPlayerService,
+                          VendorGameService vendorGameService,
+                          VendorService vendorService) {
+
+        this.httpService = httpService;
+        this.settledBetService = settledBetService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.vendorService = vendorService;
+    }
 
     @PostMapping(path = Endpoints.ROLLBACK)
     public ResponseVo rollback(HttpServletRequest request) {
@@ -53,7 +66,6 @@ public class RollbackAction {
         String currency = null;
         String provider = null;
         String providerTxId = null;
-        BigDecimal oldBalance = null;
 
         try {
             // 1. Retrieve request body in original string format and convert into dto
@@ -83,16 +95,13 @@ public class RollbackAction {
             // 6. Zero win amount & no free spin considered a valid rollback scenario (Only place bet can rollback)
             this.checkValidRollback(winAmount, freeSpin);
 
-            // 7. Retrieve the latest wallet balance from Operator
-            oldBalance = walletService.getBalance(traceId, gameSession, httpRequestLog);
+            // 7. Send rollback request to Operator
+            WalletRequest walletRequest = walletService.processRollback(dto, gameSession, vendorService, httpRequestLog);
 
-            // 8. Send rollback request to Operator
-            BigDecimal balance = walletService.processRollback(traceId, dto, gameSession, vendorService, httpRequestLog);
-
-            // 9. Set response data
+            // 8. Set response data
             data.setOperator_tx_id(traceId);
-            data.setNew_balance(AmountConverter.convertBalanceToUnit(balance));
-            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setNew_balance(AmountConverter.convertBalanceToUnit(walletRequest.getBalanceAfter()));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(walletRequest.getBalanceBefore()));
             data.setUser_id(userId);
             data.setCurrency(currency);
             data.setProvider(provider);
@@ -100,9 +109,9 @@ public class RollbackAction {
             vo.setErrorCode(ErrorCodes.SUCCESS);
             vo.setData(data);
 
-        } catch (RecordNotFoundException | BetNotFoundException transactionNotFoundeException) {
+        } catch (RecordNotFoundException | BetNotFoundException transactionNotFoundException) {
             vo.setErrorCode(ErrorCodes.TRANSACTION_NOT_FOUND);
-            httpService.logError(httpRequestLog, transactionNotFoundeException);
+            httpService.logError(httpRequestLog, transactionNotFoundException);
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
             if (invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_DUPLICATE_REQUEST.code) ||
@@ -132,8 +141,8 @@ public class RollbackAction {
         } catch (BetResultIdempotentViolationException |
                  BetRefundIdempotentViolationException idempotentViolationException) {
             data.setOperator_tx_id(traceId);
-            data.setNew_balance(AmountConverter.convertBalanceToUnit(oldBalance));
-            data.setOld_balance(AmountConverter.convertBalanceToUnit(oldBalance));
+            data.setNew_balance(AmountConverter.convertBalanceToUnit(BigDecimal.ZERO));
+            data.setOld_balance(AmountConverter.convertBalanceToUnit(BigDecimal.ZERO));
             data.setUser_id(userId);
             data.setCurrency(currency);
             data.setProvider(provider);

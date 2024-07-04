@@ -24,7 +24,7 @@ public class SettleBetTransactionDto implements SportBetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return operationId;
+        return operationId + "-" + this.getRefId();
     }
 
     @Override

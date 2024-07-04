@@ -19,10 +19,14 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class RefundService {
+    private final HttpService httpService;
+    private final SportWalletService sportWalletService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private SportWalletService sportWalletService;
+    public RefundService(HttpService httpService, SportWalletService sportWalletService) {
+        this.httpService = httpService;
+        this.sportWalletService = sportWalletService;
+    }
 
     public CommonVo refund(Action action, HttpRequestLog httpRequestLog) {
         String traceId = httpRequestLog.getId();

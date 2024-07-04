@@ -18,8 +18,13 @@ import java.util.Map;
 @Service
 @Slf4j
 public class VendorService extends BaseVendorService {
+
+    private final VendorGameCodeService vendorGameCodeService;
+
     @Autowired
-    private VendorGameCodeService vendorGameCodeService;
+    public VendorService(VendorGameCodeService vendorGameCodeService){
+        this.vendorGameCodeService = vendorGameCodeService;
+    }
 
     public static long getCurrentTime(){
         return Instant.now().getEpochSecond();
@@ -51,9 +56,8 @@ public class VendorService extends BaseVendorService {
         }
     }
 
-    public List<VendorGameCode> getVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
-        List<VendorGameCode> vendorGameCodeList = vendorGameCodeService.getByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(gameId, gameSession.getLanguageId(), gameSession.getPlatformId(), gameSession.getVendorId());
-        return vendorGameCodeList;
+    public VendorGameCode getVendorGameCode(GameSession gameSession, String gameId) throws GameNotSupportedException {
+        return vendorGameCodeService.getByBetGameCode(gameId, gameSession.getLanguageId(), gameSession.getPlatformId(), gameSession.getVendorId());
     }
 
     public static String trimGameCode(String gameCode){

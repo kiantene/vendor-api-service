@@ -42,13 +42,13 @@ public class SportWalletSettleAction {
     @Autowired
     private CurrencyService currencyService;
 
-    public WalletBalanceVo call(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException, InvalidCurrencyException {
+    public WalletBalanceVo call(String traceId, SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet) throws InvalidAgentApiCredentialException, RecordNotFoundException, InvalidCurrencyException {
         MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
 
         AgentPlayer agentPlayer = agentPlayerService.get(unsettledBet.getAgentPlayerId());
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(unsettledBet.getAgentId());
-        String apiUrl = agentApiCredential.getCallbackUrl();
+        String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         WalletBetResultDto dto = this.newSportWalletSettleDto(traceId, unsettledBet, settledBet, agentApiCredential.getAgent(), agentPlayer);
 
@@ -100,7 +100,7 @@ public class SportWalletSettleAction {
         return null;
     }
 
-    private SportWalletSettleDto newSportWalletSettleDto(String traceId, VendorGame.SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) throws InvalidCurrencyException {
+    private SportWalletSettleDto newSportWalletSettleDto(String traceId, SportUnsettledBetMariaDB unsettledBet, SportRawSettledBet settledBet, Agent agent, AgentPlayer agentPlayer) throws InvalidCurrencyException {
 
         // add conversion rate when sending all the figures to operator
         BigDecimal betAmount = (ObjectUtils.isEmpty(unsettledBet.getBetAmount())) ? null : this.stripZeroToString(unsettledBet.getBetAmount());

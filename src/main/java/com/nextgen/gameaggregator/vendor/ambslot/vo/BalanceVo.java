@@ -2,9 +2,11 @@ package com.nextgen.gameaggregator.vendor.ambslot.vo;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class BalanceVo {
-    private Double before;
+    private BigDecimal before;
 
-    private Double after;
+    private BigDecimal after;
 }

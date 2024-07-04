@@ -67,6 +67,8 @@ public class GameUrlService implements GameUrl {
         String apiUrl = credentials.get(Credentials.API_URL);
         Optional.ofNullable(apiUrl).orElseThrow(InvalidVendorLineException::new);
 
+        formData.add("HomeUrl", gameSession.getLobbyUrl());
+
         URI uri = UriComponentsBuilder.fromUriString(apiUrl)
                 .path(EndPoints.GAME_URL)
                 .queryParams(formData)

@@ -6,6 +6,7 @@ import com.nextgen.gameaggregator.data.kafka.constant.KafkaConstant;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.entity.ga.custom.WarehouseFutureEntity;
 import com.nextgen.gameaggregator.entity.wallet.TransferHistory;
+import com.nextgen.gameaggregator.logging.ApiResponseLog;
 import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import com.nextgen.gameaggregator.sport.entity.SportRawSettledBet;
 import lombok.extern.slf4j.Slf4j;
@@ -19,26 +20,36 @@ import java.math.BigDecimal;
 @Slf4j
 public class KafkaService {
 
+    private final KafkaTemplate<String, String> stringKafkaTemplate;
+    private final KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
+    private final CurrencyConversionService currencyConversionService;
+    private final WarehouseBetHistoryService warehouseBetHistoryService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorPlayerService vendorPlayerService;
+
     @Autowired
-    private KafkaTemplate<String, String> stringKafkaTemplate;
-    @Autowired
-    private KafkaTemplate<String, Object> jsonSchemaKafkaTemplate;
-    @Autowired
-    private SettledBetService settledBetService;
-    @Autowired
-    private CurrencyConversionService currencyConversionService;
-    @Autowired
-    private WarehouseBetHistoryService warehouseBetHistoryService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorPlayerService vendorPlayerService;
+    public KafkaService(KafkaTemplate<String, String> stringKafkaTemplate,
+                        KafkaTemplate<String, Object> jsonSchemaKafkaTemplate,
+                        CurrencyConversionService currencyConversionService,
+                        WarehouseBetHistoryService warehouseBetHistoryService,
+                        AgentPlayerService agentPlayerService,
+                        VendorPlayerService vendorPlayerService) {
+        this.stringKafkaTemplate = stringKafkaTemplate;
+        this.jsonSchemaKafkaTemplate = jsonSchemaKafkaTemplate;
+        this.currencyConversionService = currencyConversionService;
+        this.warehouseBetHistoryService = warehouseBetHistoryService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorPlayerService = vendorPlayerService;
+    }
 
     public void produceBetHistory(BetHistory betHistory, SettledBet settledBet, BigDecimal conversionRate) {
         try {
             //will do currency conversion before send to kafka
             currencyConversionService.doCurrencyConversionRateFromVendorForBetHistoryBeforeSendToKafka(betHistory, conversionRate);
 
+            if (betHistory.getGameSessionToken() == null) {
+                betHistory.setGameSessionToken("");
+            }
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_V2, betHistory);
             //ga-1726 temporary remove delete actions
             //settledBetService.delete(settledBet);
@@ -86,7 +97,7 @@ public class KafkaService {
             if (agentPlayerUsername == null || agentPlayerUsername.isEmpty()) {
                 AgentPlayer agentPlayer = agentPlayerService.getByAgentPlayerId(betHistory.getAgentPlayerId(), null);
                 agentPlayerUsername = agentPlayer.getUsername();
-                        log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
+                log.error("WarehouseBetHistory-agentPlayerUsername is empty detail:" + new Gson().toJson(betHistory));
             }
 
             if (vendorPlayerUsername == null || vendorPlayerUsername.isEmpty()) {
@@ -101,11 +112,13 @@ public class KafkaService {
 
             // Using Jackson or any other JSON library to convert UserData object to JSON string
             ObjectMapper mapper = new ObjectMapper();
-            String jsonString = "{}";
 
             stringKafkaTemplate.send(KafkaConstant.TOPIC_WAREHOUSE_BET_HISTORY, mapper.writeValueAsString(warehouseBetHistory));
-            //ga-1726 temporary remove delete actions
-            //settledBetService.delete(settledBet);
+
+            if(warehouseBetHistoryService.checkIsDelaySettlement(warehouseBetHistory)){
+                stringKafkaTemplate.send(KafkaConstant.TOPIC_BET_HISTORY_DELAY_SETTLEMENT, mapper.writeValueAsString(warehouseBetHistory));
+            }
+
         } catch (Exception e) {
             log.error(e.getMessage() + " -> vendorBetId = " + betHistory.getVendorBetId() + "& roundId = " + betHistory.getRoundId());
             e.printStackTrace();
@@ -136,7 +149,7 @@ public class KafkaService {
         }
     }
 
-    public void produceUnsettledBet(VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
+    public void produceUnsettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB) {
         try {
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, sportUnsettledBetMariaDB);
         } catch (Exception e) {
@@ -144,10 +157,20 @@ public class KafkaService {
         }
     }
 
-    public void produceUnsettledBet(VendorGame.SportUnsettledBetMariaDB sportUnsettledBetMariaDB, BigDecimal conversionRate) {
+    public void produceUnsettledBet(SportUnsettledBetMariaDB sportUnsettledBetMariaDB, BigDecimal conversionRate) {
         try {
             sportUnsettledBetMariaDB.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(sportUnsettledBetMariaDB.getBetAmount(), conversionRate));
             jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_UNSETTLED_BET, sportUnsettledBetMariaDB);
+
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    public void produceMasterUnsettledBet(SportMasterUnsettledBetMariaDB sportMasterUnsettledBetMariaDB, BigDecimal conversionRate) {
+        try {
+            sportMasterUnsettledBetMariaDB.setBetAmount(currencyConversionService.doCurrencyConversionRateFromVendorForAmount(sportMasterUnsettledBetMariaDB.getBetAmount(), conversionRate));
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_MASTER_UNSETTLED_BET, sportMasterUnsettledBetMariaDB);
 
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -175,12 +198,11 @@ public class KafkaService {
         }
     }
 
-    public void produceHttpResponseLog(HttpResponseLog httpResponseLog) {
+    public void produceApiResponseLog(ApiResponseLog apiResponseLog) {
         try {
-            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_HTTP_RESPONSE_LOG, httpResponseLog);
+            jsonSchemaKafkaTemplate.send(KafkaConstant.TOPIC_API_RESPONSE_LOG, apiResponseLog.getId(), apiResponseLog);
         } catch (Exception e) {
-            log.error(e.getMessage() + " produceHttpResponseLog[" + httpResponseLog.getId() + "]");
-            e.printStackTrace();
+            log.error(e.getMessage() + " produceHttpResponseLog[" + apiResponseLog.getId() + "]");
         }
     }
 }

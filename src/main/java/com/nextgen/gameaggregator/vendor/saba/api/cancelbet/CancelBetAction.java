@@ -1,98 +1,114 @@
 package com.nextgen.gameaggregator.vendor.saba.api.cancelbet;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.nextgen.gameaggregator.core.WalletRequest;
+import com.nextgen.gameaggregator.core.WalletRequestService;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.eventing.events.BetEvent;
-import com.nextgen.gameaggregator.exception.BetNotFoundException;
-import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
+import com.nextgen.gameaggregator.exception.BetNotAllowedException;
+import com.nextgen.gameaggregator.exception.DuplicateRequestException;
+import com.nextgen.gameaggregator.exception.InvalidPlayerException;
+import com.nextgen.gameaggregator.service.BetIdempotentLogService;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.vendor.saba.api.confirmbet.RefundWalletRequest;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
+import com.nextgen.gameaggregator.vendor.saba.service.VendorService;
 import com.nextgen.gameaggregator.vendor.saba.vo.GeneralVo;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
-import java.util.UUID;
+import static com.nextgen.gameaggregator.vendor.saba.constant.EndPoints.VENDOR_CODE;
 
+@Slf4j
 @RestController
 @RequestMapping(path = EndPoints.PATH)
 public class CancelBetAction {
 
+    private final HttpService httpService;
+    private final SportWalletService sportWalletService;
+    private final WalletRequestService walletRequestService;
+    private final BetIdempotentLogService betIdempotentLogService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private SportWalletService sportWalletService;
+    public CancelBetAction(HttpService httpService,
+                           SportWalletService sportWalletService,
+                           WalletRequestService walletRequestService,
+                           BetIdempotentLogService betIdempotentLogService) {
+
+        this.httpService = httpService;
+        this.sportWalletService = sportWalletService;
+        this.walletRequestService = walletRequestService;
+        this.betIdempotentLogService = betIdempotentLogService;
+    }
 
     @PostMapping(path = EndPoints.CANCEL_BET)
     public GeneralVo action(HttpServletRequest request) {
         HttpRequestLog httpRequestLog = httpService.start(request);
-        String traceId = httpRequestLog.getId();
+
+        RefundWalletRequest walletRequest = new RefundWalletRequest(httpRequestLog.getId());
+        walletRequest.setRequestBody(httpRequestLog.getRequestBody());
 
         // Construct Vo
         GeneralVo vo = new GeneralVo();
 
         try {
-            // Convert original request body into dto
-            RequestDto<CancelBetDto> dtos = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
+            RequestDto<CancelBetDto> dto = HttpService.convertJsonToDto(httpRequestLog.getRequestBody(), new TypeReference<>() {
             });
 
-            vo.setResponseCode(ResponseCode.SUCCESS);
+            CancelBetDto cancelBetDto = dto.getMessage();
+            final String operationId = cancelBetDto.getOperationId();
 
-            for (CancelBetTransactionDto txn : dtos.getMessage().getTxns()) {
-                dtos.getMessage().setRefId(txn.getRefId());
-                GeneralVo response = this.singleRefund(dtos.getMessage(), httpRequestLog);
+            // check operationId for idempotent and throw error to vendor
+            String idempotencyKey = VENDOR_CODE + "_" + operationId;
+            betIdempotentLogService.idempotentCheck(idempotencyKey);
 
-                if (vo.getStatus().equals(ResponseCode.SUCCESS.status) && response.getStatus().equals(ResponseCode.DUPLICATE_TRANSACTION.status)) {
-                    vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
-                } else if (vo.getStatus().equals(ResponseCode.SUCCESS.status) && response.getStatus().equals(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY.status)) {
-                    vo.setResponseCode(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY);
-                } else if (vo.getStatus().equals(ResponseCode.SUCCESS.status) && response.getStatus().equals(ResponseCode.SYSTEM_ERROR_RETRY.status)) {
-                    vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
-                }
+            final String vendorPlayerUsername = cancelBetDto.getUserId();
+            walletRequestService.updateByVendorUsername(walletRequest, vendorPlayerUsername);
+            walletRequest.setTimestamp(cancelBetDto.getTimestamp());
+
+            for (CancelBetTransactionDto txn : cancelBetDto.getTxns()) {
+                final String refId = txn.getRefId();
+                final String externalTransactionId = VendorService.generateExtTxnId(operationId, refId);
+                final WalletRequest newWalletRequest = new WalletRequest(walletRequest);
+                newWalletRequest.setExternalTransactionId(externalTransactionId);
+                newWalletRequest.setVendorBetId(refId);
+
+                SportWalletService.THREAD_POOL.submit(() -> {
+                    try {
+                        sportWalletService.refund(newWalletRequest);
+
+                    } catch (Exception exception) {
+                        // throw to dlq
+                        log.error(exception.getMessage());
+                    } finally {
+                        walletRequestService.end(newWalletRequest, httpRequestLog, vo);
+                    }
+                });
             }
 
-        } catch (
-                Exception e) {
+        } catch (JsonProcessingException |
+                 InvalidPlayerException |
+                 BetNotAllowedException exception) {
             vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
-            httpService.logError(httpRequestLog, e);
+            httpService.logError(httpRequestLog, exception);
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
 
-        } finally {
-            httpService.end(httpRequestLog, vo);
-
-        }
-
-        return vo;
-    }
-
-    private GeneralVo singleRefund(CancelBetDto txn, HttpRequestLog httpRequestLog) {
-        // Construct Vo
-        GeneralVo vo = new GeneralVo();
-        BetEvent betEvent = null;
-
-        try {
-            String traceId = UUID.randomUUID().toString();
-            betEvent = sportWalletService.refund(traceId, txn, httpRequestLog);
-
-            vo.setResponseCode(ResponseCode.SUCCESS);
-            vo.setBalance(betEvent == null ? BigDecimal.ZERO : betEvent.getLastBalance());
-
-        } catch (BetNotFoundException e) {
-            vo.setResponseCode(ResponseCode.NO_SUCH_TICKET_CANCEL_BET_RETRY);
-            httpService.logError(httpRequestLog, e);
-
-        } catch (BetResultIdempotentViolationException e) {
+        } catch (DuplicateRequestException duplicateRequestException) {
+            httpService.logError(httpRequestLog, duplicateRequestException);
             vo.setResponseCode(ResponseCode.DUPLICATE_TRANSACTION);
-            httpService.logError(httpRequestLog, e);
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
 
         } catch (Exception e) {
+            vo.setResponseCode(ResponseCode.SYSTEM_ERROR_RETRY);
             httpService.logError(httpRequestLog, e);
-
+            walletRequestService.end(walletRequest, httpRequestLog, vo);
         }
 
         return vo;

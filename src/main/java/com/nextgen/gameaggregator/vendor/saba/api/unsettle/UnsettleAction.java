@@ -2,11 +2,11 @@ package com.nextgen.gameaggregator.vendor.saba.api.unsettle;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
-import com.nextgen.gameaggregator.entity.ga.VendorGame;
+import com.nextgen.gameaggregator.entity.ga.RawBatchProcessIdempotentLog;
 import com.nextgen.gameaggregator.exception.BetResultIdempotentViolationException;
 import com.nextgen.gameaggregator.service.HttpService;
 import com.nextgen.gameaggregator.service.RawBatchProcessIdempotentLogService;
-import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.sport.service.SportWalletServiceImpl;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
@@ -29,7 +29,7 @@ public class UnsettleAction {
     @Autowired
     private RawBatchProcessIdempotentLogService rawBatchProcessIdempotentLogService;
     @Autowired
-    private SportWalletService sportWalletService;
+    private SportWalletServiceImpl sportWalletService;
     @Autowired
     private VendorService vendorService;
 
@@ -55,7 +55,7 @@ public class UnsettleAction {
                 sportWalletService.unsettle(traceId, txnsDto, httpRequestLog.getRequestBody(), httpRequestLog);
             }
 
-            VendorGame.RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new VendorGame.RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
+            RawBatchProcessIdempotentLog rawBatchProcessIdempotentLog = new RawBatchProcessIdempotentLog(batchProcessId, dtos.getMessage().getAction(), httpRequestLog.getUrl());
             rawBatchProcessIdempotentLogService.create(rawBatchProcessIdempotentLog);
 
             vo.setResponseCode(ResponseCode.SUCCESS);

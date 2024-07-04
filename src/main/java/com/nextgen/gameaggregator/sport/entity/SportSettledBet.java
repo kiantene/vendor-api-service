@@ -29,13 +29,13 @@ public class SportSettledBet extends BetInformation {
     private String vendorPlayerUsername;
     private Integer unsettledResettleNum;
 
-    public SportSettledBet(SportUnsettledBetCouchbase sportUnsettledBetCouchbase) {
+    public SportSettledBet(SportUnsettledBet sportUnsettledBet) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        modelMapper.map(sportUnsettledBetCouchbase, this);
+        modelMapper.map(sportUnsettledBet, this);
 
-        this.vendorPlayerUsername = sportUnsettledBetCouchbase.getVendorPlayerUsername();
-        this.newBetAmount = sportUnsettledBetCouchbase.getNewBetAmount();
+        this.vendorPlayerUsername = sportUnsettledBet.getVendorPlayerUsername();
+        this.newBetAmount = sportUnsettledBet.getNewBetAmount();
     }
 
     public SportSettledBet(String traceId, VendorPlayer vendorPlayer, AgentPlayer agentPlayer, SportAdjustmentData sportAdjustmentData, String rawData) {
@@ -93,14 +93,14 @@ public class SportSettledBet extends BetInformation {
         return betHistory;
     }
 
-    public SportUnsettledBetCouchbase toSportUnsettleBetCouchbase() {
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = new SportUnsettledBetCouchbase();
+    public SportUnsettledBet toSportUnsettleBetCouchbase() {
+        SportUnsettledBet sportUnsettledBet = new SportUnsettledBet();
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        modelMapper.map(this, sportUnsettledBetCouchbase);
+        modelMapper.map(this, sportUnsettledBet);
 
-        sportUnsettledBetCouchbase.setIsUnsettledBet(1);
+        sportUnsettledBet.setIsUnsettledBet(1);
 
-        return sportUnsettledBetCouchbase;
+        return sportUnsettledBet;
     }
 }

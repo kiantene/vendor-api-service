@@ -1,7 +1,8 @@
 package com.nextgen.gameaggregator.entity.ga;
 
-import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
+import com.nextgen.gameaggregator.operator.sport.bet.SportMultipleBetData;
 import com.nextgen.gameaggregator.operator.sport.settle.SportBetResultData;
+import com.nextgen.gameaggregator.operator.wallet.settled.BetResultData;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -48,7 +49,7 @@ public abstract class BetInformation {
     private BigDecimal balance;
     private Integer betType;
 
-    public BetInformation(BetResultData betResultData) {
+    protected BetInformation(BetResultData betResultData) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(betResultData, this);
@@ -63,7 +64,7 @@ public abstract class BetInformation {
         this.vendorSettleTime = Optional.ofNullable(betResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
     }
 
-    public BetInformation(SportBetResultData sportBetResultData) {
+    protected BetInformation(SportBetResultData sportBetResultData) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(sportBetResultData, this);
@@ -78,7 +79,22 @@ public abstract class BetInformation {
         this.vendorSettleTime = Optional.ofNullable(sportBetResultData.getVendorSettleTime()).orElse(System.currentTimeMillis());
     }
 
-    public BetInformation(BetHistory betHistory) {
+    protected BetInformation(SportMultipleBetData sportMultipleBetData) {
+        ModelMapper modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        modelMapper.map(sportMultipleBetData, this);
+
+        if (this.isFreespin == null) this.isFreespin = 0;
+        if (this.betAmount == null) this.betAmount = BigDecimal.ZERO;
+        if (this.winAmount == null) this.winAmount = BigDecimal.ZERO;
+        if (this.jackpotAmount == null) this.jackpotAmount = BigDecimal.ZERO;
+        if (this.winLoss == null) this.winLoss = BigDecimal.ZERO;
+        if (this.effectiveTurnover == null) this.effectiveTurnover = BigDecimal.ZERO;
+
+        this.vendorSettleTime = Optional.ofNullable(sportMultipleBetData.getVendorSettleTime()).orElse(System.currentTimeMillis());
+    }
+
+    protected BetInformation(BetHistory betHistory) {
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.map(betHistory, this);

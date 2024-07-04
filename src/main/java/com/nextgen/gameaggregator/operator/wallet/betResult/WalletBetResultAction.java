@@ -13,7 +13,6 @@ import com.nextgen.gameaggregator.operator.constant.ResponseCodes;
 import com.nextgen.gameaggregator.operator.enums.ResultType;
 import com.nextgen.gameaggregator.operator.wallet.balance.WalletBalanceVo;
 import com.nextgen.gameaggregator.service.*;
-import com.nextgen.gameaggregator.util.RequestLogVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,8 +20,6 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -30,29 +27,58 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @Slf4j
 public class WalletBetResultAction {
+    private final RequestService requestService;
+    private final AgentApiCredentialService agentApiCredentialService;
+    private final AuthenticationService authenticationService;
+    private final CurrencyConversionService currencyConversionService;
+    private final BetResultRetryLogService betResultRetryLogService;
+    private final Set<Integer> vendorList;
+    private final Set<Integer> forceSuccessResultTypeList;
+
     @Value("${testing.stub:false}")
-    private Boolean useStub;
-
-    @Value("${spring.profiles.active}")
-    private String profilesActive;
-    @Autowired
-    private RequestService requestService;
+    private boolean useStub;
 
     @Autowired
-    private AgentApiCredentialService agentApiCredentialService;
+    public WalletBetResultAction(RequestService requestService,
+                                 AgentApiCredentialService agentApiCredentialService,
+                                 AuthenticationService authenticationService,
+                                 CurrencyConversionService currencyConversionService,
+                                 BetResultRetryLogService betResultRetryLogService) {
 
-    @Autowired
-    private AuthenticationService authenticationService;
+        this.requestService = requestService;
+        this.agentApiCredentialService = agentApiCredentialService;
+        this.authenticationService = authenticationService;
+        this.currencyConversionService = currencyConversionService;
+        this.betResultRetryLogService = betResultRetryLogService;
+        this.vendorList = new HashSet<>();
+        this.forceSuccessResultTypeList = new HashSet<>();
 
-    @Autowired
-    private CurrencyConversionService currencyConversionService;
-    @Autowired
-    private BetResultRetryLogService betResultRetryLogService;
+        this.vendorList.add(1); // PP
+        this.vendorList.add(3); // CQ9
+        this.vendorList.add(6); // SPINIX
+        this.vendorList.add(7); // SPADEGAMING
+        this.vendorList.add(12); // EVO NETENT
+        this.vendorList.add(13); // EVO LIVE
+        this.vendorList.add(17); // MG
+        this.vendorList.add(19); // HABANERO
+        this.vendorList.add(26); // EVO BTG
+        this.vendorList.add(27); // EVO NLC
+        this.vendorList.add(28); // EVO RT
+        this.vendorList.add(36); // TADA
+
+        this.forceSuccessResultTypeList.add(ResultType.WIN.code);
+        this.forceSuccessResultTypeList.add(ResultType.LOSE.code);
+        this.forceSuccessResultTypeList.add(ResultType.END.code);
+    }
 
     public WalletBalanceVo call(String traceId, Integer agentId, GameSession gameSession, BetInformation betInformation, ResultType resultType, HttpRequestLog httpRequestLog, BigDecimal fromVendorConversionRate, BigDecimal toVendorConversionRate)
             throws InvalidOperatorResponseException, InvalidAgentApiCredentialException, VendorCurrencyNotSupportException {
@@ -62,19 +88,17 @@ public class WalletBetResultAction {
             return requestService.responseOperatorSub();
         }
 
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
-        WalletBalanceVo responseVo;
+        WalletBalanceVo responseVo = new WalletBalanceVo();
+        AtomicBoolean isTimeout = new AtomicBoolean(false);
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
         String apiUrl = agentApiCredentialService.getAgentCallbackUrlBySeamlessType(agentApiCredential);
 
         WalletBetResultDto dto = this.newWalletBetResultDto(traceId, gameSession, betInformation, resultType);
         currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
-        //log.info("Request [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + dto);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
-        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
-        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
+        ResponseCodes.Status operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
         long startTime = System.currentTimeMillis();
         if (httpRequestLog != null) {
@@ -87,7 +111,7 @@ public class WalletBetResultAction {
 
         }
 
-        RequestLogVo requestLogVo = null;
+        boolean isError = false;
 
         try {
             ResponseEntity<String> apiResponse = WebClient.create(apiUrl).post().uri(EndPoints.WALLET_BET_RESULT)
@@ -101,22 +125,23 @@ public class WalletBetResultAction {
                     .toEntity(String.class)
                     .retry(3)
                     .timeout(Duration.ofMillis(EndPoints.TIMEOUT))
+                    .onErrorResume(TimeoutException.class, e -> {
+                        isTimeout.set(true);
+                        return Mono.error(e);
+                    })
                     .block();
 
             long endTime = System.currentTimeMillis();
             if (httpRequestLog != null) {
                 if (apiResponse != null) {
                     httpRequestLog.setOperatorHttpStatusCode(apiResponse.getStatusCode().value());
-
                 }
                 httpRequestLog.setOperatorEnd(endTime);
             }
 
-            requestLogVo = requestService.createRequestLogVo(
-                    EndPoints.WALLET_BET_RESULT, apiUrl, dto, apiResponse, headerMap, startTime, endTime,
-                    this.getClass().getPackage().getName(), profilesActive);
-
-            //log.info("Response [" + apiUrl + EndPoints.WALLET_BET_RESULT + "]: " + apiResponse);
+            if (isTimeout.get()) {
+                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code);
+            }
 
             // 1. validate HTTP Response Code
             requestService.validateVendorHttpStatusResponse(apiResponse);
@@ -130,84 +155,47 @@ public class WalletBetResultAction {
 
             }
 
-            boolean specialCaseForPP = false;
-
-            //if its PP and settledBet (endRound) and responseVo is null (not success responses from operator)
-            //then will still consider success and assign default success params with 0 balance return out
-            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                if (responseVo == null || !responseVo.getStatus().equals(ResponseCodes.Status.SC_OK)) {
-
-                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-                    specialCaseForPP = true;
-
-                }
-            }
-
             Optional.ofNullable(responseVo).orElseThrow(() -> new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code));
             RequestService.validateResponse(responseVo);
 
             //3. validate username and currency
             requestService.validateResponseMatchRequest(responseVo, dto.getUsername(), dto.getCurrency(), dto.getTraceId());
 
-            // 4. validate operator response fail status
-            // only special handling for PP, the rest will still process as normal
-            if (!specialCaseForPP) {
-                requestService.operatorStatusException(responseVo.getStatus());
-            }
+            //4. validate operator response fail status
+            requestService.operatorStatusException(responseVo.getStatus());
 
-            // 5. add conversion rate when returning the balance to vendor
+            //5. add conversion rate when returning the balance to vendor
             currencyConversionService.doCurrencyConversionRateToVendor(responseVo, toVendorConversionRate);
-
-            //RequestService.successResponseLog(requestLogVo);
 
         } catch (HttpResponseStatusCodeException |
                  JsonSyntaxException |
                  InvalidResponseException |
                  ResponseNotMatchRequestException invalidResponseException) {
-
-            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-            } else {
-                throw new InvalidOperatorResponseException(ResponseCodes.Status.SC_INVALID_RESPONSE.code);
-            }
-
+            isError = true;
+            operatorStatus = ResponseCodes.Status.SC_INVALID_RESPONSE;
 
         } catch (InvalidOperatorResponseException invalidOperatorResponseException) {
-
-            if (gameSession.getVendorId().equals(1)) {
-                //only apply to PP, if its end, or any result is throwing insufficient_balance, then will always success the request
-                if (resultType.equals(ResultType.END) || invalidOperatorResponseException.getOperatorStatus().equals(ResponseCodes.Status.SC_INSUFFICIENT_FUNDS.code)) {
-                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-                    betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
-                } else {
-                    //other than insufficient error and end, the rest will still responses with invalidOperatorException
-                    throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
-                }
-
-            } else {
-                throw new InvalidOperatorResponseException(invalidOperatorResponseException.getOperatorStatus());
-            }
+            isError = true;
+            operatorStatus = ResponseCodes.Status.checkCodeStatus(invalidOperatorResponseException.getOperatorStatus());
 
         } catch (Exception exception) {
+            isError = true;
+            operatorStatus = ResponseCodes.Status.SC_UNKNOWN_ERROR;
 
-            if (gameSession.getVendorId() == 1 && dto.getIsEndRound() == 1) {
-                responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-            } else {
-                long endTime = System.currentTimeMillis();
-                Integer defaultOperatorErrorResponse = ResponseCodes.Status.SC_UNKNOWN_ERROR.code;
+        } finally {
+            if (isError) {
+                if (this.vendorList.contains(gameSession.getVendorId()) && this.forceSuccessResultTypeList.contains(resultType.code)) {
+                    responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
+                    if (httpRequestLog != null) {
+                        betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
+                    }
 
-                requestLogVo = requestService.createRequestLogVo(
-                        EndPoints.WALLET_BET_RESULT, apiUrl, dto, null, headerMap, startTime, endTime,
-                        this.getClass().getPackage().getName(), profilesActive);
-
-                if (exception.getMessage().contains("java.util.concurrent.TimeoutException")) {
-                    defaultOperatorErrorResponse = ResponseCodes.Status.SC_OPERATOR_TIMEOUT.code;
+                } else {
+                    throw new InvalidOperatorResponseException(operatorStatus.code);
                 }
-
-                //RequestService.failResponseLog(requestLogVo, exception);
-                throw new InvalidOperatorResponseException(defaultOperatorErrorResponse);
+            } else {
+                //this is not error.
             }
-
         }
         return responseVo;
     }
@@ -220,7 +208,6 @@ public class WalletBetResultAction {
             return requestService.responseOperatorSub();
         }
 
-        MultiValueMap<String, String> headerMap = new LinkedMultiValueMap<>();
         WalletBalanceVo responseVo;
 
         AgentApiCredential agentApiCredential = agentApiCredentialService.getAgentApiCredential(agentId);
@@ -230,8 +217,6 @@ public class WalletBetResultAction {
         currencyConversionService.doCurrencyConversionRateFromVendorForBetResult(dto, fromVendorConversionRate);
 
         String signature = authenticationService.generateSignature(dto, agentApiCredential.getApiSecret());
-        headerMap.add(EndPoints.HEADER_SIGNATURE, signature);
-        headerMap.add(EndPoints.HEADER_API_KEY, agentApiCredential.getApiKey());
 
         long startTime = System.currentTimeMillis();
         String jsonApiResponse = new Gson().toJson(dto);
@@ -283,7 +268,7 @@ public class WalletBetResultAction {
 
         } catch (Exception exception) {
             responseVo = this.processForceSuccess(gameSession, traceId, betInformation);
-            betResultRetryLogService.create(httpRequestLog, gameSession.getVendorId(), agentId, betInformation, EndPoints.WALLET_BET_RESULT);
+            betResultRetryLogService.create(httpRequestLog.getOperatorData(), gameSession.getVendorId(), agentId, betInformation.getBetId(), betInformation.getRoundId(), betInformation.getInternalTransactionId(), EndPoints.WALLET_BET_RESULT);
 
         }
 

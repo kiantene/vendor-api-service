@@ -1,12 +1,12 @@
 package com.nextgen.gameaggregator.vendor.gpkasia.api.gameurl;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class GameUrlVo implements com.nextgen.gameaggregator.operator.game.url.GameUrlVo{
 
-    @NotNull(message = "url can not be blank")
+    @NotBlank(message = "url can not be blank")
     private String data;
 
     @Override

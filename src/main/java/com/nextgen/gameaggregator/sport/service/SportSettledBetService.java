@@ -2,20 +2,22 @@ package com.nextgen.gameaggregator.sport.service;
 
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.sport.entity.SportSettledBet;
-import com.nextgen.gameaggregator.sport.repository.SettledBetCouchbaseRepository;
+import com.nextgen.gameaggregator.sport.repository.SportSettledBetRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.Objects;
 
 @Service
 @Slf4j
 public class SportSettledBetService {
 
     @Autowired
-    private SettledBetCouchbaseRepository settledBetCouchbaseRepository;
+    private SportSettledBetRepository sportSettledBetRepository;
 
     public SportSettledBet save(SportSettledBet sportSettledBet) {
-        settledBetCouchbaseRepository.save(sportSettledBet);
+        sportSettledBetRepository.save(sportSettledBet);
         return sportSettledBet;
     }
 
@@ -23,7 +25,7 @@ public class SportSettledBetService {
         String mergeId = vendorPlayerUsername + '_' + externalTransactionId;
         SportSettledBet sportSettledBet = null;
 
-        sportSettledBet = settledBetCouchbaseRepository.findById(mergeId).orElse(null);
+        sportSettledBet = sportSettledBetRepository.findById(mergeId).orElse(null);
         if (sportSettledBet == null) { // No matching bet record
             throw new BetNotFoundException("Cannot find sportSettledBet couchbase Id: " + mergeId);
         }
@@ -35,7 +37,7 @@ public class SportSettledBetService {
         String mergeId = vendorPlayerUsername + '_' + roundId;
         SportSettledBet sportSettledBet = null;
 
-        sportSettledBet = settledBetCouchbaseRepository.findById(mergeId).orElse(null);
+        sportSettledBet = sportSettledBetRepository.findById(mergeId).orElse(null);
         if (sportSettledBet == null) { // No matching bet record
             throw new BetNotFoundException("Cannot find sportSettledBet couchbase Id: " + mergeId);
         }
@@ -43,7 +45,34 @@ public class SportSettledBetService {
         return sportSettledBet;
     }
 
+    public SportSettledBet getByVendorPlayerUsernameAndVendorBetIdAndRoundId(String vendorPlayerUsername, String vendorBetId, String roundId) throws BetNotFoundException {
+        SportSettledBet sportSettledBet = null;
+
+        sportSettledBet = sportSettledBetRepository.findByVendorPlayerUsernameAndVendorBetIdAndRoundId(vendorPlayerUsername, vendorBetId, roundId);
+        if (sportSettledBet == null) { // No matching bet record
+            throw new BetNotFoundException("Cannot find sportSettledBet getByVendorPlayerUsernameAndVendorBetIdAndRoundId: " + vendorPlayerUsername + ", " + vendorBetId + ", " + roundId);
+        }
+
+        return sportSettledBet;
+    }
+
+    public SportSettledBet getByVendorPlayerUsernameAndVendorBetId(String vendorPlayerUsername, String vendorBetId) throws BetNotFoundException {
+        SportSettledBet sportSettledBet = null;
+
+        sportSettledBet = sportSettledBetRepository.findByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+
+        if (Objects.isNull(sportSettledBet)) {
+            sportSettledBet = sportSettledBetRepository.findById(vendorPlayerUsername + '_' + vendorBetId).orElse(null);
+        }
+        
+        if (sportSettledBet == null) { // No matching bet record
+            throw new BetNotFoundException("Cannot find sportSettledBet getByVendorPlayerUsernameAndVendorBetId: " + vendorPlayerUsername + ", " + vendorBetId);
+        }
+
+        return sportSettledBet;
+    }
+
     public void delete(SportSettledBet sportSettledBet) {
-        settledBetCouchbaseRepository.delete(sportSettledBet);
+        sportSettledBetRepository.delete(sportSettledBet);
     }
 }

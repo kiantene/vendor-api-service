@@ -1,12 +1,5 @@
 package com.nextgen.gameaggregator.vendor.spribe.api.authenticate;
 
-import java.math.BigDecimal;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.nextgen.gameaggregator.entity.ga.GameSession;
 import com.nextgen.gameaggregator.entity.ga.HttpRequestLog;
 import com.nextgen.gameaggregator.exception.*;
@@ -17,25 +10,40 @@ import com.nextgen.gameaggregator.vendor.spribe.constant.ErrorCodes;
 import com.nextgen.gameaggregator.vendor.spribe.utils.AmountConverter;
 import com.nextgen.gameaggregator.vendor.spribe.vo.DataVo;
 import com.nextgen.gameaggregator.vendor.spribe.vo.ResponseVo;
-
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping(path = Endpoints.PATH)
 public class AuthAction {
 
+    private final HttpService httpService;
+    private final GameSessionService gameSessionService;
+    private final WalletService walletService;
+    private final VendorLineService vendorLineService;
+    private final VendorGameService vendorGameService;
+    private final AgentPlayerService agentPlayerService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
+    public AuthAction(HttpService httpService,
+                      GameSessionService gameSessionService,
+                      WalletService walletService,
+                      VendorLineService vendorLineService,
+                      VendorGameService vendorGameService,
+                      AgentPlayerService agentPlayerService) {
+
+        this.httpService = httpService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+        this.vendorLineService = vendorLineService;
+        this.vendorGameService = vendorGameService;
+        this.agentPlayerService = agentPlayerService;
+    }
 
     @PostMapping(path = Endpoints.AUTHENTICATE)
     public ResponseVo authenticate(HttpServletRequest request) {
@@ -100,8 +108,8 @@ public class AuthAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(AuthDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException, 
-        CurrencyNotSupportedException {
+    private void doVerification(AuthDto dto, GameSession gameSession) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, CredentialNotFoundException,
+            CurrencyNotSupportedException {
         // Verify vendor currency
         ValidationUtils.isEquals(gameSession.getVendorCurrencyCode(), dto.getCurrency(), CurrencyNotSupportedException::new);
 

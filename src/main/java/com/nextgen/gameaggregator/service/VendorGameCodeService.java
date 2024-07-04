@@ -4,30 +4,36 @@ import com.nextgen.gameaggregator.entity.ga.VendorGameCode;
 import com.nextgen.gameaggregator.enums.Status;
 import com.nextgen.gameaggregator.exception.GameNotSupportedException;
 import com.nextgen.gameaggregator.repository.ga.writer.VendorGameCodeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
 public class VendorGameCodeService {
 
-    @Autowired
-    private VendorGameCodeRepository vendorGameCodeRepository;
+    private final VendorGameCodeRepository vendorGameCodeRepository;
+
+    public VendorGameCodeService(VendorGameCodeRepository vendorGameCodeRepository) {
+        this.vendorGameCodeRepository = vendorGameCodeRepository;
+    }
 
     public VendorGameCode getByVendorGameIdAndPlatformIdAndLanguageId(Integer vendorGameId, Integer platformId, Integer languageId) throws GameNotSupportedException {
         VendorGameCode vendorGameCode = vendorGameCodeRepository.findByVendorGameIdAndPlatformIdAndLanguageIdAndStatus(vendorGameId, platformId, languageId, Status.ACTIVE.code);
-        Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
 
-        return vendorGameCode;
+        return Optional.ofNullable(vendorGameCode).orElseThrow(GameNotSupportedException::new);
     }
 
-    public List<VendorGameCode> getByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(String betGameCode, Integer languageId, Integer platformId, Integer vendorId) throws GameNotSupportedException {
-        List<VendorGameCode> vendorGameCodeResultSet = vendorGameCodeRepository.findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(betGameCode, languageId, platformId, vendorId);
+    @Cacheable(value = "VendorGameCode", key = "{#gameCode, #languageId, #platformId, #vendorId}", cacheManager = "cacheManager")
+    public VendorGameCode getByBetGameCode(String gameCode, Integer languageId, Integer platformId, Integer vendorId) throws GameNotSupportedException {
+        VendorGameCode vendorGameCode = vendorGameCodeRepository.findByBetGameCodeAndLanguageIdAndPlatformIdAndVendorId(gameCode, languageId, platformId, vendorId);
 
-        Optional.ofNullable(vendorGameCodeResultSet).orElseThrow(GameNotSupportedException::new);
+        if (vendorGameCode == null) throw new GameNotSupportedException();
 
-        return vendorGameCodeResultSet;
+        if (vendorGameCode.getStatus().equals(Status.INACTIVE.code)) {
+            throw new GameNotSupportedException();
+        }
+
+        return vendorGameCode;
     }
 }

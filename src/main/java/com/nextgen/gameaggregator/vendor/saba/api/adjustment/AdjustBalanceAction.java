@@ -6,7 +6,7 @@ import com.nextgen.gameaggregator.exception.BetAdjustmentIdempotentViolationExce
 import com.nextgen.gameaggregator.exception.InsufficientBalanceException;
 import com.nextgen.gameaggregator.service.GameSessionService;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.sport.service.SportWalletService;
+import com.nextgen.gameaggregator.sport.service.SportWalletServiceImpl;
 import com.nextgen.gameaggregator.vendor.saba.constant.EndPoints;
 import com.nextgen.gameaggregator.vendor.saba.constant.ResponseCode;
 import com.nextgen.gameaggregator.vendor.saba.dto.RequestDto;
@@ -28,7 +28,7 @@ public class AdjustBalanceAction {
     @Autowired
     private HttpService httpService;
     @Autowired
-    private SportWalletService sportWalletService;
+    private SportWalletServiceImpl sportWalletService;
 
     @PostMapping(path = EndPoints.ADJUST_BALANCE)
     public GeneralVo action(HttpServletRequest request) {

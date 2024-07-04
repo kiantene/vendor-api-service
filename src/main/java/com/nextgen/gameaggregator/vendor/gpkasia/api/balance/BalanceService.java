@@ -20,20 +20,28 @@ import java.net.URLDecoder;
 @Service
 @Slf4j
 public class BalanceService {
+    private final GameSessionService gameSessionService;
+    private final VendorLineService vendorLineService;
+    private final WalletService walletService;
+    private final HttpService httpService;
+    private final AgentPlayerService agentPlayerService;
+    private final VendorGameService vendorGameService;
+
     @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    private HttpService httpService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private VendorService vendorService;
+    public BalanceService(GameSessionService gameSessionService,
+                          VendorLineService vendorLineService,
+                          WalletService walletService,
+                          HttpService httpService,
+                          AgentPlayerService agentPlayerService,
+                          VendorGameService vendorGameService){
+        this.gameSessionService = gameSessionService;
+
+        this.vendorLineService = vendorLineService;
+        this.walletService = walletService;
+        this.httpService = httpService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+    }
 
     public CommonVo balance(HttpRequestLog httpRequestLog, String traceId) {
         BalanceDto balanceDto = new BalanceDto();
@@ -100,6 +108,6 @@ public class BalanceService {
 
         //Verify received api_token is same with credential
         String token = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.api_token);
-        ValidationUtils.isEquals(token, dto.getApi_token(), InvalidRequestException::new);
+        ValidationUtils.isEquals(token, dto.getApiToken(), InvalidRequestException::new);
     }
 }

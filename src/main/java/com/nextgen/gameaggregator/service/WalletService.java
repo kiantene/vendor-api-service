@@ -1,5 +1,6 @@
 package com.nextgen.gameaggregator.service;
 
+import com.nextgen.gameaggregator.core.WalletRequest;
 import com.nextgen.gameaggregator.entity.ga.*;
 import com.nextgen.gameaggregator.enums.BetStatus;
 import com.nextgen.gameaggregator.eventing.events.BetEvent;
@@ -311,6 +312,10 @@ public class WalletService {
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balanceVo.getData().getBalance());
 
+            loggingService.logStart();
+            settledBetService.save(settledBet, rawData);
+            loggingService.logProcessTime("doSettledBetResult ｜ after walletBetResultAction.call, settledBetService.save", traceId);
+
             // remap settleBet info before insert into kafka if needed, default will be no changes
             settledBet = vendorService.updateSettleBetDataBeforeInsertToKafka(settledBet, httpRequestLog.getRequestBody());
 
@@ -329,10 +334,6 @@ public class WalletService {
             }
 
             loggingService.logProcessTime("doSettledBetResult ｜ kafkaService.produceBetHistory", traceId);
-
-            loggingService.logStart();
-            settledBetService.save(settledBet, rawData);
-            loggingService.logProcessTime("doSettledBetResult ｜ after walletBetResultAction.call, settledBetService.save", traceId);
 
             // delete unsettle bet only for vendors that will insert unsettle bet
             if (resultType == ResultType.WIN || resultType == ResultType.LOSE || resultType == ResultType.END) {
@@ -710,6 +711,16 @@ public class WalletService {
 
     }
 
+    public WalletRequest processRollback(RollbackData rollbackData, GameSession gameSession, BaseVendorService vendorService, HttpRequestLog httpRequestLog)
+            throws InvalidAgentApiCredentialException, RecordNotFoundException, VendorCurrencyNotSupportException,
+            BetResultIdempotentViolationException, BetRefundIdempotentViolationException,
+            TransactionStillProcessingException, InvalidOperatorResponseException, BetNotFoundException {
+
+        this.processRollback(httpRequestLog.getId(), rollbackData, gameSession, vendorService, httpRequestLog);
+
+        return httpRequestLog.getWalletRequest();
+    }
+
     /**
      * To process the reversal of a bet by sending the rollback instruction to Operator so that the Operator can perform
      * a reversal and return the updated balance of the player.
@@ -743,6 +754,8 @@ public class WalletService {
         UnsettledBet unsettledBet = null;
         Long vendorSettledTime = rollbackData.getVendorSettledTime();
 
+        WalletRequest walletRequest = httpRequestLog.getWalletRequest();
+
         try {
             settledBet = this.doCheckBetExistsInSettledBet(vendorPlayerId, externalTransactionId, traceId, vendorSettledTime, vendorService);
 
@@ -771,7 +784,7 @@ public class WalletService {
                 }
 
                 settledBetService.save(settledBet, settledBet.getRawData());
-
+                walletRequest.setBetAmount(settledBet.getBetAmount());
             }
 
             vendorSettledTime = settledBet.getVendorSettleTime();
@@ -800,12 +813,14 @@ public class WalletService {
             balance = balanceVo.getData().getBalance();
             settledBet.setOperatorStatus(operatorStatusSuccess);
             settledBet.setBalance(balance);
+            walletRequest.setBalanceAfter(balance);
+            walletRequest.setBalanceBefore(balance.subtract(settledBet.getWinLoss()));
 
             BetHistory betHistory = new BetHistory(settledBet);
             loggingService.logStart();
             kafkaService.produceBetHistory(betHistory, settledBet, vendorCurrency.getFromVendorRate());
             kafkaService.produceWarehouseBetHistory
-                    (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(),  vendorCurrency.getFromVendorRate());
+                    (betHistory, gameSession.getAgentPlayerUsername(), gameSession.getVendorPlayerUsername(), vendorCurrency.getFromVendorRate());
             loggingService.logProcessTime("processRollback ｜ kafkaService.produceBetHistory", traceId);
 
             loggingService.logStart();

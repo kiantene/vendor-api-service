@@ -2,7 +2,7 @@ package com.nextgen.gameaggregator.vendor.pinnacle.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -21,6 +21,7 @@ public class Action {
     private ActionsPlayerInfoDto playerInfo;
 
     @JsonProperty("WagerInfo")
+    @NotNull(message = "WagerInfo cannot be null")
     private ActionsWagerInfoDto wagerInfo;
 
 }

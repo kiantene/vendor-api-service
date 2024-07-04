@@ -34,7 +34,7 @@ public class PlaceBetDto extends GeneralDto implements SportBetResultData {
 
     @Override
     public String getExternalTransactionId() {
-        return this.operationId;
+        return this.operationId + this.refId;
     }
 
     @Override

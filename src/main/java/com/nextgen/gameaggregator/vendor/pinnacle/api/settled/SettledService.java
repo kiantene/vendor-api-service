@@ -5,7 +5,7 @@ import com.nextgen.gameaggregator.eventing.events.BetEvent;
 import com.nextgen.gameaggregator.exception.BetFailedException;
 import com.nextgen.gameaggregator.exception.BetNotFoundException;
 import com.nextgen.gameaggregator.service.HttpService;
-import com.nextgen.gameaggregator.sport.entity.SportUnsettledBetCouchbase;
+import com.nextgen.gameaggregator.sport.entity.SportUnsettledBet;
 import com.nextgen.gameaggregator.sport.service.SportUnsettledBetService;
 import com.nextgen.gameaggregator.sport.service.SportWalletService;
 import com.nextgen.gameaggregator.vendor.pinnacle.constant.ResponseCode;
@@ -25,12 +25,19 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class SettledService {
+    private final HttpService httpService;
+    private final SportWalletService sportWalletService;
+    private final SportUnsettledBetService sportUnsettledBetService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private SportWalletService sportWalletService;
-    @Autowired
-    private SportUnsettledBetService sportUnsettledBetService;
+    public SettledService(HttpService httpService,
+                          SportWalletService sportWalletService,
+                          SportUnsettledBetService sportUnsettledBetService) {
+
+        this.httpService = httpService;
+        this.sportWalletService = sportWalletService;
+        this.sportUnsettledBetService = sportUnsettledBetService;
+    }
 
     public CommonVo settled(Action action, HttpRequestLog httpRequestLog) {
         String traceId = httpRequestLog.getId();
@@ -41,8 +48,8 @@ public class SettledService {
         try {
             SettledDto settledDto = new ModelMapper().map(action.getWagerInfo(), SettledDto.class);
             settledDto.setVendorPlayerUsername(action.getPlayerInfo().getUserCode());
-            settledDto.setTransactionAmount(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getAmount).orElse(BigDecimal.ZERO));
             settledDto.setExternalTransactionId(action.getId().toString());
+            settledDto.setTransactionAmount(Optional.ofNullable(action.getTransaction()).map(ActionsTransactionDto::getAmount).orElse(BigDecimal.ZERO));
             // check is confirmed bet or (settled bet -> unsettled bet)
             this.checkIsConfirmBetOrIsUnsettledBet(settledDto);
             BetEvent response = sportWalletService.settle(traceId, settledDto, httpRequestLog);
@@ -57,9 +64,12 @@ public class SettledService {
     }
 
     private void checkIsConfirmBetOrIsUnsettledBet(SettledDto settledDto) throws BetFailedException, BetNotFoundException {
-        SportUnsettledBetCouchbase sportUnsettledBetCouchbase = sportUnsettledBetService.getByVendorPlayerUsernameAndRoundId(settledDto.getVendorPlayerUsername(), settledDto.getRoundId());
-        Integer isConfirmBet = Objects.requireNonNullElse(sportUnsettledBetCouchbase.getIsConfirmBet(), 0);
-        Integer isUnsettledBet = Objects.requireNonNullElse(sportUnsettledBetCouchbase.getIsUnsettledBet(), 0);
+        String vendorPlayerUsername = settledDto.getVendorPlayerUsername();
+        String vendorBetId = settledDto.getVendorBetId();
+
+        SportUnsettledBet sportUnsettledBet = sportUnsettledBetService.getByVendorPlayerUsernameAndVendorBetId(vendorPlayerUsername, vendorBetId);
+        Integer isConfirmBet = Objects.requireNonNullElse(sportUnsettledBet.getIsConfirmBet(), 0);
+        Integer isUnsettledBet = Objects.requireNonNullElse(sportUnsettledBet.getIsUnsettledBet(), 0);
         if (!isConfirmBet.equals(1) && !isUnsettledBet.equals(1))
             throw new BetFailedException("Bet External Transaction Id : " + settledDto.getExternalTransactionId() + " not confirmed bet.");
     }

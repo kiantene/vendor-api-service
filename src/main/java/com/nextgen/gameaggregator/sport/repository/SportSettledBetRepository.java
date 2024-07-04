@@ -7,6 +7,10 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @Collection("sport_settled_bet")
-public interface SettledBetCouchbaseRepository extends CouchbaseRepository<SportSettledBet, String> {
+public interface SportSettledBetRepository extends CouchbaseRepository<SportSettledBet, String> {
+    SportSettledBet findByVendorPlayerUsernameAndVendorBetIdAndRoundId(String vendorPlayerUsername, String vendorBetId, String roundId);
+
+    SportSettledBet findByVendorPlayerUsernameAndVendorBetId(String vendorPlayerUsername, String vendorBetId);
+
 
 }

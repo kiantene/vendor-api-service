@@ -21,26 +21,39 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Map;
 
 @RestController
 @RequestMapping(path= EndPoints.PATH)
 @Slf4j
 public class BalanceAction {
+
+    private final HttpService httpService;
+
+    private final VendorLineService vendorLineService;
+
+    private final AgentPlayerService agentPlayerService;
+
+    private final VendorGameService vendorGameService;
+
+    private final GameSessionService gameSessionService;
+
+    private final WalletService walletService;
+
     @Autowired
-    private HttpService httpService;
-    @Autowired
-    private VendorLineService vendorLineService;
-    @Autowired
-    private AgentPlayerService agentPlayerService;
-    @Autowired
-    private VendorGameService vendorGameService;
-    @Autowired
-    private GameSessionService gameSessionService;
-    @Autowired
-    private WalletService walletService;
-    @Autowired
-    VendorService vendorService;
+    public BalanceAction(HttpService httpService,
+                         VendorLineService vendorLineService,
+                         AgentPlayerService agentPlayerService,
+                         VendorGameService vendorGameService,
+                         GameSessionService gameSessionService,
+                         WalletService walletService){
+        this.httpService = httpService;
+
+        this.vendorLineService = vendorLineService;
+        this.agentPlayerService = agentPlayerService;
+        this.vendorGameService = vendorGameService;
+        this.gameSessionService = gameSessionService;
+        this.walletService = walletService;
+    }
 
     @PostMapping(path = EndPoints.BALANCE)
     public BalanceVo balance(HttpServletRequest request){
@@ -55,10 +68,10 @@ public class BalanceAction {
         try{
             String body = httpRequestLog.getRequestBody();
 
-            BalanceDto balanceDto = httpService.convertJsonToDto(body,BalanceDto.class);
+            BalanceDto balanceDto = HttpService.convertJsonToDto(body,BalanceDto.class);
 
             // get x-ambslot-signature value for validation
-            Map<String,String> header = vendorService.headersToHashMap(request);
+            String signature = httpService.getHeadersInfo(request).get(EndPoints.HEADER_SIGNATURE);
 
             // Validate request parameters from vendor (Non-database related)
             this.doValidation(balanceDto);
@@ -67,12 +80,12 @@ public class BalanceAction {
             GameSession gameSession = gameSessionService.getGameSessionByVendorPlayerUsername(balanceDto.getUsername());
 
             // Verify remaining parameters (Verify against database values)
-            this.doVerification(balanceDto, gameSession, header.get("x-ambslot-signature"), body);
+            this.doVerification(balanceDto, gameSession, signature, body);
 
             // Retrieve the latest wallet balance from Operator
             BigDecimal balance = walletService.getBalance(traceId, gameSession, httpRequestLog);
 
-            dataVo.setBalance(balance.setScale(2, RoundingMode.DOWN).doubleValue());
+            dataVo.setBalance(balance.setScale(2, RoundingMode.DOWN));
             statusVo.setCode(ResponseCodes.SUCCESS);
             statusVo.setMessage(ResponseCodes.SUCCESS_MSG);
 
@@ -125,7 +138,7 @@ public class BalanceAction {
         ValidationUtils.validateRequest(dto);
     }
 
-    private void doVerification(BalanceDto dto, GameSession gameSession, String header, String body) throws AuthenticationException, DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException, JsonProcessingException, InvalidCredentialsException {
+    private void doVerification(BalanceDto dto, GameSession gameSession, String signature, String body) throws DisabledVendorLineException, DisabledAgentPlayerException, DisabledGameException, InvalidPlayerException, InvalidRequestException, CredentialNotFoundException, InvalidSignatureException, JsonProcessingException, InvalidCredentialsException {
         // Verify vendor line is active
         vendorLineService.verifyVendorLineStatus(gameSession.getVendorLineId());
 
@@ -144,15 +157,6 @@ public class BalanceAction {
 
         // Verify header value
         String secret = vendorLineService.getCredentialValueByName(gameSession.getVendorLineId(), Credentials.secret);
-        int iterations = 1000;
-
-        // Convert JsonNode back to JSON string
-        String convertedJsonString = vendorService.convertObjectMapper(body);
-
-        String encrypted_value = vendorService.encryption(convertedJsonString, secret, iterations);
-
-        if(!header.equals(encrypted_value)){
-            throw new InvalidSignatureException();
-        }
+        VendorService.validateSignature(signature, body, secret);
     }
 }
